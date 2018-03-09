@@ -1472,7 +1472,7 @@ only the records set with this template would be removed.
 
 === Variables and Host Considerations
 
-Templates do allow for variables in a host name.  However, these should
+While templates do allow for variables in a host name, these should
 be used sparingly.
 
 As an example, consider setting up hosting for a site. But instead of
@@ -1491,28 +1491,39 @@ Such a template might contain an A record of the form:
 }
 ----
 
-This template could be applied on the domain example.com with a variable
-for "sub", "sub1", "sub2", etc.
+This template could be applied on a domain like example.com with var set 
+to "sub", "sub1", "sub2", etc.
 
-However, application of this template would be at the domain level for
-"example.com".  Re-application of this template would remove all records
-previously set by the template.
+Application of this template would be at the domain level for
+"example.com". This causes problems for application/re-application
+of the template, conflict detection, and template removal.
 
-So application of this template on "example.com" with the var=sub would
-result in the A record for sub.example.com to the value 2.2.2.2.  But
-later applying the template on "example.com" with the var=sub2 would
-first remove the old template, and set the new one.  Sub.example.com
+Applying this template at the domain level would removal any
+previously applied instances. This means calling this with var=sub
+would result in the A record for sub.example.com to be set to 
+the value 2.2.2.2. Later applying the template on "example.com" with the
+var=sub2 would
+first remove the old template before setting the new one. Sub.example.com
 would be removed, and sub2.example.com would be set to the value
 2.2.2.2.
 
-While removing variables in host entries entirely from the specification
-would prevent this type of problem from occurring, there are some
-templates that utilize CNAME values containing user identification for
-validation of domain ownership.  For practical purposes these values do
-not conflict with other services or sub-domains being configured and are
-seen as reasonable.
+With a variable as the host, determining conflict detection would be 
+impossible for asynchronous permissions. The UX would be unable to 
+determine what values for the variable would be passed in.
 
-As such, variables remain applicable to the host name but for very
+To solve this problem, templates are applied to both a domain and a host 
+value. The host value is specified in the call to apply a synchronous 
+template, and potential values specified in the call for aysnchronous 
+permissions.
+
+As such the only variable permitted for the "host" value is "%host%".
+
+Note: There are some templates that utilize CNAME values containing user 
+identification for validation of domain ownership. For practical purposes 
+these values do not conflict with other services or sub-domains being 
+configured and are the only exception to this rule.
+
+Variables remain applicable to the host name but for these very
 limited circumstances.
 
 === Repository and Integrity

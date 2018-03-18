@@ -4,7 +4,7 @@
 :source-highlighter: prettify
 :sectnums:
 :revnumber: 42
-:revdate: 11-03-2018
+:revdate: 18-03-2018
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -309,45 +309,50 @@ Provider. This JSON structure will contain the following fields.
 |*Key*
 |*Type*
 |*Description*
-|Provider Id
+|*Provider Id*
 |providerId
 |String
 |Unique identifier for the DNS Provider. Typically, the domain name (e.g. virtucom.com).
 
-|Provider Name 
-|providerName 
+|*Provider Name* 
+|providerName
 |String 
 |The name of the DNS Provider.
 
-|Provider Display Name 
+|*Provider Display Name* 
 |providerDisplayName 
 |String 
 |The name of the DNS Provider that should be displayed by the Service Provider. Note: This might change for some DNS Providers that white label their infrastructure.
 
-|UX URL Prefix for Synchronous Flows 
+|*UX URL Prefix for Synchronous Flows* 
 |urlSyncUX 
 |String 
 |The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.
 
-|UX URL Prefix for Asynchronous Flows 
+|*UX URL Prefix for Asynchronous Flows*
 |urlAsyncUX 
 |String 
 |The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain.
 
-|API URL Prefix 
+|*API URL Prefix* 
 |urlAPI 
 |String 
 |This is the URL Prefix for the REST API
 
-|Width of Window 
+|*Width of Window*
 |width 
 |Number 
 |This is the desired width of the window for granting consent when navigated in a popup. Default value is 750px.
 
-|Height of Window 
+|*Height of Window* 
 |height 
 |Number 
 |This is the desired height of the window for granting consent when navigated in a popup. Default value is 750px.
+
+|*UX URL Control Panel* 
+|urlControlPanel 
+|String 
+|This is a URL to the control panel for editing DNS at the DNS Provider. This field is optional, and allows a Service Provider whose template isn't supported at the DNS Provider to provide a direct link to perform manual edits.
 |=======================================================================
 
 As an example, the JSON returned by this call might contain.
@@ -362,7 +367,8 @@ As an example, the JSON returned by this call might contain.
 	"urlAsyncUX": "https://domainconnect.virtucondomains.com",
 	"urlAPI": "https://api.domainconnect.virtucondomains.com",
 	"width": 750,
-	"height": 750
+	"height": 750,
+	"urlControlPanel": "https://domaincontrolpanel.virtucondomains.com"
 }
 ----
 
@@ -438,7 +444,9 @@ This is the URL used to ask for consent and to apply a template to a
 domain. It is called from the Service Provider to start the Domain
 Connect Protocol.
 
-This URL can be called in two ways.
+This URL can be called in one of two ways. 
+
+===== New Broswer Window
 
 The first is through a new browser
 tab or in a popup browser window. The DNS Provider would sign the user
@@ -446,24 +454,20 @@ in if necessary, verify domain ownership, and ask for confirmation
 before application of the template. After application of the template,
 the DNS Provider would automatically close the browser tab or window.
 
+===== Same Browser Window
 The second is in the current browser tab/window. As above the DNS
 Provider would sign the user in if necessary, verify domain ownership,
 and ask for confirmation before application of the template. After
 application of the template (or cancellation by the user), the DNS
-Provider would redirect the browser to a return URL (redirect_uri). 
-
-Which approach is used is controled by the presence of the redirect_uri. When not present, the DNS Provider closes the tab or window upon completion. When present, the browser is redirecting to the redirect_uri.
-
-When not signing the url, it is highly recommended that the syncRedirectDomain is provided. This verifies that the redirect is to a valid destination.
+Provider would redirect the browser to a return URL (redirect_uri).
 
 Several parameters may be appended to the end of this redirect_uri.
 
 * State
 +
 If a state parameter is passed in on the query string, this will be
-passed back
-+
-as state= on the return_uri
+passed back as state= on the redirect_uri.
+
 * Error
 +
 If authorization could not be obtained or an error has occurred, the
@@ -473,11 +477,11 @@ specified in OAuth 2.0 RFC 6749 (4.1.2.1. Error Response - "error"
 parameter). Valid values are: invalid_request, unauthorized_client,
 access_denied, unsupported_response_type, invalid_scope, server_error,
 and temporarilly_unavailable.
++
 * Error Description
 +
 When an error occurs, an optional error description containing a
-developer focused error description may be returned at the discretion of
-the DNS Provider.
+developer focused error description may be returned.
 +
 Most errors are due to configuration or usage problems. But under normal
 operation the access_denied error can be returned for a number of
@@ -494,17 +498,20 @@ operation. Should the DNS Provider wish to communicate this to the
 Service Provider, when the error=access_denied the error_description can
 contain the prefix "user_cancel". Again, this is left to the discretion
 of the DNS Provider.
+There is one piece of information that may be interesting to communicate
+to the Service Provider. This is when the end user decides to cancel the
+operation. Should the DNS Provider wish to communicate this to the
+Service Provider, when the error=access_denied the error_description can
+contain the prefix "user_cancel". Again, this is left to the discretion
+of the DNS Provider.
 
-It is also strongly recommended that the DNS Provider warn the user of
-existing settings that would change and/or services that would be
-disrupted as part of applying this template. The fidelity of this
-warning is left to the DNS Provider. The only requirement is that after
-application of the template the new service is enabled.
+To prevent an open redirect, the redirect_uri must be within the domain specified in the template in syncRedirectDoamin, or the request must be digitally signed by the Service Provider.
++
+===== Conflict Dectection
 
-More details on recommendations for conflict detection are outlined
-below in the section 6 on Templates.
+It is also recommended that the DNS Provider detect and display conflicts to the user. This is optional, and the only requirement is that after the template is applied the DNS changes are succesfully applied.
 
-Parameters/properties passed to this URL include:
+===== Parameters/properties passed to this URL include:
 
 [cols=",,",options="header",]
 |=======================================================================
@@ -523,11 +530,11 @@ Parameters/properties passed to this URL include:
 |*Redirect URI*
 |redirect_uri
 |The location to direct the client browser to upon successful authorization, or upon error. The parameter is
-optional, and if omitted the DNS Provider will close the browser window upon completion. Also recommended that when not signing, the syncRedirectDomain is provided in the template.
+optional, and if omitted the DNS Provider will close the browser window upon completion. It must either be scoped to the syncRedirectDomain from the template, or the request must be signed.
 
 |*State*
 |state
-|OPTIONAL but recommended. This is a random, unique string passed along to prevent CSRF. It will be returned as a parameter when redirecting to the redirect_uri described above.
+|OPTIONAL. This is a random, unique string passed along to prevent CSRF, or to pass back state. It will be returned as a parameter when redirecting to the redirect_uri described above.
 
 |*Name/Value Pairs*
 |Any key that will be used as a replacement for the “% surrounded” value(s) in a template.
@@ -546,6 +553,15 @@ template for a service that is sold through different companies. Not all templat
 |*Signature*
 |sig
 |An OPTIONAL signature of the query string. See Security Considerations section below.
+
+|*Group Id*
+|groupId
+|This OPTIONAL parameter specifies the group of changes from the template to apply. If no group is specified, all groups are applied. Multiple groups can be specified in comma delimited format.
+
+|*Provider Name*
+|providerName
+|This OPTIONAL parameter specifies the provider name for display in the UX. It allows for application of a
+template for a service that is sold through different companies. Not all templates allow for this capability. See Shared Templates below.
 
 |*Key*
 |key
@@ -580,16 +596,20 @@ this link, they would land on the DNS Provider site to confirm the
 change. To the user, this would appear to be a valid request to
 configure the domain. Yet the IP would be hijacking the service.
 
-Not all templates have this problem. But when they do, there are two
+Not all templates have this problem. But when they do, there are several
 options.
 
+===== Disable Synchronous
+
 One option would be to not enable the synchronous flow and use
-asynchronous OAuth. While this can be controlled with the syncBlock
-value from the template, as will be seen below OAuth has both a higher
+asynchronous OAuth. This can be controlled with the syncBlock
+value from the template. However, as will be seen below OAuth has both a higher
 implementation burden and requires onboarding between each Service and
 DNS Provider.
 
-The second option would be to digitally sign the query string. The
+===== Digitally Sign Requests
+
+Another option would be to digitally sign the query string. The
 signature will be appended as an additional query string parameter,
 properly URL encoded and of the form:
 
@@ -649,13 +669,21 @@ a=1&b=2&ip=10.10.10.10&domain=foobar.com
 ----
 
 Support for signing the query string and verification is optional. Not
-all services require this level of security. Presence of the
-syncPubKeyDomain in the template indicates that the template requires
+all services require or are able to provide this level of security. Presence of the
+*syncPubKeyDomain* in the template indicates that the template requires
 signature verification.
 
 The digital signature will be generated on the full query string
 excluding the sig and key parameters. The values of each query string
 value will be properly URL Encoded before the signature is generated.
+
+===== Warnings
+
+Some applications aren't able to use oAuth and/or sign requests. 
+
+When this is the case it is highly recommended (as always) that the template be constrained. However, when this is not possible and the template is susceptible to phising style attacks the flag *warnPhishing* should be set to true in the template. 
+
+When set this indicates to the DNS Provider that they should display extra warnings to the user to ensure the link was/is from a reputable source before applying the template.s
 
 ==== Shared Templates
 
@@ -718,16 +746,11 @@ OAuth client with the DNS provider. This is envisioned as a manual
 process.
 
 To register, the Service Provider would provide (in addition to their
-template) any parameters necessary for the DNS Providers OAuth
+template) any configuration necessary for the DNS Providers OAuth
 implementation. This includes valid URLs and Domains for redirects upon
 success or errors.
 
-The OAuth specification gives several options for the registration of
-return uris, including the registration of fully qualified uris, partial
-uris, or no uris. For Domain Connect to work consistently across
-providers, it is recommended that the client register one more more host
-names to be validated with against a fully qualified uri passed into the
-call for getting an authorization code.
+Note: The valid redirects are very important in any oAuth implementation. Most oAuth vunerabilities are a combination of a leaked redirect andor a compromised secret.
 
 In return, the DNS provider will give the Service Provider a client id
 and secret which will be used when requesting tokens. It is also
@@ -863,22 +886,13 @@ token, and a reasonable recommended setting is ten minutes. As such this
 exchange needs to be completed before that time has expired or the
 process will need to be repeated.
 
-This token exchange is done via a server to server API call from the
-Service Provider to the DNS Provider using a POST
+This token exchange is typically done via a server to server API call from the
+Service Provider to the DNS Provider using a POST. When called in this manner a secret is provided along with the Authorization Code.
 
-The Access Token granted will also have a longer lifespan, but also can
-expire. To get a new access token, the Refresh Token is used.
+oAuth does allow for retreiving the access token without a secret. This is typically done when the oAuth client is a client application. When onboarding with the DNS Provider this would need to be enabled.
 
-The request for the access token is done via a POST to a well-known path
-of the urlAPI from the JSON. However, care must be taken here because a
-secret is sent with this POST. A malicious user could return false JSON
-information in their domain, allowing them to hijack this request. When
-called they could steal the server secret.
-
-Instead of using the urlAPI from a runtime query, the Service Provider
-should maintain a table mapping the DNS Provider to the proper URL. This
-will involve storage of the urlAPI per DNS Provider, but can sit
-alongside the secret that is stored per DNS Provider.
+When the secret is provided (which is the normal case), care must be taken. Because a malicious user could return false JSON
+information in their domain, the urlAPI read from the JSON during discovery should not be used for this call. Instead, the Service Provider would maintain this urlAPI along with the secret per DNS Provider.
 
 The following table describes the POST parameters to be included in the
 request for the access token. The parameters should be accepted via the
@@ -892,8 +906,8 @@ is generally frowned upon given that various systems often log URLs.
 |Key
 |Description
 
-|Authorization Code/Refresh Code
-|code
+|*Authorization Code/Refresh Code*
+|code/refresh_token
 |The authorization code that was
 provided in the previous step when the customer accepted the
 authorization request, or the refresh_token for a subsequent access
@@ -918,7 +932,7 @@ DNS provider, to the Service Provider during registration
 |*Client Secret*
 |client_secret
 |The secret provided to the Service
-Provider during registration
+Provider during registration. Typically required unless the rare circumstance with secret-less oAuth.
 |=======================================================================
 
 Upon successful token exchange, the DNS Provider will return a response
@@ -1197,7 +1211,7 @@ following data:
 |Key
 |Description
 
-|Service Provider Id
+|*Service Provider Id*
 |String
 |providerId
 |The unique identifier of the
@@ -1265,8 +1279,13 @@ record from DNS that contains the public key information.
 |syncRedirectDomain
 |(optional)
 When present, this is the domain name for which redirects must be sent
-to with the response for the configuration. The domain from the
-providerId is also allowed.
+to with the response for the configuration. 
+
+|*Warn Phising*
+|Boolean
+|warnPhising
+|(optional)
+When present, this tells the DNS Provider that the template may contain variables susceptiable to phising attacks and the provider is unable to digitally sign the requests. The default value for this is false.
 
 |*Template Records*
 |Array of Template Records
@@ -1501,7 +1520,7 @@ Application of this template would be at the domain level for
 "example.com". This causes problems for application/re-application
 of the template, conflict detection, and template removal.
 
-Applying this template at the domain level would removal any
+Applying this template at the domain level would remove any
 previously applied instances. This means calling this with var=sub
 would result in the A record for sub.example.com to be set to 
 the value 2.2.2.2. Later applying the template on "example.com" with the
@@ -1510,25 +1529,22 @@ first remove the old template before setting the new one. Sub.example.com
 would be removed, and sub2.example.com would be set to the value
 2.2.2.2.
 
-With a variable as the host, determining conflict detection would be 
+Furthermore, with a variable as the host determining conflict detection would be 
 impossible for asynchronous permissions. The UX would be unable to 
-determine what values for the variable would be passed in.
+determine what values for said variable would be passed in.
 
 To solve this problem, templates are applied to both a domain and a host 
 value. The host value is specified in the call to apply a synchronous 
 template, and potential values specified in the call for aysnchronous 
 permissions.
 
-As such the only variable permitted for the "host" value is "%host%".
+To allow for templates that utilize the host name (or the domain name for that matter), the values of %host% and %domain% are available and can be used in the "host" field in the template.
 
-Note: There are some templates that utilize CNAME values containing user 
+Note: There are some templates that utilize CNAME values containing some form of user 
 identification for validation of domain ownership. For practical purposes 
 these values do not conflict with other services or sub-domains being 
-configured and are the only exception to this rule.
-
-Variables remain applicable to the host name but for these very
-limited circumstances.
-
+configured and are the only exception to this rule. As such other variables are allowed in for the host name, but only in this limited circumstance.
+ss
 === Repository and Integrity
 
 This template format is intended largely for documentation and

@@ -6,8 +6,8 @@ Domain Connect specification is published on GitHub and can be displayed under f
 ## Lifecycle of the specification
 
 * New version of the specification is published by new commits on master branch of this repository.
-* New version which change only the MINOR number SHALL not break any of existing functionalities or integrations.
-* Update to MAJOR number means a breaking change and as such shall by all means be avoided.
+* New publication which change only the *Revision* number SHALL not break any of existing functionalities or integrations.
+* Update to *Version* number means a breaking change and as such shall by all means be avoided.
 
 ## Issues and questions to the specification
 

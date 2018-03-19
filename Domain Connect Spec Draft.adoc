@@ -10,6 +10,7 @@
 
 = Domain Connect 2.0
 
+[cols=",,,"]
 |===========================================
 |Version 2.0
 |Revision {revnumber}
@@ -1197,7 +1198,7 @@ following data:
 |Key
 |Description
 
-|Service Provider Id
+|*Service Provider Id*
 |String
 |providerId
 |The unique identifier of the
@@ -1413,7 +1414,7 @@ records that will change. And others may implement logic to further
 remove any the existing templates that overlap with the new template *.
 Again this may be progressively displayed.
 
-* As an example, example, consider a template that set two records in
+* As an example, consider a template that set two records in
 DNS (recordA and recordB).  Next consider applying a new template that
 overlaps with the first template (recordB and recordC).  If the DNS
 Provider removes conflicting templates when applying new ones, upon
@@ -1473,6 +1474,64 @@ treated as two distinct templates. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
 
+All the host names specified in the template will be therefore implicitely
+prefixed with the host specified in the _host_ parameter.
+
+Example template:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www",
+	"pointsTo": "@",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "@",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+Template applied with _domain_=foo.com and _host_ parameter missing or empty:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www",
+	"pointsTo": "foo.com",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "@",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+Template applied with _domain_=foo.com and _host_=bar:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www.bar",
+	"pointsTo": "bar.foo.com",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "bar.foo.com",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+In any of the above examples _@_ can be replaced with _%host%_ pre-defined variable as these heve exactly the same meaning.
+
+If any template requires to use always root of the domain no matter which host is applied (without scope of a host applied), pseudo variable _%domain%_ shall be used.
+
 === Variables and Host Considerations
 
 While templates do allow for variables in a host name, these should
@@ -1525,6 +1584,12 @@ Note: There are some templates that utilize CNAME values containing user
 identification for validation of domain ownership. For practical purposes 
 these values do not conflict with other services or sub-domains being 
 configured and are the only exception to this rule.
+It is however advisable, that such templates still define a constant
+part of a variable host name (a prefix) which will serve from one sidea
+as a name space lowering the probability of a conflict with different vendor,
+from the other side preventing phishing attack vectors which would impersonate
+the provider in order to push different data into DNS (which could be used
+to complete other mean of DNS-based verification).
 
 Variables remain applicable to the host name but for these very
 limited circumstances.

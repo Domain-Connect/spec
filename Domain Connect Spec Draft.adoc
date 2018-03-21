@@ -10,6 +10,7 @@
 
 = Domain Connect 2.0
 
+[cols=",,,"]
 |===========================================
 |Version 2.0
 |Revision {revnumber}
@@ -1425,7 +1426,7 @@ records that will change. And others may implement logic to further
 remove any the existing templates that overlap with the new template *.
 Again this may be progressively displayed.
 
-* As an example, example, consider a template that set two records in
+* As an example, consider a template that set two records in
 DNS (recordA and recordB).  Next consider applying a new template that
 overlaps with the first template (recordB and recordC).  If the DNS
 Provider removes conflicting templates when applying new ones, upon
@@ -1485,6 +1486,46 @@ treated as two distinct templates. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
 
+All the host names specified in the template will be therefore implicitely
+prefixed with the host specified in the _host_ parameter.
+
+Example template:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www",
+	"pointsTo": "@",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "@",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+Template applied with _domain_=foo.com and _host_ parameter missing or empty:
+
+[source]
+----
+www 1800 IN CNAME foo.com
+@   1800 IN A 1.1.1.1
+----
+
+Template applied with _domain_=foo.com and _host_=bar:
+
+[source]
+----
+www.bar 1800 IN CNAME bar
+bar     1800 IN A 1.1.1.1
+----
+
+Any usage of _@_ is equivalent to _%host%_ or _@_ (in sense of BIND notation as per RFC 1035) when host is missing/empty.
+
+If any template requires to use always root of the domain no matter which host is applied (without scope of a host applied), pseudo variable _%domain%_ shall be used.
+
 === Variables and Host Considerations
 
 While templates do allow for variables in a host name, these should
@@ -1534,10 +1575,12 @@ permissions.
 To allow for templates that utilize the host name (or the domain name for that matter), the values of %host% and %domain% are available and can be used in the "host" field in the template. Similarly the "@" character can be used in lieu of %host%.
 
 Note: There are some templates that utilize CNAME values containing some form of user 
-identification for validation of domain ownership. For practical purposes 
-these values do not conflict with other services or sub-domains being 
-configured and are the only exception to this rule. As such other variables are allowed in for the host name, but only in this limited circumstance.
-ss
+identification for validation of domain ownership. Means shall be undertaken to assure no conflict with other services or sub-domains being 
+configured, for example by using GUID or constant prefix. As such other variables are allowed in for the host name, but only in this limited circumstance.
+
+It is not allowed in any occasion that both _host_ and _pointsTo_/_data_ fields contain only variables. Such templates shall still define a constant part of _host_ or _pointsTo_/_data_ (a prefix) which will prevent phishing attack vectors which would impersonate
+the provider in order to push different data into DNS (which could be used to complete other mean of DNS-based verification).
+
 === Repository and Integrity
 
 This template format is intended largely for documentation and

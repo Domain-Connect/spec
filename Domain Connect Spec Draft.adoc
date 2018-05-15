@@ -3,8 +3,8 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 46
-:revdate: 14-05-2018
+:revnumber: 47
+:revdate: 15-05-2018
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -52,7 +52,7 @@ toc::[]
 
 == Introduction and background
 
-GoDaddy recently implemented a feature called Domain Connect that simplified how Service
+GoDaddy implemented a feature called Domain Connect that simplified how Service
 Providers configured domains hosted at  GoDaddy (the DNS Provider). This made the end to end
 experience considerably easier for the end user. 
 
@@ -106,8 +106,8 @@ tools.
 
 Discovery of the DNS Provider in this manner is unreliable, and
 providing instructions to users would present a number of technologies
-(DNS record types, TTLs, Hostnames, etc.) and processes they didn’t
-understand. These instructions authored by the Service Provider often
+(DNS record types, TTLs, Hostnames, etc.) and processes the end user didn’t
+understand. And the instructions authored by the Service Provider often
 quickly become out of date, further confusing the issue for users.
 
 === Goals
@@ -124,9 +124,9 @@ direct manipulation of individual DNS records.
 
 === Templates
 
-Templates are core to this proposal, as they describe a service owned by
+Templates are core to Domain Connect, as they describe a service owned by
 a Service Provider and contain all of the information necessary to
-enable and operate/maintain a service.
+enable and operate/maintain a service in the form of records.
 
 The individual records may be identified by a groupId. This allows for
 the application of templates in different stages. For example, an email
@@ -134,17 +134,17 @@ provider might first set a TXT record to verify the domain, and later
 set an MX record to configure email delivery. While done separately,
 both changes are fundamentally part of the same service.
 
-It is important that templates be constrained to an individual service,
-as later removal of a template would remove all associated records.
-
 Templates can also contain variable portions, as often values of data in
-the template change based on the implementation and/or user of the
-Service Provider (e.g. the IP address of a service, a customer id,
+DNS changes based on the implementation and/or user of the
+service (e.g. the IP address of a service, a customer id,
 etc.).
 
 Configuration and onboarding of templates between the DNS Provider and
-the Service Provider is seen as a manual process. The template is
-defined by the Service Provider and given to the DNS Provider. Future
+the Service Provider is seen as a manual process. This is both from a 
+business and technical point of view. Nothing obligates a DNS Provider to onboard 
+a Service Provider.
+
+The template is defined by the Service Provider and manually given to the DNS Provider. Future
 versions of this specification may allow for an independent repository
 of templates. For now the templates are all published at
 http://domainconnect.org
@@ -159,8 +159,7 @@ system is more secure as templates are tightly controlled and contained.
 * Domain Connect can make changes to DNS based on a service template and
 avoid exposing DNS to customers and Service Providers.
 * Domain Connect can have arbitrary parameters for known variables with
-values that change per user and not confuse users with their meanings or
-functionality.
+values that change per user.
 * Domain Connect is easy for customers with a simple confirmation dialog
 flow.
 * For more complex integrations, Domain Connect has an oAuth based
@@ -181,7 +180,7 @@ protocol. A Domain Connect compliant DNS Provider would return
 information about that domain and how to configure it using Domain
 Connect.
 
-For the application of the changes to DNS, there are two use cases. The
+To apply the changes to DNS, there are two use cases. The
 first is a synchronous web flow, and the second is an asynchronous flow
 using oAuth and an API.
 
@@ -197,7 +196,7 @@ synchronous flow only, the asynchronous flow only, or with both.
 === The Synchronous Flow
 
 This flow is tailored for the Service Provider that requires a one time
-and synchronous change to DNS.
+synchronous change to DNS.
 
 The user would first enter their domain name at the Service Provider
 website.
@@ -235,7 +234,7 @@ Assuming the user grants this consent, the DNS changes would be applied.
 
 Upon successful application of the DNS changes, if invoked in a pop-up
 window or tab the browser window would be closed. If in place the user
-would be redirected back to the service provider.
+would be redirected back to the Service Provider.
 
 === The Asynchronous Flow
 
@@ -257,7 +256,7 @@ an access (bearer) token.
 
 The permission granted in the oAuth token is a right for the Service
 Provider to apply a requested template (or templates) to the specific
-domain (and its subdomains) owned by a specific user.
+domain (and specific subdomains) owned by a specific user.
 
 The Service Provider would later call the oAuth API to apply a template
 using the access token. This is a simple API that allows the application
@@ -328,7 +327,7 @@ Provider. This JSON structure will contain the following fields.
 |*Provider Display Name* 
 |providerDisplayName 
 |String 
-|The name of the DNS Provider that should be displayed by the Service Provider. Note: This
+|The name of the DNS Provider that should be displayed by the Service Provider. This
 might change for some DNS Providers that white label their infrastructure.
 
 |*UX URL Prefix for Synchronous Flows* 
@@ -390,7 +389,10 @@ As an example, the JSON returned by this call might contain.
 }
 ----
 
-Discovery should work on the root domain (zone) only.
+Discovery should work on the root domain (zone) only. Bear in mind that 
+zones can be delegated to other users, making this information valuable to
+Service Providers since the DNS changes may be different for an apex zone vs. 
+a sub-domain for an individual service.
 
 It should be noted that it is possible a zone returns a value for the
 _domainconnect TXT record query, but that a subsequent call for the JSON
@@ -510,15 +512,15 @@ or the domain may be suspended.
 It is unlikely that the DNS Provider would want to leak this information
 to the Service Provider, and as such the description may be vague.
 +
-There is one piece of information that may be interesting to communicate
+There is however one piece of information that may be interesting to communicate
 to the Service Provider. This is when the end user decides to cancel the
 operation. Should the DNS Provider wish to communicate this to the
 Service Provider, when the error=access_denied the error_description can
 contain the prefix "user_cancel". Again, this is left to the discretion
 of the DNS Provider.
 
-To prevent an open redirect, the redirect_uri must be within the domain specified in the 
-template in syncRedirectDomain, or the request must be digitally signed by the Service Provider.
+To prevent an open redirect, unless the request is digitally signed the redirect_uri
+must be within the domain specified in the template in syncRedirectDomain.
 
 ===== Conflict Detection
 
@@ -553,7 +555,7 @@ from the template, or the request must be signed.
 
 |*State*
 |state
-|OPTIONAL. This is a random, unique string passed along to prevent CSRF, or to pass back state. It
+|(optional) This is a random, unique string passed along to prevent CSRF, or to pass back state. It
 will be returned as a parameter when
 redirecting to the redirect_uri described above.
 
@@ -565,21 +567,21 @@ be used when applying the template.
 
 |*Provider Name*
 |providerName
-|This OPTIONAL parameter specifies the provider name for display in the UX. It allows for
+|(optional) This parameter specifies the provider name for display in the UX. It allows for
 application of a template for a service that is sold through different companies. Not all templates
 allow for this capability. See Shared Templates below.
 
-|*Signature*
-|sig
-|An OPTIONAL signature of the query string. See Security Considerations section below.
-
 |*Group Id*
 |groupId
-|This OPTIONAL parameter specifies the group of changes from the template to apply. If no group is specified, all groups are applied. Multiple groups can be specified in comma delimited format.
+|(optional) This parameter specifies the group of changes from the template to apply. If no group is specified, all groups are applied. Multiple groups can be specified in comma delimited format.
+
+|*Signature*
+|sig
+|(optional) A signature of the query string. See Security Considerations section below.
 
 |*Key*
 |key
-|An OPTIONAL value containing the host in DNS where the public key for the signature can be obtained. The domain for this host is in the template in syncPubKeyDomain.
+|(optional) A value containing the host in DNS where the public key for the signature can be obtained. The domain for this host is in the template in syncPubKeyDomain.
 |=======================================================================
 
 An example query string is below:
@@ -633,7 +635,11 @@ sig=NLOQQm6ikGC2FlFvFZqIFNCZqlaC4B%2FQDwS6iCwIElMWhXMgRnRE17zhLtdLFieWkyqKa4I%2F
 ----
 
 The Service Provider can generate this signature using a private key.
+
 The DNS Provider can then verify the signature using the public key.
+
+Note: The signature is generated from the query string, excluding the key 
+and sig fields.
 
 The public key will be placed in a TXT DNS Record in a domain specified
 in the template. To allow for key rotation, the host name of the TXT
@@ -675,9 +681,9 @@ also indicates that the signing algorithm is an RSA Signature with
 SHA-256 using an x509 certificate. The value for "a" if omitted will be
 assumed to be RS256, and for "t" will be assumed to be x509.
 
-Note: The only algorithm currently support is SHA-256 with x509 certificates at the moment. The values are placed here for future compatability.
+Note: The only algorithm currently supported is SHA-256 with x509 certificates. The value is placed here for future compatability.
 
-It should be noted that the above data was generated for a query string:
+The above data was generated for a query string:
 
 [source]
 ----
@@ -689,8 +695,10 @@ all services require or are able to provide this level of security. Presence of 
 *syncPubKeyDomain* in the template indicates that the template requires
 signature verification.
 
-Note: *The digital signature will be generated on the full query string only, 
-excluding the sig and key parameters. This is everything after the ?, except the sig and key values.* The values of each query string
+Note: The digital signature will be generated on the full query string only, 
+excluding the sig and key parameters. This is everything after the ?, except the sig and key values.
+
+The values of each query string
 value will be properly URL Encoded before the signature is generated.
 
 ===== Warnings
@@ -709,12 +717,11 @@ ensure the link was/is from a reputable source before applying the template.
 Most services are enabled and sold by the same company. However, some
 Service Providers have a reseller channel. This allows the service to be
 provided by the Service Provider, but sold through third party
-resellers. It is often this third party reseller that configures the
-service.
+resellers. It is often this third party reseller that configures DNS.
 
 While each reseller could enable Domain Connect, this is inefficient for
 the DNS Providers. Enabling a single template that is shared by multiple
-resellers would be more ideal.
+resellers would be more optimal.
 
 To facilitate this, the ability to pass in the name of the reseller in
 the synchronous flow is provided for some templates. This allows the DNS
@@ -909,7 +916,7 @@ POST
 
 Once authorization has been granted the Service Provider must use the
 Authorization Code provided to request an Access Token. The oAuth
-specification recommends that the Authorization Token be a short lived
+specification recommends that the Authorization Code be a short lived
 token, and a reasonable recommended setting is ten minutes. As such this
 exchange needs to be completed before that time has expired or the
 process will need to be repeated.
@@ -922,7 +929,7 @@ oAuth does allow for retreiving the access token without a secret. This is typic
 oAuth client is a client application.
 When onboarding with the DNS Provider this would need to be enabled.
 
-When the secret is provided (which is the normal case), care must be taken. Because a malicious
+When the secret is provided (which is the normal case), care must be taken. A malicious
 user could return false JSON
 information in their domain, the urlAPI read from the JSON during discovery should not be used for
 this call. Instead, the Service Provider
@@ -1081,13 +1088,13 @@ implementation notes.
 
 |*Group ID*
 |groupId
-|This OPTIONAL parameter specifies the group of
+|(optional) This parameter specifies the group of
 changes in the template to apply. If omitted, all changes are applied.
 This can also be a comma separated list of groupIds.
 
 |*Force*
 |force
-|This OPTIONAL parameter specifies that the template
+|(optional) Thisparameter specifies that the template
 should be applied independently of any conflicts that may exist on the
 domain. This can be a value of 0 or 1.
 |=======================================================================
@@ -1269,7 +1276,7 @@ This is used in URLs to identify the template. It is also used in the
 scope parameter for oAuth. It should not contain space characters.
 
 |*Service Name*
-|­­String
+|String
 |serviceName
 |The friendly name of this service.
 This may be displayed to the user.
@@ -1298,7 +1305,8 @@ is false.
 |Boolean
 |shared
 |Indicates that the template is shared and the
-provider name can be passed in on the query string. The default for this
+provider name can be passed in on the query string. If not 
+shared the name is not used from the query string. The default for this
 is false.
 
 |*Synchronous Public Key Domain*
@@ -1334,15 +1342,18 @@ for the template.
 === Template Record
 
 Each template record is an entry that contains a type and several
-optional parameters based on the value.
+other values depending on the type.
 
 For all entries of a record other than "type" and "groupId", the value
 can contain variables denoted by %<variable name>%. These are the values
-substituted at runtime when writing into DNS.
+substituted at runtime when writing into DNS. There are three built in variables:
 
-It should be noted that as a best practice, the variable should be equal
-to the portion of the values in the template that change as little as
-possible.
+* %host%: This is the host passed from the query string.
+* %domain%: This is the domain passed from the query string.
+* %fqdn%: This is the fully qualified domain name, with a trailing dot. This is sometimes conveniently specified as @.
+
+It should be noted that as a best practice, the variable should be constrained
+to as small as possible a portion of the resulting DNS record.
 
 For example, say a Service Provider requires a CNAME of one of three
 values for their users: s01.example.com, s02.example.com, and
@@ -1387,8 +1398,8 @@ SRV: name, target, protocol, service, priority, weight, port, TTL
 |*Group Id*
 |String
 |groupId
-|This OPTIONAL parameter identifies the group
-the record belongs to when applying changes.
+|(optional)
+This parameter identifies the group the record belongs to when applying changes.
 
 [[essential-record]]
 |*Essential*
@@ -1450,47 +1461,51 @@ in DNS.
 |String
 |service
 |This is the symbolic name for the SRV record
+
+|*Name*
+|String
+|name
+|This is the name for the SRV record
+
+|*Target*
+|String
+|target
+|This is the target for the SRV record
 |=======================================================================
 
 == Template Considerations
 
 === Disclosure of Changes and Conflicts
 
-It is left to the DNS Provider to determine what is disclosed to the
-user regarding changes being made to DNS and of potential conflicts.
-This can happen at multiple points in time.
+It is left to the discretion of DNS Provider to determine what is disclosed to the user when 
+granting permission and/or applying changes to DNS. 
 
-For the synchronous flow this happens when the template is being
-applied.
+For the synchronous flow this happens while the user is present. One DNS Provider
+may decide to simply tell the user the name of the service being enabled. Another
+may decide to display the records being set. And another
+may progressively display both. 
 
-For the asynchronous flow this happens when permissions are granted to
-make changes to DNS on the user’s behalf (oAuth). Detection of conflicts
-also happens when the API is called to apply the template in the form of
-an error response code when the "force" parameter is not set to 1.
+For conflict detection, some DNS Providers may disclose these and others may not. 
+One DNS Provider may simply overwrite
+changed records without warning. Another may detect conflicts and warn the users of the
+records that will change. And another may implement logic to further
+remove any the existing templates that overlap with the new template once applied and disclose these.
 
-For disclosure of changes being made to DNS, one DNS Provider may decide
-to simply tell the user the name of the service being enabled. Another
-may decide to display the records being/that will be set. And another
-may progressively display both.
-
-The template can also conflict with existing records and other templates
-already applied on the domain. Some DNS Providers may simply overwrite
-changed records without warning. Others may warn the users of the
-records that will change. And others may implement logic to further
-remove any the existing templates that overlap with the new template *.
-Again this may be progressively displayed.
-
-* As an example, consider a template that set two records in
+As an example, consider a template that sets two records in
 DNS (recordA and recordB). Next consider applying a new template that
 overlaps with the first template (recordB and recordC). If the DNS
 Provider removes conflicting templates when applying new ones, upon
 application of the second template the first template would be removed.
 This would result in recordA being cleared, and only recordB and recordC
-being set.
+being present in DNS.
 
 Manual changes made by the user at the DNS Provider may also have
-appropriate warnings in place to prevent unwanted changes as well; with
+appropriate warnings in place to prevent unwanted changes; with
 overrides being possible and removal of conflicting templates.
+
+For the asynchronous flow the consent UX is similar. However, the changes are made later
+using the API and oAuth. If the DNS Provider choses, it can also detect conflicts and return these
+from the API. If the force parameter is set, the changes should be applied regardless of conflicts.
 
 It is ultimately left to the DNS Provider to determine the amount of
 disclosure and/or conflict detection. The only requirement is that after
@@ -1537,61 +1552,19 @@ This can be controlled by the <<essential-record, essential>> property of a reco
 === Template Scope
 
 An individual template is scoped to the set of records applied to a
-fully qualified domain. This includes the root domain and the host or
-sub-domain.
+fully qualified domain. This includes the root domain and the host (aka
+sub-domain).
 
-As an example, applying a template on domain=example.com&host=sub1 and
-later applying the template on domain=example.com&host=sub2 will be
-treated as two distinct templates. Should a conflict be detected later
+As an example if a template is applied on domain=example.com&host=sub1, 
+the later application of the template on domain=example.com&host=sub2 will be
+treated as a distinct template. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
-
-All the host names specified in the template will be therefore implicitely
-prefixed with the host specified in the _host_ parameter.
-
-Example template:
-[source,json]
-----
-[{
-	"type": "CNAME",
-	"host": "www",
-	"pointsTo": "@",
-	"ttl": 1800
-},
-{
-	"type": "A",
-	"host": "@",
-	"pointsTo": "1.1.1.1",
-	"ttl": 1800
-}]
-----
-
-Template applied with _domain_=foo.com and _host_ parameter missing or empty:
-
-[source]
-----
-www 1800 IN CNAME foo.com.
-@   1800 IN A 1.1.1.1
-----
-
-Template applied with _domain_=foo.com and _host_=bar:
-
-[source]
-----
-www.bar 1800 IN CNAME bar.foo.com.
-bar     1800 IN A 1.1.1.1
-----
-
-Any usage of _@_ is equivalent to _%host%_ or _@_ (in sense of BIND notation as per RFC 1035) when
-host is missing/empty.
-
-If any template requires to use always root of the domain no matter which host is applied (without
-scope of a host applied), pseudo variable _%domain%_ shall be used.
 
 === Variables and Host
 
 While templates do allow for variables in a host name, these should
-be used sparingly.
+be used very sparingly.
 
 As an example, consider setting up hosting for a site. But instead of
 applying the template to a sub-domain, the name of the sub-domain is
@@ -1629,12 +1602,19 @@ for asynchronous operations (oAuth). This is because the host would be indetermi
 
 To solve this problem, templates are applied to a domain and a host 
 value. For synchronous operations, the host value is specified in the url.
-For asynchronous operations, permissions is granted for specific values of the host, which
+For asynchronous operations, permissions are granted for specific host values, whose value
 is later specified when applying the template.
 
 To allow for the use of the host name or domain name in templates, the
-values of %host% and %domain% are available. But the use of all other variables in the host
-should be avoided.
+values of %host% and %domain% are available. A third value of %fqdn% is also available. This
+value is the result of combining the host and domain name with a trailing period, accounting for 
+a potentially empty host.
+
+For example, with domain=example.com&host=, %fqdn% would be <example.com.>, and with
+domain=example.com&host=sub1, %fqdn% would be <sub1.example.com.>. Note that we also allow a value of @, 
+which is logically equivalent to the %fqdn% variable.
+
+The use of all other variables in the host should be avoided.
 
 Note: There are some templates that utilize CNAME host values containing some form of user 
 identification for validation of domain ownership, and these are often passed in variables.
@@ -1644,9 +1624,9 @@ To support this use case, variables are allowed for the host name. But only in t
 It is also recommended that the host name contains some means to assure no conflict with other services or
 sub-domains being configured (for example by using a GUID or a constant prefix). 
 
-==== Variables in PointsTo
+==== Variables and PointsTo/Target
 
-Variables are allowed and necessary in the pointsTo in the template. However, as indicated
+Variables are also allowed and necessary in the pointsTo in the template. As indicated above, 
 consideration is necessary to prevent certain style phishing attacks with the synchronous protocol,
 and with the asynchronous protocol when secrets are not present.
 
@@ -1657,19 +1637,71 @@ The preferred mitigation to this is using signatures with the syncPubKeyDomain f
 template (for the synchronous protocol), or with secrects (for the asynchronous protocol). 
 
 When this isn't possible, the warnPhishing flag can be set in the template. This tells the DNS
-Provider to display warnings to the user before the template is applied.s
+Provider to display warnings to the user before the template is applied.
 
-==== Use of @ in templates
+Domain/host names in a pointsTo/Target implicitly have a trailing dot in the sense of BIND. The variables
+for %host%, %domain%, %fqdn%, and @ are all available. @ is equivalent to the %fqdn%.
 
-When %host% is defined, the use of @ in a template is equivalent to %host%.
+==== Variable Example
 
-When %host% is not provided or defined, the use of @ in a template is equivalent to its use in the
-BIND notation as per RFC 1035.
+Host names specified in a template implicitly contain the host and domain from the parameters. 
+
+As an example, consider the use of the @ (a.k.a. %fqdn%) in both the "host" and in the "pointsTo" in different
+records.
+
+Example template:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www",
+	"pointsTo": "@",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "@",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+Template applied with _domain_=foo.com and _host_ parameter missing or empty:
+
+[source]
+----
+www 1800 IN CNAME foo.com.
+@   1800 IN A 1.1.1.1
+----
+
+_alternatively_
+
+[source]
+----
+www.foo.com.    1800 IN CNAME foo.com.
+foo.com.        1800 IN A 1.1.1.1
+----
+
+Template applied with _domain_=foo.com and _host_=bar:
+
+[source]
+----
+www.bar 1800 IN CNAME bar.foo.com.
+bar     1800 IN A 1.1.1.1
+----
+
+_alternatively_
+
+[source]
+----
+www.bar.foo.com.    1800 IN CNAME foo.com.
+bar.foo.com.        1800 IN A 1.1.1.1
+----
 
 === Repository and Integrity
 
-This template format is intended largely for documentation and communication between the DNS Providers and Service Providers, and there
-are no codified endpoints for creation or modification of these objects.
+The template format is intended largely for documentation and communication between the DNS Providers and 
+Service Providers, and there are no codified endpoints for creation or modification of these objects.
 Instead, Domain Connect references a template by ID.
 
 As such, DNS Providers may or may not use templates in this format in

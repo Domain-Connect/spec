@@ -3,8 +3,8 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 46
-:revdate: 14-05-2018
+:revnumber: 47
+:revdate: 15-05-2018
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -328,7 +328,7 @@ Provider. This JSON structure will contain the following fields.
 |*Provider Display Name* 
 |providerDisplayName 
 |String 
-|The name of the DNS Provider that should be displayed by the Service Provider. Note: This
+|The name of the DNS Provider that should be displayed by the Service Provider. This
 might change for some DNS Providers that white label their infrastructure.
 
 |*UX URL Prefix for Synchronous Flows* 
@@ -635,6 +635,9 @@ sig=NLOQQm6ikGC2FlFvFZqIFNCZqlaC4B%2FQDwS6iCwIElMWhXMgRnRE17zhLtdLFieWkyqKa4I%2F
 The Service Provider can generate this signature using a private key.
 The DNS Provider can then verify the signature using the public key.
 
+Note: The signature is generated from the query string, excluding the key 
+and sig fields.
+
 The public key will be placed in a TXT DNS Record in a domain specified
 in the template. To allow for key rotation, the host name of the TXT
 record will be appended as another variable on the query string of the
@@ -677,7 +680,7 @@ assumed to be RS256, and for "t" will be assumed to be x509.
 
 Note: The only algorithm currently support is SHA-256 with x509 certificates at the moment. The values are placed here for future compatability.
 
-It should be noted that the above data was generated for a query string:
+The above data was generated for a query string:
 
 [source]
 ----
@@ -689,7 +692,7 @@ all services require or are able to provide this level of security. Presence of 
 *syncPubKeyDomain* in the template indicates that the template requires
 signature verification.
 
-Note: *The digital signature will be generated on the full query string only, 
+Note: The digital signature will be generated on the full query string only, 
 excluding the sig and key parameters. This is everything after the ?, except the sig and key values.* The values of each query string
 value will be properly URL Encoded before the signature is generated.
 
@@ -1450,6 +1453,16 @@ in DNS.
 |String
 |service
 |This is the symbolic name for the SRV record
+
+|*Name*
+|String
+|name
+|This is the name for the SRV record
+
+|*Target*
+|String
+|target
+|This is the target for the SRV record
 |=======================================================================
 
 == Template Considerations
@@ -1537,56 +1550,14 @@ This can be controlled by the <<essential-record, essential>> property of a reco
 === Template Scope
 
 An individual template is scoped to the set of records applied to a
-fully qualified domain. This includes the root domain and the host or
-sub-domain.
+fully qualified domain. This includes the root domain and the host (or
+sub-domain).
 
 As an example, applying a template on domain=example.com&host=sub1 and
 later applying the template on domain=example.com&host=sub2 will be
 treated as two distinct templates. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
-
-All the host names specified in the template will be therefore implicitely
-prefixed with the host specified in the _host_ parameter.
-
-Example template:
-[source,json]
-----
-[{
-	"type": "CNAME",
-	"host": "www",
-	"pointsTo": "@",
-	"ttl": 1800
-},
-{
-	"type": "A",
-	"host": "@",
-	"pointsTo": "1.1.1.1",
-	"ttl": 1800
-}]
-----
-
-Template applied with _domain_=foo.com and _host_ parameter missing or empty:
-
-[source]
-----
-www 1800 IN CNAME foo.com.
-@   1800 IN A 1.1.1.1
-----
-
-Template applied with _domain_=foo.com and _host_=bar:
-
-[source]
-----
-www.bar 1800 IN CNAME bar.foo.com.
-bar     1800 IN A 1.1.1.1
-----
-
-Any usage of _@_ is equivalent to _%host%_ or _@_ (in sense of BIND notation as per RFC 1035) when
-host is missing/empty.
-
-If any template requires to use always root of the domain no matter which host is applied (without
-scope of a host applied), pseudo variable _%domain%_ shall be used.
 
 === Variables and Host
 
@@ -1629,12 +1600,20 @@ for asynchronous operations (oAuth). This is because the host would be indetermi
 
 To solve this problem, templates are applied to a domain and a host 
 value. For synchronous operations, the host value is specified in the url.
-For asynchronous operations, permissions is granted for specific values of the host, which
+For asynchronous operations, permissions are granted for specific values of the host, whose value
 is later specified when applying the template.
 
 To allow for the use of the host name or domain name in templates, the
-values of %host% and %domain% are available. But the use of all other variables in the host
-should be avoided.
+values of %host% and %domain% are available. A third value of %fqdn% is also available. This
+value is the result of the host and domain name with a trailing period, accounting for 
+a potentially empty host.
+
+For example, with domain=example.com&host=, %fqdn% would be <example.com.>, and with
+domain=example.com&host=sub1, %fqdn% would be <sub1.example.com.>.
+
+The use of all other variables in the host should be avoided.
+
+A value of @ is logically equivalent to the %fqdn% value.
 
 Note: There are some templates that utilize CNAME host values containing some form of user 
 identification for validation of domain ownership, and these are often passed in variables.
@@ -1644,7 +1623,7 @@ To support this use case, variables are allowed for the host name. But only in t
 It is also recommended that the host name contains some means to assure no conflict with other services or
 sub-domains being configured (for example by using a GUID or a constant prefix). 
 
-==== Variables in PointsTo
+==== Variables and PointsTo/Target
 
 Variables are allowed and necessary in the pointsTo in the template. However, as indicated
 consideration is necessary to prevent certain style phishing attacks with the synchronous protocol,
@@ -1657,19 +1636,80 @@ The preferred mitigation to this is using signatures with the syncPubKeyDomain f
 template (for the synchronous protocol), or with secrects (for the asynchronous protocol). 
 
 When this isn't possible, the warnPhishing flag can be set in the template. This tells the DNS
-Provider to display warnings to the user before the template is applied.s
+Provider to display warnings to the user before the template is applied.
+
+Domain/host names in a pointsTo/Target implicitly have a trailing dot in the sense of bind. The variables
+for %host%, %domain%, %fqdn%, and @ are all available. @ is equivalent to the %fqdn%.
 
 ==== Use of @ in templates
 
-When %host% is defined, the use of @ in a template is equivalent to %host%.
+As stated above, the use of @ in the host field or in the pointsTo/Target in a template is equivalent to %fqdn%.
 
-When %host% is not provided or defined, the use of @ in a template is equivalent to its use in the
-BIND notation as per RFC 1035.
+==== Variable Example
+
+Host names specified in a template implicitly contain the host and domain. 
+
+As an example, consider the use of the @ (a.k.a %fqdn%) in both the "host" and in the "pointsTo".
+
+Example template:
+[source,json]
+----
+[{
+	"type": "CNAME",
+	"host": "www",
+	"pointsTo": "@",
+	"ttl": 1800
+},
+{
+	"type": "A",
+	"host": "@",
+	"pointsTo": "1.1.1.1",
+	"ttl": 1800
+}]
+----
+
+Template applied with _domain_=foo.com and _host_ parameter missing or empty:
+
+[source]
+----
+www 1800 IN CNAME foo.com.
+@   1800 IN A 1.1.1.1
+----
+
+_alternatively_
+
+[source]
+----
+www.foo.com.    1800 IN CNAME foo.com.
+foo.com.        1800 IN A 1.1.1.1
+----
+
+Template applied with _domain_=foo.com and _host_=bar:
+
+[source]
+----
+www.bar 1800 IN CNAME bar.foo.com.
+bar     1800 IN A 1.1.1.1
+----
+
+_alternatively_
+
+[source]
+----
+www.bar.foo.com.    1800 IN CNAME foo.com.
+bar.foo.com.        1800 IN A 1.1.1.1
+----
+
+Any usage of _@_ is equivalent to _%fqdn%_ or _@_ (in sense of BIND notation as per RFC 1035) when
+host is missing/empty.
+
+If any template requires to use always root of the domain no matter which host is applied (without
+scope of a host applied), pseudo variable _%domain%_ shall be used.
 
 === Repository and Integrity
 
-This template format is intended largely for documentation and communication between the DNS Providers and Service Providers, and there
-are no codified endpoints for creation or modification of these objects.
+The template format is intended largely for documentation and communication between the DNS Providers and 
+Service Providers, and there are no codified endpoints for creation or modification of these objects.
 Instead, Domain Connect references a template by ID.
 
 As such, DNS Providers may or may not use templates in this format in

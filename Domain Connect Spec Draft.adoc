@@ -1301,7 +1301,8 @@ is false.
 |Boolean
 |shared
 |Indicates that the template is shared and the
-provider name can be passed in on the query string. The default for this
+provider name can be passed in on the query string. If not 
+shared the name is not used from the query string. The default for this
 is false.
 
 |*Synchronous Public Key Domain*
@@ -1337,11 +1338,15 @@ for the template.
 === Template Record
 
 Each template record is an entry that contains a type and several
-optional parameters based on the value.
+other values that depend on the type.
 
 For all entries of a record other than "type" and "groupId", the value
 can contain variables denoted by %<variable name>%. These are the values
-substituted at runtime when writing into DNS.
+substituted at runtime when writing into DNS. There are three built in variables:
+
+* %host%: This is the host passed from the query string.
+* %domain%: This is the domain passed from the query string.
+* %fqdn%: This is the fully qualified domain name, with a trailing dot. This is sometimes conveniently specified as @.
 
 It should be noted that as a best practice, the variable should be equal
 to the portion of the values in the template that change as little as
@@ -1390,8 +1395,8 @@ SRV: name, target, protocol, service, priority, weight, port, TTL
 |*Group Id*
 |String
 |groupId
-|This OPTIONAL parameter identifies the group
-the record belongs to when applying changes.
+|(optional)
+This parameter identifies the group the record belongs to when applying changes.
 
 [[essential-record]]
 |*Essential*
@@ -1469,31 +1474,21 @@ in DNS.
 
 === Disclosure of Changes and Conflicts
 
-It is left to the DNS Provider to determine what is disclosed to the
-user regarding changes being made to DNS and of potential conflicts.
-This can happen at multiple points in time.
+It is left to the discretion of DNS Provider to determine what is disclosed to the user when 
+granting permission and/or applying changes to DNS. 
 
-For the synchronous flow this happens when the template is being
-applied.
+For the synchronous flow this all happens while the user is present. One DNS Provider
+may decide to simply tell the user the name of the service being enabled. Another
+may decide to display the records being set. And another
+may progressively display both. 
 
-For the asynchronous flow this happens when permissions are granted to
-make changes to DNS on the user’s behalf (oAuth). Detection of conflicts
-also happens when the API is called to apply the template in the form of
-an error response code when the "force" parameter is not set to 1.
+For conflict detection, some DNS Providers may disclose these and others may not. 
+One DNS Provider may simply overwrite
+changed records without warning. Another may detect conflicts and warn the users of the
+records that will change. And another may implement logic to further
+remove any the existing templates that overlap with the new template once applied and disclose these.
 
-For disclosure of changes being made to DNS, one DNS Provider may decide
-to simply tell the user the name of the service being enabled. Another
-may decide to display the records being/that will be set. And another
-may progressively display both.
-
-The template can also conflict with existing records and other templates
-already applied on the domain. Some DNS Providers may simply overwrite
-changed records without warning. Others may warn the users of the
-records that will change. And others may implement logic to further
-remove any the existing templates that overlap with the new template *.
-Again this may be progressively displayed.
-
-* As an example, consider a template that set two records in
+As an example, consider a template that set two records in
 DNS (recordA and recordB). Next consider applying a new template that
 overlaps with the first template (recordB and recordC). If the DNS
 Provider removes conflicting templates when applying new ones, upon
@@ -1502,8 +1497,12 @@ This would result in recordA being cleared, and only recordB and recordC
 being set.
 
 Manual changes made by the user at the DNS Provider may also have
-appropriate warnings in place to prevent unwanted changes as well; with
+appropriate warnings in place to prevent unwanted changes; with
 overrides being possible and removal of conflicting templates.
+
+For the asynchronous flow the consent UX is similar. However, the changes are made later
+using the API and oAuth. If the DNS Provider choses, it can detect conflicts and return these
+from the API. If the force parameter is set, the changes should be applied regardless of conflicts.
 
 It is ultimately left to the DNS Provider to determine the amount of
 disclosure and/or conflict detection. The only requirement is that after
@@ -1550,12 +1549,12 @@ This can be controlled by the <<essential-record, essential>> property of a reco
 === Template Scope
 
 An individual template is scoped to the set of records applied to a
-fully qualified domain. This includes the root domain and the host (or
+fully qualified domain. This includes the root domain and the host (aka
 sub-domain).
 
-As an example, applying a template on domain=example.com&host=sub1 and
-later applying the template on domain=example.com&host=sub2 will be
-treated as two distinct templates. Should a conflict be detected later
+As an example if a template is applied on domain=example.com&host=sub1, 
+the later application of the template on domain=example.com&host=sub2 will be
+treated as a distinct template. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
 
@@ -1605,15 +1604,14 @@ is later specified when applying the template.
 
 To allow for the use of the host name or domain name in templates, the
 values of %host% and %domain% are available. A third value of %fqdn% is also available. This
-value is the result of the host and domain name with a trailing period, accounting for 
+value is the result of combining the host and domain name with a trailing period, accounting for 
 a potentially empty host.
 
 For example, with domain=example.com&host=, %fqdn% would be <example.com.>, and with
-domain=example.com&host=sub1, %fqdn% would be <sub1.example.com.>.
+domain=example.com&host=sub1, %fqdn% would be <sub1.example.com.>. A value of @ is logically equivalent to the 
+%fqdn% variable.
 
 The use of all other variables in the host should be avoided.
-
-A value of @ is logically equivalent to the %fqdn% value.
 
 Note: There are some templates that utilize CNAME host values containing some form of user 
 identification for validation of domain ownership, and these are often passed in variables.
@@ -1625,7 +1623,7 @@ sub-domains being configured (for example by using a GUID or a constant prefix).
 
 ==== Variables and PointsTo/Target
 
-Variables are allowed and necessary in the pointsTo in the template. However, as indicated
+Variables are also allowed and necessary in the pointsTo in the template. As indicated above, 
 consideration is necessary to prevent certain style phishing attacks with the synchronous protocol,
 and with the asynchronous protocol when secrets are not present.
 
@@ -1641,13 +1639,9 @@ Provider to display warnings to the user before the template is applied.
 Domain/host names in a pointsTo/Target implicitly have a trailing dot in the sense of bind. The variables
 for %host%, %domain%, %fqdn%, and @ are all available. @ is equivalent to the %fqdn%.
 
-==== Use of @ in templates
-
-As stated above, the use of @ in the host field or in the pointsTo/Target in a template is equivalent to %fqdn%.
-
 ==== Variable Example
 
-Host names specified in a template implicitly contain the host and domain. 
+Host names specified in a template implicitly contain the host and domain from the parameters. 
 
 As an example, consider the use of the @ (a.k.a %fqdn%) in both the "host" and in the "pointsTo".
 
@@ -1699,12 +1693,6 @@ _alternatively_
 www.bar.foo.com.    1800 IN CNAME foo.com.
 bar.foo.com.        1800 IN A 1.1.1.1
 ----
-
-Any usage of _@_ is equivalent to _%fqdn%_ or _@_ (in sense of BIND notation as per RFC 1035) when
-host is missing/empty.
-
-If any template requires to use always root of the domain no matter which host is applied (without
-scope of a host applied), pseudo variable _%domain%_ shall be used.
 
 === Repository and Integrity
 

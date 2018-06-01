@@ -3,8 +3,8 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 47
-:revdate: 15-05-2018
+:revnumber: 48
+:revdate: 01-06-2018
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -447,9 +447,8 @@ GET
 This URL can be used by the Service Provider to determine if the DNS
 Provider supports a specific template through the synchronous flow.
 
-Returning a status of 200 without a body indicates the template is
-supported. Returning a status of 404 indicates the template is not
-supported.
+Returning a status of 200 without a body indicates the template is supported. DNS provider may also optionally decide to disclose the version of the template in a JSON object with field _version_ (see: <<template-version-field, version field>>) or full JSON object of deployed template.
+Returning a status of 404 indicates the template is not supported.
 
 ==== Apply Template
 
@@ -1227,19 +1226,20 @@ aware that their access to the API may be denied.
 
 === Template Versioning
 
-Templates are not versioned. Instead, if a breaking change is made to a
+If a breaking change is made to a
 template it is recommended that a new template be created. While on the
-surface versioning looks appealing, the reality is that the settings in
+surface versioning looks appealing, if shall be always considered that in reality the settings in
 a template rarely change. This is because a successful service will have
 many customers with settings in their DNS, some applied by templates
 using this protocol, and some manually applied. As such changes to the
 template need to be done in a manner that accounts for existing
 customers.
 
-For some template changes such as the addition of a new record, the
+For some template changes such as the addition of a new record, or a change in template meta-data, the
 template is largely backward compatible. With the caveats that the
 template would need to be on-boarded with the DNS Providers and that
 only new applications of the template would have the change.
+<<template-version-field, Version field>> of the template definition serves the purpose of transparency between DNS Provider and Service Provider in case of such changes. 
 
 === Template Definition
 
@@ -1280,6 +1280,13 @@ scope parameter for oAuth. It should not contain space characters.
 |serviceName
 |The friendly name of this service.
 This may be displayed to the user.
+
+[[template-version-field]]
+|*Version*
+|Integer
+|version
+|(optional)
+If present represents a version of the template and shall be increased with each update of the template content. This value has mainly informational function and shall improve communication and transparency between providers.
 
 |*Logo*
 |String
@@ -1819,6 +1826,7 @@ DNS Provider to determine if they will support.
 	"providerName": "Example Web Hosting",
 	"serviceId": "hosting",
 	"serviceName": "Wordpress by example.com",
+	"version": 1,
 	"logoUrl": "https://www.example.com/images/billthecat.jpg",
 	"description": "This connects your domain to our super cool web hosting",
 	"launchURL" : "https://www.example.com/connectlaunch",

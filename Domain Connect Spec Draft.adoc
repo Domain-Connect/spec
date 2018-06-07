@@ -3,16 +3,16 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 48
-:revdate: 18-05-2018
+:revnumber: 49
+:revdate: 07-06-2018
 :revremark: DRAFT 
 :apply-image-size:
 
-= Domain Connect 2.0
+= Domain Connect 2.1
 
 [cols=",,,"]
 |===========================================
-|Version 2.0
+|Version 2.1
 |Revision {revnumber}
 |{revdate}
 |{revremark}
@@ -447,9 +447,8 @@ GET
 This URL can be used by the Service Provider to determine if the DNS
 Provider supports a specific template through the synchronous flow.
 
-Returning a status of 200 without a body indicates the template is
-supported. Returning a status of 404 indicates the template is not
-supported.
+Returning a status of 200 without a body indicates the template is supported. The DNS provider may also optionally decide to disclose the version of the template in a JSON object with field _version_ (see: <<template-version-field, version field>>) or the full JSON object of deployed template.
+Returning a status of 404 indicates the template is not supported.
 
 ==== Apply Template
 
@@ -1227,19 +1226,20 @@ aware that their access to the API may be denied.
 
 === Template Versioning
 
-Templates are not versioned. Instead, if a breaking change is made to a
+If a breaking change is made to a
 template it is recommended that a new template be created. While on the
-surface versioning looks appealing, the reality is that the settings in
+surface versioning looks appealing, reality the settings in
 a template rarely change. This is because a successful service will have
 many customers with settings in their DNS, some applied by templates
 using this protocol, and some manually applied. As such changes to the
 template need to be done in a manner that accounts for existing
 customers.
 
-For some template changes such as the addition of a new record, the
+For some template changes such as the addition of a new record, or a change in template meta-data, the
 template is largely backward compatible. With the caveats that the
 template would need to be on-boarded with the DNS Providers and that
 only new applications of the template would have the change.
+<<template-version-field, Version field>> of the template definition serves the purpose of transparency between the DNS Provider and the Service Provider in case of such changes. 
 
 === Template Definition
 
@@ -1281,6 +1281,13 @@ scope parameter for oAuth. It should not contain space characters.
 |The friendly name of this service.
 This may be displayed to the user.
 
+[[template-version-field]]
+|*Version*
+|Integer
+|version
+|(optional)
+If present represents a version of the template and shall be increased with each update of the template content. This value has mainly informational function and shall improve communication and transparency between providers.
+
 |*Logo*
 |String
 |logoUrl
@@ -1312,7 +1319,8 @@ is false.
 |*Synchronous Public Key Domain*
 |String
 |syncPubKeyDomain
-|When present,
+|(optional)
+When present,
 indicates that calls to apply a template synchronously will be digitally
 signed. This element contains the domain name for querying the TXT
 record from DNS that contains the public key information.
@@ -1331,6 +1339,12 @@ to with the response for the configuration.
 When present, this tells the DNS Provider that the template may contain 
 variables susceptiable to phishing attacks and the provider is unable to digitally sign the
 requests. The default value for this is false.
+
+|*Host Required*
+|Boolean
+|hostRequired
+|(optional)
+When present, this indicates that the template has been authored to work only when both domain and host are provided. An example where this would be true might be a template where CNAME is set on the fully qualified domain name. This is largely informational, as most DNS Providers should enforce such rules.
 
 |*Template Records*
 |Array of Template Records
@@ -1395,7 +1409,7 @@ MX: host, pointsTo, priority, TTL
 
 SRV: name, target, protocol, service, priority, weight, port, TTL
 
-SPFM: host, spfRules, spfAllModifier
+SPFM: host, spfRules
 
 |*Group Id*
 |String
@@ -1479,18 +1493,6 @@ in DNS.
 |spfRules
 |These are desired rules for the SPF TXT record. These rules will be merged with other SPFM records into final SPF TXT record. See <<spf-record>>.
 
-|[[spf-all-modifier]]*SPF all modifier*
-|Enum
-|spfAllModifier
-|This is the desired rule for "all" section of the PSF record. It will be merged with other SPFM records into final SPF TXT. See <<spf-record>>.
-
-Valid values:
-
-? - Neutral (not recommended)
-
-~ - Soft-fail
-
-- - Hard-fail
 |=======================================================================
 
 == Template Considerations
@@ -1557,6 +1559,8 @@ SRV. If the template specifies an A or AAAA, the respective AAAA or A
 record should be removed to avoid IPv4 and IPv6 pointing to different
 services
 * Append to the existing records of the same type for TXT
+** An exception exists for records of unique nature like SPF
+-which should be replaced, however it is advisable to use SPFM record type instead (see: <<spf-record-merging>>).
 * Replace any record for CNAME
 * Remove any CNAME record existing at the same or parent level to any
 records added by the template
@@ -1761,34 +1765,34 @@ We combined the two rules, and in this case picked the least restrictive all mod
 
 The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate, but with several services together only DNS Provider is able to determine the valid shape of SPF TXT record.
 
-One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with the least restrictive modifier on _all_ at the end. 
+One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end. For the purpose of SPF record to fulfill it's purpose of protection agains malicous E-mail delivery Domain Connect defines a fixed modifier _"-"_ advising rejection of the messages from other sources not specified in SPF. End user can always modify it after merge operation is completed.
 
 ----
-@ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all
+@ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net -all
 ----
 
 The other would be to write intermediate records, and reference these locally.
 
 ----
 r1.example.com. TXT v=spf1 include:spf.mailer1.com –all
-r2.example.com. TXT v=spf1 include:_spf.newsletter.net ~all
-@ TXT v=spf1 include:r1.example.com include:r2.example.com ?all
+r2.example.com. TXT v=spf1 include:_spf.newsletter.net -all
+@ TXT v=spf1 include:r1.example.com include:r2.example.com -all
 ----
 
 There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.
 
-The implementation would be left to the DNS Provider, but to facilitate this we are recommending that SPF TXT records NOT be included in templates.  Instead, we introduce a new pseudo-record type in the template called _SPFM_. This has the following attributes:
+The implementation would be left to the DNS Provider, but to facilitate this we are recommending that SPF TXT records NOT be included in templates.  Instead, we introduce a new pseudo-record type in the template called _SPFM_. This has the following attribute:
 
 spfRules::
-Determines the desired rules, basically everything but leasing "v=spf1" and trailing _all_ rule -  see: <<spf-rules, SPF Rules>>
-spfAllModifier::
-Determines the modifier for _all_ rule - see: <<spf-all-modifier, SPF all modifier>>
+Determines the desired rules, basically everything but leading "v=spf1" and trailing _all_ rule -  see: <<spf-rules, SPF Rules>>
 
 When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied and recalculate the resulting SPF TXT record.
 
-All _SPFM_ records are considered due to merging step in between as always non-essential (see: <<non-essential-record>>), that means the user may decide to override the final calculated value or remove the whole SPF record. This action shall not lead to removal of any of related templates in conflict detection routines.
+Due to merging step in between all _SPFM_ records are considered always non-essential (see: <<non-essential-record>>), that means the user may decide to override the final calculated value or remove the whole SPF record. This action shall never lead to removal of any of related templates in conflict detection and template integrity routines if implemented by DNS provider.
 
-Service providers shall also avoid checking content of TXT SPF record, as it might be strongly influenced by DNS Provider merging strategy and user actions.
+If the existing TXT record renders merging operation not possible, DNS provider shall handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless _force=true_ parameter is used effectively removing the existing record.
+
+Service providers shall avoid checking content of TXT SPF record, as it might be strongly influenced by DNS Provider merging strategy and user actions.
 
 See <<example-spf-merge>>.
 
@@ -1906,6 +1910,7 @@ DNS Provider to determine if they will support.
 	"providerName": "Example Web Hosting",
 	"serviceId": "hosting",
 	"serviceName": "Wordpress by example.com",
+	"version": 1,
 	"logoUrl": "https://www.example.com/images/billthecat.jpg",
 	"description": "This connects your domain to our super cool web hosting",
 	"launchURL" : "https://www.example.com/connectlaunch",
@@ -2031,8 +2036,7 @@ Now application of the following template:
 	{
 		"type":"SPFM",
 		"host":"@",
-		"spfRules":"a include: spf.hoster.com",
-		"spfAllModifier":"~"
+		"spfRules":"a include: spf.hoster.com"
 	}
 ]
 ----
@@ -2091,8 +2095,7 @@ Now application of the following template of Mail service:
 	{
 		"type":"SPFM",
 		"host":"@",
-		"spfRules":"a include:spf.acme.net",
-		"spfAllModifier":"~"
+		"spfRules":"a include:spf.acme.net"
 	}
 ]
 ----
@@ -2109,7 +2112,7 @@ $ORIGIN test-domain.com.
 @ 3600 IN NS ns12.acme.net.
 @ 3600 IN MX 10 mx1.acme.net.
 @ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net ~all"
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net -all"
 ----
 
 In the next step application of the following template of Newsletter service:
@@ -2119,8 +2122,7 @@ In the next step application of the following template of Newsletter service:
 	{
 		"type":"SPFM",
 		"host":"@",
-		"spfRules":"include:_spf.newsletter.com",
-		"spfAllModifier":"-"
+		"spfRules":"include:_spf.newsletter.com"
 	}
 ]
 ----
@@ -2137,7 +2139,6 @@ $ORIGIN test-domain.com.
 @ 3600 IN NS ns12.acme.net.
 @ 3600 IN MX 10 mx1.acme.net.
 @ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com ~all"
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com -all"
 ----
 
-Note the (~) modifier by _all_ rule, which is the least restrictive of (-) and (~) .

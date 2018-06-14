@@ -3,16 +3,16 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 48
-:revdate: 01-06-2018
+:revnumber: 49
+:revdate: 13-06-2018
 :revremark: DRAFT 
 :apply-image-size:
 
-= Domain Connect 2.0
+= Domain Connect 2.1
 
 [cols=",,,"]
 |===========================================
-|Version 2.0
+|Version 2.1
 |Revision {revnumber}
 |{revdate}
 |{revremark}
@@ -1392,7 +1392,7 @@ Each record will contain the following elements.
 |type a|
 Describes the type of record in DNS, or the operation impacting DNS.
 
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, NS, APEXCNAME,
+Valid values include: A, AAAA, CNAME, MX, TXT, SRV, NS, SPFM, APEXCNAME,
 REDIR301, or REDIR 302
 
 For each type, additional fields would be required.
@@ -1409,14 +1409,15 @@ MX: host, pointsTo, priority, TTL
 
 SRV: name, target, protocol, service, priority, weight, port, TTL
 
+SPFM: host, spfRules
+
 |*Group Id*
 |String
 |groupId
 |(optional)
 This parameter identifies the group the record belongs to when applying changes.
 
-[[essential-record]]
-|*Essential*
+|[[essential-record]]*Essential*
 |enum
 |essential
 |(optional)
@@ -1485,6 +1486,13 @@ in DNS.
 |String
 |target
 |This is the target for the SRV record
+
+
+|[[spf-rules]]*SPF Rules*
+|String
+|spfRules
+|These are desired rules for the SPF TXT record. These rules will be merged with other SPFM records into final SPF TXT record. See <<spf-record>>.
+
 |=======================================================================
 
 == Template Considerations
@@ -1551,12 +1559,13 @@ SRV. If the template specifies an A or AAAA, the respective AAAA or A
 record should be removed to avoid IPv4 and IPv6 pointing to different
 services
 * Append to the existing records of the same type for TXT
-** An exception exists for records of unique nature like SPF or DKIM
-which should be replaced
+** An exception exists for records of unique nature like SPF or DMARC
+-which should be replaced. To avoid conflicts for SPF it is advisable to use SPFM record type instead (see: <<spf-record-merging>>)
 * Replace any record for CNAME
 * Remove any CNAME record existing at the same or parent level to any
 records added by the template
 
+[[non-essential-record]]
 === Non-essential records
 
 Typically a template specifices a list of DNS records which are required for the service. There may be cases where some records are only required for a very short period of time, and removing or altering the record later (either by the end user or through application of another template) should not trigger conflict detection.
@@ -1711,6 +1720,88 @@ _alternatively_
 www.bar.foo.com.    1800 IN CNAME foo.com.
 bar.foo.com.        1800 IN A 1.1.1.1
 ----
+
+[[spf-record-merging]]
+=== SPF TXT Record
+
+==== What is SPF?
+
+SPF stands for Sender Policy Framework specified in https://tools.ietf.org/html/rfc7208[RFC7208]. It is a record that specifies a list of authorized host names and/or IP addresses from which mail can originate from for a given domain name.
+
+It manifests itself as a TXT record.  The format of which starts with v=spf1 followed by a list of “rules” of what to include/exclude.  If a rule passes, the mail is allowed. If it fails, it moves to the next rule. Typical record might appear as:
+
+----
+v=spf1 include:policy.exampleprovider.com -all
+----
+
+This is an SPF record with two rules.  One indicates that rules should be run included policy at _policy.exampleprovder.com_. The second rule is a catch all (_all_). The default modifier for a rule is _pass_ (+). Other modifiers are _hard failure_(-), _soft failure_ (~) and _neutral_ (?).
+
+Note: A failure in SPF doesn’t mean delivery won’t happen, however depending on the policies of the receiving system messages classified with _hard failure_ or _soft failure_ may not be delivered or marked as junk.
+
+The use of “all” at the end  is pretty common, although some providers mark it as ~ (soft fail) or ? (neutral).  The reality is that a good SPF record is tuned based on what all the services attached to a domain. Not just one individual service.
+
+[[multiple-services]]
+==== Multiple Services
+
+If only one email sending service were active, the SPF record recommended by the provider is sufficient. But mail from a domain can often come from several different services. 
+
+A very typical use case might be end user mail and a email newsletter service.
+Let’s look at the SPF records recommended for individual services.
+
+Mailer1: v=spf1 include:spf.mailer1.com –all
+Newsletter1: v=spf1 include:_spf.newsletter.net ~all
+
+All of these examples use the include syntax. This is fairly common. The use of all at the end is common, although inconsistent with the modifier. Again, the reality is that a good SPF record would be highly tuned.
+
+If a customer installed Mailer1 and Newsletter1, their combined SPF record ought to be:
+
+----
+v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all 
+----
+
+We combined the two rules, and in this case picked the least restrictive all modifier. Of course if no other service was sending mail, -all might be more appropriate.
+
+==== SPF record merging
+
+The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate, but with several services together only DNS Provider is able to determine the valid shape of SPF TXT record.
+
+One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end. For the purpose of SPF record to fulfill it's purpose of protection agains malicous E-mail delivery Domain Connect defines a fixed modifier _"-"_ advising rejection of the messages from other sources not specified in SPF. End user can always modify it after merge operation is completed.
+
+----
+@ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net -all
+----
+
+The other would be to write intermediate records, and reference these locally.
+
+----
+r1.example.com. TXT v=spf1 include:spf.mailer1.com –all
+r2.example.com. TXT v=spf1 include:_spf.newsletter.net -all
+@ TXT v=spf1 include:r1.example.com include:r2.example.com -all
+----
+
+There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.
+
+The implementation would be left to the DNS Provider, but to facilitate this we are recommending that SPF TXT records NOT be included in templates.  Instead, we introduce a new pseudo-record type in the template called _SPFM_. This has the following attribute:
+
+spfRules::
+Determines the desired rules, basically everything but leading "v=spf1" and trailing _all_ rule -  see: <<spf-rules, SPF Rules>>
+
+When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied and recalculate the resulting SPF TXT record.
+
+Due to merging step in between all _SPFM_ records are considered always non-essential (see: <<non-essential-record>>), that means the user may decide to override the final calculated value or remove the whole SPF record. This action shall never lead to removal of any of related templates in conflict detection and template integrity routines if implemented by DNS provider.
+
+If the existing TXT record renders merging operation not possible, DNS provider shall handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless _force=true_ parameter is used effectively removing the existing record.
+
+Service providers shall avoid checking content of TXT SPF record, as it might be strongly influenced by DNS Provider merging strategy and user actions.
+
+See <<example-spf-merge>>.
+
+==== Alternatives
+
+Some DNS Providers may decide not to support SPFM record. Following alternative solutions shall allow general interoperability of the templates for those providers:
+
+- ignore SPFM - will secure that services would not run into conflict with each other, with a disadvantage of lacking SPF, or
+- onboard the templates with SPFM record in variable-compatible form using regular TXT record with a content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict
 
 === Repository and Integrity
 
@@ -1950,10 +2041,9 @@ Now application of the following template:
 		"ttl":"1800"
 	},
 	{
-		"type":"TXT",
+		"type":"SPFM",
 		"host":"@",
-		"data":"\"v=spf1 a include: spf.hoster.com ~all\"",
-		"ttl":"1800"
+		"spfRules":"a include: spf.hoster.com"
 	}
 ]
 ----
@@ -1971,6 +2061,91 @@ $ORIGIN test-domain.com.
 @ 1800 IN A 2.2.2.2
 @ 3600 IN MX 10 mx1.acme.net.
 @ 3600 IN MX 10 mx2.acme.net.
-@ 1800 IN TXT "v=spf1 a include: spf.hoster.com ~all"
+@ 1800 IN TXT "v=spf1 a include: spf.acme.com include:spf.hoster.com ~all"
 www 1800 IN A 2.2.2.2
 ----
+
+[[example-spf-merge]]
+===== Example: SPF Record Merging
+
+Consider a DNS Zone before a template application:
+
+[source]
+----
+$ORIGIN test-domain.com.
+
+@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+1209600 3600
+@ 3600 IN NS ns11.acme.net.
+@ 3600 IN NS ns12.acme.net.
+----
+
+Now application of the following template of Mail service:
+
+[source,json]
+----
+[
+	{
+		"type":"MX",
+		"host":"@",
+		"priority": "10",
+		"pointsTo":"mx1.acme.net",
+		"ttl":"1800"
+	},
+	{
+		"type":"MX",
+		"host":"www",
+		"priority": "10",
+		"pointsTo":"mx2.acme.net",
+		"ttl":"1800"
+	},
+	{
+		"type":"SPFM",
+		"host":"@",
+		"spfRules":"a include:spf.acme.net"
+	}
+]
+----
+
+Expected result in the DNS Zone
+
+[source]
+----
+$ORIGIN test-domain.com.
+
+@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+1209600 3600
+@ 3600 IN NS ns11.acme.net.
+@ 3600 IN NS ns12.acme.net.
+@ 3600 IN MX 10 mx1.acme.net.
+@ 3600 IN MX 10 mx2.acme.net.
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net -all"
+----
+
+In the next step application of the following template of Newsletter service:
+[source,json]
+----
+[
+	{
+		"type":"SPFM",
+		"host":"@",
+		"spfRules":"include:_spf.newsletter.com"
+	}
+]
+----
+
+Expected result in the DNS Zone
+
+[source]
+----
+$ORIGIN test-domain.com.
+
+@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+1209600 3600
+@ 3600 IN NS ns11.acme.net.
+@ 3600 IN NS ns12.acme.net.
+@ 3600 IN MX 10 mx1.acme.net.
+@ 3600 IN MX 10 mx2.acme.net.
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com -all"
+----
+

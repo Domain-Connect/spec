@@ -1234,19 +1234,19 @@ aware that their access to the API may be denied.
 === Template Versioning
 
 If a breaking change is made to a
-template it is recommended that a new template be created. While on the
-surface versioning looks appealing, reality the settings in
+template, it is recommended that a new template be created. While on the
+surface versioning looks appealing, in reality the settings in
 a template rarely change. This is because a successful service will have
 many customers with settings in their DNS, some applied by templates
-using this protocol, and some manually applied. As such changes to the
+using this protocol, and some manually applied. As such, changes to the
 template need to be done in a manner that accounts for existing
 customers.
 
-For some template changes such as the addition of a new record, or a change in template meta-data, the
-template is largely backward compatible. With the caveats that the
+For some template changes such as the addition of a new record or a change in template metadata, the
+template is largely backward compatible, with the caveats that the
 template would need to be on-boarded with the DNS Providers and that
 only new applications of the template would have the change.
-<<template-version-field, Version field>> of the template definition serves the purpose of transparency between the DNS Provider and the Service Provider in case of such changes. 
+The <<template-version-field, version field>> of the template definition serves the purpose of transparency between the DNS Provider and the Service Provider in case of such changes.
 
 === Template Definition
 
@@ -1400,7 +1400,7 @@ Each record will contain the following elements.
 Describes the type of record in DNS, or the operation impacting DNS.
 
 Valid values include: A, AAAA, CNAME, MX, TXT, SRV, NS, SPFM, APEXCNAME,
-REDIR301, or REDIR 302
+REDIR301, or REDIR302
 
 For each type, additional fields would be required.
 
@@ -1427,7 +1427,7 @@ This parameter identifies the group the record belongs to when applying changes.
 |[[essential-record]]*Essential*
 |enum
 |essential
-|(optional)s
+|(optional)
 This parameter indicates how the record should be treated during conflict detection (if the DNS Provider is not implementing Conflict Detection it is ignored).
 
 Always (default) - record MUST be applied and kept with the template
@@ -1441,7 +1441,7 @@ The host for A, AAAA, CNAME, TXT, and MX values.
 
 This is the hostname in DNS.
 
-|*Points To*
+|[[pointsto-record]]*Points To*
 |String
 |pointsTo
 |The pointsTo location for A, AAAA, CNAME,
@@ -1506,10 +1506,10 @@ in DNS.
 
 === Disclosure of Changes and Conflicts
 
-It is left to the discretion of DNS Provider to determine what is disclosed to the user when 
+It is left to the discretion of the DNS Provider to determine what is disclosed to the user when 
 granting permission and/or applying changes to DNS. 
 
-For the synchronous flow this happens while the user is present. One DNS Provider
+For the synchronous flow, this happens while the user is present. One DNS Provider
 may decide to simply tell the user the name of the service being enabled. Another
 may decide to display the records being set. And another
 may progressively display both. 
@@ -1518,7 +1518,7 @@ For conflict detection, some DNS Providers may disclose these and others may not
 One DNS Provider may simply overwrite
 changed records without warning. Another may detect conflicts and warn the users of the
 records that will change. And another may implement logic to further
-remove any the existing templates that overlap with the new template once applied and disclose these.
+remove any of the existing templates that overlap with the new template once applied and disclose these.
 
 As an example, consider a template that sets two records in
 DNS (recordA and recordB). Next consider applying a new template that
@@ -1532,7 +1532,7 @@ Manual changes made by the user at the DNS Provider may also have
 appropriate warnings in place to prevent unwanted changes; with
 overrides being possible and removal of conflicting templates.
 
-For the asynchronous flow the consent UX is similar. However, the changes are made later
+For the asynchronous flow, the consent UX is similar. However, the changes are made later
 using the API and oAuth. If the DNS Provider choses, it can also detect conflicts and return these
 from the API. If the force parameter is set, the changes should be applied regardless of conflicts.
 
@@ -1546,14 +1546,14 @@ enabled. Should the customer want to know the specifics, the DNS
 Provider could provide a "show details" link to the user. This could
 display to them the specific records that are being set in DNS.
 * If there are conflicts, either at the template or record level, the
-consent UX should warn the user about these conflicts. For templates
-this would be services that would be disabled. For records this would be
-records that would be overwritten. This could be progressively disclosed
+consent UX should warn the user about these conflicts. For templates,
+this would be services that would be disabled. For records, this would be
+records that would be overwritten. This could be progressively disclosed.
 
 Note: When applying the same template, DNS Providers should not detect
-the conflict. Instead the first template would be removed and the new
-instance applied. For most templates this is a benign operation.
-Unless the template contains variables in host names. For consideration
+the conflict. Instead, the first template would be removed and the new
+instance applied. For most templates this is a benign operation, unless
+the template contains variables in host names. For consideration
 of this, see the section below.
 
 === Record Types and Conflicts
@@ -1562,15 +1562,15 @@ A proposed handling of records and conflicts is as follows (if not
 otherwise specified, conflicts occur if the records have the same name):
 
 * Replace records of the same type for A, AAAA, MX, CNAME, APEXCNAME,
-SRV. If the template specifies an A or AAAA, the respective AAAA or A
+SRV. If the template specifies an A or AAAA, the respective A or AAAA
 record should be removed to avoid IPv4 and IPv6 pointing to different
-services
-* Append to the existing records of the same type for TXT
+services.
+* Append to the existing records of the same type for TXT.
 ** An exception exists for records of unique nature like SPF or DMARC
--which should be replaced. To avoid conflicts for SPF it is advisable to use SPFM record type instead (see: <<spf-record-merging>>)
-* Replace any record for CNAME
+-which should be replaced. To avoid conflicts for SPF, it is advisable to use SPFM record type instead (see: <<spf-record-merging>>).
+* Replace any record for CNAME.
 * Remove any CNAME record existing at the same or parent level to any
-records added by the template
+records added by the template.
 
 [[non-essential-record]]
 === Non-essential records
@@ -1622,7 +1622,7 @@ of the template, conflict detection, and template removal.
 This template would be applied to the domain only, and would remove any
 previously applied instances. This means calling this with var=sub
 would result in the A record for sub.example.com to be set to 
-the value 2.2.2.2. Later applying the template on "example.com" with the
+the value 2.2.2.2. Later, applying the template on "example.com" with the
 var=sub2 would first remove the old template before setting the new one. Sub.example.com
 would be removed, and sub2.example.com would be set to the value
 2.2.2.2.
@@ -1651,14 +1651,13 @@ identification for validation of domain ownership, and these are often passed in
 
 To support this use case, variables are allowed for the host name. But only in this limited circumstance.
 
-It is also recommended that the host name contains some means to assure no conflict with other services or
+It is also recommended that the host name contains some means to assure no conflicts exist with other services or
 sub-domains being configured (for example by using a GUID or a constant prefix). 
 
 ==== Variables and PointsTo/Target
-
-Variables are also allowed and necessary in the pointsTo in the template. As indicated above, 
-consideration is necessary to prevent certain style phishing attacks with the synchronous protocol,
-and with the asynchronous protocol when secrets are not present.
+Variables are also allowed and necessary in the <<pointsto-record, pointsTo>> property in the
+template. As indicated above, consideration is necessary to prevent certain styles of phishing
+attacks with the synchronous protocol, and with the asynchronous protocol when secrets are not present.
 
 The more static the value, the more secure the template. When static values are not possible, a 
 carefully crafted link could hijack DNS settings.
@@ -1741,18 +1740,18 @@ It manifests itself as a TXT record.  The format of which starts with v=spf1 fol
 v=spf1 include:policy.exampleprovider.com -all
 ----
 
-This is an SPF record with two rules.  One indicates that rules should be run included policy at _policy.exampleprovder.com_. The second rule is a catch all (_all_). The default modifier for a rule is _pass_ (+). Other modifiers are _hard failure_(-), _soft failure_ (~) and _neutral_ (?).
+This is an SPF record with two rules.  The first rule indicates that the rules for SPF record _policy.exampleprovider.com be included in this record. The second rule is a catch all (_all_). The default modifier for a rule is _pass_ (+). Other modifiers are _hard failure_(-), _soft failure_ (~) and _neutral_ (?).
 
-Note: A failure in SPF doesn’t mean delivery won’t happen, however depending on the policies of the receiving system messages classified with _hard failure_ or _soft failure_ may not be delivered or marked as junk.
+Note: A failure in SPF doesn’t mean delivery won’t happen, however depending on the policies of the receiving system, messages classified with _hard failure_ or _soft failure_ may not be delivered or marked as junk.
 
-The use of “all” at the end  is pretty common, although some providers mark it as ~ (soft fail) or ? (neutral).  The reality is that a good SPF record is tuned based on what all the services attached to a domain. Not just one individual service.
+The use of “all” at the end  is pretty common, although some providers mark it as ~ (soft fail) or ? (neutral).  The reality is that a good SPF record is tuned based on what services are attached to a domain. Not just one individual service.
 
 [[multiple-services]]
 ==== Multiple Services
 
 If only one email sending service were active, the SPF record recommended by the provider is sufficient. But mail from a domain can often come from several different services. 
 
-A very typical use case might be end user mail and a email newsletter service.
+A very typical use case might be end user mail and an email newsletter service.
 Let’s look at the SPF records recommended for individual services.
 
 Mailer1: v=spf1 include:spf.mailer1.com –all
@@ -1770,9 +1769,9 @@ We combined the two rules, and in this case picked the least restrictive all mod
 
 ==== SPF record merging
 
-The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate, but with several services together only DNS Provider is able to determine the valid shape of SPF TXT record.
+The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate, but with several services together only the DNS Provider is able to determine the valid shape of a SPF TXT record.
 
-One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end. For the purpose of SPF record to fulfill it's purpose of protection against malicious E-mail delivery Domain Connect defines a fixed modifier _"-"_ advising rejection of the messages from other sources not specified in SPF. End user can always modify it after merge operation is completed.
+One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, Domain Connect defines a fixed modifier _"-"_ advising rejection of the messages from other sources not specified in SPF. The end user can always modify it after merge operation is completed.
 
 ----
 @ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net -all
@@ -1795,17 +1794,17 @@ Determines the desired rules, basically everything but leading "v=spf1" and trai
 
 When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied and recalculate the resulting SPF TXT record.
 
-Due to merging step in between all _SPFM_ records are considered always non-essential (see: <<non-essential-record>>), that means the user may decide to override the final calculated value or remove the whole SPF record. This action shall never lead to removal of any of related templates in conflict detection and template integrity routines if implemented by DNS provider.
+Due to merging step in between, all _SPFM_ records are considered always non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action shall never lead to removal of any of related templates in conflict detection and template integrity routines if implemented by the DNS provider.
 
-If the existing TXT record renders merging operation not possible, DNS provider shall handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless _force=true_ parameter is used effectively removing the existing record.
+If the existing TXT record makes the merging operation not possible, the DNS provider shall handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless the _force=true_ parameter is used, effectively removing the existing record.
 
-Service providers shall avoid checking content of TXT SPF record, as it might be strongly influenced by DNS Provider merging strategy and user actions.
+Service providers shall avoid checking content of TXT SPF record, as it might be strongly influenced by the DNS Provider merging strategy and user actions.
 
 See <<example-spf-merge>>.
 
 ==== Alternatives
 
-Some DNS Providers may decide not to support SPFM record. Following alternative solution shall allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using regular TXT record with a content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict
+Some DNS Providers may decide not to support the SPFM record. The following alternative solution shall allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
 
 === Repository and Integrity
 
@@ -1816,10 +1815,10 @@ Instead, Domain Connect references a template by ID.
 As such, DNS Providers may or may not use templates in this format in
 their internal implementations.
 
-However, by defining a standard template format it is believed it will
+However, by defining a standard template format, it is believed it will
 make it easier for Service Providers to share their configuration across
 DNS Providers. Further revisions of this specification may include a
-repository for publishing and consuming these templates. For now
+repository for publishing and consuming these templates. For now,
 templates are maintained at http://domainconnect.org.
 
 Implementers are responsible for data integrity and should use the

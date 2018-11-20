@@ -1573,8 +1573,11 @@ applied regardless of conflicts.
 
 It is ultimately left to the DNS Provider to determine the amount of
 disclosure and/or conflict detection. The only requirement is that after
-a template is applied the new service is enabled. However, a reasonable
-set of recommendations would consist of:
+a template is applied the new service is fully applied to the DNS zone
+and all of conflicting records get either deleted or overwritten before
+or during this process.
+
+A reasonable set of recommendations for the UX would consist of:
 
 * The consent UX should inform the customer of the service that will be
 enabled. Should the customer want to know the specifics, the DNS
@@ -1583,29 +1586,34 @@ display to them the specific records that are being set in DNS.
 * If there are conflicts, either at the template or record level, the
 consent UX should warn the user about these conflicts. For templates,
 this would be services that would be disabled. For records, this would be
-records that would be overwritten. This could be progressively disclosed.
-
-Note: When re-applying the same template, ideally DNS Providers would not detect
-the conflict. Instead, the first template would be removed and the new
-instance applied. For most templates this is a benign operation, unless
-the template contains variables in host names. For consideration
-of this, see the section below.
+records that would be deleted or overwritten. This could be progressively disclosed.
 
 === Record Types and Conflicts
 
-The proposed handling of records and conflicts is as follows (if not
-otherwise specified, conflicts occur if the records have the same name):
+Conflict detection done by DNS provider prior to template application has to take
+into consideration specifics of each DNS record type. The rules outlined below shall
+assure predictable conflict resolution between DNS providers. Each rule applies to
+the records on the very same host, unless specifed otherwise.
 
-* Replace records of the same type for A, AAAA, MX, CNAME, APEXCNAME,
-SRV. If the template specifies an A or AAAA, the respective A or AAAA
-record should be removed to avoid IPv4 and IPv6 pointing to different
-services.
-* For TXT records deletion is handled looking at txtConflictMatchingMode
-** None: This indicates that the TXT records should be appended to the zone without removing existing values of the same host.
-** All: This indicates that the TXT records with the same host name are deleted prior to applying.
-** Prefix: This indicates that TXT records starting with txtConfictMatchingPrefix should be deleted prior to applying.
-* Remove any CNAME record existing at the same or parent level to any
-records added by the template.
+* CNAME records conflicts with all other records
+* any record type conflicts with existing CNAME record
+* MX, APEXCNAME, SRV records always conflict with records of the same type
+* A and AAAA records conflict with any other A and/or AAAA record, to avoid IPv4
+and IPv6 pointing to different services.
+* TXT records conflict detection is handled looking at txtConflictMatchingMode
+parameter
+** None: This indicates that the TXT records do not conflict with any other TXT
+record. This is the default setting, if not specified.
+** All: This indicates that the TXT records conflict with any other TXT record
+** Prefix: This indicates that TXT record conflict with any other TXT containing value starting with txtConfictMatchingPrefix 
+
+=== Re-apply
+
+When applying the same template again, identified by the same providerId, serviceId,
+domain and host, ideally DNS Providers would not detect the conflict. Instead, the records
+created by the initial template application would be removed and the new instance applied.
+For most templates this is a benign operation, unless the template contains variables in host names. For consideration of this, see the section <<variables-and-hosts,Variables and Host>>.
+
 
 [[non-essential-record]]
 === Non-essential records
@@ -1630,6 +1638,7 @@ treated as a distinct template. Should a conflict be detected later
 while applying a template with the records set into "sub2.example.com",
 only the records set with this template would be removed.
 
+[[variables-and-hosts]]
 === Variables and Host
 
 While templates do allow for variables in a host name, these should

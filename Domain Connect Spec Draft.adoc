@@ -3,8 +3,8 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 53
-:revdate: 18-11-2018
+:revnumber: 54
+:revdate: 22-11-2018
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -390,11 +390,29 @@ zones can be delegated to other users, making this information valuable to
 Service Providers since DNS changes may be different for an apex zone vs. 
 a sub-domain for an individual service.
 
-It should be noted that it is possible a zone returns a value for the
-_domainconnect TXT record query, but that a subsequent call for the JSON
-fails. For example, a zone may errantly have a value for this record. Or
-a DNS Provider may decide to place the record in all zones, even for
-some where Domain Connect isn’t enabled.
+The Service Provider should handle the condition when a query for the 
+_domainconnect TXT record suceeds, but a call to query for the JSON fails.
+This can happen if the zone is hosted with another provider, but contains an 
+incorrect _domainconnect TXT record.
+
+The DNS Provider should return a 404 if they do not contain the zone. 
+
+[cols=",,",options="header",]
+|=======================================================================
+|Status
+|Response
+|Description
+
+|*Success*
+|2xx
+|A response of an http status code of 2xx indicates that the
+call was successful. The response is the JSON described above.
+
+|*Not Found*
+|404
+|A response of a 404 indicates that the DNS Provider does not have the zone.
+|=======================================================================
+
 
 == Applying Domain Connect 
 
@@ -449,6 +467,22 @@ in a JSON object with field _version_ (see: <<template-version-field, version fi
 or the full JSON object of deployed template.
 
 Returning a status of 404 indicates the template is not supported.
+
+[cols=",,",options="header",]
+|=======================================================================
+|Status
+|Response
+|Description
+
+|*Success*
+|2xx
+|A response of an http status code of 2xx indicates that the
+call was successful. The response optionally contains the version or template.
+
+|*Not Found*
+|404
+|A response of a 404 indicates that the template is not supported
+|=======================================================================
 
 ==== Apply Template
 
@@ -1004,6 +1038,22 @@ with 4 properties in the body of the response.
 |*refresh_token*
 |The token that can be used to request new access tokens
 when this one has expired.
+|=======================================================================
+
+[cols=",,",options="header",]
+|=======================================================================
+|Status
+|Response
+|Description
+
+|*Success*
+|2xx
+|A response of an http status code of 2xx indicates that the
+call was successful. The response is the JSON described above.
+
+|*Errors*
+|4**
+|All other responses indicate an error.
 |=======================================================================
 
 ==== oAuth Flow: Making Requests with Access Tokens

@@ -3,7 +3,7 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 55
+:revnumber: 56
 :revdate: 05-12-2018
 :revremark: DRAFT 
 :apply-image-size:
@@ -53,7 +53,7 @@ toc::[]
 == Introduction and background
 
 Historically configuring DNS for services has been a difficult task for users. To
-make this easier, GoDaddy created an internal feature called Domain Connect that 
+make this easier, GoDaddy created an internal feature that 
 simplified this for users.
 
 Based on learnings from this implementation, an improved and more general version of this
@@ -147,7 +147,7 @@ etc.).
 The template is defined by the Service Provider and manually given to the DNS Provider.
 Future versions of this specification may allow for an independent repository
 of templates. For now the templates are all published at
-http://domainconnect.org
+https://github.com/Domain-Connect/templates
 
 By basing the protocol on templates instead of DNS Records, several
 advantages are achieved. The DNS Provider has very explicit knowledge
@@ -222,8 +222,8 @@ image::.//media/image3.png[image,width=495,height=318]
 
 After authenticating at the DNS Provider, the DNS Provider would first verify
 the domain name is owned by the user. The DNS Provider would also verify
-other parameters passed in are valid, and would prompt the user to give
-consent for making the change to DNS. The DNS Provider could also warn
+other parameters passed in are valid, and would prompt the user for consent to 
+make the changes to DNS. The DNS Provider could also warn
 the user of services that would be disabled by applying this change to
 DNS.
 
@@ -242,8 +242,8 @@ wishes to make changes to DNS asynchronously with respect to the user
 interaction, or wishes to make multiple or additional changes to DNS
 over time.
 
-The oAuth based authentication and authorization flow begins similarly
-to the web based synchronous flow. The Service Provider determines the
+The asynchronous flow begins similarly
+to the synchronous flow. The Service Provider determines the
 DNS Provider and links to a consent dialog at the DNS Provider. Once at
 the DNS Provider the user signs in, the ownership of the domain is
 verified, and consent is granted.
@@ -313,7 +313,7 @@ Provider. This JSON structure will contain the following fields.
 |*Provider Id*
 |providerId
 |String
-|Unique identifier for the DNS Provider. Typically a the domain name (e.g. virtucom.com).
+|Unique identifier for the DNS Provider. Typically a  domain name (e.g. virtucom.com).
 
 |*Provider Name* 
 |providerName
@@ -399,7 +399,7 @@ a sub-domain for an individual service.
 
 The Service Provider should handle the condition when a query for the 
 _domainconnect TXT record suceeds, but a call to query for the JSON fails.
-This can happen if the zone is hosted with another provider, but contains an 
+This can happen if the zone is hosted with another DNS Provider, but contains an 
 incorrect _domainconnect TXT record.
 
 The DNS Provider should return a 404 if they do not contain the zone.  
@@ -721,7 +721,8 @@ also indicates that the signing algorithm is an RSA Signature with
 SHA-256 using an x509 certificate. The value for "a" if omitted will be
 assumed to be RS256, and for "t" will be assumed to be x509.
 
-Note: The only algorithm currently supported is SHA-256 with x509 certificates. The values are placed here for future compatibility.
+Note: The only algorithm currently supported is SHA-256 with x509 certificates. The values are placed here for
+future compatibility.
 
 The above data was generated for a query string:
 
@@ -807,6 +808,8 @@ multiple steps and/or are asynchronous from the user’s interaction.
 Details of an oAuth implementation are beyond the scope of this
 specification. Instead, an overview of how oAuth is used by Domain
 Connect is given here.
+
+Not all DNS Providers will support the asyncronous flow.
 
 ==== oAuth Flow: Setup
 
@@ -1257,7 +1260,7 @@ template. The domain had an existing service applied for hosting.
 
 This call reverts the application of a specific template from a domain.
 
-Note that not all DNS Providers will be capable of reverting a template. If this is the case, a 501 would be returned.
+Implementation of this call is optional. If not supported a 501 would be returned.
 
 [source]
 ----
@@ -1269,9 +1272,9 @@ POST
 This API allows the removal of a template from a customer domain/host
 using an oAuth request.
 
-The provider and service name in hte URL must match the values provided during authorization.
+The provider and service name in the URL must match the values provided during authorization.
 
-This call must validate that the template requested exists and has been
+This call must validate that the template exists and has been
 applied to the domain by the Service Provider, or a warning must be
 returned that the call would have no effect.
 
@@ -1301,20 +1304,14 @@ aware that their access to the API may be denied.
 === Template Versioning
 
 If a breaking change is made to a
-template, it is recommended that a new template be created. While on the
-surface versioning looks appealing, in reality the settings in
-a template rarely change. This is because a successful service will have
-many customers with settings in their DNS, some applied by templates
-using this protocol, and some manually applied. As such, changes to the
-template need to be done in a manner that accounts for existing
-customers.
+template it is recommended that a new template be created. While on the
+surface versioning looks appealing, in reality this is rarely needed.
 
-For some template changes such as the addition of a new record or a change in 
-template metadata the template is largely backward compatible.
+Any changes to the template need to account for existing customers with settings in 
+DNS, some applied through Domain Connect and some manual. So when changes are made, 
+they are often backward compatible. 
 
-This has the caveats that the
-template would need to be on-boarded with the DNS Providers, and that
-only new applications of the template would have the change.
+Note that when a template changes, it does need to be on-boarded with the DNS Providers.
 
 The <<template-version-field, version field>> of the template definition serves the purpose
 of transparency between the DNS Provider and the Service Provider in case of such changes.
@@ -1413,6 +1410,13 @@ record from DNS that contains the public key used for signing.
 When present, this is a comma separated list of domain names for which redirects must
 be sent to after applying a template for the synchronous flow.
 
+|*Multiple Instance*
+|Boolean
+|multiInstance
+|(optional)
+Defaults to False. When set to True, it indicates that the template
+may be applied multiple times. 
+
 |*Warn Phishing*
 |Boolean
 |warnPhishing
@@ -1446,7 +1450,8 @@ Many of these values can contain variables. There are three built in variables.
 
 * %host%: This is the host passed from the query string.
 * %domain%: This is the domain passed from the query string.
-* %fqdn%: This is the fully qualified domain name, with a trailing dot. This is sometimes conveniently abbreviated as @.
+* %fqdn%: This is the fully qualified domain name, with a trailing dot. This is sometimes conveniently
+abbreviated as @.
 
 It should be noted that as a best practice the variable should be constrained
 to as small as possible a portion of the resulting DNS record.
@@ -1593,6 +1598,20 @@ SPFM records into final SPF TXT record. See <<spf-record>>.
 
 == Template Considerations
 
+=== Template State in DNS
+
+Some DNS Providers will maintain state associating individual records in the
+zone with the application of a specific template. Other DNS Providers may only deal
+with templates as they are applied, writing and deleting records. For these providers, after the 
+template is applied determining which records in the zone were added by a template or manually would not 
+be possible.
+
+A DNS Provider that maintains this state may be able to provide an improved experience for customers. 
+They also may be able to have more advanced handling of conflicts.
+
+To make the implementation burden reasonable for DNS Providers, Domain Connect does not dictate the approach
+the DNS Provider takes. 
+
 === Disclosure of Changes and Conflicts
 
 It is left to the discretion of the DNS Provider to determine what is disclosed to the user 
@@ -1606,16 +1625,17 @@ may decide to display the records being set. And another
 may progressively display both. 
 
 For conflict detection, one DNS Provider may simply overwrite
-changed records without warning. Another may detect conflicts and warn the users of the
+changed records without warning. Another may detect conflicts and warn the user of the
 records that will change. And another may implement logic to further detect, warn, and
-remove any of the existing templates that overlap with the new template once applied.
+remove any of the existing templates that overlap with the new template once applied
+(this assumes they are a DNS Provider that maintains this state as discussed above).
 
-As an example, consider applying a template that sets two records in
-DNS (recordA and recordB) into a zone. Next consider applying a second template that
+As an example, consider applying a template that sets two records
+(recordA and recordB) into a zone. Next consider applying a second template that
 overlaps with the first template (recordB and recordC) into the zone. If the DNS
-Provider removes conflicting templates when applying new ones, upon
+Provider is capable of and removes conflicting templates when applying new templates, upon
 application of the second template the first template would be removed.
-This would result in recordA being cleared, and only recordB and recordC
+This would result in recordA being cleared, and only new values for recordB and recordC
 being present in DNS.
 
 Manual changes made by the user at the DNS Provider may also have
@@ -1625,17 +1645,18 @@ overrides being possible and removal of conflicting templates.
 For the synchronous flow, this happens while the user is present.
 
 For the asynchronous flow, the consent UX is similar. However, the changes are made later
-using the API and oAuth. If the DNS Provider choses, it can also detect conflicts and 
-return these from the API. If the force parameter is set, the changes should be 
+using the API and oAuth. The DNS Provider can detect conflicts and 
+return these from the API without applying the change. 
+If the force parameter is set, the changes should be 
 applied regardless of conflicts.
 
 It is ultimately left to the DNS Provider to determine the amount of
 disclosure and/or conflict detection. The only requirement is that after
 a template is applied the new service is fully applied to the DNS zone
-and all of conflicting records get either deleted or overwritten before
-or during this process.
+and all of conflicting records get either deleted or overwritten
+during this process.
 
-A reasonable set of recommendations for the UX would consist of:
+A reasonable set of recommendations for the UX might consist of:
 
 * The consent UX should inform the customer of the service that will be
 enabled. Should the customer want to know the specifics, the DNS
@@ -1654,8 +1675,9 @@ into consideration specifics of each DNS record type. The rules outlined below s
 assure predictable conflict resolution between DNS providers. Each rule applies to
 the records on the very same host, unless specifed otherwise.
 
-* CNAME record conflicts with all other records, and any other records of any type conflict with an existing CNAME record.
-* MX, APEXCNAME, SRV records always conflict with records of the same type
+* CNAME record conflicts with TXT, MX, AAAA, A and existing CNAME records, and any other records of these 
+types conflict with an existing CNAME record.
+* MX, SRV records always conflict with records of the same type
 * A and AAAA records conflict with any other A and/or AAAA record, to avoid IPv4
 and IPv6 pointing to different services.
 * TXT records conflict detection is handled looking at txtConflictMatchingMode
@@ -1663,18 +1685,25 @@ parameter
 ** None: This indicates that the TXT records do not conflict with any other TXT
 record. This is the default setting, if not specified.
 ** All: This indicates that the TXT records conflict with any other TXT record
-** Prefix: This indicates that TXT record conflict with any other TXT containing value starting with txtConfictMatchingPrefix 
+** Prefix: This indicates that TXT record conflict with any other TXT containing value starting with
+txtConfictMatchingPrefix 
 
-=== Re-apply
+=== Apply, Re-apply, and Multi-Instance
 
-When applying the same template again, identified by the same providerId, serviceId,
-domain and host, ideally DNS Providers would not detect the conflict. Instead, the records
-created by the initial template application would be removed and the new instance applied.
-This approach is only then applicable, if DNS Provider stores the information about
-previously applied templates. DNS Provider who does not store such information
-has to rely on the conflict resolution rules that would remove all previous instances of the same records.
-For most templates this is a benign operation, unless the template contains variables in host names.
-For consideration of this, see the section <<variables-and-hosts,Variables and Host>>.
+There is an additional consideration when re-applying a template for DNS Providers that maintain
+the state of an applied template.
+
+To avoide unnecessary conflict warnings to the user, under normal use when re-applying a template the DNS
+Provider should remove the previously applied template on the same host.
+
+This may not be desireable for all templates, as a limited set of templates are designed to be applied 
+multiple times. To faciliate this the template can have the flag multiInstance set. This tells the DNS Provider
+that the template is expected to be written multiple times and that a re-apply should not remove previous
+instances.
+
+This setting only impacts DNS Providers that maintain applied template state. DNS Providers that do not
+maintain applied template state would simply rely on the normal conflict resolution rules, and this flag
+has no impact.
 
 [[non-essential-record]]
 === Non-essential records
@@ -1772,10 +1801,11 @@ The more static the value, the more secure the template. When static values are 
 carefully crafted link could hijack DNS settings.
 
 The preferred mitigation to this is using signatures with the syncPubKeyDomain field in the
-template (for the synchronous protocol), or with secrects (for the asynchronous protocol). 
+template (for the synchronous protocol), or with secrets (for the asynchronous protocol). 
 
 When this isn't possible, the warnPhishing flag can be set in the template. This tells the DNS
-Provider to display warnings to the user before the template is applied.
+Provider to warn the user to ensure that the template is being applied from a trusted source
+before confirming the operation.
 
 Domain/host names in a pointsTo/Target implicitly have a trailing dot in the sense of BIND. The variables
 for %host%, %domain%, %fqdn%, and @ are all available. @ is equivalent to the %fqdn%.
@@ -1841,24 +1871,33 @@ bar.foo.com.        1800 IN A 1.1.1.1
 
 ==== What is SPF?
 
-SPF stands for Sender Policy Framework specified in https://tools.ietf.org/html/rfc7208[RFC7208]. It is a record that specifies a list of authorized host names and/or IP addresses from which mail can originate from for a given domain name.
+SPF stands for Sender Policy Framework specified in https://tools.ietf.org/html/rfc7208[RFC7208]. It is a
+record that specifies a list of authorized host names and/or IP addresses from which mail can originate from
+for a given domain name.
 
-It manifests itself as a TXT record.  The format of which starts with v=spf1 followed by a list of “rules” of what to include/exclude.  If a rule passes, the mail is allowed. If it fails, it moves to the next rule. Typical record might appear as:
+It manifests itself as a TXT record.  The format of which starts with v=spf1 followed by a list of “rules” of
+what to include/exclude.  If a rule passes, the mail is allowed. If it fails, it moves to the next rule.
+Typical record might appear as:
 
 ----
 v=spf1 include:policy.exampleprovider.com -all
 ----
 
-This is an SPF record with two rules.  The first rule indicates that the rules for SPF record _policy.exampleprovider.com be included in this record. The second rule is a catch all (_all_). The default modifier for a rule is _pass_ (+). Other modifiers are _hard failure_(-), _soft failure_ (~) and _neutral_ (?).
+This is an SPF record with two rules.  The first rule indicates that the rules for SPF record
+_policy.exampleprovider.com be included in this record. The second rule is a catch all (_all_). The default modifier for a rule is _pass_ (+). Other modifiers are _hard failure_(-), _soft failure_ (~) and _neutral_ (?).
 
-Note: A failure in SPF doesn’t mean delivery won’t happen, however depending on the policies of the receiving system, messages classified with _hard failure_ or _soft failure_ may not be delivered or marked as junk.
+Note: A failure in SPF doesn’t mean delivery won’t happen, however depending on the policies of the receiving
+system, messages classified with _hard failure_ or _soft failure_ may not be delivered or marked as junk.
 
-The use of “all” at the end  is pretty common, although some providers mark it as ~ (soft fail) or ? (neutral).  The reality is that a good SPF record is tuned based on what services are attached to a domain. Not just one individual service.
+The use of “all” at the end  is pretty common, although some providers mark it as ~ (soft fail) or ? (neutral).
+The reality is that a good SPF record is tuned based on what services are attached to a domain. Not just one
+individual service.
 
 [[multiple-services]]
 ==== Multiple Services
 
-If only one email sending service were active, the SPF record recommended by the provider is sufficient. But mail from a domain can often come from several different services. 
+If only one email sending service were active, the SPF record recommended by the provider is sufficient. But
+mail from a domain can often come from several different services. 
 
 A very typical use case might be end user mail and an email newsletter service.
 Let’s look at the SPF records recommended for individual services.
@@ -1866,7 +1905,8 @@ Let’s look at the SPF records recommended for individual services.
 Mailer1: v=spf1 include:spf.mailer1.com –all
 Newsletter1: v=spf1 include:_spf.newsletter.net ~all
 
-All of these examples use the include syntax. This is fairly common. The use of all at the end is common, although is often inconsistent with the modifier. The reality is that a good SPF record would be highly tuned.
+All of these examples use the include syntax. This is fairly common. The use of all at the end is common,
+although is often inconsistent with the modifier. The reality is that a good SPF record would be highly tuned.
 
 If a customer installed Mailer1 and Newsletter1, their combined SPF record ought to be:
 
@@ -2234,7 +2274,8 @@ $ORIGIN test-domain.com.
 @ 3600 IN TXT "v=spf1 a include:spf.acme.net -all"
 ----
 
-In the next step application of the following template of Newsletter service:
+In the next step application of the following template of Newsletter
+service:
 [source,json]
 ----
 [

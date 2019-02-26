@@ -1164,6 +1164,12 @@ This can also be a comma separated list of groupIds.
 |(optional) Specifies that the template
 should be applied independently of any conflicts that may exist on the
 domain. This can be a value of 0 or 1.
+
+|*InstanceId*
+|instanceId
+|(optional) Only applicable to templates supporting multiple instances
+(see <<multiInstance,multiInstance>> template property). Allows for later
+removal of one template instance by DNS Providers storing this information.
 |=======================================================================
 
 An example call is below. In this example, it is contemplated that there
@@ -1193,7 +1199,7 @@ defined.
 |Response
 |Description
 
-|Success
+|*Success*
 |2xx
 |A response of an http status code of 204 indicates that
 call was successful and the template applied. Note that any 200 level
@@ -1287,11 +1293,36 @@ POST
 https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/revert?domain=example.com
 ----
 
-The only parameters are the domain and host. The DNS Provider should be
-able to accept these on the query string or in the body of the POST.
+Allowed parameters:
+[cols=",,",options="header",]
+|=======================================================================
+|Property
+|Key
+|Description
 
-Response codes Success, Authorization, and Errors are identical to
-above.
+|*Domain*
+|domain
+|The root domain name being configured. It
+must match the domain that was authorized in the token.
+
+|*Host*
+|host
+|The host name of the sub domain of the root domain that was authorized in the token.
+If omitted or left blank, the template is being applied to the root
+domain.
+
+|*InstanceId*
+|instanceId
+|(optional) Only applicable to templates supporting multiple instances
+(see <<multiInstance,multiInstance>> template property). For DNS Provider
+storing information about applied templates allows removal of single instance
+of template. If missing all instances of template shall be removed.
+|=======================================================================
+
+
+The DNS Provider should be able to accept these on the query string or in the body of the POST with `application/x-www-form-urlencoded` encoding.
+
+Response codes Success, Authorization, and Errors are identical to above.
 
 ==== oAuth Flow: Revoking access
 
@@ -1410,7 +1441,7 @@ record from DNS that contains the public key used for signing.
 When present, this is a comma separated list of domain names for which redirects must
 be sent to after applying a template for the synchronous flow.
 
-|*Multiple Instance*
+|[[multiInstance]]*Multiple Instance*
 |Boolean
 |multiInstance
 |(optional)
@@ -1673,7 +1704,7 @@ records that would be deleted or overwritten. This could be progressively disclo
 Conflict detection done by DNS provider prior to template application has to take
 into consideration specifics of each DNS record type. The rules outlined below shall
 assure predictable conflict resolution between DNS providers. Each rule applies to
-the records on the very same host, unless specifed otherwise.
+the records on the very same host, unless specified otherwise.
 
 * CNAME record conflicts with TXT, MX, AAAA, A and existing CNAME records, and any other records of these 
 types conflict with an existing CNAME record.
@@ -1693,11 +1724,11 @@ txtConfictMatchingPrefix
 There is an additional consideration when re-applying a template for DNS Providers that maintain
 the state of an applied template.
 
-To avoide unnecessary conflict warnings to the user, under normal use when re-applying a template the DNS
+To avoid unnecessary conflict warnings to the user, under normal use when re-applying a template the DNS
 Provider should remove the previously applied template on the same host.
 
-This may not be desireable for all templates, as a limited set of templates are designed to be applied 
-multiple times. To faciliate this the template can have the flag multiInstance set. This tells the DNS Provider
+This may not be desirable for all templates, as a limited set of templates are designed to be applied 
+multiple times. To facilitate this the template can have the flag multiInstance set. This tells the DNS Provider
 that the template is expected to be written multiple times and that a re-apply should not remove previous
 instances.
 

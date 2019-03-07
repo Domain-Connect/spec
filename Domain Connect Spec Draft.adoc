@@ -3,8 +3,8 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:revnumber: 56
-:revdate: 05-12-2018
+:revnumber: 57
+:revdate: 03-07-2019
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -1525,7 +1525,9 @@ A: host, pointsTo, TTL
 
 AAAA: host, pointsTo, TTL
 
-CNAME: host, pointsTo, TTL
+CNAME: host, pointsTo, TTL (cannot exist at root)
+
+NS: host, pointsTo, TTL (cannot exist at root)
 
 TXT: host, data, TTL, txtConflictMatchingMode, txtConflictMatchingPrefix
 
@@ -1556,21 +1558,21 @@ template
 
 |*Host*
 |String|host a|
-The host for A, AAAA, CNAME, TXT, and MX values.
+The host for A, AAAA, CNAME, NS, TXT, and MX values.
 
 This is the hostname in DNS. It is heavily recommended that this not contain variables.
-However, this may be necessary and is discussed below.
+However, this may be necessary and is discussed below. Note that CNAME and NS cannot exist at the root of the zone.
 
 |[[pointsto-record]]*Points To*
 |String
 |pointsTo
-|The pointsTo location for A, AAAA, CNAME, and MX records.
+|The pointsTo location for A, AAAA, CNAME, NS and MX records.
 
 |*TTL*
 |Int
 |ttl
 |The time-to-live for the record in DNS. Valid
-for A, AAAA, CNAME, TXT, MX, and SRV records. As a matter of practice this does not contain
+for A, AAAA, CNAME, NS, TXT, MX, and SRV records. As a matter of practice this does not contain
 variables.
 
 |*Data*
@@ -1714,7 +1716,9 @@ assure predictable conflict resolution between DNS providers. Each rule applies 
 the records on the very same host, unless specified otherwise.
 
 * CNAME record conflicts with TXT, MX, AAAA, A and existing CNAME records, and any other records of these 
-types conflict with an existing CNAME record.
+types conflict with an existing CNAME record. Note: CNAME records cannot be at the root of the zone.
+* NS records conflict with all other records. This includes of the same host, and for any record ending with the NS host. For example, an NS record of foo will conflict with any foo, www.foo, bar.foo, etc. Similarly all
+other record type conflict with NS records in the same manner.
 * MX, SRV records always conflict with records of the same type
 * A and AAAA records conflict with any other A and/or AAAA record, to avoid IPv4
 and IPv6 pointing to different services.

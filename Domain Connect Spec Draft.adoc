@@ -222,8 +222,8 @@ if necessary.
 image::.//media/image3.png[image,width=495,height=318]
 
 After authenticating at the DNS Provider, the DNS Provider must verify
-the domain name is owned by the user. The DNS Provider should also verify
-other parameters passed in are valid, and should prompt the user for consent to 
+the DNS zone of the domain name is controlled by the user. The DNS Provider must verify
+other parameters passed in are valid, and must prompt the user for consent to 
 make the changes to DNS. The DNS Provider may also warn
 the user of services that would be disabled by applying this change to
 DNS.
@@ -246,7 +246,7 @@ over time.
 The asynchronous flow begins similarly
 to the synchronous flow. The Service Provider determines the
 DNS Provider and links to a consent dialog at the DNS Provider. Once at
-the DNS Provider the user signs in, ownership of the domain is
+the DNS Provider the user signs in, control of the DNS zone for the domain is
 verified, and consent is granted.
 
 Instead of applying the DNS changes on user consent, OAuth access is
@@ -256,12 +256,12 @@ an access (bearer) token.
 
 The permission granted in the OAuth token is a right for the Service
 Provider to apply a requested template (or templates) to the specific
-domain (and specific subdomains) owned by a specific user at the DNS Provider.
+domain (and specific subdomains) DNS under control of a specific user at the DNS Provider.
 
 The Service Provider would later call the an API to apply a template
 using the access token.
 
-Additional parameters should be passed as name/value pairs when applying
+Additional parameters must be passed as name/value pairs when applying
 the template.
 
 == DNS Provider Discovery
@@ -278,7 +278,7 @@ domainconnect.virtucondomains.com
 
 As a practical matter of implementation, the DNS Provider may or may not
 contain a copy of this data in each and every zone. Instead, the DNS
-Provider must simply to respond to the DNS query for the
+Provider must simply respond to the DNS query for the
 __domainconnect_ TXT record with the appropriate data.
 
 How this is implemented is up to the DNS Provider.
@@ -289,7 +289,7 @@ TXT record in the target of the CNAME. Another DNS Provider may simply
 respond with the appropriate records at the DNS layer without having the data in each
 zone.
 
-The URL prefix returnred is subsequently used by the Service Provider to
+The URL prefix returned is subsequently used by the Service Provider to
 determine the additional settings for using Domain Connect on this
 domain at the DNS Provider. This is done by calling a REST API.
 
@@ -519,7 +519,7 @@ the DNS Provider should automatically close the browser tab or window.
 
 ===== Same Browser Window
 The second is in the current browser tab/window. As above the DNS
-Provider signs the user in if necessary, verifies domain ownership,
+Provider signs the user in if necessary, verifies the user control of the DNS Zone for the domain,
 and asks for confirmation before application of the template. After
 application of the template (or cancellation by the user), the DNS
 Provider must redirect the browser to a return URL (redirect_uri).
@@ -558,7 +558,7 @@ to the Service Provider, and as such the description may be vague.
 +
 There is one piece of information that may be interesting to communicate
 to the Service Provider. This is when the end user decided to cancel the
-operation. Should the DNS Provider wish to communicate this to the
+operation. If the DNS Provider wishes to communicate this to the
 Service Provider, when the error=access_denied the error_description may
 contain the prefix "user_cancel". Again, this is left to the discretion
 of the DNS Provider.
@@ -601,15 +601,14 @@ It must be returned as a parameter when redirecting to the redirect_uri describe
 |*
 |Any key that will be used as a replacement for the “% surrounded” variables in the
 template. The name portion of this API call corresponds to
-the variable(s) specified in the template and the value corresponds to the value that should
+the variable(s) specified in the template and the value corresponds to the value that will
 be used when applying the template.
 
 |*Provider Name*
 |providerName
 |(optional) This parameter specifies the provider name for display in the UX. It allows for
 application of a template for a service that is sold through different companies. Not all
-templates allow for this capability. Only when the "shared" attribute is set in the template
-should this name be used.
+templates allow for this capability. This name must be used only when the "shared" attribute is set in the template.
 
 |*Group Id*
 |groupId
@@ -739,15 +738,15 @@ Notes:
 The digital signature will be generated on the full query string only, 
 excluding the sig and key parameters. This is everything after the ?, except the sig and key values.
 
-The values of each query string value key/value pair should be properly URL Encoded 
+The values of each query string value key/value pair must be properly URL Encoded 
 before the signature is generated.
 
 ===== Warnings
 
 Some applications aren't able to use OAuth and/or sign requests. 
 
-Should the template require variables and OAuth and signing isn't available, 
-the flag *warnPhishing* should be set to true in the template. 
+If the template require variables, and OAuth and signing isn't available, 
+the flag *warnPhishing* must be set to true in the template. 
 
 When set this indicates to the DNS Provider that they should display extra warnings to 
 the user to have them verify the link was/is from a reputable source before applying 
@@ -766,7 +765,7 @@ resellers would be more optimal.
 
 To facilitate this, the ability to pass in the name of the reseller in
 the synchronous flow is available. When the *shared* flag is set in the template and
-the providerName is passed in the querystring, the DNS Provider may display the
+the providerName is passed in the querystring, the DNS Provider should display the
 name of the reseller in the confirmation user experience.
 
 As an example, the message can now read “(Reseller) XYZ would like to
@@ -779,7 +778,7 @@ This must only work for templates that have set the *shared* attribute
 set to true.
 
 Note: When a Service Provider has a large reseller channel, it is highly 
-recommended that the Service Provider create an API for their resellers
+recommended that the Service Provider creates an API for their resellers
 to ease the implementation of Domain Connect. There are elements of convenience in doing
 this around Domain Discovery and URL Formatting. But this would be required
 if the template required signatures.
@@ -848,7 +847,7 @@ To initiate the OAuth flow the Service Provider first links to the DNS
 Provider to gain consent. 
 
 This endpoint is similar to the synchronous flow described above. The DNS Provider
-must authentication the user, verify domain ownership, and ask the user for 
+must authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for 
 permission. Instead of permission to make a change to DNS, the permission
 is now to allow the Service Provider to
 make the changes on their behalf. Similarly the
@@ -941,7 +940,7 @@ provided during onboarding.
 
 |*Response type*
 |response_type
-|(optional) If included it should be the string ‘code’ to indicate an authorization code 
+|(optional) If included it must be the string ‘code’ to indicate an authorization code 
 is being requested.
 
 |*Scope*
@@ -1121,7 +1120,7 @@ is possible that a new conflict was introduced by the user.
 
 While it is up to the DNS Provider to determine what constitutes a
 conflict (see section on Conflicts below), when one is detected calling
-this API may return an error. This error will enumerate the
+this API must return an error. This error should enumerate the
 conflicting records in a format described below.
 
 Because the user oten isn’t present at the time of this error, it is up the
@@ -1133,7 +1132,7 @@ desired state.
 
 Calls to apply a template via OAuth require the following parameters
 posted to the above URL unless otherwise indicated. 
-The DNS Provider should accept parameters in query string or body of this
+The DNS Provider must accept parameters in query string or body of this
 post.
 
 The body is application/json encoded.
@@ -1160,7 +1159,7 @@ domain.
 |Any variable fields consumed by
 this template. The name portion of this API call corresponds to the
 variable(s) specified in the record and the value corresponds to the
-value that should be used when applying the template as per the
+value that must be used when applying the template as per the
 implementation notes.
 
 |*Group ID*
@@ -1172,7 +1171,7 @@ This can also be a comma separated list of groupIds.
 |*Force*
 |force
 |(optional) Specifies that the template
-should be applied independently of any conflicts that may exist on the
+must be applied independently of any conflicts that may exist on the
 domain. This can be a value of 0 or 1.
 
 |*InstanceId*
@@ -1213,7 +1212,7 @@ defined.
 |2xx
 |A response of an http status code of 204 indicates that
 call was successful and the template applied. Note that any 200 level
-code should be considered a success.
+code must be considered a success.
 
 |*Bad Request*
 |400
@@ -1325,11 +1324,11 @@ domain.
 |(optional) Only applicable to templates supporting multiple instances
 (see <<multiInstance,multiInstance>> template property). For DNS Provider
 storing information about applied templates allows removal of single instance
-of template. If missing all instances of template shall be removed.
+of template. If missing all instances of template should be removed.
 |=======================================================================
 
 
-The DNS Provider should be able to accept these on the query string or in the body of the POST with `application/x-www-form-urlencoded` encoding.
+The DNS Provider should be able to accept these on the query string or in the body of the POST with `application/json` encoding.
 
 Response codes Success, Authorization, and Errors are identical to
 above with the addition of the 501 code.
@@ -1390,7 +1389,7 @@ UX.
 |serviceId
 |The name or identifier of the template.
 This is used in URLs to identify the template. It is also used in the
-scope parameter for oAuth. It must not contain space characters, and should be URL friendly.
+scope parameter for oAuth. It must not contain space characters, and must be URL friendly.
 
 |*Service Name*
 |String
@@ -1403,8 +1402,8 @@ on the DNS Provider consent UX.
 |Integer
 |version
 |(optional) 
-If present represents a version of the template and shall be increased with each update 
-of the template content. This value is mainly informational and shall improve
+If present this represents a version of the template and should be increased with each update 
+of the template content. This value is mainly informational to improve
 communication and transparency between providers.
 
 |*Logo*
@@ -1484,7 +1483,7 @@ Defaults to false. When present this indicates that the template has been author
 only when both domain and host are provided. An example where this would be true would be
 a template where
 CNAME is set on the fully qualified domain name. This is largely informational, as most DNS
-Providers should enforce such rules.
+Providers already enforce such rules.
 
 |*Template Records*
 |Array of Template Records
@@ -1505,7 +1504,7 @@ Many of these values can contain variables. There are three built in variables.
 
 The @ symbol also has special meaning and is described below.
 
-It should be noted that as a best practice the variable portions should be constrained
+It is noted that as a best practice the variable portions should be constrained
 to as small as possible a portion of the resulting DNS record.
 
 For example, say a Service Provider requires a CNAME of one of three
@@ -1514,7 +1513,7 @@ s03.example.com.
 
 The value in the template could simply contain %servercluster%, and the
 fully qualified string passed in. Alternatively, the value in the
-template could contain s%var%.example.com and a value of 01, 02, or 03 passed in.
+template could contain %var%.example.com and a value of 01, 02, or 03 passed in.
 By placing more fixed data into the template, the template is more secure.
 
 Each record will contain the following elements.
@@ -1539,9 +1538,9 @@ A: host, pointsTo, TTL
 
 AAAA: host, pointsTo, TTL
 
-CNAME: host, pointsTo, TTL (host cannot be null or @)
+CNAME: host, pointsTo, TTL (host must not be null or @)
 
-NS: host, pointsTo, TTL (host cannot be null or @)
+NS: host, pointsTo, TTL (host must not be null or @)
 
 TXT: host, data, TTL, txtConflictMatchingMode, txtConflictMatchingPrefix
 
@@ -1614,7 +1613,7 @@ for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This must not contain variable
 |*TXT Conflict Matching Mode*
 |String
 |txtConflictMatchingMode
-|Describes how conflicts on the TXT record should be detected. Possible values are 
+|Describes how conflicts on the TXT record are detected. Possible values are 
 None, All, or Prefix. The default value is None. <<record-types-conflicts, See below>>. 
 
 |*TXT Conflict Matching Prefix*
@@ -1694,7 +1693,7 @@ remove any of the existing templates that overlap with the new template once app
 
 As an example, consider applying a template that sets two records
 (recordA and recordB) into a zone. Next consider applying a second template that
-overlaps with the first template (recordB and recordC). If the DNS matains template state
+overlaps with the first template (recordB and recordC). If the DNS maintains template state
 and removes conflicting templates, applying the second template would remove the first
 template. Application of the second template would conflict with recordB and the entire
 first template would be removed.
@@ -1717,7 +1716,7 @@ a template is applied the new records must be applied in totality.
 A reasonable set of recommendations for the UX might consist of:
 
 * The consent UX should inform the customer of the service that will be
-enabled. Should the customer want to know the specifics, the DNS
+enabled. If the customer want to know the specifics, the DNS
 Provider could provide a "show details" link to the user. This could
 display to them the specific records that are being set in DNS.
 * If there are conflicts, either at the template or record level, the
@@ -1729,7 +1728,7 @@ records that would be deleted or overwritten. This could be progressively disclo
 === Record Types and Conflicts
 
 Conflict detection done by the DNS provider prior to template application has to take
-into consideration specifics of each DNS record type. The rules outlined below shall
+into consideration specifics of each DNS record type. The rules outlined below 
 ensure predictable conflict resolution between DNS providers. Each rule applies to
 the records on the very same host, unless specifed otherwise.
 
@@ -1753,7 +1752,7 @@ txtConfictMatchingPrefix
 There is an additional consideration for DNS Providers that maintain the state of an applied
 template when re-applying a template.
 
-To avoide unnecessary conflict warnings to the user, under normal use when re-applying a
+To avoid unnecessary conflict warnings to the user, under normal use when re-applying a
 template such a DNS Provider should remove the previously applied template on the same host.
 
 This may not be desireable for all templates, as a limited set of templates are designed to
@@ -1780,14 +1779,14 @@ Again, this setting only impacts DNS Providers that maintain applied template st
 
 === Template Scope
 
-An individual template is scoped to the set of records applied to a
+For DNS Providers that maintain template state, an individual template is scoped to the set of records applied to a
 fully qualified domain. This includes the root domain and the host (aka
 sub-domain) at apply time.
 
-As an example if a template is applied on domain=example.com&host=sub1, 
+As an example, if a template is applied on domain=example.com&host=sub1
 a later application of the template on domain=example.com&host=sub2 must be
-treated as a distinct template. Should a conflict be detected later
-while applying a template with the records set into "sub2.example.com",
+treated as a distinct template. If a conflict is detected later
+with the records set into "sub2.example.com",
 only the records set with this template would be removed.
 
 === Host/Name in Template
@@ -1853,11 +1852,11 @@ Application of this template would be at the domain level for
 of the template, conflict detection, and template removal.
 
 Since this template would be applied to the domain only, DNS providers that maintain
-template would remove previous instances of the template before re-application. 
+template state would remove previous instances of the template before re-application. 
 This means applying this template with var=sub
 would result in the A record for sub.example.com to be set to 
 the value 2.2.2.2. Later, applying the template on "example.com" with the
-var=sub2 would remove the old template before setting the new one. sub.example.com
+var=sub2 should remove the old template before setting the new one. sub.example.com
 would be removed, and sub2.example.com would be set to the value
 2.2.2.2.
 
@@ -2024,17 +2023,17 @@ Determines the desired rules, basically everything but leading "v=spf1" and trai
 
 When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied and recalculate the resulting SPF TXT record.
 
-Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action shall never lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
+Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action must not lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
 
 If the existing TXT record makes the merging operation not possible, the DNS provider must handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless the _force=true_ parameter is used, effectively removing the existing record.
 
-Service providers should avoid checking content of TXT SPF record, as it might be strongly influenced by the DNS Provider merging strategy and user actions.
+Service providers should avoid exact match checking content of TXT SPF record, as it might be strongly influenced by the DNS Provider merging strategy and user actions.
 
 See <<example-spf-merge>>.
 
 ==== Alternatives
 
-Some DNS Providers may decide not to support the SPFM record. The following alternative solution shall allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
+Some DNS Providers may decide not to support the SPFM record. The following alternative solution should allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
 
 === Repository and Integrity
 
@@ -2278,7 +2277,7 @@ Now application of the following template:
 ]
 ----
 
-The following DNS Zone shall be generated after the template is applied:
+The following DNS Zone should be generated after the template is applied:
 
 [source]
 ----

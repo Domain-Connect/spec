@@ -1174,6 +1174,12 @@ This can also be a comma separated list of groupIds.
 |(optional) Specifies that the template
 should be applied independently of any conflicts that may exist on the
 domain. This can be a value of 0 or 1.
+
+|*InstanceId*
+|instanceId
+|(optional) Only applicable to templates supporting multiple instances
+(see <<multiInstance,multiInstance>> template property). Allows for later
+removal of one template instance by DNS Providers storing this information.
 |=======================================================================
 
 An example call is below. In this example, it is contemplated that there
@@ -1203,7 +1209,7 @@ defined.
 |Response
 |Description
 
-|Success
+|*Success*
 |2xx
 |A response of an http status code of 204 indicates that
 call was successful and the template applied. Note that any 200 level
@@ -1296,8 +1302,34 @@ POST
 https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/revert?domain=example.com
 ----
 
-The only parameters are the domain and host. The DNS Provider should be
-able to accept these on the query string or in the body of the POST.
+Allowed parameters:
+[cols=",,",options="header",]
+|=======================================================================
+|Property
+|Key
+|Description
+
+|*Domain*
+|domain
+|The root domain name being configured. It
+must match the domain that was authorized in the token.
+
+|*Host*
+|host
+|The host name of the sub domain of the root domain that was authorized in the token.
+If omitted or left blank, the template is being applied to the root
+domain.
+
+|*InstanceId*
+|instanceId
+|(optional) Only applicable to templates supporting multiple instances
+(see <<multiInstance,multiInstance>> template property). For DNS Provider
+storing information about applied templates allows removal of single instance
+of template. If missing all instances of template shall be removed.
+|=======================================================================
+
+
+The DNS Provider should be able to accept these on the query string or in the body of the POST with `application/x-www-form-urlencoded` encoding.
 
 Response codes Success, Authorization, and Errors are identical to
 above with the addition of the 501 code.
@@ -1427,7 +1459,7 @@ record from DNS that contains the public key used for signing.
 When present, this is a comma separated list of domain names for which redirects must
 be sent to after applying a template for the synchronous flow.
 
-|*Multiple Instance*
+|[[multiInstance]]*Multiple Instance*
 |Boolean
 |multiInstance
 |(optional)

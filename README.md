@@ -7,6 +7,7 @@ Domain Connect specification is published on GitHub and can be displayed under f
 
 * New version of the specification is published by new commits on master branch of this repository.
 * New publication which change only the *Revision* number SHALL not break any of existing functionalities or integrations.
+** Each new revision shall be tagged, using `git` command for example: `git tag -a rev.58 -m "Rev. 58"` or GitHub feature
 * Update to *Version* number means a breaking change and as such shall by all means be avoided.
 
 ## Issues and questions to the specification

@@ -87,6 +87,9 @@ Customer/User:: refers to the end-user of these services.
 Templates/Service Templates:: refers to a file that describes a set of
 changes to DNS and domain functionality to enable a specific service.
 
+Public Template Repository:: refers to a public repository of Templates
+in a standarised format (read more: <<repository-and-integrity>>).
+
 Root Domain:: refers to a registered domain (e.g. example.com or
 example.co.uk), or to a delegated zone in DNS.
 
@@ -146,16 +149,16 @@ service (e.g. the IP address of a service, a customer id,
 etc.).
 
 The template is defined by the Service Provider and manually onboarded with the DNS
-Provider.
-Future versions of this specification may allow for an independent repository
-of templates. For now the templates are all published at
-https://github.com/Domain-Connect/templates
+Provider, according to a template definition published in
+the <<repository-and-integrity, Public Repository>> or agreed out-of-band between
+the Service Provider and the DNS Provider.
 
 By basing the protocol on templates instead of DNS Records, several
 advantages are achieved. The DNS Provider has very explicit knowledge
 and control of the settings being changed to enable a service. And the
 system is more secure as templates are controlled and contained.
 
+[[onboarding-considerations]]
 === Onboarding Considerations
 
 This specification is an open standard that describes the protocol, messages and formats 
@@ -180,8 +183,7 @@ returned.
 
 One exception is the domain/host name. This is because a fully qualified domain name is case insensitive.
 
-File names for the templates should be lower case. However, the values for providerId/serviceId in the template
-and passed through URIs in the path or query string are case sensitive.
+The values for providerId/serviceId in the template and passed through URIs in the path or query string are case sensitive. Different rules apply to the file naming in the <<repository-file-names-requirements, Public Template Repository>>.
 
 == Protocol Overview and End User Flows
 
@@ -2050,21 +2052,45 @@ See <<example-spf-merge>>.
 
 Some DNS Providers may decide not to support the SPFM record. The following alternative solution should allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
 
-=== Repository and Integrity
+[[repository-and-integrity]]
+=== Public Template Repository
+
+The Public Template Repository is an open accessible location where Service Providers
+MAY publish their Service Templates in the format specified in this specification.
+DNS Providers MAY support all of the published templates, just a subset or none of them according
+to own onboarding policies (see also: <<onboarding-considerations>>).
 
 The template format is intended largely for documentation and communication between the DNS Providers and 
 Service Providers, and there are no codified endpoints for creation or modification of these objects.
 Instead, Domain Connect references a template by ID.
 
 As such, DNS Providers may or may not use templates in this format in
-their internal implementations.
+their internal implementations. By defining a standard template format,
+it is believed it will make it easier for Service Providers to share
+their configuration across DNS Providers.
 
-However, by defining a standard template format, it is believed it will
-make it easier for Service Providers to share their configuration across
-DNS Providers. Further revisions of this specification may include a
-repository for publishing and consuming these templates. For now,
-templates are maintained at http://domainconnect.org.
+==== Repository Location
+The  repository of the templates is maintained under
+https://github.com/Domain-Connect/templates. 
 
+[[repository-file-names-requirements]]
+==== File naming requirements
+The file names in this repository MUST be all lower case, including the providerId
+and serviceId. As a result, while the providerId and serviceId can be mixed case,
+all providerIds and serviceIds in this repository must be unique when lower case.
+
+Templates MUST be named according the following pattern: `providerId.serviceId.json`
+
+.A non-normative example of file-name inte template repository
+[source]
+----
+providerId: Acme.com
+serviceId: WebsiteBuilder
+
+Template file name: acme.com.websitebuilder.json
+----
+
+==== Template Integrity
 Implementers are responsible for data integrity and should use the
 record type field to validate that variable input meets the criteria for
 each different data type.

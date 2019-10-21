@@ -4,8 +4,8 @@
 :source-highlighter: prettify
 :sectnums:
 :specversion: 2.1
-:revnumber: 61
-:revdate: 17-06-2019
+:revnumber: 62
+:revdate: 19-09-2019
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -2011,24 +2011,24 @@ If a customer installed Mailer1 and Newsletter1, their combined SPF record ought
 v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all 
 ----
 
-We combined the two rules, and in this case picked the least restrictive all modifier. Of course if no other service was sending mail, -all might be more appropriate.
+We combined the two rules, and in this case picked the least restrictive all modifier.
 
 ==== SPF Record Merging
 
 The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate. But with several services together only the DNS Provider is able to determine the valid shape of a SPF TXT record.
 
-One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “-all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, Domain Connect defines a fixed modifier _"-"_ advising rejection of the messages from other sources not specified in SPF. The end user can always modify it after merge operation is completed.
+One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, Domain Connect advises a fixed modifier _"~"_ advising lower rating of the messages from other sources not specified in SPF. This setup offers a reasonable level of protection of mail delivery, on the other side does not reject the message in case forwarding facility is in place.
 
 ----
-@ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net -all
+@ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all
 ----
 
 The other would be to write intermediate records, and reference these locally.
 
 ----
-r1.example.com. TXT v=spf1 include:spf.mailer1.com –all
-r2.example.com. TXT v=spf1 include:_spf.newsletter.net -all
-@ TXT v=spf1 include:r1.example.com include:r2.example.com -all
+r1.example.com. TXT v=spf1 include:spf.mailer1.com ~all
+r2.example.com. TXT v=spf1 include:_spf.newsletter.net ~all
+@ TXT v=spf1 include:r1.example.com include:r2.example.com ~all
 ----
 
 There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.
@@ -2038,7 +2038,9 @@ The implementation would be left to the DNS Provider, but to facilitate this SPF
 spfRules::
 Determines the desired rules, basically everything but leading "v=spf1" and trailing _all_ rule -  see: <<spf-rules, SPF Rules>>
 
-When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied and recalculate the resulting SPF TXT record.
+When a template is added or removed with an _SPFM_ record in the template, some code would need to take the aggregate value of all _SPFM_ records in all templates applied as well as existing SPF TXT record on the host and recalculate the resulting SPF TXT record. In case several sources specify the same rule with a different policy DNS Provider SHOULD apply the least restrictive one as a result. _soft failure_ SHOULD be preferred over _hard failure_, _neutral_ SHOULD be preferred over _soft failure_.
+
+DNS Provider SHOULD also allow the end user to modify the SPF record after merging.
 
 Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action must not lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
 
@@ -2050,7 +2052,7 @@ See <<example-spf-merge>>.
 
 ==== Alternatives
 
-Some DNS Providers may decide not to support the SPFM record. The following alternative solution should allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% -all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
+Some DNS Providers may decide not to support the SPFM record. The following alternative solution should allow general interoperability of the templates for those providers: onboard the templates with SPFM record in variable-compatible form using a regular TXT record with content _“v=spf1 %spfRules% ~all”_, using property _essential=OnApply_ set to avoid removal of the whole template by a conflict.
 
 [[repository-and-integrity]]
 === Public Template Repository
@@ -2389,7 +2391,7 @@ $ORIGIN test-domain.com.
 @ 3600 IN NS ns12.acme.net.
 @ 3600 IN MX 10 mx1.acme.net.
 @ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net -all"
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net ~all"
 ----
 
 In the next step application of the following template of Newsletter
@@ -2417,5 +2419,5 @@ $ORIGIN test-domain.com.
 @ 3600 IN NS ns12.acme.net.
 @ 3600 IN MX 10 mx1.acme.net.
 @ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com -all"
+@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com ~all"
 ----

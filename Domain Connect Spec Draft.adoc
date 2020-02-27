@@ -3,9 +3,9 @@
 :toclevels: 4
 :source-highlighter: prettify
 :sectnums:
-:specversion: 2.1
+:specversion: 2.2
 :revnumber: 62
-:revdate: 19-09-2019
+:revdate: 26-02-2019
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -622,9 +622,18 @@ be used when applying the template.
 
 |*Provider Name*
 |providerName
-|(optional) This parameter specifies the provider name for display in the UX. It allows for
-application of a template for a service that is sold through different companies. Not all
-templates allow for this capability. This name must be used only when the "shared" attribute is set in the template.
+|(optional) This parameter allows for the caller to provide additional text for display
+with the template providerName. This text should be used to augment the providerName value
+from the template, not replace it. This parameter is only allowed when the
+"sharedProviderName" attribute is set in the template. Note: this used to be controlled by the "shared"
+attribute in the template, which has been deprecated.
+
+|*Service Name*
+|serviceName
+|(optional) This parameter allows for the caller to provide additional text for display
+with the template serviceName. It should be used to augment the serviceName value
+from the template, not replace it. This parameter is only allowed when the
+"sharedServiceName" attribute is set in the template.
 
 |*Group Id*
 |groupId
@@ -770,7 +779,9 @@ the template.
 
 ==== Shared Templates
 
-Most services are sold and provided by the same company. However, some
+Some templates can be called by multiple companies, or be used for different purposes.
+
+For example, most services are sold and provided by the same company. However, some
 Service Providers have a reseller channel. This allows the service to be
 provided by the Service Provider, but sold through third parties.
 It is often this third party reseller that configures DNS.
@@ -779,19 +790,17 @@ While each reseller could enable Domain Connect, this is inefficient for
 the DNS Providers. Enabling a single template that is shared by multiple
 resellers would be more optimal.
 
-To facilitate this, the ability to pass in the name of the reseller in
-the synchronous flow is available. When the *shared* flag is set in the template and
-the providerName is passed in the querystring, the DNS Provider should display the
-name of the reseller in the confirmation user experience.
+As another example, some templates may be used for different purposes by the same company.
 
-As an example, the message can now read “(Reseller) XYZ would like to
-make your domain example.com work with ACME Websites.”
+To facilitate these use cases, the ability to pass in additional context for the display
+of the providerName and serviceName is enabled. This is only allowed when the template enables the capability
+through the sharedProviderName and/or sharedServiceName flags.
 
-In this example, ACME Websites is a service provided by ACME but resold
-through XYZ.
+Note: The shared flag used to be used for this purpose, but has been deprecated.
 
-This must only work for templates that have set the *shared* attribute
-set to true.
+The exact message presented to the user is up to the DNS Provider. However it is recommended
+that these fields be used to augment the display of the serviceName and providerName from the template,
+not replace it.
 
 Note: When a Service Provider has a large reseller channel, it is highly 
 recommended that the Service Provider creates an API for their resellers
@@ -881,8 +890,8 @@ resolution evolves, this list may grow.
 The protocol allows for the Service Provider to gain consent to apply
 multiple templates. These templates are specified in the *scope* parameter. It
 also allows for the Service Provider to gain consent to apply these templates to the domain
-or to the domain with multiple sub-domains. These are specified in the host parameter. If 
-conflict detection is implemented 
+or to the domain with multiple sub-domains. These are specified in the *domain* and *host*
+parameter. If conflict detection is implemented 
 by the DNS Provider, they should account for all permutations.
 
 The scope parameter is a space separated list (as per the OAuth protocol)
@@ -963,6 +972,18 @@ is being requested.
 |scope
 |The OAuth scope corresponds to the requested templates. This is list of space separated
 serviceIds.
+
+|*Provider Name*
+|providerName
+|(optional) This parameter allows for the caller to provide additional text for display
+with the template providerName. This text should be used to augment the providerName value
+from the template, not replace it.
+
+|*Service Name*
+|serviceName
+|(optional) This parameter allows for the caller to provide additional text for display
+with the template serviceName(s). It should be used to augment the serviceName value(s)
+from the template, not replace.
 
 |*State*
 |state
@@ -1189,6 +1210,20 @@ This can also be a comma separated list of groupIds.
 |(optional) Specifies that the template
 must be applied independently of any conflicts that may exist on the
 domain. This can be a value of 0 or 1.
+
+|*Provider Name*
+|providerName
+|(optional) This parameter allows for the caller to provide additional context for the providerName
+that applied the template. It may be used by some DNS Providers that display state regarding which
+templates have been applied. It is only allowed when the "sharedProviderName" attribute is set
+in the template being applied.
+
+|*Service Name*
+|serviceName
+|(optional) This parameter allows for the caller to provide additional context for the serviceName
+that applied the template. It may be used by some DNS Providers that display state regarding which
+templates have been applied. It is only allowed when the "sharedProviderName" attribute is set
+in the template being applied.
 
 |*InstanceId*
 |instanceId
@@ -1453,10 +1488,25 @@ is false.
 |Boolean
 |shared
 |(optional) 
-Indicates that the template is shared and the
-provider name can be passed in on the query string. If false, passing in the name on the 
-query string must have no impact. The default for this
-is false.
+This flag has been deprecated. It used to indicate that the template allowed a dynamic providerName
+on the query string. It is replaced with the sharedProviderName flag in v2.2 of the spec.
+
+|*Shared Provider Name*
+|Boolean
+|sharedProviderName
+|(optional) 
+This flag indicates that the template allows the caller to pass in additional information for the
+providerName. This information should augment the display of the providerName from the template. The
+default for this is false. For backward compatability with DNS Providers not at V2.2 of the spec it is
+recommended that the shared flag also be set.
+
+|*Shared Service Name*
+|Boolean
+|sharedServiceName
+|(optional) 
+This flag indicates that the template allows the caller to pass in additional information for the
+serviceName. This information should augment the display of the serviceName from the template. The
+default for this is false.
 
 |*Synchronous Public Key Domain*
 |String

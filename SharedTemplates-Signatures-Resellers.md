@@ -9,19 +9,25 @@ This document will propose a solution that gives the benefits of Domain Connect 
 
 ## Shared Templates
 
-Synchronous templates have an attribute labeled “shared.” This flag impacts how the name of the Service Provider is rendered at the DNS Provider when the user is confirming the operation.
+Templates have two attributes to help with sharing. These are sharedProviderName and sharedServiceName. These flags impact how information is displayed to the user when confirming a change at the DNS Provider.
 
-Normally the name of the Service Provider is retrieved from the template from the providerName attribute. If and only if this flag is set this name can be “overridden” by passing in a value on the querystring as providerName=[value].
+Normally the DNS Provider would display information to the user indicating the changes being made. This includes the domain, host, and of course template being applied. The template is normally communicated using the template
+attributes providerName/serviceName, both suitable for display to the end user.
 
-This flag is particularly interesting for any Service Provider that has a large reseller channel.
+However, if the flags sharedProviderName and/or sharedServiceName are
+set in the template, the caller can pass in additional data for the providerName/serviceName. For the synchronous flow, this is passed via the query string on the apply call. For the asynchronous flow, this data is can be
+passed on the authorization consent or on the apply call.
 
-Consider a service that is resold through a large partner network. Each of the partners sells the product through an API with the service; but owns the UX and all on-boarding of the product.  This is exactly what gsuite and O365 do.
+Consider a service that is resold through a large reseller/partner network. Each of the resellers sells the product through an API with the service; but owns the UX and all on-boarding of the product.  This is exactly what gsuite and O365 do.
 
 Today these resellers typically tell customers how to configure DNS; and as such each would benefit from Domain Connect. But it isn’t practical for each of these resellers to define their own template. On-boarding these templates wouldn’t scale, and the Service Provider would likely want to control the definition of their own service template.
 
-By defining a template and setting the shared flag, the Service Provider can own their template but allow the reseller to pass in their own name when applying the template.
+By defining a template and setting the shared flag(s), the Service Provider can own their template but allow the reseller to pass in their own information to display to the user.
 
-As an example, consider an example where Verizon is reselling gsuite.  Rather than tell the user to manually make the necessary DNS changes, Verizon could use Domain Connect. Verizon would generate the properly formatted link to apply the gsuite template, in this case one owned by gsuite with the shared attribute set to true.  Verizon could pass the providerName on the querystring as providerName=Verizon, allowing the confirmation message to render “Do you want to allow Verizon to change DNS for the domain xyz.com to work with gsuite?”
+As an example, consider a product like gsuite using the providerName/serviceName of Google/GSuite. When Google invokes Domain Connect, the user might see a message like "Do you want to enable GSuite from Google on the domain foo.com?".
+
+Now consider a reseller offering GSuite. In our example, we'll use Verizon.  If Verizon invokes Domain Connect and passes in their name as the providerName, the message can be displayed as "Do you want
+to enable GSuite from Google/Verizion on the domain foo.com?"
 
 On the surface this is simple. A reseller simply links to apply the proper template, overriding the providerName in the querystring. However, there is an additional consideration. Some templates require the generation of a signature.
 

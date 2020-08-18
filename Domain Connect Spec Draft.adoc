@@ -4,8 +4,8 @@
 :source-highlighter: prettify
 :sectnums:
 :specversion: 2.2
-:revnumber: 62
-:revdate: 26-02-2019
+:revnumber: 63
+:revdate: 16-08-2020
 :revremark: DRAFT 
 :apply-image-size:
 
@@ -1568,7 +1568,22 @@ Many of these values can contain variables. There are three built in variables.
 * %domain%: This is the domain passed from the query string
 * %fqdn%: This is the fully qualified domain name e.g. [host.]domain
 
-The @ symbol also has special meaning and is described below.
+The @ symbol has special meaning, and can be used in the host/name field or in
+the pointsTo/data field in isolation.
+
+For the host/name field it is a shortcut for the value "%fqdn%.". When applying the
+template to a domain only, it represents "example.com.". When applying with a sub-domain
+(host) it represents "subdomain.example.com.".
+
+Note: The trailing dot here is similar to the bind protocol, which indicates the value
+is absolute. Without the trailing ".", the value in this field is relative to the [host.]domain.com
+value.
+
+For the pointsTo/data field it is a shortcut for for the "%fqdn%". When appling
+the template to a domain only, it represents "example.com". When applying with a sub-
+domain (host) it represents "subdomain.example.com".
+
+Note: The pointsTo and data files are always absolute for these fields.
 
 It is noted that as a best practice the variable portions should be constrained
 to as small as possible a portion of the resulting DNS record.
@@ -1643,8 +1658,10 @@ template
 |
 The host for A, AAAA, CNAME, NS, TXT, and MX values.
 
-This value is relative to the applied host and domain. A value of empty or @ indicates 
-the root of the applied host and domain.
+This value is relative to the applied host and domain, unless trailed by a ".".
+
+A value of empty or @ indicates the root of the applied host and domain. In other words
+"[host.]domain.com.".
 
 This value should not contain variables unless absolutely necessary. This is discussed
 below.
@@ -1663,7 +1680,10 @@ below.
 |[[pointsto-record]]*Points To*
 |String
 |pointsTo
-|The pointsTo location for A, AAAA, CNAME, NS and MX records.
+|
+The pointsTo location for A, AAAA, CNAME, NS and MX records.
+
+A value of empty or @ indicates the host and domain name being applied or [host.]domain.com
 
 |*TTL*
 |Int
@@ -1674,7 +1694,10 @@ for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This must not contain variable
 |*Data*
 |String
 |data
-|The data for a TXT record in DNS
+|
+The data for a TXT record in DNS.
+
+A value of empty or @ indicates the host and domain name being applied or [host.]domain.com
 
 |*TXT Conflict Matching Mode*
 |String
@@ -1859,7 +1882,7 @@ only the records set with this template would be removed.
 
 Template records contain the host name of the record to set into the zone (called name 
 for SRV records). This value must be considered relative to the domain/host when 
-the template is applied.
+the template is applied, unless followed by a traling ".".
 
 Consider a template record of type A with a host value of "xyz". When the template is
 applied to a domain=foo.com and an empty host value, the resulting zone after the template
@@ -1868,7 +1891,8 @@ is applied will contain an A record of "xyz" (or "xyz.foo.com." in bind format).
 If the same template is applied to a domain=foo.com and host=bar, the zone will contain an A
 record of "xyz.bar" (or "xyz.bar.foo.com." in bind format).
 
-A value of @ for host in the template is a placeholder for an empty value.
+A value of @ for host in the template is a placeholder for an empty value. In other words @
+would point to "bar.foo.com." when the same template is applied to domain=foo.com and host=bar.
 
 === PointsTo in Template
 
@@ -1880,8 +1904,8 @@ name of the domain/host being applied.
 
 Consider a template record of type CNAME with a pointsTo value of "@". After a template of
 domain=foo.com and an empty host is applied, the pointsTo value (or corresponding field) in
-the resulting zone would be "foo.com." in bind format. After a template of domain=foo.com
-with host=bar is applied, the points to value would be "bar.foo.com." in bind format.
+the resulting zone would be "foo.com". After a template of domain=foo.com
+with host=bar is applied, the points to value would be "bar.foo.com".
 
 Any domain in a pointsTo field in a template must be considered fully qualified and not
 relative.

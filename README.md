@@ -20,3 +20,10 @@ All the discussion will be then held within the ticket.
 Anyone is encouraged to contribute to the specification and to propose changes or new functionalities.
 The desired way of working is by forking the repository to a private account, make necessary changes and then issue a Pull Request back to the master.
 The change will be then taken under Review.
+
+## Building the IETF draft
+
+Using VSCode with Dev Container extension, launch VSCode with the configuration provided in .devcontainer
+
+Execute:
+`metanorma -t ietf -x txt,html draft-domain-connect-04.adoc`

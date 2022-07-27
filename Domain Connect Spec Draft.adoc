@@ -694,7 +694,7 @@ DNS Provider.
 
 Another option is to digitally sign the query string. A
 signature is appended as an additional query string parameter,
-properly URL encoded and of the form:
+properly Base64 encoded and of the form:
 
 [source]
 ----
@@ -709,6 +709,19 @@ EQ%3D%3D
 The Service Provider generates this signature using a private key. As indicated,
 this signature is generated from the query string properly URL encoded.
 
+The Service Provider must generate the signature with RSA256 hash,
+PKCS1v15 padding and Base64 encode it before adding it to query parameters.
+Example service in python can be found https://github.com/Domain-Connect/exampleservice/blob/master/sigutil.py[here]
+
+Example signature signing in node.js using std crypto package:
+[source]
+----
+sigQueryParam = crypto.sign("sha256", Buffer.from(data), {
+   key: privateKey,
+   padding: crypto.constants.RSA_PKCS1_PADDING,
+}).toString("base64");
+----
+
 The Service provider must publish their public key and place it in a DNS TXT
 record in a domain specified in the template in *syncPubKeyDomain*. To allow for key 
 rotation, the host name of the TXT record must be appended as another variable on the query string of the form:
@@ -720,7 +733,8 @@ key=_dcpubkeyv1
 
 This example indicates that the public key can be found by doing a DNS
 query for a TXT record called _dcpubkeyv1 in the domain specified in the
-syncPubKeyDomain from the template.
+syncPubKeyDomain from the template. 
+After generating and adding your key can test if its available from DNS TXT records https://exampleservice.domainconnect.org/sig[here]
 
 To account for DNS Servers with limits to the size of a TXT record, multiple
 records may exist for the DNS TXT query. For example, a public key of:
@@ -748,8 +762,8 @@ bsELQL8GjS4zsjdA53gRk2SDxuzcB4fK+NCDfnRHut5nG0S3U4cq4DuGrMDFVBwxH1duTs
 p=2,a=RS256,d=qDNgIOOfNTsFcWSVXoSSTqCCMGbj8Vt51umDhWQAj06lf50qP2/jMNs2G+
 KTlk3dBHx3wtqYLvdcop1Tk5xBD64BPJ9uwm8KlDNHe+8O+cC9j04Ji8B2K0/PzAj90xnb8X
 Jy/EM124hpT9lMgpHKBUvdeurJYweC6oP41gsTf5LrpjnyIy9j5FHPCQIDAQAB
-
 ----
+A service for generating the DNS records from your public key can be found https://exampleservice.domainconnect.org/sig[here]
 
 Here the public key is broken into four records in DNS, and the data
 also indicates that the signing algorithm is an RSA Signature with

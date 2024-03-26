@@ -1254,7 +1254,7 @@ passed as name/value pairs.
 ----
 POST
 
-https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/apply?IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello&force=1
+https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/apply?IP=192.0.2.42&RANDOMTEXT=shm%3A1542108821%3AHello&force=1
 ----
 
 The API must validate the access token, and that the domain belongs to
@@ -1898,14 +1898,14 @@ for SRV records). This value must be considered relative to the domain/host when
 the template is applied, unless followed by a trailing ".".
 
 Consider a template record of type A with a host value of "xyz". When the template is
-applied to a domain=foo.com and an empty host value, the resulting zone after the template
-is applied will contain an A record of "xyz" (or "xyz.foo.com." in bind format).
+applied to a domain=example.com and an empty host value, the resulting zone after the template
+is applied will contain an A record of "xyz" (or "xyz.example.com." in bind format).
 
-If the same template is applied to a domain=foo.com and host=bar, the zone will contain an A
-record of "xyz.bar" (or "xyz.bar.foo.com." in bind format).
+If the same template is applied to a domain=example.com and host=bar, the zone will contain an A
+record of "xyz.bar" (or "xyz.bar.example.com." in bind format).
 
 A value of @ for host in the template is a placeholder for an empty value. In other words @
-would point to "bar.foo.com." when the same template is applied to domain=foo.com and host=bar.
+would point to "bar.example.com." when the same template is applied to domain=example.com and host=bar.
 
 === PointsTo in Template
 
@@ -1916,9 +1916,9 @@ A value of @ in pointsTo field in the template is a shortcut for the fully quali
 name of the domain/host being applied. 
 
 Consider a template record of type CNAME with a pointsTo value of "@". After a template of
-domain=foo.com and an empty host is applied, the pointsTo value (or corresponding field) in
-the resulting zone would be "foo.com". After a template of domain=foo.com
-with host=bar is applied, the points to value would be "bar.foo.com".
+domain=example.com and an empty host is applied, the pointsTo value (or corresponding field) in
+the resulting zone would be "example.com". After a template of domain=example.com
+with host=bar is applied, the points to value would be "bar.example.com".
 
 Any domain in a pointsTo field in a template must be considered fully qualified and not
 relative.
@@ -1942,7 +1942,7 @@ Such a template might contain an A record of the form:
 {
     "type": "A",
     "host": "%var%",
-    "pointsTo": "2.2.2.2",
+    "pointsTo": "192.0.2.2",
     "ttl": 1800
 }
 ----
@@ -1958,10 +1958,10 @@ Since this template would be applied to the domain only, DNS providers that main
 template state would remove previous instances of the template before re-application. 
 This means applying this template with var=sub
 would result in the A record for sub.example.com to be set to 
-the value 2.2.2.2. Later, applying the template on "example.com" with the
+the value 192.0.2.2. Later, applying the template on "example.com" with the
 var=sub2 should remove the old template before setting the new one. sub.example.com
 would be removed, and sub2.example.com would be set to the value
-2.2.2.2.
+192.0.2.2.
 
 Furthermore, determining conflicts would be impossible when the user is granting consent
 for asynchronous operations (OAuth). This is because the host would be indeterminate. 
@@ -2011,41 +2011,41 @@ Example template:
 {
     "type": "A",
     "host": "@",
-    "pointsTo": "1.1.1.1",
+    "pointsTo": "192.0.2.1",
     "ttl": 1800
 }]
 ----
 
-Template applied with _domain_=foo.com and _host_ parameter missing or empty:
+Template applied with _domain_=example.com and _host_ parameter missing or empty:
 
 [source]
 ----
-www 1800 IN CNAME foo.com.
-@   1800 IN A 1.1.1.1
+www 1800 IN CNAME example.com.
+@   1800 IN A 192.0.2.1
 ----
 
 _alternatively_
 
 [source]
 ----
-www.foo.com.    1800 IN CNAME foo.com.
-foo.com.        1800 IN A 1.1.1.1
+www.example.com.    1800 IN CNAME example.com.
+example.com.        1800 IN A 192.0.2.1
 ----
 
-Template applied with _domain_=foo.com and _host_=bar:
+Template applied with _domain_=example.com and _host_=bar:
 
 [source]
 ----
-www.bar 1800 IN CNAME bar.foo.com.
-bar     1800 IN A 1.1.1.1
+www.bar 1800 IN CNAME bar.example.com.
+bar     1800 IN A 192.0.2.1
 ----
 
 _alternatively_
 
 [source]
 ----
-www.bar.foo.com.    1800 IN CNAME bar.foo.com.
-bar.foo.com.        1800 IN A 1.1.1.1
+www.bar.example.com.    1800 IN CNAME bar.example.com.
+bar.example.com.        1800 IN A 192.0.2.1
 ----
 
 [[spf-record-merging]]
@@ -2322,14 +2322,14 @@ have a value of:
 [{
     "type": "A",
     "host": "www",
-    "pointsTo": "192.168.1.1",
+    "pointsTo": "192.0.2.1",
     "ttl": 600
 }]
 ----
 
 This would have no variable substitution and the application of this
 template to a domain would simply set the host name "www" to the IP
-address "192.168.1.1"
+address "192.0.2.1"
 
 ===== Example Records: Single variable host record for A
 
@@ -2342,7 +2342,7 @@ have a value of:
 [{
     "type": "A",
     "host": "@",
-    "pointsTo": "192.168.1.%srv%",
+    "pointsTo": "198.51.100.%srv%",
     "ttl": 600
 }]
 ----
@@ -2355,7 +2355,7 @@ srv=2
 ----
 
 would cause the application of this template to a domain to set the host
-name for the apex A record to the IP address "192.168.1.2" with a TTL of
+name for the apex A record to the IP address "198.51.100.2" with a TTL of
 600
 
 ===== Example: DNS Zone merging
@@ -2364,19 +2364,19 @@ Consider a DNS Zone before a template application:
 
 [source]
 ----
-$ORIGIN test-domain.com.
+$ORIGIN example.com.
 
-@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
 1209600 3600
-@ 3600 IN NS ns11.acme.net.
-@ 3600 IN NS ns12.acme.net.
-@ 3600 IN A 1.1.1.1
-@ 3600 IN A 1.1.1.2
+@ 3600 IN NS ns11.example.net.
+@ 3600 IN NS ns12.example.net.
+@ 3600 IN A 192.0.2.1
+@ 3600 IN A 192.0.2.2
 @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
 @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
-@ 3600 IN MX 10 mx1.acme.net.
-@ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.com ~all"
+@ 3600 IN MX 10 mx1.example.net.
+@ 3600 IN MX 10 mx2.example.net.
+@ 3600 IN TXT "v=spf1 a include:spf.example.org ~all"
 www 3600 IN CNAME other.host.com.
 ----
 
@@ -2388,13 +2388,13 @@ Now application of the following template:
     {
         "type":"A",
         "host":"@",
-        "pointsTo":"2.2.2.2",
+        "pointsTo":"203.0.113.2",
         "ttl":"1800"
     },
     {
         "type":"A",
         "host":"www",
-        "pointsTo":"2.2.2.2",
+        "pointsTo":"203.0.113.2",
         "ttl":"1800"
     },
     {
@@ -2409,17 +2409,17 @@ The following DNS Zone should be generated after the template is applied:
 
 [source]
 ----
-$ORIGIN test-domain.com.
+$ORIGIN example.com.
 
-@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050920 7200 1800
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200 1800
 1209600 3600
-@ 3600 IN NS ns11.acme.net.
-@ 3600 IN NS ns12.acme.net.
-@ 1800 IN A 2.2.2.2
-@ 3600 IN MX 10 mx1.acme.net.
-@ 3600 IN MX 10 mx2.acme.net.
-@ 1800 IN TXT "v=spf1 a include:spf.acme.com include:spf.hoster.com ~all"
-www 1800 IN A 2.2.2.2
+@ 3600 IN NS ns11.example.net.
+@ 3600 IN NS ns12.example.net.
+@ 1800 IN A 203.0.113.2
+@ 3600 IN MX 10 mx1.example.net.
+@ 3600 IN MX 10 mx2.example.net.
+@ 1800 IN TXT "v=spf1 a include:spf.example.org include:spf.hoster.com ~all"
+www 1800 IN A 203.0.113.2
 ----
 
 [[example-spf-merge]]
@@ -2429,12 +2429,12 @@ Consider a DNS Zone before a template application:
 
 [source]
 ----
-$ORIGIN test-domain.com.
+$ORIGIN example.com.
 
-@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
 1209600 3600
-@ 3600 IN NS ns11.acme.net.
-@ 3600 IN NS ns12.acme.net.
+@ 3600 IN NS ns11.example.net.
+@ 3600 IN NS ns12.example.net.
 ----
 
 Now application of the following template of Mail service:
@@ -2446,20 +2446,20 @@ Now application of the following template of Mail service:
         "type":"MX",
         "host":"@",
         "priority": "10",
-        "pointsTo":"mx1.acme.net",
+        "pointsTo":"mx1.example.net",
         "ttl":"1800"
     },
     {
         "type":"MX",
         "host":"www",
         "priority": "10",
-        "pointsTo":"mx2.acme.net",
+        "pointsTo":"mx2.example.net",
         "ttl":"1800"
     },
     {
         "type":"SPFM",
         "host":"@",
-        "spfRules":"a include:spf.acme.net"
+        "spfRules":"a include:spf.example.net"
     }
 ]
 ----
@@ -2468,15 +2468,15 @@ Expected result in the DNS Zone
 
 [source]
 ----
-$ORIGIN test-domain.com.
+$ORIGIN example.com.
 
-@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
 1209600 3600
-@ 3600 IN NS ns11.acme.net.
-@ 3600 IN NS ns12.acme.net.
-@ 3600 IN MX 10 mx1.acme.net.
-@ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net ~all"
+@ 3600 IN NS ns11.example.net.
+@ 3600 IN NS ns12.example.net.
+@ 3600 IN MX 10 mx1.example.net.
+@ 3600 IN MX 10 mx2.example.net.
+@ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
 ----
 
 In the next step application of the following template of Newsletter
@@ -2496,13 +2496,13 @@ Expected result in the DNS Zone
 
 [source]
 ----
-$ORIGIN test-domain.com.
+$ORIGIN example.com.
 
-@ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
 1209600 3600
-@ 3600 IN NS ns11.acme.net.
-@ 3600 IN NS ns12.acme.net.
-@ 3600 IN MX 10 mx1.acme.net.
-@ 3600 IN MX 10 mx2.acme.net.
-@ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com ~all"
+@ 3600 IN NS ns11.example.net.
+@ 3600 IN NS ns12.example.net.
+@ 3600 IN MX 10 mx1.example.net.
+@ 3600 IN MX 10 mx2.example.net.
+@ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newsletter.com ~all"
 ----

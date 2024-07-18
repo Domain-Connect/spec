@@ -1669,7 +1669,9 @@ Each record will contain the following elements.
 |type|
 (REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.
 
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM
+Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM.
+All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL.
+ 
 
 For each type, additional fields would be REQUIRED.
 
@@ -1688,6 +1690,26 @@ MX: host, pointsTo, TTL, priority
 SRV: name, target, TTL, priority, protocol, service, weight, port
 
 SPFM: host, spfRules
+
+other record types: host, data, TTL
+
+|*Host*
+|String
+|host
+|(REQUIRED)
+This parameter identifies the host the record belongs to when applying changes. This must
+not contain variables.
+
+|*Points to*
+|String
+|pointsTo
+|(REQUIRED)
+This parameter identifies the host the record points to when applying changes. This must
+not contain variables.
+
+|*TTL*
+|Integer
+|T
 
 |*Group Id*
 |String
@@ -1754,8 +1776,15 @@ for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This must not contain variable
 |data
 |
 The data for a TXT record in DNS.
-
 A value of empty or @ indicates the host and domain name being applied or [host.]example.com
+
+For any unspecified record type this field contains the canonical presentation format of the given record. The representation SHALL follow <<RFC3597>> as generic or type-specific encoding. This MUST NOT be used for any record type explicitly listed in the Type field with specific data fields.
+
+|*Data*
+|String
+|rdata
+|
+
 
 |*TXT Conflict Matching Mode*
 |String
@@ -2402,6 +2431,30 @@ srv=2
 would cause the application of this template to a domain to set the host
 name for the apex A record to the IP address "198.51.100.2" with a TTL of
 600
+
+=== Example Records: Unspecified record type CAA
+
+This example shows how to include a set of unspecified record types on an example of CAA records:
+
+[source,json]
+----
+[{
+    "type": "CAA",
+    "host": "@",
+    "data": "0 issue \"ca1.example.net\"",
+    "ttl": 1800
+},
+{
+    "type": "CAA",
+    "host": "@",
+    "data": "0 issuewild \"ca2.example.\"",
+    "ttl": 1800
+}]
+
+----
+
+This would have no variable substitution and the application of this
+template to a domain would add 2 CAA records.
 
 === Example: DNS Zone merging
 

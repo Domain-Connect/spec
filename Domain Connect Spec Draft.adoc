@@ -1523,7 +1523,7 @@ A template is defined as a standard JSON data structure containing the following
 |String
 |serviceId
 |(REQUIRED) The name or identifier of the template.
-This is used in URLs to identify the template. It is also used in the scope parameter for oAuth. It must not contain space characters, and must be URL friendly.
+This is used in URLs to identify the template. It is also used in the scope parameter for oAuth. It MUST NOT contain space characters, and must be URL friendly.
 
 |*Service Name*
 |String
@@ -1544,12 +1544,12 @@ If present this represents a version of the template and should be increased wit
 |*Description*
 |Text
 |description
-|(OPTIONAL) A textual description of what this template attempts to do. This is meant to assist developers and must not be displayed to the user.
+|(OPTIONAL) A textual description of what this template attempts to do. This is meant to assist developers and MUST NOT be displayed to the user.
 
 |*Variable Description*
 |Text
 |variableDescription
-|(OPTIONAL) A textual description of what the variables are. This is meant to assist developers and must not be displayed to the user.
+|(OPTIONAL) A textual description of what the variables are. This is meant to assist developers and MUST NOT be displayed to the user.
 
 |*Synchronous Block*
 |Boolean
@@ -1677,9 +1677,9 @@ A: host, pointsTo, TTL
 
 AAAA: host, pointsTo, TTL
 
-CNAME: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template)
+CNAME: host, pointsTo, TTL (host MUST NOT be null or @ unless `hostRequired` is defined `true` for the template)
 
-NS: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template)
+NS: host, pointsTo, TTL (host MUST NOT be null or @ unless `hostRequired` is defined `true` for the template)
 
 TXT: host, data, TTL, txtConflictMatchingMode, txtConflictMatchingPrefix
 
@@ -1744,10 +1744,15 @@ The pointsTo location for A, AAAA, CNAME, NS and MX records.
 A value of empty or @ indicates the host and domain name being applied or [host.]example.com
 
 |*TTL*
-|Int
+|Int or string representation of Int
 |ttl
 |The time-to-live for the record in DNS. Valid
-for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This must not contain variables.
+for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
+This SHOULD NOT contain variables unless absolutely necessary to avoid operational unpredactibility of the template and the challenges outlined below. If it does, the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only value content. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+This value, no matter if variable or constant, is understood as "best effort" by DNS provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS provider. The DNS provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Data*
 |String
@@ -1767,22 +1772,31 @@ None, All, or Prefix. The default value is None. <<record-types-conflicts, See b
 |String
 |txtConflictMatchingPrefix
 |The prefix to detect conflicts when txtConflictMatchingMode is "Prefix". This
-must not contain variables. <<record-types-conflicts, See below>>.
+MUST NOT contain variables. <<record-types-conflicts, See below>>.
 
 |*Priority*
-|Int
+|Int or string representation of Int
 |priority
-|The priority for an MX or SRV record. This must not contain variables.
+|The priority for an MX or SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Weight*
-|Int
+|Int or string representation of Int
 |weight
-|The weight for the SRV record. This must not contain variables.
+|The weight for the SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Port*
-|Int
+|Int or string representation of Int
 |port
-|The port for the SRV record. This must not contain variables.
+|The port for the SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Protocol*
 |String
@@ -1905,7 +1919,7 @@ template such a DNS Provider should remove the previously applied template on th
 This may not be desireable for all templates, as a limited set of templates are designed to
 be applied multiple times. To faciliate this the template can have the flag <<template-definition, multiInstance>>
 set. This tells the DNS Provider that the template is expected to be written multiple times
-and that a re-apply must not remove previous instances.
+and that a re-apply MUST NOT remove previous instances.
 
 This setting only impacts DNS Providers that maintain applied template state. DNS Providers
 that do not maintain applied template state must rely on the normal conflict
@@ -2173,7 +2187,7 @@ When a template is added or removed with an _SPFM_ record in the template, some 
 
 DNS Provider SHOULD also allow the end user to modify the SPF record after merging.
 
-Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action must not lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
+Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action MUST NOT lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
 
 If the existing TXT record makes the merging operation not possible, the DNS provider must handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless the _force=true_ parameter is used, effectively removing the existing record.
 

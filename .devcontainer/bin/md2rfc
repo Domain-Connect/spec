@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# This script will invoke mmark to convert markdown to xml2rfc format,
+# then it will invoke xml2rfc to produce an outout text file
+#
+# One may specify one or more markdown files (with the .md extension).
+#
+
+# Ensure that at least one file was specified
+if [ $# -eq 0 ] ; then
+    echo "usage: md2rfc <draft_name.md> [<draft_name.md> ...]"
+    exit 1;
+fi
+
+# Loop through all of the specified .md files to produce .txt and .pdf files
+# as output
+while [ $# -gt 0 ] ; do
+    MDFILE=$1
+    shift
+    XMLFILE=$(echo $MDFILE | sed 's/\.md$/.xml/')
+    TXTFILE=$(echo $MDFILE | sed 's/\.md$/.txt/')
+    PDFFILE=$(echo $MDFILE | sed 's/\.md$/.pdf/')
+    HTMLFILE=$(echo $MDFILE | sed 's/\.md$/.html/')
+
+    if [ x"$MDFILE" == x"$XMLFILE" ] ; then
+        echo "Error: $MDFILE is not a .md file"
+        exit 1
+    else
+        mmark "$MDFILE" > "$XMLFILE" && \
+          xml2rfc --v3 --text "$XMLFILE" -o "$TXTFILE" && \
+          xml2rfc --v3 --pdf "$XMLFILE" -o "$PDFFILE" && \
+          xml2rfc --v3 --html "$XMLFILE" -o "$HTMLFILE"
+    fi
+done

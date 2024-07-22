@@ -2,23 +2,27 @@
 
 
 
-Registration Protocols Extensions                              R. Carney
-Internet-Draft                                              GoDaddy Inc.
-Intended status: Informational                                  A. Blinn
-Expires: 29 October 2022                                                
-                                                              P. Kowalik
-                                                                IONOS SE
-                                                           27 April 2022
+Registration Protocols Extensions                             P. Kowalik
+Internet-Draft                                                  DENIC eG
+Intended status: Standards Track                                A. Blinn
+Expires: 23 January 2025                                                
+                                                               J. Kolker
+                                                            GoDaddy Inc.
+                                                               S. Kerola
+                                                        Cloudflare, Inc.
+                                                            22 July 2024
 
 
- Domain Connect API - Communications between DNS Provider and Services
-                  draft-carney-regext-domainconnect-04
+  Domain Connect Protocol - DNS provisioning between Services and DNS
+                               Providers
+                 draft-kowalik-regext-domainconnect-00
 
 Abstract
 
-   This document provides information related to the Domain Connect API
-   that was built to support communications between DNS Providers and
-   Service Providers (hosting, social, email, hardware, etc.).
+   This document provides specification of the Domain Connect Protocol
+   that was built to support DNS configuration provisioning between
+   Service Providers (hosting, social, email, hardware, etc.) and DNS
+   Providers.
 
 Status of This Memo
 
@@ -35,115 +39,138 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 29 October 2022.
+   This Internet-Draft will expire on 23 January 2025.
 
 Copyright Notice
 
-   Copyright (c) 2022 IETF Trust and the persons identified as the
+   Copyright (c) 2024 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
    Provisions Relating to IETF Documents (https://trustee.ietf.org/
    license-info) in effect on the date of publication of this document.
    Please review these documents carefully, as they describe your rights
-   and restrictions with respect to this document.
 
 
 
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 1]
+Kowalik, et al.          Expires 23 January 2025                [Page 1]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
+
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
 
 Table of Contents
 
-   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
-   2.  Protocol design . . . . . . . . . . . . . . . . . . . . . . .   5
-     2.1.  Templates . . . . . . . . . . . . . . . . . . . . . . . .   5
-     2.2.  End User Flows  . . . . . . . . . . . . . . . . . . . . .   5
-       2.2.1.  The Synchronous Flow  . . . . . . . . . . . . . . . .   6
-       2.2.2.  The Asynchronous Flow . . . . . . . . . . . . . . . .   9
-   3.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .   9
-   4.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  13
-     4.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  13
-     4.2.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  14
-       4.2.1.  Query Supported Template  . . . . . . . . . . . . . .  14
-       4.2.2.  Apply Template  . . . . . . . . . . . . . . . . . . .  15
-       4.2.3.  Security Considerations . . . . . . . . . . . . . . .  18
-       4.2.4.  Shared Templates  . . . . . . . . . . . . . . . . . .  21
-       4.2.5.  Verification of Changes . . . . . . . . . . . . . . .  21
-     4.3.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  22
-       4.3.1.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  22
-       4.3.2.  OAuth Flow: Getting an Authorization Code . . . . . .  22
-       4.3.3.  oAuth Flow: Requesting an Access Token  . . . . . . .  26
-       4.3.4.  OAuth Flow: Making Requests with Access Tokens  . . .  29
-       4.3.5.  OAuth Flow: Apply Template to Domain. . . . . . . . .  30
-       4.3.6.  OAuth Flow: Revert Template . . . . . . . . . . . . .  34
-       4.3.7.  OAuth Flow: Revoking access . . . . . . . . . . . . .  35
-   5.  Domain Connect Objects and Templates  . . . . . . . . . . . .  36
-     5.1.  Template Versioning . . . . . . . . . . . . . . . . . . .  36
-     5.2.  Template Definition . . . . . . . . . . . . . . . . . . .  36
-     5.3.  Template Record . . . . . . . . . . . . . . . . . . . . .  39
-   6.  Template Considerations . . . . . . . . . . . . . . . . . . .  43
-     6.1.  Template State in DNS . . . . . . . . . . . . . . . . . .  43
-     6.2.  Disclosure of Changes and Conflicts . . . . . . . . . . .  44
-     6.3.  Record Types and Conflicts  . . . . . . . . . . . . . . .  45
-     6.4.  Apply, Re-apply, and Multi-Instance . . . . . . . . . . .  46
-     6.5.  Non-essential records . . . . . . . . . . . . . . . . . .  46
-     6.6.  Template Scope  . . . . . . . . . . . . . . . . . . . . .  46
-     6.7.  Host/Name in Template . . . . . . . . . . . . . . . . . .  47
-     6.8.  PointsTo in Template  . . . . . . . . . . . . . . . . . .  47
-     6.9.  Variables . . . . . . . . . . . . . . . . . . . . . . . .  48
-       6.9.1.  Variables and Host/Name in Template . . . . . . . . .  48
-       6.9.2.  Variable Values . . . . . . . . . . . . . . . . . . .  49
-       6.9.3.  Variables and Security  . . . . . . . . . . . . . . .  49
-       6.9.4.  Variable Examples . . . . . . . . . . . . . . . . . .  49
-     6.10. SPF TXT Record  . . . . . . . . . . . . . . . . . . . . .  50
-       6.10.1.  What is SPF? . . . . . . . . . . . . . . . . . . . .  50
-       6.10.2.  Multiple Services  . . . . . . . . . . . . . . . . .  51
-       6.10.3.  SPF Record Merging . . . . . . . . . . . . . . . . .  51
-       6.10.4.  Alternatives . . . . . . . . . . . . . . . . . . . .  53
+   1.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   4
+   4.  Protocol design . . . . . . . . . . . . . . . . . . . . . . .   5
+     4.1.  Templates . . . . . . . . . . . . . . . . . . . . . . . .   5
+   5.  End User Flows  . . . . . . . . . . . . . . . . . . . . . . .   6
+     5.1.  General information . . . . . . . . . . . . . . . . . . .   6
+     5.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .   6
+     5.3.  The Asynchronous Flow . . . . . . . . . . . . . . . . . .   9
+   6.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .   9
+   7.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  13
+     7.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  14
+     7.2.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  14
+       7.2.1.  Query Supported Template  . . . . . . . . . . . . . .  14
+       7.2.2.  Apply Template  . . . . . . . . . . . . . . . . . . .  15
+       7.2.3.  Security Considerations . . . . . . . . . . . . . . .  19
+       7.2.4.  Shared Templates  . . . . . . . . . . . . . . . . . .  21
+       7.2.5.  Verification of Changes . . . . . . . . . . . . . . .  22
+     7.3.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  22
+       7.3.1.  General information . . . . . . . . . . . . . . . . .  23
+       7.3.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  23
+       7.3.3.  OAuth Flow: Getting an Authorization Code . . . . . .  23
+       7.3.4.  OAuth Flow: Requesting an Access Token  . . . . . . .  27
+       7.3.5.  OAuth Flow: Making Requests with Access Tokens  . . .  30
+       7.3.6.  OAuth Flow: Apply Template to Domain. . . . . . . . .  31
+       7.3.7.  OAuth Flow: Revert Template . . . . . . . . . . . . .  35
+       7.3.8.  OAuth Flow: Revoking access . . . . . . . . . . . . .  36
+   8.  Domain Connect Objects and Templates  . . . . . . . . . . . .  36
+     8.1.  Template Versioning . . . . . . . . . . . . . . . . . . .  37
+     8.2.  Template Definition . . . . . . . . . . . . . . . . . . .  37
+     8.3.  Template Record . . . . . . . . . . . . . . . . . . . . .  41
+   9.  Template Considerations . . . . . . . . . . . . . . . . . . .  46
+     9.1.  Template State in DNS . . . . . . . . . . . . . . . . . .  46
+     9.2.  Disclosure of Changes and Conflicts . . . . . . . . . . .  46
+     9.3.  Record Types and Conflicts  . . . . . . . . . . . . . . .  48
+     9.4.  Apply, Re-apply, and Multi-Instance . . . . . . . . . . .  48
+     9.5.  Non-essential records . . . . . . . . . . . . . . . . . .  49
+     9.6.  Template Scope  . . . . . . . . . . . . . . . . . . . . .  49
+     9.7.  Host/Name in Template . . . . . . . . . . . . . . . . . .  49
+     9.8.  PointsTo in Template  . . . . . . . . . . . . . . . . . .  50
+     9.9.  Variables . . . . . . . . . . . . . . . . . . . . . . . .  50
+       9.9.1.  Variables and Host/Name in Template . . . . . . . . .  50
 
 
 
-Carney, et al.           Expires 29 October 2022                [Page 2]
+Kowalik, et al.          Expires 23 January 2025                [Page 2]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-     6.11. Public Template Repository  . . . . . . . . . . . . . . .  53
-       6.11.1.  Repository Location  . . . . . . . . . . . . . . . .  53
-       6.11.2.  File naming requirements . . . . . . . . . . . . . .  53
-       6.11.3.  Template Integrity . . . . . . . . . . . . . . . . .  54
-   7.  General considerations  . . . . . . . . . . . . . . . . . . .  54
-     7.1.  Onboarding  . . . . . . . . . . . . . . . . . . . . . . .  54
-     7.2.  Case Sensitivity  . . . . . . . . . . . . . . . . . . . .  54
-   8.  Extensions/Exclusions . . . . . . . . . . . . . . . . . . . .  55
-     8.1.  APEXCNAME . . . . . . . . . . . . . . . . . . . . . . . .  55
-     8.2.  Redirection . . . . . . . . . . . . . . . . . . . . . . .  55
-     8.3.  Nameservers . . . . . . . . . . . . . . . . . . . . . . .  56
-     8.4.  DS (DNSSEC) . . . . . . . . . . . . . . . . . . . . . . .  56
-   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  56
-   10. Acknowledgments . . . . . . . . . . . . . . . . . . . . . . .  56
-   11. Change History  . . . . . . . . . . . . . . . . . . . . . . .  57
-     11.1.  Change from 03 to 04 . . . . . . . . . . . . . . . . . .  57
-     11.2.  Change from 02 to 03 . . . . . . . . . . . . . . . . . .  57
-     11.3.  Change from 01 to 02 . . . . . . . . . . . . . . . . . .  57
-     11.4.  Change from 00 to 01 . . . . . . . . . . . . . . . . . .  57
-   12. Normative References  . . . . . . . . . . . . . . . . . . . .  57
-   13. Informative References  . . . . . . . . . . . . . . . . . . .  57
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  58
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  58
-     A.2.  Example Records: Single static host record  . . . . . . .  59
-     A.3.  Example Records: Single variable host record for A  . . .  59
-     A.4.  Example: DNS Zone merging . . . . . . . . . . . . . . . .  59
-     A.5.  Example: SPF Record Merging . . . . . . . . . . . . . . .  61
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  62
+       9.9.2.  Variable Values . . . . . . . . . . . . . . . . . . .  51
+       9.9.3.  Variables and Security  . . . . . . . . . . . . . . .  52
+       9.9.4.  Variable Examples . . . . . . . . . . . . . . . . . .  52
+     9.10. SPF TXT Record  . . . . . . . . . . . . . . . . . . . . .  53
+       9.10.1.  What is SPF? . . . . . . . . . . . . . . . . . . . .  53
+       9.10.2.  Multiple Services  . . . . . . . . . . . . . . . . .  53
+       9.10.3.  SPF Record Merging . . . . . . . . . . . . . . . . .  54
+       9.10.4.  Alternatives . . . . . . . . . . . . . . . . . . . .  56
+     9.11. Public Template Repository  . . . . . . . . . . . . . . .  56
+       9.11.1.  General information  . . . . . . . . . . . . . . . .  56
+       9.11.2.  Repository Location  . . . . . . . . . . . . . . . .  56
+       9.11.3.  File naming requirements . . . . . . . . . . . . . .  56
+       9.11.4.  Template Integrity . . . . . . . . . . . . . . . . .  57
+   10. General considerations  . . . . . . . . . . . . . . . . . . .  57
+     10.1.  Onboarding . . . . . . . . . . . . . . . . . . . . . . .  57
+     10.2.  Case Sensitivity . . . . . . . . . . . . . . . . . . . .  57
+   11. Extensions/Exclusions . . . . . . . . . . . . . . . . . . . .  58
+     11.1.  General information  . . . . . . . . . . . . . . . . . .  58
+     11.2.  APEXCNAME  . . . . . . . . . . . . . . . . . . . . . . .  58
+     11.3.  Redirection  . . . . . . . . . . . . . . . . . . . . . .  58
+     11.4.  Nameservers  . . . . . . . . . . . . . . . . . . . . . .  59
+     11.5.  DS (DNSSEC)  . . . . . . . . . . . . . . . . . . . . . .  59
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  59
+   13. Change History  . . . . . . . . . . . . . . . . . . . . . . .  59
+     13.1.  Change from 03 to 04 . . . . . . . . . . . . . . . . . .  59
+     13.2.  Change from 02 to 03 . . . . . . . . . . . . . . . . . .  60
+     13.3.  Change from 01 to 02 . . . . . . . . . . . . . . . . . .  60
+     13.4.  Change from 00 to 01 . . . . . . . . . . . . . . . . . .  60
+   14. Normative References  . . . . . . . . . . . . . . . . . . . .  60
+   15. Informative References  . . . . . . . . . . . . . . . . . . .  60
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  61
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  61
+     A.2.  Example Records: Single static host record  . . . . . . .  62
+     A.3.  Example Records: Single variable host record for A  . . .  62
+     A.4.  Example: DNS Zone merging . . . . . . . . . . . . . . . .  62
+     A.5.  Example: SPF Record Merging . . . . . . . . . . . . . . .  64
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  65
 
-1.  Introduction
+1.  Acknowledgements
+
+   The authors wish to thank the following persons for their feedback
+   and suggestions as well as for the previous work on the standard:
+
+   *  Roger Carney of GoDaddy Inc.
+
+   *  Chris Ambler of GoDaddy Inc.
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 3]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+2.  Introduction
 
    Configuring a service at a Service Provider to work with a domain has
    historically been a complex task that is difficult for users.
@@ -159,16 +186,6 @@ Internet-Draft               Domain Connect                   April 2022
    gave the customer instructions for proper configuration of DNS.  This
    might include help text, screen shots, or even links to the
    appropriate tools.
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 3]
-
-Internet-Draft               Domain Connect                   April 2022
-
 
    Discovery of the DNS Provider in this manner is unreliable, and
    providing instructions to users would present a number of
@@ -187,12 +204,12 @@ Internet-Draft               Domain Connect                   April 2022
    of DNS settings will be done through the application of templates
    instead of direct manipulation of individual DNS records.
 
-1.1.  Terminology
+3.  Terminology
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-   "SHOULD", "SHOULD NOT", "RECOMMENDED", "*NOT RECOMMENDED*", "MAY",
-   and "OPTIONAL" in this document are to be interpreted as described in
-   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
    Service Providers  refers to entities that provide products and
@@ -202,9 +219,16 @@ Internet-Draft               Domain Connect                   April 2022
       manufacturers with DNS-enabled devices like home routers or
       automation controls (such as Linksys, Nest, and Philips).
 
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 4]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    DNS Providers  refers to entities that provide DNS services such as
       registrars (such as GoDaddy or 1and1) or standalone DNS services
-      (like CloudFlare).
+      (like Cloudflare).
 
    Registrar  refers to entities that register domain names with
       registries.  It is noted that the DNS Provider and Registrar can
@@ -217,14 +241,7 @@ Internet-Draft               Domain Connect                   April 2022
       service.
 
    Public Template Repository  refers to a public repository of
-      Templates in a standarised format (read more: Section 6.11).
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 4]
-
-Internet-Draft               Domain Connect                   April 2022
-
+      Templates in a standarised format (read more: Section 9.11).
 
    Root Domain  refers to a registered domain (e.g. example.com or
       example.co.uk), or to a delegated zone in DNS.
@@ -232,9 +249,9 @@ Internet-Draft               Domain Connect                   April 2022
    Sub Domain  refers to a sub-domain of a root domain (e.g.
       sub.example.com or sub.example.co.uk).
 
-2.  Protocol design
+4.  Protocol design
 
-2.1.  Templates
+4.1.  Templates
 
    Templates are core to Domain Connect, as they fully describe a
    service owned by a Service Provider and contain all of the
@@ -254,8 +271,16 @@ Internet-Draft               Domain Connect                   April 2022
 
    The template is defined by the Service Provider and manually
    onboarded with the DNS Provider, according to a template definition
-   published in the Public Repository (Section 6.11) or agreed out-of-
+   published in the Public Repository (Section 9.11) or agreed out-of-
    band between the Service Provider and the DNS Provider.
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 5]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    By basing the protocol on templates instead of DNS Records, several
    advantages are achieved.  The DNS Provider has very explicit
@@ -263,24 +288,12 @@ Internet-Draft               Domain Connect                   April 2022
    service.  And the system is more secure as templates are controlled
    and contained.
 
-2.2.  End User Flows
+5.  End User Flows
+
+5.1.  General information
 
    To attach a domain name to a service provided by a Service Provider,
    the customer would first enter their domain name.
-
-
-
-
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 5]
-
-Internet-Draft               Domain Connect                   April 2022
-
 
    Instead of relying on examination of the nameservers and mapping
    these to DNS Providers, DNS Provider discovery is handled through
@@ -292,18 +305,18 @@ Internet-Draft               Domain Connect                   April 2022
 
    To apply the changes to DNS, there are two use cases.  The first is a
    synchronous web flow, and the second is an asynchronous flow using
-   oAuth and an API.
+   OAuth and an API.
 
    It is noted that a DNS Provider may choose to only implement one of
    the flows.  As a matter of practice many Service Providers are based
    on the synchronous flow, with only a handful of them based on the
-   asynchronous oAuth flow.  So many DNS providers may opt to only
+   asynchronous OAuth flow.  So many DNS providers may opt to only
    implement the synchronous flow.
 
    It is also be noted that individual services may work with the
    synchronous flow only, the asynchronous flow only, or with both.
 
-2.2.1.  The Synchronous Flow
+5.2.  The Synchronous Flow
 
    This flow is tailored for the Service Provider that requires a one
    time synchronous change to DNS.
@@ -311,8 +324,22 @@ Internet-Draft               Domain Connect                   April 2022
    The user first enters their domain name at the Service Provider
    website.
 
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 6]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    +-----------------------------------------------+
-   | http://acmewebsiteserviceprovider.com         |
+   | https://acmewebsiteserviceprovider.example    |
    +-----------------------------------------------+
    | ACME Web Site Service Provider                |
    |                                               |
@@ -331,19 +358,12 @@ Internet-Draft               Domain Connect                   April 2022
 
                   Figure 1: Service Provider domain input
 
-
-
-Carney, et al.           Expires 29 October 2022                [Page 6]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    After the Service Provider determines the DNS Provider using
    discovery, the Service Provider should display a link to the user
    indicating that they can "Connect their Domain" to the service.
 
    +-----------------------------------------------+
-   | http://acmewebsiteserviceprovider.com         |
+   | https://acmewebsiteserviceprovider.example    |
    +-----------------------------------------------+
    | ACME Web Site Service Provider                |
    |                                               |
@@ -367,42 +387,25 @@ Internet-Draft               Domain Connect                   April 2022
    provider/template being enabled, and any additional parameters
    (variables) needed to apply the template and configure the service.
 
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 7]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    Once at the DNS Provider site, the user is asked to authenticate if
    necessary.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 7]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    +-----------------------------------------------+
-   | http://virtucondomains.com                    |
+   | https://virtucondomains.example               |
    +-----------------------------------------------+
    | Virtucon Domains                              |
    |                                               |
    | Please sign in to Virtucon domains            |
    |                                               |
    |                 +-------------------------+   |
-   | Login           |user@xyz.com             |   |
+   | Login           |user@xyz.example         |   |
    |                 +-------------------------+   |
    |                                               |
    |                 +-------------------------+   |
@@ -425,7 +428,7 @@ Internet-Draft               Domain Connect                   April 2022
    disabled by applying this change to DNS.
 
    +-----------------------------------------------+
-   | http://virtucondomains.com                    |
+   | https://virtucondomains.example               |
    +-----------------------------------------------+
    | Virtucon Domains                              |
    |                                               |
@@ -440,15 +443,15 @@ Internet-Draft               Domain Connect                   April 2022
    |                                               |
    +-----------------------------------------------+
 
+
+
+Kowalik, et al.          Expires 23 January 2025                [Page 8]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
      Figure 4: User authorization at the DNS provider of the DNS setup
                                   for ACME
-
-
-
-Carney, et al.           Expires 29 October 2022                [Page 8]
-
-Internet-Draft               Domain Connect                   April 2022
-
 
    Assuming the user grants this consent, the DNS changes are be
    applied.
@@ -458,9 +461,9 @@ Internet-Draft               Domain Connect                   April 2022
    must be navigated back to the Service Provider after the changes are
    applied.
 
-2.2.2.  The Asynchronous Flow
+5.3.  The Asynchronous Flow
 
-   The asynchronous oAuth flow is tailored for the Service Provider that
+   The asynchronous OAuth flow is tailored for the Service Provider that
    wishes to make changes to DNS asynchronously with respect to the user
    interaction, or wishes to make multiple or additional changes to DNS
    over time.
@@ -481,13 +484,13 @@ Internet-Draft               Domain Connect                   April 2022
    domain (and specific subdomains) DNS under control of a specific user
    at the DNS Provider.
 
-   The Service Provider would later call the an API to apply a template
-   using the access token.
+   The Service Provider would later call the API of the DNS provider to
+   apply a template using the access token.
 
    Additional parameters must be passed as name/value pairs when
    applying the template.
 
-3.  DNS Provider Discovery
+6.  DNS Provider Discovery
 
    To facilitate discovery of the DNS Provider from a domain name DNS is
    utilized.  This is done by returning a TXT record for
@@ -495,16 +498,15 @@ Internet-Draft               Domain Connect                   April 2022
 
    An example of the contents of this record:
 
-   domainconnect.virtucondomains.com
 
 
 
-
-
-Carney, et al.           Expires 29 October 2022                [Page 9]
+Kowalik, et al.          Expires 23 January 2025                [Page 9]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
+
+   domainconnect.virtucondomains.example
 
    As a practical matter of implementation, the DNS Provider may or may
    not contain a copy of this data in each and every zone.  Instead, the
@@ -535,33 +537,34 @@ Internet-Draft               Domain Connect                   April 2022
    +==============+=====================+========+=====================+
    | *Field*      | *Key*               | *Type* | *Description*       |
    +==============+=====================+========+=====================+
-   | *Provider    | providerId          | String | Unique identifier   |
-   | Id*          |                     |        | for the DNS         |
-   |              |                     |        | Provider.  To       |
+   | *Provider    | providerId          | String | (REQUIRED) Unique   |
+   | Id*          |                     |        | identifier for the  |
+   |              |                     |        | DNS Provider.  To   |
    |              |                     |        | ensure non-         |
    |              |                     |        | coordinated         |
    |              |                     |        | uniqueness, this    |
    |              |                     |        | should be the       |
    |              |                     |        | domain name of the  |
    |              |                     |        | DNS Provider (e.g.  |
-   |              |                     |        | virtucom.com).      |
+   |              |                     |        | virtucom.example).  |
    +--------------+---------------------+--------+---------------------+
-   | *Provider    | providerName        | String | The name of the     |
-   | Name*        |                     |        | DNS Provider.       |
+   | *Provider    | providerName        | String | (REQUIRED) The      |
+   | Name*        |                     |        | name of the DNS     |
+   |              |                     |        | Provider.           |
    +--------------+---------------------+--------+---------------------+
    | *Provider    | providerDisplayName | String | (OPTIONAL) The      |
    | Display      |                     |        | name of the DNS     |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 10]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    | Name*        |                     |        | Provider that       |
    |              |                     |        | should be           |
    |              |                     |        | displayed by the    |
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 10]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    |              |                     |        | Service Provider.   |
    |              |                     |        | This may change     |
    |              |                     |        | per domain for      |
@@ -596,8 +599,9 @@ Internet-Draft               Domain Connect                   April 2022
    |              |                     |        | asynchronous flow   |
    |              |                     |        | on this domain.     |
    +--------------+---------------------+--------+---------------------+
-   | *API URL     | urlAPI              | String | The URL Prefix for  |
-   | Prefix*      |                     |        | the REST API        |
+   | *API URL     | urlAPI              | String | (REQUIRED) The URL  |
+   | Prefix*      |                     |        | Prefix for the      |
+   |              |                     |        | REST API            |
    +--------------+---------------------+--------+---------------------+
    | *Width of    | width               | Number | (OPTIONAL) This is  |
    | Window*      |                     |        | the desired width   |
@@ -606,18 +610,18 @@ Internet-Draft               Domain Connect                   April 2022
    |              |                     |        | when navigated in   |
    |              |                     |        | a popup.  Default   |
    |              |                     |        | value if not        |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 11]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    |              |                     |        | returned should be  |
    |              |                     |        | 750px.              |
    +--------------+---------------------+--------+---------------------+
    | *Height of   | height              | Number | (OPTIONAL) This is  |
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 11]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    | Window*      |                     |        | the desired height  |
    |              |                     |        | of the window for   |
    |              |                     |        | granting consent    |
@@ -662,31 +666,31 @@ Internet-Draft               Domain Connect                   April 2022
    |              |                     |        | nameservers; for    |
    |              |                     |        | this the registry   |
    |              |                     |        | would be queried.   |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 12]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    +--------------+---------------------+--------+---------------------+
 
              Table 1: properties of the settings data structure
 
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 12]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   As an example, the JSON returned by this call might contain.
-
    {
-       "providerId": "virtucondomains.com",
+       "providerId": "virtucondomains.example",
        "providerName": "Virtucon Domains",
        "providerDisplayName": "Virtucon Domains",
-       "urlSyncUX": "https://domainconnect.virtucondomains.com",
-       "urlAsyncUX": "https://domainconnect.virtucondomains.com",
-       "urlAPI": "https://api.domainconnect.virtucondomains.com",
+       "urlSyncUX": "https://domainconnect.virtucondomains.example",
+       "urlAsyncUX": "https://domainconnect.virtucondomains.example",
+       "urlAPI": "https://api.domainconnect.virtucondomains.example",
        "width": 750,
        "height": 750,
-       "urlControlPanel": "https://domaincontrolpanel.virtucondomains.com/?domain=%domain%",
-       "nameServers": ["ns01.virtucondomainsdns.com", "ns02.virtucondomainsdns.com"]
+       "urlControlPanel": "https://domaincontrolpanel.virtucondomains.ex
+       ample/?domain=%domain%",
+       "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucon
+       domainsdns.example"]
    }
 
    Discovery must work on the root domain (zone) only.  Bear in mind
@@ -714,49 +718,51 @@ Internet-Draft               Domain Connect                   April 2022
 
           Table 2: HTTP status codes for the settings end-point
 
-4.  Applying Domain Connect
+7.  Applying Domain Connect
 
-4.1.  Endpoints
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 13]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+7.1.  Endpoints
 
    The Domain Connect endpoints returned in the JSON during discovery
    are in the form of URLs.
 
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 13]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    The first set of endpoints are for the UX that the Service Provider
    links to.  These are for the synchronous flow where the user can
    click to grant consent and have changes applied, and for the
-   asynchronous oAuth flow where the user can grant consent for OAuth
+   asynchronous OAuth flow where the user can grant consent for OAuth
    access.
 
    The second set of endpoints are for the REST API.
 
    All endpoints begin with a root URL for the DNS Provider such as:
 
-   https://connect.dnsprovider.com
+   https://connect.dnsprovider.example
 
    They may also include any prefix at the discretion of the DNS
    Provider.  For example:
 
-   https://connect.dnsprovider.com/api
+   https://connect.dnsprovider.example/api
 
    The root URLs for the UX endpoints and the API endpoints are returned
    in the JSON payload during DNS Provider discovery.
 
-4.2.  Synchronous Flow
+7.2.  Synchronous Flow
 
-4.2.1.  Query Supported Template
+7.2.1.  Query Supported Template
 
    GET
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}
+   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}
 
    This URL is be used by the Service Provider to determine if the DNS
    Provider supports a specific template through the synchronous flow.
@@ -764,7 +770,7 @@ Internet-Draft               Domain Connect                   April 2022
    Returning a status of 200 without a body indicates the template is
    supported.  The DNS provider may decide to disclose the version of
    the template in a JSON object with field _version_ (see: version
-   field (Section 5.2)) or the full JSON object of deployed template.
+   field (Section 8.2) or the full JSON object of deployed template.
 
    Returning a status of 404 indicates the template is not supported.
 
@@ -775,15 +781,9 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 14]
+Kowalik, et al.          Expires 23 January 2025               [Page 14]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
       +===========+==========+======================================+
@@ -801,11 +801,14 @@ Internet-Draft               Domain Connect                   April 2022
             Table 3: https status codes for the Query Supported
                              Template end-point
 
-4.2.2.  Apply Template
+7.2.2.  Apply Template
+
+7.2.2.1.  Apply Template URL
 
    GET
 
-   {urlSyncUX}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/apply?[properties]
+   {urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/apply?[properties]
 
    This is the URL where the user is sent to apply a template to a
    domain they own.  It is called from the Service Provider to start the
@@ -813,7 +816,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    This URL can be called in one of two ways.
 
-4.2.2.1.  New Browser Window
+7.2.2.2.  New Browser Window
 
    The first is through a new browser tab or in a popup browser window.
    The DNS Provider signs the user in if necessary, verifies domain
@@ -821,7 +824,7 @@ Internet-Draft               Domain Connect                   April 2022
    template.  After application of the template, the DNS Provider should
    automatically close the browser tab or window.
 
-4.2.2.2.  Same Browser Window
+7.2.2.3.  Same Browser Window
 
    The second is in the current browser tab/window.  As above the DNS
    Provider signs the user in if necessary, verifies the user control of
@@ -832,15 +835,14 @@ Internet-Draft               Domain Connect                   April 2022
 
    Several parameters must be appended to the end of this redirect_uri.
 
-   *  State
 
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 15]
+Kowalik, et al.          Expires 23 January 2025               [Page 15]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
+
+   *  State
 
       If a state parameter is passed in on the query string, this must
       be passed back as state= on the redirect_uri.
@@ -850,7 +852,7 @@ Internet-Draft               Domain Connect                   April 2022
       If authorization could not be obtained or an error has occurred,
       the parameter error= must be appended.  For consistency with the
       asynchronous OAuth flows the valid values for the error parameter
-      will be as specified in OAuth 2.0 RFC 6749 (4.1.2.1.  Error
+      will be as specified in OAuth 2.0 [RFC6749] (4.1.2.1.  Error
       Response - "error" parameter).  Valid values are: invalid_request,
       unauthorized_client, access_denied, unsupported_response_type,
       invalid_scope, server_error, and temporarily_unavailable.
@@ -881,24 +883,31 @@ Internet-Draft               Domain Connect                   April 2022
    the redirect_uri must be within the domains specified in the template
    in syncRedirectDomain.
 
-4.2.2.3.  Parameters/properties
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 16]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+7.2.2.4.  Parameters/properties
 
    +=============+==============+======================================+
    | Property    | Request      | Description                          |
    |             | Parameter    |                                      |
    +=============+==============+======================================+
-   | *Domain*    | domain       | The domain name being configured.    |
-   |             |              | This is the root domain (the         |
-   |             |              | registered domain or delegated       |
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 16]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   |             |              | zone).                               |
+   | *Domain*    | domain       | (REQUIRED) The domain name being     |
+   |             |              | configured.  This is the root        |
+   |             |              | domain (the registered domain or     |
+   |             |              | delegated zone).                     |
    +-------------+--------------+--------------------------------------+
    | *Host*      | host         | (OPTIONAL) This is the host name of  |
    |             |              | the sub domain.  If left blank, the  |
@@ -924,19 +933,27 @@ Internet-Draft               Domain Connect                   April 2022
    |             |              | when redirecting to the              |
    |             |              | redirect_uri described above.        |
    +-------------+--------------+--------------------------------------+
-   | *Name/Value | *            | Any key that will be used as a       |
-   | Pairs*      |              | replacement for the "% surrounded"   |
-   |             |              | variables in the template.  The      |
-   |             |              | name portion of this API call        |
-   |             |              | corresponds to the variable(s)       |
-   |             |              | specified in the template and the    |
-   |             |              | value corresponds to the value that  |
-   |             |              | will be used when applying the       |
-   |             |              | template.                            |
+   | *Name/Value | *            | (REQUIRED) Any key that will be      |
+   | Pairs*      |              | used as a replacement for the "%     |
+   |             |              | surrounded" variables in the         |
+   |             |              | template.  The name portion of this  |
+   |             |              | API call corresponds to the          |
+   |             |              | variable(s) specified in the         |
+   |             |              | template and the value corresponds   |
+   |             |              | to the value that will be used when  |
+   |             |              | applying the template.               |
    +-------------+--------------+--------------------------------------+
    | *Provider   | providerName | (OPTIONAL) This parameter allows     |
    | Name*       |              | for the caller to provide            |
    |             |              | additional text for display with     |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 17]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    |             |              | the template providerName.  This     |
    |             |              | text should be used to augment the   |
    |             |              | providerName value from the          |
@@ -946,14 +963,6 @@ Internet-Draft               Domain Connect                   April 2022
    |             |              | set in the template.  Note: this     |
    |             |              | used to be controlled by the         |
    |             |              | "shared" attribute in the template,  |
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 17]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    |             |              | which has been deprecated.           |
    +-------------+--------------+--------------------------------------+
    | *Service    | serviceName  | (OPTIONAL) This parameter allows     |
@@ -978,23 +987,45 @@ Internet-Draft               Domain Connect                   April 2022
    |             |              | string.  See Security                |
    |             |              | Considerations section below.        |
    +-------------+--------------+--------------------------------------+
+   | *Key*       | key          | (OPTIONAL) A value containing the    |
+   |             |              | host in DNS where the public key     |
+   |             |              | for the signature can be obtained.   |
+   |             |              | The domain for this host is in the   |
+   |             |              | template in syncPubKeyDomain.  See   |
+   |             |              | Security Considerations section      |
+   |             |              | below.                               |
+   +-------------+--------------+--------------------------------------+
 
         Table 4: query parameters of the apply call in the sync flow
 
    An example query string:
 
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 18]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    GET
 
-   https://web-connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/apply?domain=example.com&IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello
+   https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
+   exampleservice.example/services/template1/apply?domain=example.com
+   &#x26;IP=192.168.42.42&#x26;RANDOMTEXT=shm%3A1542108821%3AHello
 
    This call indicates that the Service Provider wishes to connect the
    domain example.com to the service using the template identified by
-   the composite key of the provider (exampleservice.domainconnect.org)
-   and the service template owned by them (template1).  In this example,
-   there are two variables in this template, "IP" and "RANDOMTEXT".
-   These variables are passed as name/value pairs.
+   the composite key of the provider (exampleservice.example) and the
+   service template owned by them (template1).  In this example, there
+   are two variables in this template, "IP" and "RANDOMTEXT".  These
+   variables are passed as name/value pairs.
 
-4.2.3.  Security Considerations
+7.2.3.  Security Considerations
+
+7.2.3.1.  Risk of phishing with open template parameters
 
    By applying a template with parameters there is a security
    consideration that must be taken into account.
@@ -1002,14 +1033,6 @@ Internet-Draft               Domain Connect                   April 2022
    Consider the template above where the IP address of the A record is
    passed in through a variable.  A bad actor could generate a URL with
    a malicious IP and phish users by sending out emails asking them to
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 18]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    "re-configure" their service.  If an end user is convinced to click
    on this link, they would land on the DNS Provider site to confirm the
    change.  To the user, this would appear to be a valid request to
@@ -1018,7 +1041,7 @@ Internet-Draft               Domain Connect                   April 2022
    Not all templates have this problem.  But when they do, there are
    several options.
 
-4.2.3.1.  Disable Synchronous
+7.2.3.2.  Disable Synchronous
 
    One option is to disable the synchronous flow and use asynchronous
    OAuth.  This can be controlled with the syncBlock value from the
@@ -1026,13 +1049,29 @@ Internet-Draft               Domain Connect                   April 2022
    implementation burden and requires onboarding between each Service
    and DNS Provider.
 
-4.2.3.2.  Digitally Sign Requests
+7.2.3.3.  Digitally Sign Requests
 
    Another option is to digitally sign the query string.  A signature is
    appended as an additional query string parameter, properly URL
    encoded and of the form:
 
-   sig=NLOQQm6ikGC2FlFvFZqIFNCZqlaC4B%2FQDwS6iCwIElMWhXMgRnRE17zhLtdLFieWkyqKa4I%2FOoFaAgd%2FAl%2ByzDd3sM2X1JVF5ELjTlj84jZ4KOEIdnbgkEeO%2FTkYRrPkwcmcHMwc4RuX%2Fqio8vKYxJaKLKeVGpUNSKo7zkq3XIRgyxoLSRKxmlSTHFAz4LvYXPWo6SHDoVcRvElWj18Um13sSXuX4KhtOLym2yImHpboEi4m2Ziigc%2BNHZE0VvHUR7wZgDaB01z8hFm5ATF%2B8swjandMRf2Lr4Syv4qTxMNT61r62EWFkt5t9nhxMgss6z4pfDVFZ3vYwSJDGuRpEQ%3D%3D
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 19]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+   sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+   7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
+   F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
+   5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
+   HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
+   SHgJq9%2FXoMTTw%3D%3D
 
    The Service Provider generates this signature using a private key.
    As indicated, this signature is generated from the query string
@@ -1054,25 +1093,34 @@ Internet-Draft               Domain Connect                   April 2022
    multiple records may exist for the DNS TXT query.  For example, a
    public key of:
 
-   MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1dCqv7JEzUOfbhWKB9mTRsv3O9Vzy1Tz3UQlIDGpnVrTPBJDQTXUhxUMREEOBKo+rOjHZqfYnSmlkgu1dnBEO8bsELQL8GjS4zsjdA53gRk2SDxuzcB4fK+NCDfnRHut5nG0S3U4cq4DuGrMDFVBwxH1duTsqDNgIOOfNTsFcWSVXoSSTqCCMGbj8Vt51umDhWQAj06lf50qP2/jMNs2G+KTlk3dBHx3wtqYLvdcop1Tk5xBD64BPJ9uwm8KlDNHe+8O+cC9j04Ji8B2K0/PzAj90xnb8XJy/EM124hpT9lMgpHKBUvdeurJYweC6oP41gsTf5LrpjnyIy9j5FHPCQIDAQAB
+   MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+   4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
+   +HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
+   NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
+   tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
+   2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
 
    may contain several TXT records.  The records would be of the form:
 
+   p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+   4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
+   IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
+
+   p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
+   dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
+   qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
+
+   p=3,a=RS256,d=weDjXrJwIDAQAB
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 19]
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 20]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
-
-   p=1,a=RS256,t=x509,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1dCqv7JEzUOfbhWKB9mTRsv3O9Vzy1Tz3UQlIDGpnVrTPBJDQTXUhxUMREEOBKo+rOjHZqfYnSmlkgu1dn
-
-   p=2,a=RS256,t=x509,d=BEO8bsELQL8GjS4zsjdA53gRk2SDxuzcB4fK+NCDfnRHut5nG0S3U4cq4DuGrMDFVBwxH1duTsqDNgIOOfNTsFcWSVXoSSTqCCMGbj8Vt51umDhWQAj06lf5
-
-   p=3,a=RS256,t=x509,d=NCDfnRHut5nG0S3U4cq4DuGrMDFVBwxH1duTsqDNgIOOfNTsFcWSVXoSSTqCCMGbj8Vt51umDhWQAj06lf50qP2/jMNs2G+KTlk3dBHx3wtqYLvdcop1Tk5xBD64BPJ9
-
-   p=4,a=RS256,t=x509,d=uwm8KlDNHe+8O+cC9j04Ji8B2K0/PzAj90xnb8XJy/EM124hpT9lMgpHKBUvdeurJYweC6oP41gsTf5LrpjnyIy9j5FHPCQIDAQAB
 
    Here the public key is broken into four records in DNS, and the data
    also indicates that the signing algorithm is an RSA Signature with
@@ -1084,7 +1132,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    The above data was generated for a query string:
 
-   a=1&b=2&ip=10.10.10.10&domain=foobar.com
+   a=1&b=2&ip=10.10.10.10&domain=example.net
 
    Signing the query string by the Service Provider is OPTIONAL.  Not
    all Services Provider templates require or are able to provide this
@@ -1100,7 +1148,7 @@ Internet-Draft               Domain Connect                   April 2022
    The values of each query string value key/value pair must be properly
    URL Encoded before the signature is generated.
 
-4.2.3.3.  Warnings
+7.2.3.4.  Warnings
 
    Some applications aren't able to use OAuth and/or sign requests.
 
@@ -1112,17 +1160,7 @@ Internet-Draft               Domain Connect                   April 2022
    extra warnings to the user to have them verify the link was/is from a
    reputable source before applying the template.
 
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 20]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-4.2.4.  Shared Templates
+7.2.4.  Shared Templates
 
    Some templates can be called by multiple companies, or be used for
    different purposes.
@@ -1132,6 +1170,13 @@ Internet-Draft               Domain Connect                   April 2022
    the service to be provided by the Service Provider, but sold through
    third parties.  It is often this third party reseller that configures
    DNS.
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 21]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    While each reseller could enable Domain Connect, this is inefficient
    for the DNS Providers.  Enabling a single template that is shared by
@@ -1161,22 +1206,12 @@ Internet-Draft               Domain Connect                   April 2022
    Formatting.  But this would be required if the template required
    signatures.
 
-4.2.5.  Verification of Changes
+7.2.5.  Verification of Changes
 
    There are circumstances where the Service Provider may wish to verify
    that the template was successfully applied.  Without Domain Donnect,
    this typically involved the Service Provider querying DNS to see if
    the changes to DNS had been made.
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 21]
-
-Internet-Draft               Domain Connect                   April 2022
-
 
    This same technique works with Domain Connect, and if necessary can
    be triggered either manually on the Service Provider site or
@@ -1189,7 +1224,17 @@ Internet-Draft               Domain Connect                   April 2022
    return url in the browser.  As such it is recommend that enablement
    of a service be based on verification of changes to DNS.
 
-4.3.  Asynchronous Flow: OAuth
+7.3.  Asynchronous Flow: OAuth
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 22]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+7.3.1.  General information
 
    Using the OAuth flow is a more advanced use case needed by Service
    Providers that have more complex configurations that may require
@@ -1203,7 +1248,7 @@ Internet-Draft               Domain Connect                   April 2022
    is recommended that Service Providers relying on an OAuth
    implementation also implement a synchronous implementation.
 
-4.3.1.  OAuth Flow: Setup
+7.3.2.  OAuth Flow: Setup
 
    Service providers wishing to use the OAuth flow must register as an
    OAuth client with each DNS provider.  This is a manual process.
@@ -1221,21 +1266,29 @@ Internet-Draft               Domain Connect                   April 2022
    id and a secret which will be used when requesting tokens.  For
    simplicity the client id should be the same as the providerId.
 
-4.3.2.  OAuth Flow: Getting an Authorization Code
+7.3.3.  OAuth Flow: Getting an Authorization Code
 
    GET
 
    {urlAsyncUX}/v2/domainTemplates/providers/{providerId}
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 22]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    To initiate the OAuth flow the Service Provider first links to the
    DNS Provider to gain consent.
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 23]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    This endpoint is similar to the synchronous flow described above.
    The DNS Provider must authenticate the user, verify the user has
@@ -1285,35 +1338,34 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 23]
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 24]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   +===============================================+==================+
-   | *Query String*                                | *Description*    |
-   +===============================================+==================+
-   | scope=t1+t2&domain=example.com                | Templates "t1"   |
-   |                                               | and "t2" can be  |
-   |                                               | applied to       |
-   |                                               | example.com      |
-   +-----------------------------------------------+------------------+
-   | scope=t1+t2&domain=example.com&host=sub1,sub2 | Templates "t1"   |
-   |                                               | and "t2" can be  |
-   |                                               | applied to       |
-   |                                               | sub1.example.com |
-   |                                               | or               |
-   |                                               | sub2.example.com |
-   +-----------------------------------------------+------------------+
-   | scope=t1+t2&domain=example.com&host=sub1,     | Templates "t1"   |
-   |                                               | and "t2" can be  |
-   |                                               | applied to       |
-   |                                               | example.com or   |
-   |                                               | sub1.example.com |
-   +-----------------------------------------------+------------------+
+        +===================================+=====================+
+        | *Query String*                    | *Description*       |
+        +===================================+=====================+
+        | scope=t1+t2=example.com           | Templates "t1" and  |
+        |                                   | "t2" can be applied |
+        |                                   | to example.com      |
+        +-----------------------------------+---------------------+
+        | scope=t1+t2=example.com=sub1,sub2 | Templates "t1" and  |
+        |                                   | "t2" can be applied |
+        |                                   | to sub1.example.com |
+        |                                   | or sub2.example.com |
+        +-----------------------------------+---------------------+
+        | scope=t1+t2=example.com=sub1,     | Templates "t1" and  |
+        |                                   | "t2" can be applied |
+        |                                   | to example.com or   |
+        |                                   | sub1.example.com    |
+        +-----------------------------------+---------------------+
 
-       Table 5: examples of scope and host parameter values in the
-                                async flow
+          Table 5: examples of scope and host parameter values in
+                               the async flow
 
    Upon successful authorization/verification/consent from the user, the
    DNS Provider will direct the end user's browser to the redirect URI.
@@ -1322,7 +1374,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    Similar to the synchronous flow, upon error the DNS provider may
    append an error code as query parameter "error".  These errors are
-   also from the oAuth 2.0 RFC 6749 (4.1.2.1.  Error Response - "error"
+   also from the OAuth 2.0 [RFC6749] (4.1.2.1.  Error Response - "error"
    parameter).  Valid values include: invalid_request,
    unauthorized_client, access_denied, unsupported_response_type,
    invalid_scope, server_error, and temporarilly_unavailable.  An
@@ -1341,86 +1393,98 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 24]
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 25]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   +===========+===============+=======================================+
-   | Property  | Key           | Description                           |
-   +===========+===============+=======================================+
-   | *Domain*  | domain        | The domain name being                 |
-   |           |               | configured.  This is the root         |
-   |           |               | domain (the registered domain or      |
-   |           |               | delegated zone).                      |
-   +-----------+---------------+---------------------------------------+
-   | *Host*    | host          | (OPTIONAL) An list of comma           |
-   |           |               | separated host names upon which       |
-   |           |               | the template may be applied.  An      |
-   |           |               | empty string implies the root.        |
-   +-----------+---------------+---------------------------------------+
-   | *Client   | client_id     | The client id that was provided       |
-   | Id*       |               | by the DNS provider to the            |
-   |           |               | service provider during               |
-   |           |               | registration.  It is recommended      |
-   |           |               | that this should be the same as       |
-   |           |               | the providerId in the template.       |
-   +-----------+---------------+---------------------------------------+
-   | *Redirect | redirect_uri  | The location to direct the            |
-   | URI*      |               | client's browser upon successful      |
-   |           |               | authorization or upon error.          |
-   |           |               | Validation of the redirect_uri        |
-   |           |               | will be done by the DNS Provider      |
-   |           |               | to match the values provided          |
-   |           |               | during onboarding.                    |
-   +-----------+---------------+---------------------------------------+
-   | *Response | response_type | (OPTIONAL) If included it must        |
-   | type*     |               | be the string 'code' to indicate      |
-   |           |               | an authorization code is being        |
-   |           |               | requested.                            |
-   +-----------+---------------+---------------------------------------+
-   | *Scope*   | scope         | The OAuth scope corresponds to        |
-   |           |               | the requested templates.  This        |
-   |           |               | is list of space separated            |
-   |           |               | serviceIds.                           |
-   +-----------+---------------+---------------------------------------+
-   | *Provider | providerName  | (OPTIONAL) This parameter allows      |
-   | Name*     |               | for the caller to provide             |
-   |           |               | additional text for display with      |
-   |           |               | the template providerName.  This      |
-   |           |               | text should be used to augment        |
-   |           |               | the providerName value from the       |
-   |           |               | template, not replace it.             |
-   +-----------+---------------+---------------------------------------+
-   | *Service  | serviceName   | (OPTIONAL) This parameter allows      |
-   | Name*     |               | for the caller to provide             |
+     +===========+===============+==================================+
+     | Property  | Key           | Description                      |
+     +===========+===============+==================================+
+     | *Domain*  | domain        | (REQUIRED) The domain name being |
+     |           |               | configured.  This is the root    |
+     |           |               | domain (the registered domain or |
+     |           |               | delegated zone).                 |
+     +-----------+---------------+----------------------------------+
+     | *Host*    | host          | (OPTIONAL) An list of comma      |
+     |           |               | separated host names upon which  |
+     |           |               | the template may be applied.  An |
+     |           |               | empty string implies the root.   |
+     +-----------+---------------+----------------------------------+
+     | *Client   | client_id     | (REQUIRED) The client id that    |
+     | Id*       |               | was provided by the DNS provider |
+     |           |               | to the service provider during   |
+     |           |               | registration.  It is recommended |
+     |           |               | that this should be the same as  |
+     |           |               | the providerId in the template.  |
+     +-----------+---------------+----------------------------------+
+     | *Redirect | redirect_uri  | (REQUIRED) The location to       |
+     | URI*      |               | direct the client's browser upon |
+     |           |               | successful authorization or upon |
+     |           |               | error.  Validation of the        |
+     |           |               | redirect_uri will be done by the |
+     |           |               | DNS Provider to match the values |
+     |           |               | provided during onboarding.      |
+     +-----------+---------------+----------------------------------+
+     | *Response | response_type | (OPTIONAL) If included it must   |
+     | type*     |               | be the string 'code' to indicate |
+     |           |               | an authorization code is being   |
+     |           |               | requested.                       |
+     +-----------+---------------+----------------------------------+
+     | *Scope*   | scope         | (REQUIRED) The OAuth scope       |
+     |           |               | corresponds to the requested     |
+     |           |               | templates.  This is list of      |
+     |           |               | space separated serviceIds.      |
+     +-----------+---------------+----------------------------------+
+     | *Provider | providerName  | (OPTIONAL) This parameter allows |
+     | Name*     |               | for the caller to provide        |
+     |           |               | additional text for display with |
+     |           |               | the template providerName.  This |
+     |           |               | text should be used to augment   |
+     |           |               | the providerName value from the  |
+     |           |               | template, not replace it.        |
+     +-----------+---------------+----------------------------------+
+     | *Service  | serviceName   | (OPTIONAL) This parameter allows |
+     | Name*     |               | for the caller to provide        |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 25]
+Kowalik, et al.          Expires 23 January 2025               [Page 26]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |           |               | additional text for display with      |
-   |           |               | the template serviceName(s).  It      |
-   |           |               | should be used to augment the         |
-   |           |               | serviceName value(s) from the         |
-   |           |               | template, not replace.                |
-   +-----------+---------------+---------------------------------------+
-   | *State*   | state         | (OPTIONAL) This is a random,          |
-   |           |               | unique string passed along to         |
-   |           |               | prevent CSRF or to pass state         |
-   |           |               | value back to the caller.  It         |
-   |           |               | will be returned as a parameter       |
-   |           |               | appended to the redirect_url          |
-   |           |               | described above.                      |
-   +-----------+---------------+---------------------------------------+
+     |           |               | additional text for display with |
+     |           |               | the template serviceName(s).  It |
+     |           |               | should be used to augment the    |
+     |           |               | serviceName value(s) from the    |
+     |           |               | template, not replace.           |
+     +-----------+---------------+----------------------------------+
+     | *State*   | state         | (OPTIONAL) This is a random,     |
+     |           |               | unique string passed along to    |
+     |           |               | prevent CSRF or to pass state    |
+     |           |               | value back to the caller.  It    |
+     |           |               | will be returned as a parameter  |
+     |           |               | appended to the redirect_url     |
+     |           |               | described above.                 |
+     +-----------+---------------+----------------------------------+
+     | *Name/    | *             | (OPTIONAL) Any key that will be  |
+     | Value     |               | used as a replacement for the "% |
+     | Pairs*    |               | surrounded" value(s) in a        |
+     |           |               | template required for conflict   |
+     |           |               | detection.  This includes        |
+     |           |               | variables used in hosts and data |
+     |           |               | in certain TXT records.          |
+     +-----------+---------------+----------------------------------+
 
-     Table 6: query parameters of the authorization end-point in async
-                                    flow
+       Table 6: query parameters of the authorization end-point in
+                                async flow
 
-4.3.3.  oAuth Flow: Requesting an Access Token
+7.3.4.  OAuth Flow: Requesting an Access Token
 
    POST
 
@@ -1428,7 +1492,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    Once authorization has been granted, the Service Provider must use
    the Authorization Code provided to request an Access Token.  The
-   oAuth specification recommends that the Authorization Code be a short
+   OAuth specification recommends that the Authorization Code be a short
    lived token, and a reasonable recommended setting is ten minutes.  As
    such this exchange needs to be completed before that time has expired
    or the process will need to be repeated.
@@ -1442,23 +1506,21 @@ Internet-Draft               Domain Connect                   April 2022
    This is typically done when the OAuth client is a client application.
    When onboarding with the DNS Provider this would need to be enabled.
 
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 27]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    When the secret is provided (which is the normal case), care must be
    taken.  A malicious user could create a domain that returns a false
    __domainconnect_ TXT record, and subsequently a JSON call to their
    own server for the API end point.  By doing so, they could then run
    Domain Connect on their domain and retrieve the secret.
 
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 26]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   As such the urlAPI used for oAuth by the Service Provider should be
+   As such the urlAPI used for OAuth by the Service Provider should be
    maintained per DNS Provider and not the value retrieved during
    discovery.
 
@@ -1503,53 +1565,47 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 27]
+Kowalik, et al.          Expires 23 January 2025               [Page 28]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-    +================+===============+================================+
-    | Property       | Key           | Description                    |
-    +================+===============+================================+
-    | *Authorization | code/         | The authorization code that    |
-    | Code/Refresh   | refresh_token | was provided in the previous   |
-    | Code*          |               | step when the customer         |
-    |                |               | accepted the authorization     |
-    |                |               | request, or the refresh_token  |
-    |                |               | for a subsequent access token. |
-    +----------------+---------------+--------------------------------+
-    | *Redirect URI* | redirect_uri  | (OPTIONAL) This is required if |
-    |                |               | a redirect_uri was passed to   |
-    |                |               | request the authorization      |
-    |                |               | code.  When included, it needs |
-    |                |               | to be the same redirect_uri    |
-    |                |               | provided in this step.         |
-    +----------------+---------------+--------------------------------+
-    | *Grant type*   | grant_type    | The type of code in the        |
-    |                |               | request.  Usually the string   |
-    |                |               | 'authorization_code' or        |
-    |                |               | 'refresh_token'                |
-    +----------------+---------------+--------------------------------+
-    | *Client ID*    | client_id     | This is the client id that was |
-    |                |               | provided by the DNS provider   |
-    |                |               | to the Service Provider during |
-    |                |               | registration                   |
-    +----------------+---------------+--------------------------------+
-    | *Client        | client_secret | The secret provided to the     |
-    | Secret*        |               | Service Provider during        |
-    |                |               | registration.  Typically       |
-    |                |               | required unless the rare       |
-    |                |               | circumstance with secret-less  |
-    |                |               | oAuth.                         |
-    +----------------+---------------+--------------------------------+
+   +================+===============+=================================+
+   | Property       | Key           | Description                     |
+   +================+===============+=================================+
+   | *Authorization | code/         | (REQUIRED) The authorization    |
+   | Code/Refresh   | refresh_token | code that was provided in the   |
+   | Code*          |               | previous step when the customer |
+   |                |               | accepted the authorization      |
+   |                |               | request, or the refresh_token   |
+   |                |               | for a subsequent access token.  |
+   +----------------+---------------+---------------------------------+
+   | *Redirect URI* | redirect_uri  | (OPTIONAL) This is REQUIRED if  |
+   |                |               | a redirect_uri was passed to    |
+   |                |               | request the authorization code. |
+   |                |               | When included, it needs to be   |
+   |                |               | the same redirect_uri provided  |
+   |                |               | in this step.                   |
+   +----------------+---------------+---------------------------------+
+   | *Grant type*   | grant_type    | (REQUIRED) The type of code in  |
+   |                |               | the request.  Usually the       |
+   |                |               | string 'authorization_code' or  |
+   |                |               | 'refresh_token'                 |
+   +----------------+---------------+---------------------------------+
+   | *Client ID*    | client_id     | (REQUIRED) This is the client   |
+   |                |               | id that was provided by the DNS |
+   |                |               | provider to the Service         |
+   |                |               | Provider during registration    |
+   +----------------+---------------+---------------------------------+
+   | *Client        | client_secret | (REQUIRED) The secret provided  |
+   | Secret*        |               | to the Service Provider during  |
+   |                |               | registration.  Typically        |
+   |                |               | required unless the rare        |
+   |                |               | circumstance with secret-less   |
+   |                |               | OAuth.                          |
+   +----------------+---------------+---------------------------------+
 
-                 Table 7: parameters of the token end-point
+                Table 7: parameters of the token end-point
 
    Upon successful token exchange, the DNS Provider will return a
    response with 4 properties in the body of the response.
@@ -1565,9 +1621,9 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 28]
+Kowalik, et al.          Expires 23 January 2025               [Page 29]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
       +=================+===========================================+
@@ -1599,7 +1655,7 @@ Internet-Draft               Domain Connect                   April 2022
 
         Table 9: http status codes of the token end-point response
 
-4.3.4.  OAuth Flow: Making Requests with Access Tokens
+7.3.5.  OAuth Flow: Making Requests with Access Tokens
 
    Once the Service Provider has the access token, they can call the DNS
    Provider's API to make changes to DNS on the domain by applying and
@@ -1621,20 +1677,21 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 29]
+Kowalik, et al.          Expires 23 January 2025               [Page 30]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
    While the calls below do not have the same security consideration of
    passing the secret, it is recommend that the urlAPI be from a stored
    value vs. the value returned during discovery here as well.
 
-4.3.5.  OAuth Flow: Apply Template to Domain.
+7.3.6.  OAuth Flow: Apply Template to Domain.
 
    POST
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/apply?[properties]
+   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/apply?[properties]
 
    The primary function of the API is to apply a template to a customer
    domain.
@@ -1670,18 +1727,18 @@ Internet-Draft               Domain Connect                   April 2022
     +==============+==============+===================================+
     | Property     | Key          | Description                       |
     +==============+==============+===================================+
-    | *Domain*     | domain       | The root domain name being        |
-    |              |              | configured.  It must match the    |
-    |              |              | domain that was authorized in the |
-    |              |              | token.                            |
+    | *Domain*     | domain       | (REQUIRED) The root domain name   |
+    |              |              | being configured.  It must match  |
+    |              |              | the domain that was authorized in |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 30]
+Kowalik, et al.          Expires 23 January 2025               [Page 31]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
+    |              |              | the token.                        |
     +--------------+--------------+-----------------------------------+
     | *Host*       | host         | (OPTIONAL) The host name of the   |
     |              |              | sub domain of the root domain     |
@@ -1690,14 +1747,15 @@ Internet-Draft               Domain Connect                   April 2022
     |              |              | template is being applied to the  |
     |              |              | root domain.                      |
     +--------------+--------------+-----------------------------------+
-    | *Name/Value  | *            | Any variable fields consumed by   |
-    | Pairs*       |              | this template.  The name portion  |
-    |              |              | of this API call corresponds to   |
-    |              |              | the variable(s) specified in the  |
-    |              |              | record and the value corresponds  |
-    |              |              | to the value that must be used    |
-    |              |              | when applying the template as per |
-    |              |              | the implementation notes.         |
+    | *Name/Value  | *            | (REQUIRED) Any variable fields    |
+    | Pairs*       |              | consumed by this template.  The   |
+    |              |              | name portion of this API call     |
+    |              |              | corresponds to the variable(s)    |
+    |              |              | specified in the record and the   |
+    |              |              | value corresponds to the value    |
+    |              |              | that must be used when applying   |
+    |              |              | the template as per the           |
+    |              |              | implementation notes.             |
     +--------------+--------------+-----------------------------------+
     | *Group ID*   | groupId      | (OPTIONAL) Specifies the group of |
     |              |              | changes in the template to apply. |
@@ -1728,16 +1786,16 @@ Internet-Draft               Domain Connect                   April 2022
     |              |              | additional context for the        |
     |              |              | serviceName that applied the      |
     |              |              | template.  It may be used by some |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 32]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
     |              |              | DNS Providers that display state  |
     |              |              | regarding which templates have    |
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 31]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
     |              |              | been applied.  It is only allowed |
     |              |              | when the "sharedProviderName"     |
     |              |              | attribute is set in the template  |
@@ -1746,7 +1804,7 @@ Internet-Draft               Domain Connect                   April 2022
     | *InstanceId* | instanceId   | (OPTIONAL) Only applicable to     |
     |              |              | templates supporting multiple     |
     |              |              | instances (see multiInstance      |
-    |              |              | (Section 5.2) template property). |
+    |              |              | (Section 8.2) template property). |
     |              |              | Allows for later removal of one   |
     |              |              | template instance by DNS          |
     |              |              | Providers storing this            |
@@ -1761,7 +1819,9 @@ Internet-Draft               Domain Connect                   April 2022
 
    POST
 
-   https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/apply?IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello&force=1
+   https://connect.dnsprovider.example/v2/domainTemplates/providers/
+   exampleservice.example/services/template1/apply?IP=192.0.2.42
+   &#x26;RANDOMTEXT=shm%3A1542108821%3AHello&#x26;force=1
 
    The API must validate the access token, and that the domain belongs
    to the customer and is represented by the token being presented.  Any
@@ -1785,13 +1845,9 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 32]
+Kowalik, et al.          Expires 23 January 2025               [Page 33]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
      +================+==========+==================================+
@@ -1845,9 +1901,9 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 33]
+Kowalik, et al.          Expires 23 January 2025               [Page 34]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
    As an example:
@@ -1872,7 +1928,7 @@ Internet-Draft               Domain Connect                   April 2022
    In this example, the Service Provider tried to apply a new hosting
    template.  The domain had an existing service applied for hosting.
 
-4.3.6.  OAuth Flow: Revert Template
+7.3.7.  OAuth Flow: Revert Template
 
    This call reverts the application of a specific template from a
    domain.
@@ -1882,7 +1938,8 @@ Internet-Draft               Domain Connect                   April 2022
 
    POST
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/revert?domain={domain}&host={host}
+   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/revert?domain={domain}&host={host}
 
    This API allows the removal of a template from a customer domain/host
    using an OAuth request.
@@ -1900,36 +1957,36 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-Carney, et al.           Expires 29 October 2022               [Page 34]
+Kowalik, et al.          Expires 23 January 2025               [Page 35]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
    POST
 
-   https://connect.dnsprovider.com/v2/domainTemplates/providers/exampleservice.domainconnect.org/services/template1/revert?domain=example.com
+   https://connect.dnsprovider.example/v2/domainTemplates/providers
+   /exampleservice.example/services/template1/revert?domain=example.com
 
    Allowed parameters:
 
    +==============+============+======================================+
    | Property     | Key        | Description                          |
    +==============+============+======================================+
-   | *Domain*     | domain     | The root domain name being           |
-   |              |            | configured.  It must match the       |
+   | *Domain*     | domain     | (REQUIRED) The root domain name      |
+   |              |            | being configured.  It must match the |
    |              |            | domain that was authorized in the    |
    |              |            | token.                               |
    +--------------+------------+--------------------------------------+
-   | *Host*       | host       | The host name of the sub domain of   |
-   |              |            | the root domain that was authorized  |
-   |              |            | in the token.  If omitted or left    |
-   |              |            | blank, the template is being applied |
-   |              |            | to the root domain.                  |
+   | *Host*       | host       | (OPTIONAL) The host name of the sub  |
+   |              |            | domain of the root domain that was   |
+   |              |            | authorized in the token.  If omitted |
+   |              |            | or left blank, the template is being |
+   |              |            | applied to the root domain.          |
    +--------------+------------+--------------------------------------+
    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to        |
    |              |            | templates supporting multiple        |
    |              |            | instances (see multiInstance         |
-   |              |            | (Section 5.2) template property).    |
+   |              |            | (Section 8.2) template property).    |
    |              |            | For DNS Provider storing information |
    |              |            | about applied templates allows       |
    |              |            | removal of single instance of        |
@@ -1945,26 +2002,23 @@ Internet-Draft               Domain Connect                   April 2022
    Response codes Success, Authorization, and Errors are identical to
    above with the addition of the 501 code.
 
-4.3.7.  OAuth Flow: Revoking access
+7.3.8.  OAuth Flow: Revoking access
 
-   Like all oAuth flows, the user may revoke the access at any time
+   Like all OAuth flows, the user may revoke the access at any time
    using UX at the DNS Provider site.  As such the Service Provider
    needs to be aware that their access to the API may be denied.
 
+8.  Domain Connect Objects and Templates
 
 
 
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 35]
+Kowalik, et al.          Expires 23 January 2025               [Page 36]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-5.  Domain Connect Objects and Templates
-
-5.1.  Template Versioning
+8.1.  Template Versioning
 
    If a breaking change is made to a template it is recommended that a
    new template be created.  While on the surface versioning looks
@@ -1978,183 +2032,242 @@ Internet-Draft               Domain Connect                   April 2022
    Note that when a template changes, it does need to be on-boarded with
    the DNS Providers.
 
-   The version field (Section 5.2) of the template definition serves the
+   The version field (Section 8.2) of the template definition serves the
    purpose of transparency between the DNS Provider and the Service
    Provider in case of such changes.
 
-5.2.  Template Definition
+8.2.  Template Definition
 
    A template is defined as a standard JSON data structure containing
    the following data.  Fields are required unless otherwise indicated.
 
-   +=============+========+===================+==================================+
-   |Data Element |Type    |Key                |Description                       |
-   +=============+========+===================+==================================+
-   |*Service     |String  |providerId         |The unique identifier of the      |
-   |Provider Id* |        |                   |Service Provider that created this|
-   |             |        |                   |template.  This is used in the    |
-   |             |        |                   |URLs to identify the Service      |
-   |             |        |                   |Provider.  To ensure non-         |
-   |             |        |                   |coordinated uniqueness, this      |
-   |             |        |                   |should be the domain name of the  |
-   |             |        |                   |Service Provider (e.g.            |
-   |             |        |                   |exampleservice.domainconnect.org).|
-   +-------------+--------+-------------------+----------------------------------+
-   |*Service     |String  |providerName       |The name of the Service Provider  |
-   |Provider     |        |                   |suitable for display.  This may be|
-   |Name*        |        |                   |displayed to the user on the DNS  |
-   |             |        |                   |Provider consent UX.              |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Service Id* |String  |serviceId          |The name or identifier of the     |
-   |             |        |                   |template.  This is used in URLs to|
-   |             |        |                   |identify the template.  It is also|
-   |             |        |                   |used in the scope parameter for   |
-   |             |        |                   |oAuth.  It must not contain space |
+   +=============+========+===================+========================+
+   |Data Element |Type    |Key                |Description             |
+   +=============+========+===================+========================+
+   |*Service     |String  |providerId         |(REQUIRED) The unique   |
+   |Provider Id* |        |                   |identifier of the       |
+   |             |        |                   |Service Provider that   |
+   |             |        |                   |created this template.  |
+   |             |        |                   |This is used in the URLs|
+   |             |        |                   |to identify the Service |
+   |             |        |                   |Provider.  To ensure    |
+   |             |        |                   |non-coordinated         |
+   |             |        |                   |uniqueness, this should |
+   |             |        |                   |be the domain name of   |
+   |             |        |                   |the Service Provider    |
+   |             |        |                   |(e.g.                   |
+   |             |        |                   |exampleservice.example).|
+   +-------------+--------+-------------------+------------------------+
+   |*Service     |String  |providerName       |(REQUIRED) The name of  |
+   |Provider     |        |                   |the Service Provider    |
+   |Name*        |        |                   |suitable for display.   |
+   |             |        |                   |This may be displayed to|
+   |             |        |                   |the user on the DNS     |
+   |             |        |                   |Provider consent UX.    |
+   +-------------+--------+-------------------+------------------------+
+   |*Service Id* |String  |serviceId          |(REQUIRED) The name or  |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 36]
+Kowalik, et al.          Expires 23 January 2025               [Page 37]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |             |        |                   |characters, and must be URL       |
-   |             |        |                   |friendly.                         |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Service     |String  |serviceName        |The name of the service suitable  |
-   |Name*        |        |                   |for display to the user.  This may|
-   |             |        |                   |be displayed to the user on the   |
-   |             |        |                   |DNS Provider consent UX.          |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Version*    |Integer |version            |(OPTIONAL) If present this        |
-   |             |        |                   |represents a version of the       |
-   |             |        |                   |template and should be increased  |
-   |             |        |                   |with each update of the template  |
-   |             |        |                   |content.  This value is mainly    |
-   |             |        |                   |informational to improve          |
-   |             |        |                   |communication and transparency    |
-   |             |        |                   |between providers.                |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Logo*       |String  |logoUrl            |(OPTIONAL) A graphical logo       |
-   |             |        |                   |representing the Service Provider |
-   |             |        |                   |and/or Service for use in any web-|
-   |             |        |                   |based flow.  If present this may  |
-   |             |        |                   |be displayed to the user on the   |
-   |             |        |                   |DNS Provider consent UX.          |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Description*|Text    |description        |(OPTIONAL) A textual description  |
-   |             |        |                   |of what this template attempts to |
-   |             |        |                   |do.  This is meant to assist      |
-   |             |        |                   |developers and must not be        |
-   |             |        |                   |displayed to the user.            |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Variable    |Text    |variableDescription|(OPTIONAL) A textual description  |
-   |Description* |        |                   |of what the variables are.  This  |
-   |             |        |                   |is meant to assist developers and |
-   |             |        |                   |must not be displayed to the user.|
-   +-------------+--------+-------------------+----------------------------------+
-   |*Synchronous |Boolean |syncBlock          |(OPTIONAL) Indicates that the     |
-   |Block*       |        |                   |synchronous protocol must be      |
-   |             |        |                   |disabled for this template.  The  |
-   |             |        |                   |default for this is false.        |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Shared*     |Boolean |shared             |(OPTIONAL) This flag has been     |
-   |             |        |                   |deprecated.  It used to indicate  |
-   |             |        |                   |that the template allowed a       |
-   |             |        |                   |dynamic providerName on the query |
-   |             |        |                   |string.  It is replaced with the  |
-   |             |        |                   |sharedProviderName flag in v2.2 of|
-   |             |        |                   |the spec.                         |
-   +-------------+--------+-------------------+----------------------------------+
+   |             |        |                   |identifier of the       |
+   |             |        |                   |template.  This is used |
+   |             |        |                   |in URLs to identify the |
+   |             |        |                   |template.  It is also   |
+   |             |        |                   |used in the scope       |
+   |             |        |                   |parameter for OAuth.  It|
+   |             |        |                   |must not contain space  |
+   |             |        |                   |characters, and must be |
+   |             |        |                   |URL friendly.           |
+   +-------------+--------+-------------------+------------------------+
+   |*Service     |String  |serviceName        |(REQUIRED) The name of  |
+   |Name*        |        |                   |the service suitable for|
+   |             |        |                   |display to the user.    |
+   |             |        |                   |This may be displayed to|
+   |             |        |                   |the user on the DNS     |
+   |             |        |                   |Provider consent UX.    |
+   +-------------+--------+-------------------+------------------------+
+   |*Version*    |Integer |version            |(OPTIONAL) If present   |
+   |             |        |                   |this represents a       |
+   |             |        |                   |version of the template |
+   |             |        |                   |and should be increased |
+   |             |        |                   |with each update of the |
+   |             |        |                   |template content.  This |
+   |             |        |                   |value is mainly         |
+   |             |        |                   |informational to improve|
+   |             |        |                   |communication and       |
+   |             |        |                   |transparency between    |
+   |             |        |                   |providers.              |
+   +-------------+--------+-------------------+------------------------+
+   |*Logo*       |String  |logoUrl            |(OPTIONAL) A graphical  |
+   |             |        |                   |logo representing the   |
+   |             |        |                   |Service Provider and/or |
+   |             |        |                   |Service for use in any  |
+   |             |        |                   |web-based flow.  If     |
+   |             |        |                   |present this may be     |
+   |             |        |                   |displayed to the user on|
+   |             |        |                   |the DNS Provider consent|
+   |             |        |                   |UX.                     |
+   +-------------+--------+-------------------+------------------------+
+   |*Description*|Text    |description        |(OPTIONAL) A textual    |
+   |             |        |                   |description of what this|
+   |             |        |                   |template attempts to do.|
+   |             |        |                   |This is meant to assist |
+   |             |        |                   |developers and must not |
+   |             |        |                   |be displayed to the     |
+   |             |        |                   |user.                   |
+   +-------------+--------+-------------------+------------------------+
+   |*Variable    |Text    |variableDescription|(OPTIONAL) A textual    |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 37]
+Kowalik, et al.          Expires 23 January 2025               [Page 38]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |*Shared      |Boolean |sharedProviderName |(OPTIONAL) This flag indicates    |
-   |Provider     |        |                   |that the template allows the      |
-   |Name*        |        |                   |caller to pass in additional      |
-   |             |        |                   |information for the providerName. |
-   |             |        |                   |This information should augment   |
-   |             |        |                   |the display of the providerName   |
-   |             |        |                   |from the template.  The default   |
-   |             |        |                   |for this is false.  For backward  |
-   |             |        |                   |compatability with DNS Providers  |
-   |             |        |                   |not at V2.2 of the spec it is     |
-   |             |        |                   |recommended that the shared flag  |
-   |             |        |                   |also be set.                      |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Shared      |Boolean |sharedServiceName  |(OPTIONAL) This flag indicates    |
-   |Service Name*|        |                   |that the template allows the      |
-   |             |        |                   |caller to pass in additional      |
-   |             |        |                   |information for the serviceName.  |
-   |             |        |                   |This information should augment   |
-   |             |        |                   |the display of the serviceName    |
-   |             |        |                   |from the template.  The default   |
-   |             |        |                   |for this is false.                |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Synchronous |String  |syncPubKeyDomain   |(OPTIONAL) When present, indicates|
-   |Public Key   |        |                   |that calls to apply a template    |
-   |Domain*      |        |                   |synchronously must be digitally   |
-   |             |        |                   |signed.  The value indicates the  |
-   |             |        |                   |domain name for querying the TXT  |
-   |             |        |                   |record from DNS that contains the |
-   |             |        |                   |public key used for signing.      |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Synchronous |String  |syncRedirectDomain |(OPTIONAL) When present, this is a|
-   |Redirect     |        |                   |comma separated list of domain    |
-   |Domains*     |        |                   |names for which redirects must be |
-   |             |        |                   |sent to after applying a template |
-   |             |        |                   |for the synchronous flow.         |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Multiple    |Boolean |multiInstance      |(OPTIONAL) Defaults to False.     |
-   |Instance*    |        |                   |When set to True, it indicates    |
-   |             |        |                   |that the template may be applied  |
-   |             |        |                   |multiple times.  This only impacts|
-   |             |        |                   |DNS Providers that maintain       |
-   |             |        |                   |template state in DNS.            |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When present, this     |
-   |Phishing*    |        |                   |tells the DNS Provider that the   |
-   |             |        |                   |template may contain variables    |
-   |             |        |                   |susceptible to phishing attacks   |
-   |             |        |                   |and the provider is unable to     |
+   |Description* |        |                   |description of what the |
+   |             |        |                   |variables are.  This is |
+   |             |        |                   |meant to assist         |
+   |             |        |                   |developers and must not |
+   |             |        |                   |be displayed to the     |
+   |             |        |                   |user.                   |
+   +-------------+--------+-------------------+------------------------+
+   |*Synchronous |Boolean |syncBlock          |(OPTIONAL) Indicates    |
+   |Block*       |        |                   |that the synchronous    |
+   |             |        |                   |protocol must be        |
+   |             |        |                   |disabled for this       |
+   |             |        |                   |template.  The default  |
+   |             |        |                   |for this is false.      |
+   +-------------+--------+-------------------+------------------------+
+   |*Shared*     |Boolean |shared             |(OPTIONAL) This flag has|
+   |             |        |                   |been deprecated.  It    |
+   |             |        |                   |used to indicate that   |
+   |             |        |                   |the template allowed a  |
+   |             |        |                   |dynamic providerName on |
+   |             |        |                   |the query string.  It is|
+   |             |        |                   |replaced with the       |
+   |             |        |                   |sharedProviderName flag |
+   |             |        |                   |in v2.2 of the spec.    |
+   +-------------+--------+-------------------+------------------------+
+   |*Shared      |Boolean |sharedProviderName |(OPTIONAL) This flag    |
+   |Provider     |        |                   |indicates that the      |
+   |Name*        |        |                   |template allows the     |
+   |             |        |                   |caller to pass in       |
+   |             |        |                   |additional information  |
+   |             |        |                   |for the providerName.   |
+   |             |        |                   |This information should |
+   |             |        |                   |augment the display of  |
+   |             |        |                   |the providerName from   |
+   |             |        |                   |the template.  The      |
+   |             |        |                   |default for this is     |
+   |             |        |                   |false.  For backward    |
+   |             |        |                   |compatability with DNS  |
+   |             |        |                   |Providers not at V2.2 of|
+   |             |        |                   |the spec it is          |
+   |             |        |                   |recommended that the    |
+   |             |        |                   |shared flag also be set.|
+   +-------------+--------+-------------------+------------------------+
+   |*Shared      |Boolean |sharedServiceName  |(OPTIONAL) This flag    |
+   |Service Name*|        |                   |indicates that the      |
+   |             |        |                   |template allows the     |
+   |             |        |                   |caller to pass in       |
+   |             |        |                   |additional information  |
+   |             |        |                   |for the serviceName.    |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 38]
+Kowalik, et al.          Expires 23 January 2025               [Page 39]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |             |        |                   |digitally sign the requests.  When|
-   |             |        |                   |set the DNS Provider should       |
-   |             |        |                   |display warnings to the user.  The|
-   |             |        |                   |default value for this is false.  |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Host        |Boolean |hostRequired       |(OPTIONAL) Defaults to false.     |
-   |Required*    |        |                   |When present this indicates that  |
-   |             |        |                   |the template has been authored to |
-   |             |        |                   |work only when both domain and    |
-   |             |        |                   |host are provided.  An example    |
-   |             |        |                   |where this would be true would be |
-   |             |        |                   |a template where CNAME is set on  |
-   |             |        |                   |the fully qualified domain name.  |
-   |             |        |                   |This is largely informational, as |
-   |             |        |                   |most DNS Providers already enforce|
-   |             |        |                   |such rules.                       |
-   +-------------+--------+-------------------+----------------------------------+
-   |*Template    |Array of|records            |A list of records for the         |
-   |Records*     |Template|                   |template.                         |
-   |             |Records |                   |                                  |
-   +-------------+--------+-------------------+----------------------------------+
+   |             |        |                   |This information should |
+   |             |        |                   |augment the display of  |
+   |             |        |                   |the serviceName from the|
+   |             |        |                   |template.  The default  |
+   |             |        |                   |for this is false.      |
+   +-------------+--------+-------------------+------------------------+
+   |*Synchronous |String  |syncPubKeyDomain   |(OPTIONAL) When present,|
+   |Public Key   |        |                   |indicates that calls to |
+   |Domain*      |        |                   |apply a template        |
+   |             |        |                   |synchronously must be   |
+   |             |        |                   |digitally signed.  The  |
+   |             |        |                   |value indicates the     |
+   |             |        |                   |domain name for querying|
+   |             |        |                   |the TXT record from DNS |
+   |             |        |                   |that contains the public|
+   |             |        |                   |key used for signing.   |
+   +-------------+--------+-------------------+------------------------+
+   |*Synchronous |String  |syncRedirectDomain |(OPTIONAL) When present,|
+   |Redirect     |        |                   |this is a comma         |
+   |Domains*     |        |                   |separated list of domain|
+   |             |        |                   |names for which         |
+   |             |        |                   |redirects must be sent  |
+   |             |        |                   |to after applying a     |
+   |             |        |                   |template for the        |
+   |             |        |                   |synchronous flow.       |
+   +-------------+--------+-------------------+------------------------+
+   |*Multiple    |Boolean |multiInstance      |(OPTIONAL) Defaults to  |
+   |Instance*    |        |                   |False.  When set to     |
+   |             |        |                   |True, it indicates that |
+   |             |        |                   |the template may be     |
+   |             |        |                   |applied multiple times. |
+   |             |        |                   |This only impacts DNS   |
+   |             |        |                   |Providers that maintain |
+   |             |        |                   |template state in DNS.  |
+   +-------------+--------+-------------------+------------------------+
+   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When present,|
+   |Phishing*    |        |                   |this tells the DNS      |
+   |             |        |                   |Provider that the       |
+   |             |        |                   |template may contain    |
+   |             |        |                   |variables susceptible to|
+   |             |        |                   |phishing attacks and the|
+   |             |        |                   |provider is unable to   |
+   |             |        |                   |digitally sign the      |
+   |             |        |                   |requests.  When set the |
+   |             |        |                   |DNS Provider should     |
+   |             |        |                   |display warnings to the |
+   |             |        |                   |user.  The default value|
+   |             |        |                   |for this is false.      |
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 40]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+   +-------------+--------+-------------------+------------------------+
+   |*Host        |Boolean |hostRequired       |(OPTIONAL) Defaults to  |
+   |Required*    |        |                   |false.  When present    |
+   |             |        |                   |this indicates that the |
+   |             |        |                   |template has been       |
+   |             |        |                   |authored to work only   |
+   |             |        |                   |when both domain and    |
+   |             |        |                   |host are provided.  An  |
+   |             |        |                   |example where this would|
+   |             |        |                   |be true would be a      |
+   |             |        |                   |template where CNAME is |
+   |             |        |                   |set on the fully        |
+   |             |        |                   |qualified domain name.  |
+   |             |        |                   |This is largely         |
+   |             |        |                   |informational, as most  |
+   |             |        |                   |DNS Providers already   |
+   |             |        |                   |enforce such rules.     |
+   +-------------+--------+-------------------+------------------------+
+   |*Template    |Array of|records            |(REQUIRED) A list of    |
+   |Records*     |Template|                   |records for the         |
+   |             |Records |                   |template.               |
+   +-------------+--------+-------------------+------------------------+
 
               Table 13: properties of the template definition
 
-5.3.  Template Record
+8.3.  Template Record
 
    Each template record is an entry that contains a type and several
    other values depending on the type.
@@ -2180,15 +2293,14 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-Carney, et al.           Expires 29 October 2022               [Page 39]
+Kowalik, et al.          Expires 23 January 2025               [Page 41]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   Note: The trailing dot here is similar to the bind protocol, which
+   Note: The trailing dot here is similar to the bind notation, which
    indicates the value is absolute.  Without the trailing ".", the value
-   in this field is relative to the [host.]domain.com value.
+   in this field is relative to the [host.]example.com value.
 
    For the pointsTo/data field it is a shortcut for for the "%fqdn%".
    When appling the template to a domain only, it represents
@@ -2214,183 +2326,226 @@ Internet-Draft               Domain Connect                   April 2022
 
    Each record will contain the following elements.
 
-   +===========+======+=========================+=========================+
-   |Data       |Type  |Key                      |Description              |
-   |Element    |      |                         |                         |
-   +===========+======+=========================+=========================+
-   |*Type*     |enum  |type                     |Describes the type of    |
-   |           |      |                         |record in DNS, or the    |
-   |           |      |                         |operation impacting DNS. |
-   |           |      |                         |Valid values include: A, |
-   |           |      |                         |AAAA, CNAME, MX, TXT,    |
-   |           |      |                         |SRV, or SPFM For each    |
-   |           |      |                         |type, additional fields  |
-   |           |      |                         |would be required.  A:   |
-   |           |      |                         |host, pointsTo, TTL AAAA:|
-   |           |      |                         |host, pointsTo, TTL      |
-   |           |      |                         |CNAME: host, pointsTo,   |
-   |           |      |                         |TTL (host must not be    |
-   |           |      |                         |null or @) NS: host,     |
-   |           |      |                         |pointsTo, TTL (host must |
-   |           |      |                         |not be null or @) TXT:   |
-   |           |      |                         |host, data, TTL,         |
+   +===========+======+=========================+======================+
+   |Data       |Type  |Key                      |Description           |
+   |Element    |      |                         |                      |
+   +===========+======+=========================+======================+
+   |*Type*     |enum  |type                     |(REQUIRED) Describes  |
+   |           |      |                         |the type of record in |
+   |           |      |                         |DNS, or the operation |
+   |           |      |                         |impacting DNS.        |
+   |           |      |                         |Valid values include: |
+   |           |      |                         |A, AAAA, CNAME, MX,   |
+   |           |      |                         |TXT, SRV, or SPFM     |
+   |           |      |                         |For each type,        |
+   |           |      |                         |additional fields     |
+   |           |      |                         |would be REQUIRED.    |
+   |           |      |                         |* A: host, pointsTo,  |
+   |           |      |                         |TTL                   |
+   |           |      |                         |* AAAA: host,         |
+   |           |      |                         |pointsTo, TTL         |
+   |           |      |                         |* CNAME: host,        |
+   |           |      |                         |pointsTo, TTL (host   |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 40]
+Kowalik, et al.          Expires 23 January 2025               [Page 42]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |           |      |                         |txtConflictMatchingMode, |
-   |           |      |                         |txtConflictMatchingPrefix|
-   |           |      |                         |MX: host, pointsTo, TTL, |
-   |           |      |                         |priority SRV: name,      |
-   |           |      |                         |target, TTL, priority,   |
-   |           |      |                         |protocol, service,       |
-   |           |      |                         |weight, port SPFM: host, |
-   |           |      |                         |spfRules                 |
-   +-----------+------+-------------------------+-------------------------+
-   |*Group Id* |String|groupId                  |(OPTIONAL) This parameter|
-   |           |      |                         |identifies the group the |
-   |           |      |                         |record belongs to when   |
-   |           |      |                         |applying changes.  This  |
-   |           |      |                         |must not contain         |
-   |           |      |                         |variables.               |
-   +-----------+------+-------------------------+-------------------------+
-   |*Essential*|enum  |essential                |(OPTIONAL) This parameter|
-   |           |      |                         |indicates how the record |
-   |           |      |                         |is treated during        |
-   |           |      |                         |conflict detection with  |
-   |           |      |                         |existing templates.  If  |
-   |           |      |                         |the DNS Provider is not  |
-   |           |      |                         |implementing applied     |
-   |           |      |                         |template state in DNS    |
-   |           |      |                         |this is ignored.  Always |
-   |           |      |                         |(default) - record MUST  |
-   |           |      |                         |be applied and kept with |
-   |           |      |                         |the template OnApply -   |
-   |           |      |                         |record MUST be applied   |
-   |           |      |                         |but can be later removed |
-   |           |      |                         |without dropping the     |
-   |           |      |                         |whole template           |
-   +-----------+------+-------------------------+-------------------------+
-   |*Host*     |String|host                     |The host for A, AAAA,    |
-   |           |      |                         |CNAME, NS, TXT, and MX   |
-   |           |      |                         |values.  This value is   |
-   |           |      |                         |relative to the applied  |
-   |           |      |                         |host and domain, unless  |
-   |           |      |                         |trailed by a ".".  A     |
-   |           |      |                         |value of empty or @      |
-   |           |      |                         |indicates the root of the|
-   |           |      |                         |applied host and domain. |
-   |           |      |                         |In other words           |
-   |           |      |                         |"[host.]domain.com.".    |
-   |           |      |                         |This value should not    |
-   |           |      |                         |contain variables unless |
-   |           |      |                         |absolutely necessary.    |
-   |           |      |                         |This is discussed below. |
+   |           |      |                         |must not be null or @ |
+   |           |      |                         |unless hostRequired is|
+   |           |      |                         |defined true for the  |
+   |           |      |                         |template)             |
+   |           |      |                         |* NS: host, pointsTo, |
+   |           |      |                         |TTL (host must not be |
+   |           |      |                         |null or @ unless      |
+   |           |      |                         |hostRequired is       |
+   |           |      |                         |defined true for the  |
+   |           |      |                         |template)             |
+   |           |      |                         |* TXT: host, data,    |
+   |           |      |                         |TTL, txtConflict-     |
+   |           |      |                         |MatchingMode,         |
+   |           |      |                         |txtConflict-          |
+   |           |      |                         |MatchingPrefix        |
+   |           |      |                         |* MX: host, pointsTo, |
+   |           |      |                         |TTL, priority         |
+   |           |      |                         |* SRV: name, target,  |
+   |           |      |                         |TTL, priority,        |
+   |           |      |                         |protocol, service,    |
+   |           |      |                         |weight, port          |
+   |           |      |                         |* SPFM: host, spfRules|
+   +-----------+------+-------------------------+----------------------+
+   |*Group Id* |String|groupId                  |(OPTIONAL) This       |
+   |           |      |                         |parameter identifies  |
+   |           |      |                         |the group the record  |
+   |           |      |                         |belongs to when       |
+   |           |      |                         |applying changes.     |
+   |           |      |                         |This must not contain |
+   |           |      |                         |variables.            |
+   +-----------+------+-------------------------+----------------------+
+   |*Essential*|enum  |essential                |(OPTIONAL) This       |
+   |           |      |                         |parameter indicates   |
+   |           |      |                         |how the record is     |
+   |           |      |                         |treated during        |
+   |           |      |                         |conflict detection    |
+   |           |      |                         |with existing         |
+   |           |      |                         |templates.            |
+   |           |      |                         |If the DNS Provider is|
+   |           |      |                         |not implementing      |
+   |           |      |                         |applied template state|
+   |           |      |                         |in DNS this is        |
+   |           |      |                         |ignored.              |
+   |           |      |                         |Always (default) -    |
+   |           |      |                         |record MUST be applied|
+   |           |      |                         |and kept with the     |
+   |           |      |                         |template              |
+   |           |      |                         |OnApply - record MUST |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 41]
+Kowalik, et al.          Expires 23 January 2025               [Page 43]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   +-----------+------+-------------------------+-------------------------+
-   |*Name*     |String|name                     |The name for the SRV     |
-   |           |      |                         |record.  This value is   |
-   |           |      |                         |relative to the applied  |
-   |           |      |                         |host and domain.  A value|
-   |           |      |                         |of empty or @ indicates  |
-   |           |      |                         |the root of the applied  |
-   |           |      |                         |host and domain.  This   |
-   |           |      |                         |value should not contain |
-   |           |      |                         |variables unless         |
-   |           |      |                         |absolutely necessary.    |
-   |           |      |                         |This is discussed below. |
-   +-----------+------+-------------------------+-------------------------+
-   |*Points To*|String|pointsTo                 |The pointsTo location for|
-   |           |      |                         |A, AAAA, CNAME, NS and MX|
-   |           |      |                         |records.  A value of     |
-   |           |      |                         |empty or @ indicates the |
-   |           |      |                         |host and domain name     |
-   |           |      |                         |being applied or         |
-   |           |      |                         |[host.]domain.com        |
-   +-----------+------+-------------------------+-------------------------+
-   |*TTL*      |Int   |ttl                      |The time-to-live for the |
-   |           |      |                         |record in DNS.  Valid for|
-   |           |      |                         |A, AAAA, CNAME, NS, TXT, |
-   |           |      |                         |MX, and SRV records.     |
-   |           |      |                         |This must not contain    |
-   |           |      |                         |variables.               |
-   +-----------+------+-------------------------+-------------------------+
-   |*Data*     |String|data                     |The data for a TXT record|
-   |           |      |                         |in DNS.  A value of empty|
-   |           |      |                         |or @ indicates the host  |
-   |           |      |                         |and domain name being    |
-   |           |      |                         |applied or               |
-   |           |      |                         |[host.]domain.com        |
-   +-----------+------+-------------------------+-------------------------+
-   |*TXT       |String|txtConflictMatchingMode  |Describes how conflicts  |
-   |Conflict   |      |                         |on the TXT record are    |
-   |Matching   |      |                         |detected.  Possible      |
-   |Mode*      |      |                         |values are None, All, or |
-   |           |      |                         |Prefix.  The default     |
-   |           |      |                         |value is None.  See below|
-   |           |      |                         |(Section 6.3).           |
-   +-----------+------+-------------------------+-------------------------+
-   |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect     |
-   |Conflict   |      |                         |conflicts when           |
-   |Matching   |      |                         |txtConflictMatchingMode  |
-   |Prefix*    |      |                         |is "Prefix".  This must  |
-   |           |      |                         |not contain variables.   |
+   |           |      |                         |be applied but can be |
+   |           |      |                         |later removed without |
+   |           |      |                         |dropping the whole    |
+   |           |      |                         |template              |
+   +-----------+------+-------------------------+----------------------+
+   |*Host*     |String|host                     |(REQUIRED) The host   |
+   |           |      |                         |for A, AAAA, CNAME,   |
+   |           |      |                         |NS, TXT, and MX       |
+   |           |      |                         |values.               |
+   |           |      |                         |This value is relative|
+   |           |      |                         |to the applied host   |
+   |           |      |                         |and domain, unless    |
+   |           |      |                         |trailed by a ".".     |
+   |           |      |                         |A value of empty or @ |
+   |           |      |                         |indicates the root of |
+   |           |      |                         |the applied host and  |
+   |           |      |                         |domain.  In other     |
+   |           |      |                         |words                 |
+   |           |      |                         |"[host.]example.com.".|
+   |           |      |                         |This value should not |
+   |           |      |                         |contain variables     |
+   |           |      |                         |unless absolutely     |
+   |           |      |                         |necessary.  This is   |
+   |           |      |                         |discussed below.      |
+   +-----------+------+-------------------------+----------------------+
+   |*Name*     |String|name                     |The name for the SRV  |
+   |           |      |                         |record.               |
+   |           |      |                         |This value is relative|
+   |           |      |                         |to the applied host   |
+   |           |      |                         |and domain.  A value  |
+   |           |      |                         |of empty or @         |
+   |           |      |                         |indicates the root of |
+   |           |      |                         |the applied host and  |
+   |           |      |                         |domain.               |
+   |           |      |                         |This value should not |
+   |           |      |                         |contain variables     |
+   |           |      |                         |unless absolutely     |
+   |           |      |                         |necessary.  This is   |
+   |           |      |                         |discussed below.      |
+   +-----------+------+-------------------------+----------------------+
+   |*Points To*|String|pointsTo                 |The pointsTo location |
+   |           |      |                         |for A, AAAA, CNAME, NS|
+   |           |      |                         |and MX records.       |
+   |           |      |                         |A value of empty or @ |
+   |           |      |                         |indicates the host and|
+   |           |      |                         |domain name being     |
+   |           |      |                         |applied or            |
+   |           |      |                         |[host.]example.com    |
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 42]
+Kowalik, et al.          Expires 23 January 2025               [Page 44]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   |           |      |                         |See below (Section 6.3). |
-   +-----------+------+-------------------------+-------------------------+
-   |*Priority* |Int   |priority                 |The priority for an MX or|
-   |           |      |                         |SRV record.  This must   |
-   |           |      |                         |not contain variables.   |
-   +-----------+------+-------------------------+-------------------------+
-   |*Weight*   |Int   |weight                   |The weight for the SRV   |
-   |           |      |                         |record.  This must not   |
-   |           |      |                         |contain variables.       |
-   +-----------+------+-------------------------+-------------------------+
-   |*Port*     |Int   |port                     |The port for the SRV     |
-   |           |      |                         |record.  This must not   |
-   |           |      |                         |contain variables.       |
-   +-----------+------+-------------------------+-------------------------+
-   |*Protocol* |String|protocol                 |The protocol for the SRV |
-   |           |      |                         |record.                  |
-   +-----------+------+-------------------------+-------------------------+
-   |*Service*  |String|service                  |The symbolic name for the|
-   |           |      |                         |SRV record.              |
-   +-----------+------+-------------------------+-------------------------+
-   |*Target*   |String|target                   |The target for the SRV   |
-   |           |      |                         |record.                  |
-   +-----------+------+-------------------------+-------------------------+
-   |*SPF Rules*|String|spfRules                 |These are desired rules  |
-   |           |      |                         |for the SPF TXT record.  |
-   |           |      |                         |These rules will be      |
-   |           |      |                         |merged with other SPFM   |
-   |           |      |                         |records into final SPF   |
-   |           |      |                         |TXT record.  See         |
-   |           |      |                         |Section 6.10.            |
-   +-----------+------+-------------------------+-------------------------+
+   +-----------+------+-------------------------+----------------------+
+   |*TTL*      |Int   |ttl                      |The time-to-live for  |
+   |           |      |                         |the record in DNS.    |
+   |           |      |                         |Valid for A, AAAA,    |
+   |           |      |                         |CNAME, NS, TXT, MX,   |
+   |           |      |                         |and SRV records.  This|
+   |           |      |                         |must not contain      |
+   |           |      |                         |variables.            |
+   +-----------+------+-------------------------+----------------------+
+   |*Data*     |String|data                     |The data for a TXT    |
+   |           |      |                         |record in DNS.  A     |
+   |           |      |                         |value of empty or @   |
+   |           |      |                         |indicates the host and|
+   |           |      |                         |domain name being     |
+   |           |      |                         |applied or            |
+   |           |      |                         |[host.]example.com    |
+   +-----------+------+-------------------------+----------------------+
+   |*TXT       |String|txtConflictMatchingMode  |Describes how         |
+   |Conflict   |      |                         |conflicts on the TXT  |
+   |Matching   |      |                         |record are detected.  |
+   |Mode*      |      |                         |Possible values are   |
+   |           |      |                         |None, All, or Prefix. |
+   |           |      |                         |The default value is  |
+   |           |      |                         |None.  See below      |
+   |           |      |                         |(Section 9.3).        |
+   +-----------+------+-------------------------+----------------------+
+   |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
+   |Conflict   |      |                         |conflicts when        |
+   |Matching   |      |                         |txtConflict-          |
+   |Prefix*    |      |                         |MatchingMode is       |
+   |           |      |                         |"Prefix".  This must  |
+   |           |      |                         |not contain variables.|
+   |           |      |                         |See below             |
+   |           |      |                         |(Section 9.3).        |
+   +-----------+------+-------------------------+----------------------+
+   |*Priority* |Int   |priority                 |The priority for an MX|
+   |           |      |                         |or SRV record.  This  |
+   |           |      |                         |must not contain      |
+   |           |      |                         |variables.            |
+   +-----------+------+-------------------------+----------------------+
+   |*Weight*   |Int   |weight                   |The weight for the SRV|
+   |           |      |                         |record.  This must not|
+   |           |      |                         |contain variables.    |
+   +-----------+------+-------------------------+----------------------+
+   |*Port*     |Int   |port                     |The port for the SRV  |
+   |           |      |                         |record.  This must not|
+   |           |      |                         |contain variables.    |
+   +-----------+------+-------------------------+----------------------+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 45]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+   |*Protocol* |String|protocol                 |The protocol for the  |
+   |           |      |                         |SRV record.           |
+   +-----------+------+-------------------------+----------------------+
+   |*Service*  |String|service                  |The symbolic name for |
+   |           |      |                         |the SRV record.       |
+   +-----------+------+-------------------------+----------------------+
+   |*Target*   |String|target                   |The target for the SRV|
+   |           |      |                         |record.               |
+   +-----------+------+-------------------------+----------------------+
+   |*SPF Rules*|String|spfRules                 |These are desired     |
+   |           |      |                         |rules for the SPF TXT |
+   |           |      |                         |record.  These rules  |
+   |           |      |                         |will be merged with   |
+   |           |      |                         |other SPFM records    |
+   |           |      |                         |into final SPF TXT    |
+   |           |      |                         |record.  See          |
+   |           |      |                         |Section 9.10.         |
+   +-----------+------+-------------------------+----------------------+
 
            Table 14: properties of the template record definition
 
-6.  Template Considerations
+9.  Template Considerations
 
-6.1.  Template State in DNS
+9.1.  Template State in DNS
 
    DNS Providers may chose to maintain state inside records in DNS
    indicating the templates writing the records.  Other providers may
@@ -2403,14 +2558,7 @@ Internet-Draft               Domain Connect                   April 2022
    To make the implementation burden reasonable for DNS Providers,
    Domain Connect does not dictate the approach.
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 43]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-6.2.  Disclosure of Changes and Conflicts
+9.2.  Disclosure of Changes and Conflicts
 
    It is left to the discretion of the DNS Provider to determine what is
    disclosed to the user when granting permission and/or applying
@@ -2421,6 +2569,14 @@ Internet-Draft               Domain Connect                   April 2022
    the user the name of the service being enabled.  Another may decide
    to display the records being set.  And another may progressively
    display both.
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 46]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    For conflict detection, one DNS Provider may simply overwrite changed
    records without warning.  Another may detect conflicts and warn the
@@ -2458,14 +2614,6 @@ Internet-Draft               Domain Connect                   April 2022
 
    A reasonable set of recommendations for the UX might consist of:
 
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 44]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    *  The consent UX should inform the customer of the service that will
       be enabled.  If the customer want to know the specifics, the DNS
       Provider could provide a "show details" link to the user.  This
@@ -2478,7 +2626,15 @@ Internet-Draft               Domain Connect                   April 2022
       records, this would be records that would be deleted or
       overwritten.  This could be progressively disclosed.
 
-6.3.  Record Types and Conflicts
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 47]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+9.3.  Record Types and Conflicts
 
    Conflict detection done by the DNS provider prior to template
    application has to take into consideration specifics of each DNS
@@ -2513,16 +2669,9 @@ Internet-Draft               Domain Connect                   April 2022
          other TXT record
 
       -  Prefix: This indicates that TXT record conflict with any other
-         TXT containing value starting with txtConfictMatchingPrefix
+         TXT containing value starting with txtConflictMatchingPrefix
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 45]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-6.4.  Apply, Re-apply, and Multi-Instance
+9.4.  Apply, Re-apply, and Multi-Instance
 
    There is an additional consideration for DNS Providers that maintain
    the state of an applied template when re-applying a template.
@@ -2531,9 +2680,19 @@ Internet-Draft               Domain Connect                   April 2022
    when re-applying a template such a DNS Provider should remove the
    previously applied template on the same host.
 
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 48]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    This may not be desireable for all templates, as a limited set of
    templates are designed to be applied multiple times.  To faciliate
-   this the template can have the flag multiInstance (Section 5.2) set.
+   this the template can have the flag multiInstance (Section 8.2) set.
    This tells the DNS Provider that the template is expected to be
    written multiple times and that a re-apply must not remove previous
    instances.
@@ -2543,7 +2702,7 @@ Internet-Draft               Domain Connect                   April 2022
    state must rely on the normal conflict resolution rules, and this
    flag has no impact.
 
-6.5.  Non-essential records
+9.5.  Non-essential records
 
    Typically a template specifies a list of DNS records which are
    required for the service.  There may be cases where some records are
@@ -2552,60 +2711,55 @@ Internet-Draft               Domain Connect                   April 2022
    application of another template) should not trigger conflict
    detection.
 
-   This can be controlled by the essential (Section 5.3) property of a
+   This can be controlled by the essential (Section 8.3) property of a
    record in the template.
 
    Again, this setting only impacts DNS Providers that maintain applied
    template state.
 
-6.6.  Template Scope
+9.6.  Template Scope
 
    For DNS Providers that maintain template state, an individual
    template is scoped to the set of records applied to a fully qualified
    domain.  This includes the root domain and the host (aka sub-domain)
    at apply time.
 
+   As an example, if a template is applied on domain=example.com=sub1 a
+   later application of the template on domain=example.com=sub2 must be
+   treated as a distinct template.  If a conflict is detected later with
+   the records set into "sub2.example.com", only the records set with
+   this template would be removed.
 
-
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 46]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   As an example, if a template is applied on
-   domain=example.com&host=sub1 a later application of the template on
-   domain=example.com&host=sub2 must be treated as a distinct template.
-   If a conflict is detected later with the records set into
-   "sub2.example.com", only the records set with this template would be
-   removed.
-
-6.7.  Host/Name in Template
+9.7.  Host/Name in Template
 
    Template records contain the host name of the record to set into the
    zone (called name for SRV records).  This value must be considered
    relative to the domain/host when the template is applied, unless
    followed by a trailing ".".
 
-   Consider a template record of type A with a host value of "xyz".
-   When the template is applied to a domain=foo.com and an empty host
-   value, the resulting zone after the template is applied will contain
-   an A record of "xyz" (or "xyz.foo.com." in bind format).
 
-   If the same template is applied to a domain=foo.com and host=bar, the
-   zone will contain an A record of "xyz.bar" (or "xyz.bar.foo.com." in
-   bind format).
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 49]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+   Consider a template record of type A with a host value of "xyz".
+   When the template is applied to a domain=example.com and an empty
+   host value, the resulting zone after the template is applied will
+   contain an A record of "xyz" (or "xyz.example.com." in bind format).
+
+   If the same template is applied to a domain=example.com and host=bar,
+   the zone will contain an A record of "xyz.bar" (or
+   "xyz.bar.example.com." in bind format).
 
    A value of @ for host in the template is a placeholder for an empty
-   value.  In other words @ would point to "bar.foo.com." when the same
-   template is applied to domain=foo.com and host=bar.
+   value.  In other words @ would point to "bar.example.com." when the
+   same template is applied to domain=example.com and host=bar.
 
-6.8.  PointsTo in Template
+9.8.  PointsTo in Template
 
    Template records of certain types contain the pointsTo value to set
    in the zone.  For record types such as CNAME where this can be a
@@ -2615,28 +2769,18 @@ Internet-Draft               Domain Connect                   April 2022
    fully qualified domain name of the domain/host being applied.
 
    Consider a template record of type CNAME with a pointsTo value of
-   "@".  After a template of domain=foo.com and an empty host is
+   "@".  After a template of domain=example.com and an empty host is
    applied, the pointsTo value (or corresponding field) in the resulting
-   zone would be "foo.com".  After a template of domain=foo.com with
-   host=bar is applied, the points to value would be "bar.foo.com".
+   zone would be "example.com".  After a template of domain=example.com
+   with host=bar is applied, the points to value would be
+   "bar.example.com".
 
    Any domain in a pointsTo field in a template must be considered fully
    qualified and not relative.
 
+9.9.  Variables
 
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 47]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-6.9.  Variables
-
-6.9.1.  Variables and Host/Name in Template
+9.9.1.  Variables and Host/Name in Template
 
    While templates do allow for variables in a host or name field
    values, these should be used very sparingly.
@@ -2647,10 +2791,21 @@ Internet-Draft               Domain Connect                   April 2022
 
    Such a template might contain an A record of the form:
 
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 50]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    {
        "type": "A",
        "host": "%var%",
-       "pointsTo": "2.2.2.2",
+       "pointsTo": "192.0.2.2",
        "ttl": 1800
    }
 
@@ -2665,10 +2820,10 @@ Internet-Draft               Domain Connect                   April 2022
    providers that maintain template state would remove previous
    instances of the template before re-application.  This means applying
    this template with var=sub would result in the A record for
-   sub.example.com to be set to the value 2.2.2.2.  Later, applying the
-   template on "example.com" with the var=sub2 should remove the old
+   sub.example.com to be set to the value 192.0.2.2.  Later, applying
+   the template on "example.com" with the var=sub2 should remove the old
    template before setting the new one. sub.example.com would be
-   removed, and sub2.example.com would be set to the value 2.2.2.2.
+   removed, and sub2.example.com would be set to the value 192.0.2.2.
 
    Furthermore, determining conflicts would be impossible when the user
    is granting consent for asynchronous operations (OAuth).  This is
@@ -2680,16 +2835,6 @@ Internet-Draft               Domain Connect                   April 2022
    specific host values, whose value is later specified when applying
    the template.
 
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 48]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    Note: There are some templates that utilize CNAME or TXT records with
    host values containing some form of user identification for
    validation of domain ownership, and these are often passed in
@@ -2698,19 +2843,26 @@ Internet-Draft               Domain Connect                   April 2022
    To support this use case, variables are allowed for the host name.
    But only in this limited circumstance.
 
-6.9.2.  Variable Values
+9.9.2.  Variable Values
 
    To allow for the use of the host name or domain name in templates,
    the values of %host% and %domain% are available.  A third value of
    %fqdn% is also available.  This value is the result of combining the
    host and domain name with the necessary ".".
 
-   For example, with the query string "domain=example.com&host=", %fqdn%
-   in a template would be "example.com", and with
-   "domain=example.com&host=sub1", %fqdn% in a template would be
-   "sub1.example.com".
 
-6.9.3.  Variables and Security
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 51]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+   For example, with the query string "domain=example.com=", %fqdn% in a
+   template would be "example.com", and with "domain=example.com=sub1",
+   %fqdn% in a template would be "sub1.example.com".
+
+9.9.3.  Variables and Security
 
    As discussed, with variables consideration is necessary to prevent
    certain styles of phishing attacks.
@@ -2721,7 +2873,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    Mitigations to this are discussed above.
 
-6.9.4.  Variable Examples
+9.9.4.  Variable Examples
 
    Example template:
 
@@ -2734,42 +2886,42 @@ Internet-Draft               Domain Connect                   April 2022
    {
        "type": "A",
        "host": "@",
-       "pointsTo": "1.1.1.1",
+       "pointsTo": "192.0.2.1",
        "ttl": 1800
    }]
 
+   Template applied with _domain_=example.com and _host_ parameter
+   missing or empty:
+
+   www 1800 IN CNAME example.com.
+   @   1800 IN A 192.0.2.1
+
+   _alternatively_
+
+   www.example.com.    1800 IN CNAME example.com.
+   example.com.        1800 IN A 192.0.2.1
+
+   Template applied with _domain_=example.com and _host_=bar:
+
+   www.bar 1800 IN CNAME bar.example.com.
+   bar     1800 IN A 192.0.2.1
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 49]
+
+Kowalik, et al.          Expires 23 January 2025               [Page 52]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
-
-   Template applied with _domain_=foo.com and _host_ parameter missing
-   or empty:
-
-   www 1800 IN CNAME foo.com.
-   @   1800 IN A 1.1.1.1
 
    _alternatively_
 
-   www.foo.com.    1800 IN CNAME foo.com.
-   foo.com.        1800 IN A 1.1.1.1
+   www.bar.example.com.    1800 IN CNAME bar.example.com.
+   bar.example.com.        1800 IN A 192.0.2.1
 
-   Template applied with _domain_=foo.com and _host_=bar:
+9.10.  SPF TXT Record
 
-   www.bar 1800 IN CNAME bar.foo.com.
-   bar     1800 IN A 1.1.1.1
-
-   _alternatively_
-
-   www.bar.foo.com.    1800 IN CNAME bar.foo.com.
-   bar.foo.com.        1800 IN A 1.1.1.1
-
-6.10.  SPF TXT Record
-
-6.10.1.  What is SPF?
+9.10.1.  What is SPF?
 
    SPF stands for Sender Policy Framework specified in [RFC7208].  It is
    a record that specifies a list of authorized host names and/or IP
@@ -2780,11 +2932,11 @@ Internet-Draft               Domain Connect                   April 2022
    a rule passes, the mail is allowed.  If it fails, it moves to the
    next rule.  Typical record might appear as:
 
-   v=spf1 include:policy.exampleprovider.com -all
+   v=spf1 include:policy.exampleprovider.example -all
 
    This is an SPF record with two rules.  The first rule indicates that
-   the rules for SPF record _policy.exampleprovider.com be included in
-   this record.  The second rule is a catch all (_all_).  The default
+   the rules for SPF record _policy.exampleprovider.example be included
+   in this record.  The second rule is a catch all (_all_).  The default
    modifier for a rule is _pass_ (+).  Other modifiers are _hard
    failure_(-), _soft failure_ (~) and _neutral_ (?).
 
@@ -2793,21 +2945,12 @@ Internet-Draft               Domain Connect                   April 2022
    classified with _hard failure_ or _soft failure_ may not be delivered
    or marked as spam.
 
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 50]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    The use of "all" at the end is pretty common, although some providers
    mark it as ~ (soft fail) or ? (neutral).  The reality is that a good
    SPF record is tuned based on what services are attached to a domain.
    Not just one individual service.
 
-6.10.2.  Multiple Services
+9.10.2.  Multiple Services
 
    If only one email sending service were active, the SPF record
    recommended by the provider is sufficient.  But mail from a domain
@@ -2817,8 +2960,15 @@ Internet-Draft               Domain Connect                   April 2022
    newsletter service.  Let's look at the SPF records recommended for
    individual services.
 
-   Mailer1: v=spf1 include:spf.mailer1.com -all Newsletter1: v=spf1
-   include:_spf.newsletter.net ~all
+   Mailer1: v=spf1 include:spf.mailer1.example -all Newsletter1: v=spf1
+   include:_spf.newsletter.example ~all
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 53]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    All of these examples use the include syntax.  This is fairly common.
    The use of all at the end is common, although is often inconsistent
@@ -2827,12 +2977,13 @@ Internet-Draft               Domain Connect                   April 2022
    If a customer installed Mailer1 and Newsletter1, their combined SPF
    record ought to be something like:
 
-   v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all
+   v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
+    ~all
 
    We combined the two rules, and in this case picked the least
    restrictive all modifier.
 
-6.10.3.  SPF Record Merging
+9.10.3.  SPF Record Merging
 
    The challenge with SPF records and Domain Connect is that an
    individual service might recommend an SPF record.  If only one
@@ -2851,26 +3002,29 @@ Internet-Draft               Domain Connect                   April 2022
    on the other side does not reject the message in case forwarding
    facility is in place.
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 51]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   @ TXT v=spf1 include:spf.mailer1.com include:_spf.newsletter.net ~all
+   @ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
+   ple ~all
 
    The other would be to write intermediate records, and reference these
    locally.
 
-   r1.example.com. TXT v=spf1 include:spf.mailer1.com ~all
-   r2.example.com. TXT v=spf1 include:_spf.newsletter.net ~all
+   r1.example.com. TXT v=spf1 include:spf.mailer1.example ~all
+   r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
    @ TXT v=spf1 include:r1.example.com include:r2.example.com ~all
 
    There are advantages and disadvantages to both approaches.  SPF
    records have a limit of 10 DNS lookups and record length is limited
    to 255 characters.  So depending on the embedded records both
    approaches might have advantages.
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 54]
+
+Internet-Draft               Domain Connect                    July 2024
+
 
    The implementation would be left to the DNS Provider, but to
    facilitate this SPF records must NOT be included in templates.
@@ -2879,7 +3033,7 @@ Internet-Draft               Domain Connect                   April 2022
 
    spfRules  Determines the desired rules, basically everything but
       leading "v=spf1" and trailing _all_ rule - see: SPF Rules
-      (Section 5.3)
+      (Section 8.3)
 
    When a template is added or removed with an _SPFM_ record in the
    template, some code would need to take the aggregate value of all
@@ -2894,7 +3048,7 @@ Internet-Draft               Domain Connect                   April 2022
    after merging.
 
    Due to merging step in between, the resulting SPF TXT records are
-   considered non-essential (see: Section 6.5).  That means the user may
+   considered non-essential (see: Section 9.5).  That means the user may
    decide to override the final calculated value or remove the whole SPF
    record.  This action must not lead to removal of any related
    templates in conflict detection and template integrity routines if
@@ -2907,20 +3061,28 @@ Internet-Draft               Domain Connect                   April 2022
    in the Asynchronous flow unless the _force=true_ parameter is used,
    effectively removing the existing record.
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 52]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
    Service providers should avoid exact match checking content of TXT
    SPF record, as it might be strongly influenced by the DNS Provider
    merging strategy and user actions.
 
    See Appendix A.5.
 
-6.10.4.  Alternatives
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 55]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
+9.10.4.  Alternatives
 
    Some DNS Providers may decide not to support the SPFM record.  The
    following alternative solution should allow general interoperability
@@ -2930,13 +3092,15 @@ Internet-Draft               Domain Connect                   April 2022
    _essential=OnApply_ set to avoid removal of the whole template by a
    conflict.
 
-6.11.  Public Template Repository
+9.11.  Public Template Repository
+
+9.11.1.  General information
 
    The Public Template Repository is an open accessible location where
    Service Providers MAY publish their Service Templates in the format
    specified in this specification.  DNS Providers MAY support all of
    the published templates, just a subset or none of them according to
-   own onboarding policies (see also: Section 7.1).
+   own onboarding policies (see also: Section 10.1).
 
    The template format is intended largely for documentation and
    communication between the DNS Providers and Service Providers, and
@@ -2948,12 +3112,12 @@ Internet-Draft               Domain Connect                   April 2022
    format, it is believed it will make it easier for Service Providers
    to share their configuration across DNS Providers.
 
-6.11.1.  Repository Location
+9.11.2.  Repository Location
 
    The repository of the templates is maintained under
    https://github.com/Domain-Connect/templates.
 
-6.11.2.  File naming requirements
+9.11.3.  File naming requirements
 
    The file names in this repository MUST be all lower case, including
    the providerId and serviceId.  As a result, while the providerId and
@@ -2965,17 +3129,21 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 53]
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 56]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   providerId: Acme.com
+   providerId: example.com
    serviceId: WebsiteBuilder
 
-   Template file name: acme.com.websitebuilder.json
+   Template file name: example.com.websitebuilder.json
 
-6.11.3.  Template Integrity
+9.11.4.  Template Integrity
 
    Implementers are responsible for data integrity and should use the
    record type field to validate that variable input meets the criteria
@@ -2987,9 +3155,9 @@ Internet-Draft               Domain Connect                   April 2022
    mail.) or internal names that provide critical functionality that is
    outside the scope of this specification.
 
-7.  General considerations
+10.  General considerations
 
-7.1.  Onboarding
+10.1.  Onboarding
 
    This specification is an open standard that describes the protocol,
    messages and formats used to enable Domain Connect between a Service
@@ -3008,7 +3176,7 @@ Internet-Draft               Domain Connect                   April 2022
    between unique DNS Providers.  The DNS providerId is typically a
    domain name.
 
-7.2.  Case Sensitivity
+10.2.  Case Sensitivity
 
    All values are case sensitive.  This includes variable names, values,
    parameters and objects returned.
@@ -3021,31 +3189,33 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 54]
+Kowalik, et al.          Expires 23 January 2025               [Page 57]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
    The values for providerId/serviceId in the template and passed
    through URIs in the path or query string are case sensitive.
    Different rules apply to the file naming in the Public Template
-   Repository (Section 6.11.2).
+   Repository (Section 9.11.3).
 
-8.  Extensions/Exclusions
+11.  Extensions/Exclusions
+
+11.1.  General information
 
    Additional record types and/or extensions to records in the template
    can be implemented on a per DNS Provider basis.  However, care should
    be taken when defining extensions so as to not conflict with other
    protocols and standards.  Certain record names are reserved for use
-   in DNS for protocols like DNSSEC (DNSKEY, RRSIG) at the registry
-   level.
+   in DNS for protocols like DNSSEC (DNSKEY, RRSIG) [RFC9364] at the
+   registry level.
 
    Defining these OPTIONAL extensions in an open manner as part of this
    specification is done to provide consistency.  The following are the
    initial OPTIONAL extensions a DNS Provider/Service Provider may
    support.
 
-8.1.  APEXCNAME
+11.2.  APEXCNAME
 
    Some Service Providers desire the behavior of a CNAME record, but in
    the apex record.  This would allow for an A Record at the root of the
@@ -3060,7 +3230,7 @@ Internet-Draft               Domain Connect                   April 2022
    functionality, using the same record type name across DNS Providers
    allows template reuse.
 
-8.2.  Redirection
+11.3.  Redirection
 
    Some Service Providers desire a redirection service associated with
    the A Record.  A typical example is a service that requires a
@@ -3075,11 +3245,9 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-
-Carney, et al.           Expires 29 October 2022               [Page 55]
+Kowalik, et al.          Expires 23 January 2025               [Page 58]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
    While technically not a "record" in DNS, when supporting this
@@ -3090,7 +3258,7 @@ Internet-Draft               Domain Connect                   April 2022
    respectively.  Associated with this record would be a single field
    called the "target", containing the target url of the redirect.
 
-8.3.  Nameservers
+11.4.  Nameservers
 
    Several service providers have asked for functionality supporting an
    update to the nameserver records at the registry associated with the
@@ -3105,7 +3273,7 @@ Internet-Draft               Domain Connect                   April 2022
    This functionality is again deemed as OPTIONAL and up to the DNS
    Provider to determine if they will support this.
 
-8.4.  DS (DNSSEC)
+11.5.  DS (DNSSEC)
 
    Requests have been made to allow for updates to the DS record for
    DNSSEC.  This record is required at the registry to enable DNSSEC,
@@ -3115,34 +3283,30 @@ Internet-Draft               Domain Connect                   April 2022
    DS.  Values will be keyTag, algorithm, digestType, and digest.
 
    Again it should be noted that a DS update would require that the DNS
-   Provider is the registrar, and is again deemed as OPTIONAL and up to
+   Provider is the registrar, and is again deemed as optional and up to
    the DNS Provider to determine if they will support.
 
-9.  IANA Considerations
+12.  IANA Considerations
 
-   TODO
+   None.
 
-10.  Acknowledgments
+13.  Change History
 
-   The authors wish to thank the following persons for their feedback
-   and suggestions:
+13.1.  Change from 03 to 04
 
-   *  Chris Ambler of GoDaddy Inc.
+   Version synchronized with 2.2 version rev. 66 of the public Domain
+   Connect specification.
 
-   *  Jody Kolker of GoDaddy Inc.
+                                  Figure 5
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 56]
+Kowalik, et al.          Expires 23 January 2025               [Page 59]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-11.  Change History
-
-11.1.  Change from 03 to 04
-
-11.2.  Change from 02 to 03
+13.2.  Change from 02 to 03
 
    Added width/height JSON values returned by DNS Provider Discovery.
    Corrected text of GET method for getting the authorization token.
@@ -3151,48 +3315,56 @@ Internet-Draft               Domain Connect                   April 2022
    that were found during implementation, especially in the
    Implementation Considerations section.
 
-                                  Figure 5
+                                  Figure 6
 
-11.3.  Change from 01 to 02
+13.3.  Change from 01 to 02
 
    Added new GET method for Service Providers to determine if the DNS
    Provider supports a specific template.  Some other minor edits for
    clarification.
 
-                                  Figure 6
+                                  Figure 7
 
-11.4.  Change from 00 to 01
+13.4.  Change from 00 to 01
 
    Minor edits and clarifications found during implementation.
 
-                                  Figure 7
+                                  Figure 8
 
-12.  Normative References
+14.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
-              Requirement Levels", RFC 2119, RFC 2119,
-              DOI 10.17487/RFC2119, March 1997,
+              Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
+              RFC 2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-13.  Informative References
-
-   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
-              2119 Key Words", RFC 8174, RFC 8174, DOI 10.17487/RFC8174,
-              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
-
    [RFC7208]  Kitterman, S., "Sender Policy Framework (SPF) for
-              Authorizing Use of Domains in Email, Version 1", RFC 7208,
-              RFC 7208, DOI 10.17487/RFC7208, April 2014,
+              Authorizing Use of Domains in Email, Version 1", IETF,
+              DOI 10.17487/RFC7208, RFC 7208, April 2014,
               <https://www.rfc-editor.org/info/rfc7208>.
 
+   [RFC6749]  Hardt, D., "The OAuth 2.0 Authorization Framework", IETF,
+              DOI 10.17487/RFC6749, RFC 6749, October 2012,
+              <https://www.rfc-editor.org/info/rfc6749>.
+
+15.  Informative References
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", IETF, DOI 10.17487/RFC8174, BCP 14,
+              RFC 8174, May 2017,
+              <https://www.rfc-editor.org/info/rfc8174>.
 
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 57]
+Kowalik, et al.          Expires 23 January 2025               [Page 60]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
+
+   [RFC9364]  Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF,
+              DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023,
+              <https://www.rfc-editor.org/info/rfc9364>.
 
 Appendix A.  Examples
 
@@ -3205,36 +3377,35 @@ A.1.  Example Template
        "serviceName": "Wordpress by example.com",
        "version": 1,
        "logoUrl": "https://www.example.com/images/billthecat.jpg",
-       "description": "This connects your domain to our super cool web hosting",
-       "launchURL" : "https://www.example.com/connectlaunch",
+       "description": "This connects your domain to our web hosting",
        "records": [
            {
-               "groupId" : "service",
                "type": "A",
+               "groupId": "service",
                "host": "www",
                "pointsTo": "%var1%",
-               "ttl": "%var2%"
+               "ttl": 600
            },
            {
-               "groupId" : "service",
                "type": "A",
+               "groupId": "service",
                "host": "m",
-               "pointsTo": "%var3%",
-               "ttl": "%var2%"
+               "pointsTo": "%var2%",
+               "ttl": 600
            },
            {
-               "groupId" : "service",
                "type": "CNAME",
+               "groupId": "service",
                "host": "webmail",
-               "pointsTo": "%var4%",
-               "ttl": "%var2%"
+               "pointsTo": "%var3%",
+               "ttl": 600
            },
            {
-               "groupId" : "verification",
                "type": "TXT",
+               "groupId": "verification",
                "host": "example",
-               "data": "%var5%",
-               "ttl": "%var2%"
+               "ttl": 600,
+               "data": "%var4%"
            }
        ]
    }
@@ -3242,12 +3413,9 @@ A.1.  Example Template
 
 
 
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 58]
+Kowalik, et al.          Expires 23 January 2025               [Page 61]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
 A.2.  Example Records: Single static host record
@@ -3259,13 +3427,13 @@ A.2.  Example Records: Single static host record
    [{
        "type": "A",
        "host": "www",
-       "pointsTo": "192.168.1.1",
+       "pointsTo": "192.0.2.1",
        "ttl": 600
    }]
 
    This would have no variable substitution and the application of this
    template to a domain would simply set the host name "www" to the IP
-   address "192.168.1.1"
+   address "192.0.2.1"
 
 A.3.  Example Records: Single variable host record for A
 
@@ -3276,7 +3444,7 @@ A.3.  Example Records: Single variable host record for A
    [{
        "type": "A",
        "host": "@",
-       "pointsTo": "192.168.1.%srv%",
+       "pointsTo": "198.51.100.%srv%",
        "ttl": 600
    }]
 
@@ -3285,7 +3453,7 @@ A.3.  Example Records: Single variable host record for A
    srv=2
 
    would cause the application of this template to a domain to set the
-   host name for the apex A record to the IP address "192.168.1.2" with
+   host name for the apex A record to the IP address "198.51.100.2" with
    a TTL of 600
 
 A.4.  Example: DNS Zone merging
@@ -3301,25 +3469,25 @@ A.4.  Example: DNS Zone merging
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 59]
+Kowalik, et al.          Expires 23 January 2025               [Page 62]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   $ORIGIN test-domain.com.
+   $ORIGIN example.com.
 
-   @ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
-   1209600 3600
-   @ 3600 IN NS ns11.acme.net.
-   @ 3600 IN NS ns12.acme.net.
-   @ 3600 IN A 1.1.1.1
-   @ 3600 IN A 1.1.1.2
+   @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+   1800 1209600 3600
+   @ 3600 IN NS ns11.example.net.
+   @ 3600 IN NS ns12.example.net.
+   @ 3600 IN A 192.0.2.1
+   @ 3600 IN A 192.0.2.2
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
-   @ 3600 IN MX 10 mx1.acme.net.
-   @ 3600 IN MX 10 mx2.acme.net.
-   @ 3600 IN TXT "v=spf1 a include:spf.acme.com ~all"
-   www 3600 IN CNAME other.host.com.
+   @ 3600 IN MX 10 mx1.example.net.
+   @ 3600 IN MX 10 mx2.example.net.
+   @ 3600 IN TXT "v=spf1 a include:spf.example.org ~all"
+   www 3600 IN CNAME other.host.example.
 
    Now application of the following template:
 
@@ -3327,19 +3495,19 @@ Internet-Draft               Domain Connect                   April 2022
        {
            "type":"A",
            "host":"@",
-           "pointsTo":"2.2.2.2",
+           "pointsTo":"203.0.113.2",
            "ttl":"1800"
        },
        {
            "type":"A",
            "host":"www",
-           "pointsTo":"2.2.2.2",
+           "pointsTo":"203.0.113.2",
            "ttl":"1800"
        },
        {
            "type":"SPFM",
            "host":"@",
-           "spfRules":"a include:spf.hoster.com"
+           "spfRules":"a include:spf.hoster.example"
        }
    ]
 
@@ -3357,33 +3525,34 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-Carney, et al.           Expires 29 October 2022               [Page 60]
+Kowalik, et al.          Expires 23 January 2025               [Page 63]
 
-Internet-Draft               Domain Connect                   April 2022
+Internet-Draft               Domain Connect                    July 2024
 
 
-   $ORIGIN test-domain.com.
+   $ORIGIN example.com.
 
-   @ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050920 7200 1800
-   1209600 3600
-   @ 3600 IN NS ns11.acme.net.
-   @ 3600 IN NS ns12.acme.net.
-   @ 1800 IN A 2.2.2.2
-   @ 3600 IN MX 10 mx1.acme.net.
-   @ 3600 IN MX 10 mx2.acme.net.
-   @ 1800 IN TXT "v=spf1 a include:spf.acme.com include:spf.hoster.com ~all"
-   www 1800 IN A 2.2.2.2
+   @ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200
+   1800 1209600 3600
+   @ 3600 IN NS ns11.example.net.
+   @ 3600 IN NS ns12.example.net.
+   @ 1800 IN A 203.0.113.2
+   @ 3600 IN MX 10 mx1.example.net.
+   @ 3600 IN MX 10 mx2.example.net.
+   @ 1800 IN TXT "v=spf1 a include:spf.example.org include:spf.hoster.ex
+   ample ~all"
+   www 1800 IN A 203.0.113.2
 
 A.5.  Example: SPF Record Merging
 
    Consider a DNS Zone before a template application:
 
-   $ORIGIN test-domain.com.
+   $ORIGIN example.com.
 
-   @ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
-   1209600 3600
-   @ 3600 IN NS ns11.acme.net.
-   @ 3600 IN NS ns12.acme.net.
+   @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+   1800 1209600 3600
+   @ 3600 IN NS ns11.example.net.
+   @ 3600 IN NS ns12.example.net.
 
    Now application of the following template of Mail service:
 
@@ -3392,41 +3561,42 @@ A.5.  Example: SPF Record Merging
            "type":"MX",
            "host":"@",
            "priority": "10",
-           "pointsTo":"mx1.acme.net",
+           "pointsTo":"mx1.example.net",
            "ttl":"1800"
        },
        {
            "type":"MX",
            "host":"www",
            "priority": "10",
-           "pointsTo":"mx2.acme.net",
+           "pointsTo":"mx2.example.net",
            "ttl":"1800"
        },
        {
            "type":"SPFM",
            "host":"@",
-           "spfRules":"a include:spf.acme.net"
+           "spfRules":"a include:spf.example.net"
        }
    ]
 
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 64]
+
+Internet-Draft               Domain Connect                    July 2024
+
+
    Expected result in the DNS Zone
 
+   $ORIGIN example.com.
 
-
-Carney, et al.           Expires 29 October 2022               [Page 61]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   $ORIGIN test-domain.com.
-
-   @ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
-   1209600 3600
-   @ 3600 IN NS ns11.acme.net.
-   @ 3600 IN NS ns12.acme.net.
-   @ 3600 IN MX 10 mx1.acme.net.
-   @ 3600 IN MX 10 mx2.acme.net.
-   @ 3600 IN TXT "v=spf1 a include:spf.acme.net ~all"
+   @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+   1800 1209600 3600
+   @ 3600 IN NS ns11.example.net.
+   @ 3600 IN NS ns12.example.net.
+   @ 3600 IN MX 10 mx1.example.net.
+   @ 3600 IN MX 10 mx2.example.net.
+   @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
 
    In the next step application of the following template of Newsletter
    service:
@@ -3435,57 +3605,63 @@ Internet-Draft               Domain Connect                   April 2022
        {
            "type":"SPFM",
            "host":"@",
-           "spfRules":"include:_spf.newsletter.com"
+           "spfRules":"include:_spf.newsletter.example"
        }
    ]
 
    Expected result in the DNS Zone
 
-   $ORIGIN test-domain.com.
+   $ORIGIN example.com.
 
-   @ 3600 IN SOA ns11.acme.net. support.acme.net. 2017050817 7200 1800
-   1209600 3600
-   @ 3600 IN NS ns11.acme.net.
-   @ 3600 IN NS ns12.acme.net.
-   @ 3600 IN MX 10 mx1.acme.net.
-   @ 3600 IN MX 10 mx2.acme.net.
-   @ 3600 IN TXT "v=spf1 a include:spf.acme.net include:_spf.newsletter.com ~all"
+   @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+   1800 1209600 3600
+   @ 3600 IN NS ns11.example.net.
+   @ 3600 IN NS ns12.example.net.
+   @ 3600 IN MX 10 mx1.example.net.
+   @ 3600 IN MX 10 mx2.example.net.
+   @ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newslett
+   er.
+   example ~all"
 
 Authors' Addresses
 
-   R Carney
-   GoDaddy Inc.
-   14455 N. Hayden Rd. #219
-   Scottsdale,
-   United States of America
-   Email: rcarney@godaddy.com
-   URI:   http://www.godaddy.com
+   P Kowalik
+   DENIC eG
+   Theodor-Stern-Kai 1
+   Frankfurt am Main
+   Germany
+   Email: pawel.kowalik@denic.de
+   URI:   https://denic.de
+
+
+
+
+
+Kowalik, et al.          Expires 23 January 2025               [Page 65]
+
+Internet-Draft               Domain Connect                    July 2024
 
 
    A Blinn
    Email: arnold@arnoldblinn.com
 
 
+   J Kolker
+   GoDaddy Inc.
+   14455 N. Hayden Rd. #219
+   Scottsdale,
+   United States of America
+   Email: jkolker@godaddy.com
+   URI:   https://www.godaddy.com
 
 
-
-Carney, et al.           Expires 29 October 2022               [Page 62]
-
-Internet-Draft               Domain Connect                   April 2022
-
-
-   P Kowalik
-   IONOS SE
-   Elgendorfer Str. 57
-   Montabaur
-   Germany
-   Email: pawel.kowalik@ionos.com
-   URI:   https://ionos.com
-
-
-
-
-
+   S Kerola
+   Cloudflare, Inc.
+   101 Townsend St
+   San Francisco,
+   United States of America
+   Email: kerolasa@cloudflare.com
+   URI:   https://cloudflare.com
 
 
 
@@ -3517,12 +3693,4 @@ Internet-Draft               Domain Connect                   April 2022
 
 
 
-
-
-
-
-
-
-
-
-Carney, et al.           Expires 29 October 2022               [Page 63]
+Kowalik, et al.          Expires 23 January 2025               [Page 66]

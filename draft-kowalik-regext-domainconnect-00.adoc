@@ -1,33 +1,29 @@
-= Domain Connect API - Communications between DNS Provider and Services
+= Domain Connect Protocol - DNS provisioning between Services and DNS Providers
 :mn-document-class: ietf
 :mn-output-extensions: rfc,txt,html
 :doctype: internet-draft
 :abbrev: Domain Connect
 :intended-series: standard
-:submission-type: ad-sponsored
-:docnumber: draft-kowalik-art-domainconnect-04
+:submission-type: IETF
+:docnumber: draft-kowalik-regext-domainconnect-00
 :status: informational
 :ipr: trust200902
 :area: Applications and Real-Time
-:workgroup: Registration Protocols Extensions?
+:workgroup: Registration Protocols Extensions
 :keyword: dns
-:revdate: 2024-07-19-
-
+:revdate: 2024-07-19
 :givenname: Pawel
 :surname: Kowalik
 :email: pawel.kowalik@denic.de
 :affiliation: DENIC eG
-:street: 
-:city: 
-:region: 
-:code: 
+:street: Theodor-Stern-Kai 1
+:city: Frankfurt am Main
+:code: 60596
 :country: DE
 :contributor-uri: https://denic.de
-
 :givenname_2: Arnold
 :surname_2: Blinn
 :email_2: arnold@arnoldblinn.com
-
 :givenname_3: Jody
 :surname_3: Kolker
 :email_3: jkolker@godaddy.com
@@ -38,14 +34,16 @@
 :code_3: 85260
 :country_3: US
 :contributor-uri_3: https://www.godaddy.com
-
 :givenname_4: Sami
 :surname_4: Kerola
 :email_4: kerolasa@cloudflare.com
-:affiliation_4: Cloudflare
+:affiliation_4: Cloudflare, Inc.
+:street_4: 101 Townsend St
+:city_4: San Francisco
+:region_4: CA
+:code_4: 94107
 :country_4: US
 :contributor-uri_4: https://cloudflare.com
-
 :specversion: 2.2
 :revnumber: 63
 :source-highlighter: prettify
@@ -56,7 +54,8 @@
 :toc: auto
 :toclevels: 4
 
-This document provides information related to the Domain Connect API that was built to support communications between DNS Providers and Service Providers (hosting, social, email, hardware, etc.).
+
+This document provides specification of the Domain Connect Protocol that was built to support DNS configuration provisioning between Service Providers (hosting, social, email, hardware, etc.) and DNS Providers.
 
 == Introduction
 
@@ -78,7 +77,7 @@ direct manipulation of individual DNS records.
 [glossary]
 [toc=exclude]
 :sectnums!:
-=== Terminology
+== Terminology
 
 The key words "*MUST*", "*MUST NOT*", "*REQUIRED*", "*SHALL*", "*SHALL NOT*", "*SHOULD*", "*SHOULD NOT*", "*RECOMMENDED*", "*NOT RECOMMENDED*", "*MAY*", and "*OPTIONAL*" in this document are to be interpreted as described in BCP 14 <<RFC2119>> <<RFC8174>> when, and only when, they appear in all capitals, as shown here.
 
@@ -143,32 +142,19 @@ and control of the settings being changed to enable a service. And the
 system is more secure as templates are controlled and contained.
 
 == End User Flows
+=== General information
+To attach a domain name to a service provided by a Service Provider, the customer would first enter their domain name.
 
-To attach a domain name to a service provided by a Service Provider, the
-customer would first enter their domain name.
-
-Instead of relying on examination of the nameservers and mapping these
-to DNS Providers, DNS Provider discovery is handled through simple
-records in DNS and an API. The Service Provider queries for a specific
-record in the zone that returns a REST endpoint to initiate the
-protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns
-information about that domain and how to configure it using Domain
-Connect.
+Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.
 
 To apply the changes to DNS, there are two use cases. The
-first is a synchronous web flow, and the second is an asynchronous flow
-using oAuth and an API.
+first is a synchronous web flow, and the second is an asynchronous flow using OAuth and an API.
 
-It is noted that a DNS Provider may choose to only implement one
-of the flows. As a matter of practice many Service Providers are based
-on the synchronous flow, with only a handful of them based on the
-asynchronous oAuth flow. So many DNS providers may opt to only implement
-the synchronous flow.
+It is noted that a DNS Provider may choose to only implement one of the flows. As a matter of practice many Service Providers are based on the synchronous flow, with only a handful of them based on the asynchronous OAuth flow. So many DNS providers may opt to only implement the synchronous flow.
 
-It is also be noted that individual services may work with the
-synchronous flow only, the asynchronous flow only, or with both.
+It is also be noted that individual services may work with the synchronous flow only, the asynchronous flow only, or with both.
 
-==== The Synchronous Flow
+=== The Synchronous Flow
 
 This flow is tailored for the Service Provider that requires a one time
 synchronous change to DNS.
@@ -288,8 +274,7 @@ after the changes are applied. If invoked in place, the user must be navigated b
 to the Service Provider after the changes are applied.
 
 === The Asynchronous Flow
-
-The asynchronous oAuth flow is tailored for the Service Provider that
+The asynchronous OAuth flow is tailored for the Service Provider that
 wishes to make changes to DNS asynchronously with respect to the user
 interaction, or wishes to make multiple or additional changes to DNS
 over time.
@@ -429,8 +414,6 @@ authoritative. This does not indicate the authoritative nameservers; for this th
 would be queried.
 |=======================================================================
 
-As an example, the JSON returned by this call might contain.
-
 [source,json]
 ----
 {
@@ -442,8 +425,10 @@ As an example, the JSON returned by this call might contain.
     "urlAPI": "https://api.domainconnect.virtucondomains.example",
     "width": 750,
     "height": 750,
-    "urlControlPanel": "https://domaincontrolpanel.virtucondomains.example/?domain=%domain%",
-    "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucondomainsdns.example"]
+    "urlControlPanel": "https://domaincontrolpanel.virtucondomains.ex
+    ample/?domain=%domain%",
+    "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucon
+    domainsdns.example"]
 }
 ----
 
@@ -486,7 +471,7 @@ discovery are in the form of URLs.
 The first set of endpoints are for the UX that the Service Provider
 links to. These are for the synchronous flow where the user can click
 to grant consent and have changes applied, and for the
-asynchronous oAuth flow where the user can grant consent for
+asynchronous OAuth flow where the user can grant consent for
 OAuth access.
 
 The second set of endpoints are for the REST API.
@@ -517,7 +502,8 @@ the JSON payload during DNS Provider discovery.
 ----
 GET
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}
+{urlAPI}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}
 ----
 
 This URL is be used by the Service Provider to determine if the DNS
@@ -547,12 +533,13 @@ call was successful. The response OPTIONALLY contains the version or template.
 |=======================================================================
 
 ==== Apply Template
-
+===== Apply Template URL
 [source]
 ----
 GET
 
-{urlSyncUX}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/apply?[properties]
+{urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/apply?[properties]
 ----
 
 This is the URL where the user is sent to apply a template to a domain they own.
@@ -561,7 +548,6 @@ It is called from the Service Provider to start the synchronous Domain Connect P
 This URL can be called in one of two ways.
 
 ===== New Browser Window
-
 The first is through a new browser tab or in a popup browser window.
 The DNS Provider signs the user
 in if necessary, verifies domain ownership, and asks for confirmation
@@ -587,7 +573,7 @@ passed back as state= on the redirect_uri.
 If authorization could not be obtained or an error has occurred, the
 parameter error= must be appended. For consistency with the asynchronous
 OAuth flows the valid values for the error parameter will be as
-specified in OAuth 2.0 RFC 6749 (4.1.2.1. Error Response - "error"
+specified in OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - "error"
 parameter). Valid values are: invalid_request, unauthorized_client,
 access_denied, unsupported_response_type, invalid_scope, server_error,
 and temporarily_unavailable.
@@ -692,7 +678,9 @@ An example query string:
 ----
 GET
 
-https://web-connect.dnsprovider.example/v2/domainTemplates/providers/exampleservice.example/services/template1/apply?domain=example.com&IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello
+https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
+exampleservice.example/services/template1/apply?domain=example.com
+&IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello
 ----
 
 This call indicates that the Service Provider wishes to connect the
@@ -702,7 +690,7 @@ owned by them (template1). In this example, there are two variables in this
 template, "IP" and "RANDOMTEXT". These variables are passed as name/value pairs.
 
 ==== Security Considerations
-
+===== Risk of phishing with open template parameters
 By applying a template with parameters there is a security
 consideration that must be taken into account.
 
@@ -714,8 +702,7 @@ this link, they would land on the DNS Provider site to confirm the
 change. To the user, this would appear to be a valid request to
 configure the domain. Yet the IP would be hijacking the service.
 
-Not all templates have this problem. But when they do, there are several
-options.
+Not all templates have this problem. But when they do, there are several options.
 
 ===== Disable Synchronous
 
@@ -733,12 +720,12 @@ properly URL encoded and of the form:
 
 [source]
 ----
-sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV7u5
-d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQF%2FuJ
-GXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP5l8iA4krA
-a3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6HjEya50YDHfZ
-JlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcbSHgJq9%2FXoMTTw
-%3D%3D
+sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
+F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
+5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
+HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
+SHgJq9%2FXoMTTw%3D%3D
 ----
 
 The Service Provider generates this signature using a private key. As indicated,
@@ -763,12 +750,12 @@ records may exist for the DNS TXT query. For example, a public key of:
 [source]
 .Example public key (line breaks are there for brevity)
 ----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc4gr
-YLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM+HMd4b
-yp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRnNAOAvZYUd
-WqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4Q
-xcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz
-6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
++HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
+NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
+tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
+2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
 ----
 
 may contain several TXT records. The records would be of the form:
@@ -776,13 +763,13 @@ may contain several TXT records. The records would be of the form:
 [source]
 .Example public key broken down into DNS records (line breaks are there for brevity)
 ----
-p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BH
-kkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyM
-fI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
+p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
+IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
 
-p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbd
-Ry2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLH
-f1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
+p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
+dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
 
 p=3,a=RS256,d=weDjXrJwIDAQAB
 
@@ -877,7 +864,7 @@ url in the browser. As such it is recommend that enablement of a service
 be based on verification of changes to DNS.
 
 === Asynchronous Flow: OAuth
-
+==== General information
 Using the OAuth flow is a more advanced use case needed by Service
 Providers that have more complex configurations that may require
 multiple steps and/or are asynchronous from the user’s interaction.
@@ -971,7 +958,7 @@ authorization code will be appended to this URI as a query parameter of
 
 Similar to the synchronous flow, upon error the DNS provider may append
 an error code as query parameter "error". These errors are also from the
-oAuth 2.0 RFC 6749 (4.1.2.1. Error Response - "error" parameter). Valid
+OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - "error" parameter). Valid
 values include: invalid_request, unauthorized_client, access_denied,
 unsupported_response_type, invalid_scope, server_error, and
 temporarilly_unavailable. An OPTIONAL error_description suitable for
@@ -1044,7 +1031,7 @@ template required for conflict detection. This includes variables used in hosts 
 data in certain TXT records.
 |=======================================================================
 
-==== oAuth Flow: Requesting an Access Token
+==== OAuth Flow: Requesting an Access Token
 
 [source]
 ----
@@ -1054,7 +1041,7 @@ POST
 ----
 
 Once authorization has been granted, the Service Provider must use the
-Authorization Code provided to request an Access Token. The oAuth
+Authorization Code provided to request an Access Token. The OAuth
 specification recommends that the Authorization Code be a short lived
 token, and a reasonable recommended setting is ten minutes. As such this
 exchange needs to be completed before that time has expired or the
@@ -1074,7 +1061,7 @@ user could create a domain that returns a false __domainconnect_ TXT record, and
 subsequently a JSON call to their own server for the API end point. By doing so, they
 could then run Domain Connect on their domain and retrieve the secret.
 
-As such the urlAPI used for oAuth by the Service Provider should be maintained per DNS
+As such the urlAPI used for OAuth by the Service Provider should be maintained per DNS
 Provider and not the value retrieved during discovery.
 
 The following table describes the POST parameters that must be included in the
@@ -1187,7 +1174,8 @@ value vs. the value returned during discovery here as well.
 ----
 POST
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/apply?[properties]
+{urlAPI}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/apply?[properties]
 ----
 
 The primary function of the API is to apply a template to a customer
@@ -1288,7 +1276,9 @@ passed as name/value pairs.
 ----
 POST
 
-https://connect.dnsprovider.example/v2/domainTemplates/providers/exampleservice.example/services/template1/apply?IP=192.0.2.42&RANDOMTEXT=shm%3A1542108821%3AHello&force=1
+https://connect.dnsprovider.example/v2/domainTemplates/providers/
+exampleservice.example/services/template1/apply?IP=192.0.2.42
+&RANDOMTEXT=shm%3A1542108821%3AHello&force=1
 ----
 
 The API must validate the access token, and that the domain belongs to
@@ -1378,7 +1368,8 @@ Implementation of this call is OPTIONAL. If not supported a 501 MUST be returned
 ----
 POST
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services/{serviceId}/revert?domain={domain}&host={host}
+{urlAPI}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/revert?domain={domain}&host={host}
 ----
 
 This API allows the removal of a template from a customer domain/host
@@ -1396,7 +1387,8 @@ An example query string might look like:
 ----
 POST
 
-https://connect.dnsprovider.example/v2/domainTemplates/providers/exampleservice.example/services/template1/revert?domain=example.com
+https://connect.dnsprovider.example/v2/domainTemplates/providers
+/exampleservice.example/services/template1/revert?domain=example.com
 ----
 
 Allowed parameters:
@@ -1432,8 +1424,7 @@ Response codes Success, Authorization, and Errors are identical to
 above with the addition of the 501 code.
 
 ==== OAuth Flow: Revoking access
-
-Like all oAuth flows, the user may revoke the access at any time using
+Like all OAuth flows, the user may revoke the access at any time using
 UX at the DNS Provider site. As such the Service Provider needs to be
 aware that their access to the API may be denied.
 
@@ -1475,7 +1466,7 @@ A template is defined as a standard JSON data structure containing the following
 |String
 |serviceId
 |(REQUIRED) The name or identifier of the template.
-This is used in URLs to identify the template. It is also used in the scope parameter for oAuth. It must not contain space characters, and must be URL friendly.
+This is used in URLs to identify the template. It is also used in the scope parameter for OAuth. It must not contain space characters, and must be URL friendly.
 
 |*Service Name*
 |String
@@ -1618,28 +1609,20 @@ Each record will contain the following elements.
 
 |*Type*
 |enum
-|type|
-(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.
+|type
+|(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
 
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM
+Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM +
 
-For each type, additional fields would be REQUIRED.
-
-A: host, pointsTo, TTL
-
-AAAA: host, pointsTo, TTL
-
-CNAME: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template)
-
-NS: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template)
-
-TXT: host, data, TTL, txtConflictMatchingMode, txtConflictMatchingPrefix
-
-MX: host, pointsTo, TTL, priority
-
-SRV: name, target, TTL, priority, protocol, service, weight, port
-
-SPFM: host, spfRules
+For each type, additional fields would be REQUIRED. +
+* A: host, pointsTo, TTL +
+* AAAA: host, pointsTo, TTL +
+* CNAME: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template) +
+* NS: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template) +
+* TXT: host, data, TTL, txtConflict-MatchingMode, txtConflict-MatchingPrefix +
+* MX: host, pointsTo, TTL, priority +
+* SRV: name, target, TTL, priority, protocol, service, weight, port +
+* SPFM: host, spfRules +
 
 |*Group Id*
 |String
@@ -1653,47 +1636,47 @@ not contain variables.
 |essential
 |(OPTIONAL)
 This parameter indicates how the record is treated during conflict detection with
-existing templates.
+existing templates. +
 
-If the DNS Provider is not implementing applied template state in DNS this is ignored.
+If the DNS Provider is not implementing applied template state in DNS this is ignored. +
 
-Always (default) - record MUST be applied and kept with the template
+Always (default) - record MUST be applied and kept with the template +
 
 OnApply - record MUST be applied but can be later removed without dropping the whole
-template
+template +
 
 |*Host*
 |String
 |host
 |
-(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, and MX values.
+(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, and MX values. +
 
-This value is relative to the applied host and domain, unless trailed by a ".".
+This value is relative to the applied host and domain, unless trailed by a ".". +
 
 A value of empty or @ indicates the root of the applied host and domain. In other words
-"[host.]example.com.".
+"[host.]example.com.". +
 
 This value should not contain variables unless absolutely necessary. This is discussed
-below.
+below. +
 
 |*Name*
 |String
 |name
-|The name for the SRV record.
+|The name for the SRV record. +
 
 This value is relative to the applied host and domain. A value of empty or @ indicates
-the root of the applied host and domain.
+the root of the applied host and domain. +
 
 This value should not contain variables unless absolutely necessary. This is discussed
-below.
+below. +
 
 |[[pointsto-record]]*Points To*
 |String
 |pointsTo
 |
-The pointsTo location for A, AAAA, CNAME, NS and MX records.
+The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 
-A value of empty or @ indicates the host and domain name being applied or [host.]example.com
+A value of empty or @ indicates the host and domain name being applied or [host.]example.com +
 
 |*TTL*
 |Int
@@ -1718,7 +1701,7 @@ None, All, or Prefix. The default value is None. <<record-types-conflicts, See b
 |*TXT Conflict Matching Prefix*
 |String
 |txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflictMatchingMode is "Prefix". This
+|The prefix to detect conflicts when txtConflict-MatchingMode is "Prefix". This
 must not contain variables. <<record-types-conflicts, See below>>.
 
 |*Priority*
@@ -2091,7 +2074,8 @@ although is often inconsistent with the modifier.
 If a customer installed Mailer1 and Newsletter1, their combined SPF record ought to be something like:
 
 ----
-v=spf1 include:spf.mailer1.example include:_spf.newsletter.example ~all
+v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
+ ~all
 ----
 
 We combined the two rules, and in this case picked the least restrictive all modifier.
@@ -2103,7 +2087,8 @@ The challenge with SPF records and Domain Connect is that an individual service 
 One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “all” from each of the records and merging them together, terminating with hard-coded modifier on _all_ at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, Domain Connect advises a fixed modifier _"~"_ advising lower rating of the messages from other sources not specified in SPF. This setup offers a reasonable level of protection of mail delivery, on the other side does not reject the message in case forwarding facility is in place.
 
 ----
-@ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.example ~all
+@ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
+ple ~all
 ----
 
 The other would be to write intermediate records, and reference these locally.
@@ -2139,7 +2124,7 @@ Some DNS Providers may decide not to support the SPFM record. The following alte
 
 [[repository-and-integrity]]
 === Public Template Repository
-
+==== General information
 The Public Template Repository is an open accessible location where Service Providers
 MAY publish their Service Templates in the format specified in this specification.
 DNS Providers MAY support all of the published templates, just a subset or none of them according
@@ -2214,16 +2199,13 @@ One exception is the domain/host name. This is because a fully qualified domain 
 The values for providerId/serviceId in the template and passed through URIs in the path or query string are case sensitive. Different rules apply to the file naming in the <<repository-file-names-requirements, Public Template Repository>>.
 
 == Extensions/Exclusions
-
-Additional record types and/or extensions to records in the template can
-be implemented on a per DNS Provider basis. However, care should be
-taken when defining extensions so as to not conflict with other
+=== General information
+Additional record types and/or extensions to records in the template can be implemented on a per DNS Provider basis. However, care should be taken when defining extensions so as to not conflict with other
 protocols and standards. Certain record names are reserved for use in
-DNS for protocols like DNSSEC (DNSKEY, RRSIG) at the registry level.
+DNS for protocols like DNSSEC (DNSKEY, RRSIG) <<RFC9364>> at the registry level.
 
 Defining these OPTIONAL extensions in an open manner as part of this
-specification is done to provide consistency. The following are the initial
-OPTIONAL extensions a DNS Provider/Service Provider may support.
+specification is done to provide consistency. The following are the initial OPTIONAL extensions a DNS Provider/Service Provider may support.
 
 === APEXCNAME
 
@@ -2297,11 +2279,11 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 - Roger Carney of GoDaddy Inc.
 - Chris Ambler of GoDaddy Inc.
-- Jody Kolker of GoDaddy Inc.
 
 == Change History
 === Change from 03 to 04
-   Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.
+   Version synchronized with 2.2 version rev. 66 of the public Domain 
+   Connect specification.
 
 === Change from 02 to 03
 
@@ -2328,12 +2310,14 @@ The authors wish to thank the following persons for their feedback and suggestio
 == Normative References
 
 * [[[RFC2119,RFC 2119]]]
+* [[[RFC7208,RFC 7208]]]
+* [[[RFC6749,RFC 6749]]]
 
 [bibliography]
 == Informative References
 
 * [[[RFC8174,RFC 8174]]]
-* [[[RFC7208,RFC 7208]]]
+* [[[RFC9364,RFC 9364]]]
 
 [appendix]
 == Examples
@@ -2348,7 +2332,7 @@ The authors wish to thank the following persons for their feedback and suggestio
     "serviceName": "Wordpress by example.com",
     "version": 1,
     "logoUrl": "https://www.example.com/images/billthecat.jpg",
-    "description": "This connects your domain to our super cool web hosting",
+    "description": "This connects your domain to our web hosting",
     "records": [
         {
             "type": "A",
@@ -2437,8 +2421,8 @@ Consider a DNS Zone before a template application:
 ----
 $ORIGIN example.com.
 
-@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
-1209600 3600
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
 @ 3600 IN A 192.0.2.1
@@ -2482,14 +2466,15 @@ The following DNS Zone should be generated after the template is applied:
 ----
 $ORIGIN example.com.
 
-@ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200 1800
-1209600 3600
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200
+1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
 @ 1800 IN A 203.0.113.2
 @ 3600 IN MX 10 mx1.example.net.
 @ 3600 IN MX 10 mx2.example.net.
-@ 1800 IN TXT "v=spf1 a include:spf.example.org include:spf.hoster.example ~all"
+@ 1800 IN TXT "v=spf1 a include:spf.example.org include:spf.hoster.ex
+ample ~all"
 www 1800 IN A 203.0.113.2
 ----
 
@@ -2503,8 +2488,8 @@ Consider a DNS Zone before a template application:
 ----
 $ORIGIN example.com.
 
-@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
-1209600 3600
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
 ----
@@ -2542,8 +2527,8 @@ Expected result in the DNS Zone
 ----
 $ORIGIN example.com.
 
-@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
-1209600 3600
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
 @ 3600 IN MX 10 mx1.example.net.
@@ -2570,11 +2555,13 @@ Expected result in the DNS Zone
 ----
 $ORIGIN example.com.
 
-@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200 1800
-1209600 3600
+@ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
+1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
 @ 3600 IN MX 10 mx1.example.net.
 @ 3600 IN MX 10 mx2.example.net.
-@ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newsletter.example ~all"
+@ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newslett
+er.
+example ~all"
 ----

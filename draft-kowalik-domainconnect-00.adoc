@@ -9,9 +9,8 @@
 :status: informational
 :ipr: trust200902
 :area: Applications and Real-Time
-:workgroup: Registration Protocols Extensions
 :keyword: dns
-:revdate: 2024-07-19
+:revdate: 2024-10-20
 :givenname: Pawel
 :surname: Kowalik
 :email: pawel.kowalik@denic.de
@@ -44,8 +43,8 @@
 :code_4: 94107
 :country_4: US
 :contributor-uri_4: https://cloudflare.com
-:specversion: 2.2
-:revnumber: 63
+:specversion: 2.3
+:revnumber: 64
 :source-highlighter: prettify
 :sectnums:
 :apply-image-size:
@@ -53,7 +52,6 @@
 :rfcedstyle:
 :toc: auto
 :toclevels: 4
-
 
 This document provides specification of the Domain Connect Protocol that was built to support DNS configuration provisioning between Service Providers (hosting, social, email, hardware, etc.) and DNS Providers.
 
@@ -1466,7 +1464,7 @@ A template is defined as a standard JSON data structure containing the following
 |String
 |serviceId
 |(REQUIRED) The name or identifier of the template.
-This is used in URLs to identify the template. It is also used in the scope parameter for OAuth. It must not contain space characters, and must be URL friendly.
+This is used in URLs to identify the template. It is also used in the scope parameter for OAuth. It MUST NOT contain space characters, and must be URL friendly.
 
 |*Service Name*
 |String
@@ -1487,12 +1485,12 @@ If present this represents a version of the template and should be increased wit
 |*Description*
 |Text
 |description
-|(OPTIONAL) A textual description of what this template attempts to do. This is meant to assist developers and must not be displayed to the user.
+|(OPTIONAL) A textual description of what this template attempts to do. This is meant to assist developers and MUST NOT be displayed to the user.
 
 |*Variable Description*
 |Text
 |variableDescription
-|(OPTIONAL) A textual description of what the variables are. This is meant to assist developers and must not be displayed to the user.
+|(OPTIONAL) A textual description of what the variables are. This is meant to assist developers and MUST NOT be displayed to the user.
 
 |*Synchronous Block*
 |Boolean
@@ -1576,7 +1574,7 @@ For the host/name field it is a shortcut for the value "%fqdn%.". When applying 
 template to a domain only, it represents "example.com.". When applying with a sub-domain
 (host) it represents "subdomain.example.com.".
 
-Note: The trailing dot here is similar to the bind notation, which indicates the value
+Note: The trailing dot here is equal to the DNS master file notation <<RFC1035>>, which indicates the value
 is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com
 value.
 
@@ -1612,17 +1610,23 @@ Each record will contain the following elements.
 |type
 |(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
 
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM +
+Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM. +
+The DNS provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV. +
+The DNS provider SHOULD support SPFM record for high interoperability with existing templates +
+ +
+All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL. +
 
 For each type, additional fields would be REQUIRED. +
 * A: host, pointsTo, TTL +
 * AAAA: host, pointsTo, TTL +
-* CNAME: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template) +
-* NS: host, pointsTo, TTL (host must not be null or @ unless `hostRequired` is defined `true` for the template) +
+* CNAME: host, pointsTo, TTL (host MUST NOT be null or @ unless `hostRequired` is defined `true` for the template) +
+* NS: host, pointsTo, TTL (host MUST NOT be null or @ unless `hostRequired` is defined `true` for the template) +
 * TXT: host, data, TTL, txtConflict-MatchingMode, txtConflict-MatchingPrefix +
 * MX: host, pointsTo, TTL, priority +
 * SRV: name, target, TTL, priority, protocol, service, weight, port +
 * SPFM: host, spfRules +
+* other record types: host, data, TTL +
+
 
 |*Group Id*
 |String
@@ -1649,7 +1653,7 @@ template +
 |String
 |host
 |
-(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, and MX values. +
+(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values. +
 
 This value is relative to the applied host and domain, unless trailed by a ".". +
 
@@ -1679,18 +1683,24 @@ The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 A value of empty or @ indicates the host and domain name being applied or [host.]example.com +
 
 |*TTL*
-|Int
+|Int or string repr. of Int
 |ttl
 |The time-to-live for the record in DNS. Valid
-for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This must not contain variables.
+for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
+In order to avoid operational unpredactibility of the template and the challenges outlined below this SHOULD NOT contain variables unless absolutely necessary. If it does, the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only value content. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+This value, no matter if variable or constant, is understood as "best effort" by DNS provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS provider. The DNS provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Data*
 |String
 |data
 |
 The data for a TXT record in DNS.
-
 A value of empty or @ indicates the host and domain name being applied or [host.]example.com
+
+For any unspecified record type this field contains the canonical presentation format of the given record. The representation SHALL follow <<RFC3597>> as generic or type-specific encoding. This MUST NOT be used for any record type explicitly listed in the Type field with specific data fields.
 
 |*TXT Conflict Matching Mode*
 |String
@@ -1702,22 +1712,31 @@ None, All, or Prefix. The default value is None. <<record-types-conflicts, See b
 |String
 |txtConflictMatchingPrefix
 |The prefix to detect conflicts when txtConflict-MatchingMode is "Prefix". This
-must not contain variables. <<record-types-conflicts, See below>>.
+MUST NOT contain variables. <<record-types-conflicts, See below>>.
 
 |*Priority*
-|Int
+|Int or string repr. of Int
 |priority
-|The priority for an MX or SRV record. This must not contain variables.
+|The priority for an MX or SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Weight*
-|Int
+|Int or string repr. of Int
 |weight
-|The weight for the SRV record. This must not contain variables.
+|The weight for the SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Port*
-|Int
+|Int or string repr. of Int
 |port
-|The port for the SRV record. This must not contain variables.
+|The port for the SRV record.
+This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Protocol*
 |String
@@ -1840,7 +1859,7 @@ template such a DNS Provider should remove the previously applied template on th
 This may not be desireable for all templates, as a limited set of templates are designed to
 be applied multiple times. To faciliate this the template can have the flag <<template-definition, multiInstance>>
 set. This tells the DNS Provider that the template is expected to be written multiple times
-and that a re-apply must not remove previous instances.
+and that a re-apply MUST NOT remove previous instances.
 
 This setting only impacts DNS Providers that maintain applied template state. DNS Providers
 that do not maintain applied template state must rely on the normal conflict
@@ -1879,10 +1898,10 @@ the template is applied, unless followed by a trailing ".".
 
 Consider a template record of type A with a host value of "xyz". When the template is
 applied to a domain=example.com and an empty host value, the resulting zone after the template
-is applied will contain an A record of "xyz" (or "xyz.example.com." in bind format).
+is applied will contain an A record of "xyz" (or "xyz.example.com." as absolute domain name in DNS master file notation).
 
 If the same template is applied to a domain=example.com and host=bar, the zone will contain an A
-record of "xyz.bar" (or "xyz.bar.example.com." in bind format).
+record of "xyz.bar" (or "xyz.bar.example.com." as absolute domain name).
 
 A value of @ for host in the template is a placeholder for an empty value. In other words @
 would point to "bar.example.com." when the same template is applied to domain=example.com and host=bar.
@@ -2110,7 +2129,7 @@ When a template is added or removed with an _SPFM_ record in the template, some 
 
 DNS Provider SHOULD also allow the end user to modify the SPF record after merging.
 
-Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action must not lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
+Due to merging step in between, the resulting SPF TXT records are considered non-essential (see: <<non-essential-record>>). That means the user may decide to override the final calculated value or remove the whole SPF record. This action MUST NOT lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS provider.
 
 If the existing TXT record makes the merging operation not possible, the DNS provider must handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless the _force=true_ parameter is used, effectively removing the existing record.
 
@@ -2270,9 +2289,54 @@ Again it should be noted that a DS update would require that the DNS
 Provider is the registrar, and is again deemed as optional and up to the
 DNS Provider to determine if they will support.
 
+[#iana]
 == IANA Considerations
-None.
 
+Per <<RFC8552>>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:
+
+[cols=",,",options="header"]
+|=================
+| RR Type
+| _NODE NAME
+| Reference
+
+| TXT
+| _domainconnect
+| This document.
+|=================
+
+[removeInRFC=true,toc=include,numbered=false]
+== Implementation Status
+
+[toc=exclude,numbered=false]
+=== DNS Providers
+[toc=exclude,numbered=false]
+==== Open Source
+* Server library (Python):
+    https://github.com/Domain-Connect/DomainConnectApplyZone
+
+[toc=exclude,numbered=false]
+==== Priopriatery implementations
+* ~20 providers, incl. GoDaddy, IONOS, Cloudflare, Squarespace Domains
+(former Google), Wordpress.com or Plesk
+* 35% of the .com zone (May’24)
+
+[toc=exclude,numbered=false]
+=== Service Providers
+[toc=exclude,numbered=false]
+==== Open Source
+* Example service: 
+    https://exampleservice.domainconnect.org/
+    https://github.com/Domain-Connect/exampleservice
+* Client library (Python):
+    https://github.com/Domain-Connect/domainconnect_python
+
+[toc=exclude,numbered=false]
+==== Priopriatery implementations
+• 300 templates from over 120 providers, incl. O365, Google Workspace, Apple Cloud+, Weebly, Squarespace...
+https://github.com/Domain-Connect/Templates
+
+[toc=include,numbered=false]
 == Acknowledgments
 
 The authors wish to thank the following persons for their feedback and suggestions as well as for the previous work on the standard:
@@ -2280,42 +2344,49 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Roger Carney of GoDaddy Inc.
 - Chris Ambler of GoDaddy Inc.
 
+[removeInRFC=true,toc=include,numbered=false]
 == Change History
-=== Change from 03 to 04
-   Version synchronized with 2.2 version rev. 66 of the public Domain 
-   Connect specification.
+[toc=exclude,numbered=false]
+=== Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00
+- Added possibility to specify any DNS record type in a generic manner.
+- Added possibility to define variables for numeric fields.
+- Added IANA registration for _domainconnect record as per RFC8552
 
-=== Change from 02 to 03
+[toc=exclude,numbered=false]
+=== Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00
+- Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.
 
-   Added width/height JSON values returned by DNS Provider Discovery.
-   Corrected text of GET method for getting the authorization token.
-   Added clarifying text to Group ID description parameter of the apply
-   template POST method.  Quite a few minor edits and clarifications
-   that were found during implementation, especially in the
-   Implementation Considerations section.
+[toc=exclude,numbered=false]
+=== Change from -02 to -03
 
-=== Change from 01 to 02
+- Added width/height JSON values returned by DNS Provider Discovery.
+- Corrected text of GET method for getting the authorization token.
+- Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.
 
-   Added new GET method for Service Providers to determine if the DNS
-   Provider supports a specific template.  Some other minor edits for
-   clarification.
+[toc=exclude,numbered=false]
+=== Change from -01 to -02
 
-=== Change from 00 to 01
+- Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.
 
-   Minor edits and clarifications found during implementation.
+[toc=exclude,numbered=false]
+=== Change from draft-carney-regext-domainconnect-00 to -01
+
+- Minor edits and clarifications found during implementation.
 
 
 
-[bibliography]
+[bibliography,normative=true]
 == Normative References
 
-* [[[RFC2119,RFC 2119]]]
+* [[[RFC1035,RFC 1035]]]
+* [[[RFC2119,RFC 2119]]] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14, RFC 2119, March 1997, <https://www.rfc-editor.org/info/rfc2119>.
 * [[[RFC7208,RFC 7208]]]
 * [[[RFC6749,RFC 6749]]]
+* [[[RFC3597,RFC 3597]]]
+* [[[RFC8552,RFC 8552]]]
 
-[bibliography]
+[bibliography,normative=false]
 == Informative References
-
 * [[[RFC8174,RFC 8174]]]
 * [[[RFC9364,RFC 9364]]]
 
@@ -2412,6 +2483,31 @@ srv=2
 would cause the application of this template to a domain to set the host
 name for the apex A record to the IP address "198.51.100.2" with a TTL of
 600
+
+=== Example Records: Unspecified record type CAA
+
+This example shows how to include a set of unspecified record types on an example of CAA records:
+
+[source,json]
+----
+[
+    {
+        "type": "CAA",
+        "host": "@",
+        "data": "0 issue \"ca1.example.net\"",
+        "ttl": 1800
+    },
+    {
+        "type": "CAA",
+        "host": "@",
+        "data": "0 issuewild \"ca2.example.\"",
+        "ttl": 1800
+    }
+]
+----
+
+This would have no variable substitution and the application of this
+template to a domain would add 2 CAA records.
 
 === Example: DNS Zone merging
 

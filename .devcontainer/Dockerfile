@@ -9,5 +9,7 @@ COPY bin/md2rfc /usr/bin/
 
 RUN apt-get -y update && apt-get -y install git nano default-jre && apt-get -y clean
 
+RUN wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/share/java/plantuml.jar
+
 # Specify the working directory when a container is started
 WORKDIR /rfc

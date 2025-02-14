@@ -74,13 +74,13 @@
 
 <t anchor="_fee13f8f-5eac-227c-11a9-e079a6fccf70">Configuring a service at a Service Provider to work with a domain has historically been a complex task that is difficult for users.</t>
 
-<t anchor="_6cd25dd5-352f-35c6-a83b-5fefcf2e0ef3">Typically, a customer would try to configure their service by entering their domain name with the Service Provider. The Service Provider then used a number of techniques with mixed reliability to discover the DNS Provider. This might include DNS queries for nameservers, queries to whois, and mapping tables to determine the registrar or the company providing DNS.</t>
+<t anchor="_4b005150-03aa-ca54-3e8e-76aa984b6592">Typically, a user would try to configure their service by entering their domain name with the Service Provider. The Service Provider then used a number of techniques with mixed reliability to discover the DNS Provider. This might include DNS queries for nameservers, queries to whois, and mapping tables to determine the registrar or the company providing DNS.</t>
 
-<t anchor="_d7d7106e-ae4e-7085-67de-05a03095da44">Once the Service Provider discovered the DNS Provider, they typically gave the customer instructions for proper configuration of DNS. This might include help text, screen shots, or even links to the appropriate tools.</t>
+<t anchor="_77be41f0-6808-76fb-ab1e-aab7f471ef4d">Once the Service Provider discovered the DNS Provider, they typically gave the user instructions for proper configuration of DNS. This might include help text, screen shots, or even links to the appropriate tools.</t>
 
 <t anchor="_488d2764-49b0-27ab-acfb-918a0ce7d656">Discovery of the DNS Provider in this manner is unreliable, and providing instructions to users would present a number of technologies (DNS record types, TTLs, Hostnames, etc.) and processes they didn't understand. These instructions authored by the Service Provider often quickly become out of date, further confusing the issue for users.</t>
 
-<t anchor="_c34a8cfd-2818-64be-79f2-34bece8e2c8e">The goal of this specificatoin is to create a system where Service Providers can easily enable their applications/services to work with the domain names of their customers. This includes both discovery of the DNS Provider and subsequent modification of DNS.</t>
+<t anchor="_ca3c4e16-d884-d39d-c8ac-252d5eff53de">The goal of this specificatoin is to create a system where Service Providers can easily enable their applications/services to work with the domain names of their users. This includes both discovery of the DNS Provider and subsequent modification of DNS.</t>
 
 <t anchor="_dd1a7699-1e73-d0c0-a830-4ae02b55b4b7">The system will be implemented using simple web based interactions and
 standard authentication protocols. The creation and modification of DNS
@@ -118,189 +118,217 @@ sub.example.com or sub.example.co.uk).</t>
 
 <section anchor="_templates"><name>Templates</name>
 
-<t anchor="_24885499-070b-90aa-2a17-edc766c6a584">Templates are core to Domain Connect, as they fully describe a service owned by
-a Service Provider and contain all of the information necessary to
-enable and operate/maintain the service in the form of a set of records.</t>
+<t anchor="_9e9765b1-6bbc-d230-4ddf-0cb06187b6a4">Templates are core to Domain Connect, as they fully describe a service owned by a Service Provider and contain all of the information necessary to enable and operate/maintain the service in the form of a set of records.</t>
 
-<t anchor="_e0abb55e-75fb-46ea-6036-663ba7cd3959">The individual records in a template may be identified by a groupId. This allows for
-the application of templates in different stages. For example, an email
-provider might first set a TXT record to verify the domain, and later
-set an MX record to configure email delivery. While done separately,
-both changes are fundamentally part of the same service.</t>
+<t anchor="_1985fb51-d9c8-2576-a760-53a167e66d2e">The individual records in a template may be identified by a groupId. This allows for the application of templates in different stages. For example, an email provider might first set a TXT record to verify the domain, and later set an MX record to configure email delivery. While done separately, both changes are fundamentally part of the same service.</t>
 
-<t anchor="_0fdb0d1f-7353-9a55-2fc2-db6c6caf5687">Templates may also contain variable portions, as often values of data in
-DNS change based on the implementation and/or user of the
-service (e.g. the IP address of a service, a customer id,
-etc.).</t>
+<t anchor="_417cd968-c7d2-c5b8-cdad-185c8d51e932">Templates may also contain variable portions, as often values of data in DNS change based on the implementation and/or user of the service (e.g. the IP address of a service, a textual unique token, etc.).</t>
 
-<t anchor="_1bedbd5c-1c60-c3a4-163c-06dcf08aacc6">The template is defined by the Service Provider and manually onboarded with the DNS
-Provider, according to a template definition published in
-the <xref target="repository-and-integrity">Public Repository</xref> or agreed out-of-band between
-the Service Provider and the DNS Provider.</t>
+<t anchor="_024adc1f-b46b-aa94-01e4-fb9f31af1e84">The template is defined by the Service Provider and manually onboarded with the DNS Provider, according to a template definition published in the <xref target="repository-and-integrity">Public Repository</xref> or agreed out-of-band between the Service Provider and the DNS Provider.</t>
 
-<t anchor="_963a389e-b996-5db6-699a-601198985abb">By basing the protocol on templates instead of DNS Records, several
-advantages are achieved. The DNS Provider has very explicit knowledge
-and control of the settings being changed to enable a service. And the
-system is more secure as templates are controlled and contained.</t>
+<t anchor="_33a32064-6d3a-4e34-8704-91660f337a56">By basing the protocol on templates instead of DNS Records, several advantages are achieved. The DNS Provider has very explicit knowledge and control of the settings being changed to enable a service. And the system is more secure as templates are controlled and contained.</t>
 </section>
 </section>
-    <section anchor="_end_user_flows"><name>End User Flows</name>
+    <section anchor="_protocol_flows"><name>Protocol Flows</name>
 
 <section anchor="_general_information"><name>General information</name>
 
-<t anchor="_aa7d03f5-ab86-8bd2-2154-e27cd7df93d7">To attach a domain name to a service provided by a Service Provider, the customer would first enter their domain name.</t>
+<t anchor="_a31f5e24-8841-59dd-5fe3-d95a478640f3">To attach a domain name to a service provided by a Service Provider, the user would first enter their domain name.</t>
 
 <t anchor="_67176c5c-038b-ef33-5259-15f9792e8d66">Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.</t>
 
-<t anchor="_e3063abe-6fe7-d623-7705-8c78640d8469">To apply the changes to DNS, there are two use cases. The
-first is a synchronous web flow, and the second is an asynchronous flow using OAuth and an API.</t>
+<t anchor="_77128c40-dc95-6a69-7ee0-1a87fe7d9cc4">To apply the changes to DNS, there are two use cases. The first is a synchronous web flow, and the second is an asynchronous flow using OAuth and an API.</t>
 
-<t anchor="_cc2d66fa-3544-0fbe-94c2-a8fb2b714ec7">It is noted that a DNS Provider may choose to only implement one of the flows. As a matter of practice many Service Providers are based on the synchronous flow, with only a handful of them based on the asynchronous OAuth flow. So many DNS providers may opt to only implement the synchronous flow.</t>
+<t anchor="_beac5862-50a9-ab0c-d726-e711fe39fac5">It is noted that a DNS Provider MAY choose to only implement one of the flows, however it is RECOMMENDED to implement Synchronous Flow which fulfill needs of most Service Providers.</t>
 
-<t anchor="_5e487085-cb4a-7fd3-407f-2df89f82cf20">It is also be noted that individual services may work with the synchronous flow only, the asynchronous flow only, or with both.</t>
+<t anchor="_3b149f06-432c-ec33-ce39-3202dfba2214">Individual Service Providers MAY work with the synchronous flow only, the asynchronous flow only, or with both.</t>
 </section>
 
 <section anchor="_the_synchronous_flow"><name>The Synchronous Flow</name>
 
-<t anchor="_a172a05e-6623-97c8-ca7d-f575a15a7318">This flow is tailored for the Service Provider that requires a one time
-synchronous change to DNS.</t>
+<t anchor="_5aa371ac-e96a-3c45-1b70-6830492ed3a7">This flow is tailored for the Service Provider that requires a one time synchronous change to DNS.</t>
 
-<t anchor="_abddcc09-aa44-baf9-23ae-dfc3dd393853">The user first enters their domain name at the Service Provider
-website.</t>
+<figure anchor="_e52a92bd-f641-e4dc-86e5-7b0ebe2cbb21">
 
-<figure anchor="_df779a35-ba62-d8b5-357b-d8e66166bc9e">
+<name>Sequence diagram of Synchronous Flow</name><artwork anchor="_3235cbb3-8c41-20d7-3c34-da6b548bb0b4" type="ascii-art"><![CDATA[       ,-.
+       `-'
+       /|\
+        |     ,----------------.   ,------------.          ,----------.
+       / \    |Service Provider|   |DNS Provider|          |DNS Server|
+      User    `--------+-------'   `------+-----'          `-----+----'
+     1 Provides domain name               |                      |
+        |------------->|                  |                      |
+        |              |                  |                      |
+        |              |       2 Initiates DNS discovery         |
+        |              |---------------------------------------->|
+        |              |                  |                      |
+        |              |         3 Responds with                 |
+        |              |         discovery URL fragment          |
+        |              |<----------------------------------------|
+        |              |                  |                      |
+        |        4 Requests DNS Provider settings                |
+        |              |----------------->|                      |
+        |              |                  |                      |
+        |              5 Provides settings|                      |
+        |              |<-----------------|                      |
+        |              |                  |                      |
+        |        6 Queries for supported template                |
+        |              |----------------->|                      |
+        |              |                  |                      |
+        |              7 Responds template|                      |
+        |              support status     |                      |
+        |              |<-----------------|                      |
+        |              |                  |                      |
+   8 Presents connection link             |                      |
+        |<-------------|                  |                      |
+        |              |                  |                      |
+        |  9 Navigates to DNS Provider    |                      |
+        |-------------------------------->|                      |
+        |              |                  |                      |
+        |              |                  |                      |
+        _________________________________________________________|
+        ! ALT  /  if the template requires signing               !
+        !_____/        |                  |                      !
+        !              10 Lookup URL      |                      !
+        !              signature keys (DNS)                      !
+        !              |<-----------------|                      !
+        !              |                  |                      !
+        !              |                  |----.                 !
+        !              |                  |    | 11 Check        !
+        !              |                  |<---' request URL     !
+        !              |                  |      signature       !
+        !              |                  |                      !
+        !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+        |              |                  |                      |
+        |   12 Requests authentication    |                      |
+        |<--------------------------------|                      |
+        |              |                  |                      |
+        |        13 Authenticate          |                      |
+        |-------------------------------->|                      |
+        |              |                  |                      |
+        |              |                  |----.                 |
+        |              |                  |    | 14 Check domain |
+        |              |                  |<---' ame in          |
+        |              |                  |      customer's      |
+        |              |                  |      account         |
+        |              |                  |                      |
+        |              |                  |                      |
+        15 Requests consent for DNS changes                      |
+        |<--------------------------------|                      |
+        |              |                  |                      |
+        |      16 Confirms consent        |                      |
+        |-------------------------------->|                      |
+        |              |                  |                      |
+        |              |                  17 Apply changes to DNS|
+        |              |                  |--------------------->|
+        |              |                  |                      |
+        |           18 Redirect/ Close window                    |
+        |              |<- - - - - - - - -|                      |
+        |              |                  |                      |
+        |              |          19 Query DNS records           |
+        |              |---------------------------------------->|
+        |              |                  |                      |
+        |              |           20 New DNS records            |
+        |              |<----------------------------------------|
+        |              |                  |                      |
+       21 Report success                  |                      |
+        |<-------------|                  |                      |]]></artwork></figure>
 
-<name>Service Provider domain input</name><artwork anchor="_45a7c018-7e4a-f3c3-a295-c17cb9eaee73" type="ascii-art"><![CDATA[+-----------------------------------------------+
-| https://acmewebsiteserviceprovider.example    |
-+-----------------------------------------------+
-| ACME Web Site Service Provider                |
-|                                               |
-| Please enter the domain you wish to enable    |
-| with your Acme Website and click Next         |
-|                                               |
-|             +-------------------------------+ |
-| Domain Name |                               | |
-|             +-------------------------------+ |
-|                                               |
-|           +-----------------------+           |
-|           |         Next          |           |
-|           +-----------------------+           |
-|                                               |
-+-----------------------------------------------+]]></artwork></figure>
+<t anchor="_64623774-d66e-763f-d3f9-c16303246842">Steps:</t>
 
-<t anchor="_9e4e5eeb-09d5-4365-782f-abc659f440ea">After the Service Provider determines the DNS Provider using discovery,
-the Service Provider should display a link to the user indicating
-that they can "Connect their Domain" to the service.</t>
-
-<figure anchor="_b71a2a64-d06e-ae94-520f-a9938f78b978">
-
-<name>Service Provider displays discovery results and offers setup with a DNS provider</name><artwork anchor="_06ba6d70-1a4d-8889-989f-7abfd1036452" type="ascii-art"><![CDATA[+-----------------------------------------------+
-| https://acmewebsiteserviceprovider.example    |
-+-----------------------------------------------+
-| ACME Web Site Service Provider                |
-|                                               |
-| It looks like the domain "example.com" is     |
-| currently at Virtucon Domains. To configure   |
-| this domain to work with Acme Website, click  |
-| Next.                                         |
-|           +-----------------------+           |
-|           |         Next          |           |
-|           +-----------------------+           |
-|                                               |
-+-----------------------------------------------+]]></artwork></figure>
-
-<t anchor="_2a67c784-dd81-3a0f-0001-554056362380">After clicking the link, the user is directed to a browser window on the
-DNS Provider's site. This may be done in another tab or in a new
-browser window, but may also be an in place navigation with a return
-url. This link passes the domain name being modified, the service
-provider/template being enabled, and any additional parameters (variables)
-needed to apply the template and configure the service.</t>
-
-<t anchor="_63d7b724-3c30-9556-60f6-fa435f60fd3a">Once at the DNS Provider site, the user is asked to authenticate
-if necessary.</t>
-
-<figure anchor="_e035bf49-dd74-cdbf-aed7-2ee75c99478a">
-
-<name>DNS provider user authentication</name><artwork anchor="_294f976a-3fc4-fb1b-b597-986ef18a0bf6" type="ascii-art"><![CDATA[+-----------------------------------------------+
-| https://virtucondomains.example               |
-+-----------------------------------------------+
-| Virtucon Domains                              |
-|                                               |
-| Please sign in to Virtucon domains            |
-|                                               |
-|                 +-------------------------+   |
-| Login           |user@xyz.example         |   |
-|                 +-------------------------+   |
-|                                               |
-|                 +-------------------------+   |
-| Password        |******                   |   |
-|                 +-------------------------+   |
-|                                               |
-|           +-----------------------+           |
-|           |         Next          |           |
-|           +-----------------------+           |
-|                                               |
-+-----------------------------------------------+]]></artwork></figure>
-
-<t anchor="_f78d3c7c-1b9c-0cd9-05fa-b2ae59650032">After authenticating at the DNS Provider, the DNS Provider must verify
-the DNS zone of the domain name is controlled by the user. The DNS Provider must verify
-other parameters passed in are valid, and must prompt the user for consent to
-make the changes to DNS. The DNS Provider may also warn
-the user of services that would be disabled by applying this change to
-DNS.</t>
-
-<figure anchor="_9e3cacc5-872b-d059-f188-40bbdee8f8e6">
-
-<name>User authorization at the DNS provider of the DNS setup for ACME</name><artwork anchor="_dd4b41a7-19aa-de49-6908-31e9bb600ec9" type="ascii-art"><![CDATA[+-----------------------------------------------+
-| https://virtucondomains.example               |
-+-----------------------------------------------+
-| Virtucon Domains                              |
-|                                               |
-| ACME would like to make your domain           |
-| example.com work with ACME Web Sites.         |
-|                                               |
-| Click Confirm to make the changes or Cancel   |
-|                                               |
-|  +-----------------+    +-----------------+   |
-|  |     Confirm     |    |     Cancel      |   |
-|  +-----------------+    +-----------------+   |
-|                                               |
-+-----------------------------------------------+]]></artwork></figure>
-
-<t anchor="_07ffcc91-0deb-e703-8049-8ff49cbdae73">Assuming the user grants this consent, the DNS changes are be applied.</t>
-
-<t anchor="_c171778f-f764-4e02-c6d5-843351386a2f">If invoked in a pop-up window or tab, the browser window should be closed
-after the changes are applied. If invoked in place, the user must be navigated back
-to the Service Provider after the changes are applied.</t>
+<ol anchor="_129e6240-5c7f-aab0-bbd0-3803d96b9ac4" type="1"><li><strong>User Provides Domain Name</strong>: The user initiates the process by providing their domain name to the Service Provider.</li>
+<li><strong>Service Provider Initiates DNS Discovery</strong>: The Service Provider queries the DNS provider to discover the Domain Connect settings for the given domain.</li>
+<li><strong>DNS Provider Responds with Discovery URL Fragment</strong>: The DNS Provider responds with a URL fragment containing information where to query settings of DNS provider for a domain name.</li>
+<li><strong>Service Provider Requests DNS Provider Settings</strong>: The Service Provider uses the URL fragment to request the complete Domain Connect settings from the DNS Provider.</li>
+<li><strong>DNS Provider Provides Settings</strong>: The DNS Provider provides the settings, including information about API endpoints.</li>
+<li><strong>Service Provider Queries for Supported Template</strong>: The Service Provider checks if the DNS Provider supports the specific template required for the service.</li>
+<li><strong>DNS Provider Responds with Template Support Status</strong>: The DNS Provider confirms if they support the requested template.</li>
+<li><strong>Service Provider Presents Connection Link</strong>: The Service Provider presents a connection link to the user, which leads to the DNS Provider's Domain Connect service.</li>
+<li><strong>User Navigates to DNS Provider</strong>: The user navigates the link and user agent is directed to the DNS Provider's website.</li>
+<li><strong>DNS Provider Performs URL Lookup and Signature Key Verification (if required)</strong>: If the template requires signing, the DNS Provider looks up the URL signature keys in DNS.</li>
+<li><strong>DNS Provider Checks Request URL Signature (if required)</strong>: The DNS Provider verifies the signature of the request URL.</li>
+<li><strong>Service Provider Requests Authentication</strong>: The Service Provider requests authentication from the user.</li>
+<li><strong>User Authenticates</strong>: The user authenticates with the DNS Provider.</li>
+<li><strong>DNS Provider Checks Domain Name in Customer's Account</strong>: The DNS Provider verifies that the user is authorized to make change to the domain's DNS zone.</li>
+<li><strong>DNS Provider Requests Consent for DNS Changes</strong>: The DNS Provider asks the user for consent to apply the changes to the DNS zone.</li>
+<li><strong>User Confirms Consent</strong>: The user confirms their consent to the DNS changes.</li>
+<li><strong>DNS Provider Applies Changes to DNS</strong>: The DNS Provider applies the changes to the zone.</li>
+<li><strong>DNS Provider Redirects or Closes Window</strong>: The DNS Provider either redirects the user back to the Service Provider or closes the Domain Connect browser window.</li>
+<li><strong>Service Provider Queries DNS Records</strong>: The Service Provider queries the DNS records to verify that the changes have been applied.</li>
+<li><strong>DNS Server Returns New DNS Records</strong>: The DNS Server returns the updated DNS records.</li>
+<li><strong>Service Provider Reports Success</strong>: The Service Provider reports to the user that the domain has been successfully connected to the service.</li>
+</ol>
 </section>
 
 <section anchor="_the_asynchronous_flow"><name>The Asynchronous Flow</name>
 
-<t anchor="_1ff3e2e7-40d0-8a6f-debc-e758fca26b32">The asynchronous OAuth flow is tailored for the Service Provider that
-wishes to make changes to DNS asynchronously with respect to the user
-interaction, or wishes to make multiple or additional changes to DNS
-over time.</t>
+<t anchor="_bd77eefb-3107-58f4-3e6e-454b1d5b8081">The asynchronous OAuth flow is tailored for the Service Provider that wishes to make changes to DNS asynchronously with respect to the user interaction, or wishes to make multiple or additional changes to DNS over time.</t>
 
-<t anchor="_5751993e-1492-387e-c711-362ded16227c">The asynchronous flow begins similarly
-to the synchronous flow. The Service Provider determines the
-DNS Provider and links to a consent dialog at the DNS Provider. Once at
-the DNS Provider the user signs in, control of the DNS zone for the domain is
-verified, and consent is granted.</t>
+<figure anchor="_3a4029c1-88c9-3ca6-903b-90d2d2aa2f1d">
 
-<t anchor="_c5ea83f1-dd1c-9a53-62d6-c81c5a247021">Instead of applying the DNS changes on user consent, OAuth access is
-granted to the Service Provider. An OAuth access code is generated and
-handed back to the Service Provider. The Service Provider then requests
-an access (bearer) token.</t>
+<name>Sequence diagram of Asynchronous Flow</name><artwork anchor="_2e230531-ad96-7cbc-3443-85af820c9061" type="ascii-art"><![CDATA[       ,-.
+       `-'
+       /|\
+        |     ,----------------.   ,------------.          ,----------.
+       / \    |Service Provider|   |DNS Provider|          |DNS Server|
+      User    `--------+-------'   `------+-----'          `-----+----'
+        .              .                  .                      .
+        .        Steps 1-14 same as for Synchronous flow         .
+        .              .                  .                      .
+        |              |                  |                      |
+        |              |                  |                      |
+        |    15 Requests consent for      |                      |
+        |    (future) DNS changes         |                      |
+        |<--------------------------------|                      |
+        |              |                  |                      |
+        |       16 Grants consent         |                      |
+        |-------------------------------->|                      |
+        |              |                  |                      |
+        |             17 Provides OAuth code                     |
+        |              |<-----------------|                      |
+        |              |                  |                      |
+        |          18 Exchanges code for token                   |
+        |              |----------------->|                      |
+        |              |                  |                      |
+        |            19 Returns access token                     |
+        |              |<-----------------|                      |
+        .              .                  .                      .
+        .              .          Later   .                      .
+        .              .                  .                      .
+        .        20 Sends API request with token                 .
+        |              |----------------->|                      |
+        |              |                  |                      |
+        |              |                  21 Apply changes to DNS|
+        |              |                  |--------------------->|
+        |              |                  |                      |
+        |              22 Respond success |                      |
+        |              |<-----------------|                      |
+        |              |                  |                      |
+        |              |          23 Query DNS records           |
+        |              |---------------------------------------->|
+        |              |                  |                      |
+        |              |           24 New DNS records            |
+        |              |<----------------------------------------|
+        |              |                  |                      |
+   25 Report success (async)              |                      |
+        |<- - - - - - -|                  |                      |]]></artwork></figure>
 
-<t anchor="_83ea585a-7bec-6d67-c92e-d31ef9a2d97a">The permission granted in the OAuth token is a right for the Service
-Provider to apply a requested template (or templates) to the specific
-domain (and specific subdomains) DNS under control of a specific user at the DNS Provider.</t>
+<t anchor="_50de97de-eb3a-5364-de11-efcadd2f6f2a">Steps:</t>
 
-<t anchor="_517e544a-65db-e9d1-e5e3-0f36eb2d5344">The Service Provider would later call the API of the DNS provider to apply a template
-using the access token.</t>
+<t anchor="_76e91da9-1c26-3791-8ac1-fc96fcdf5abb">1-14: Same as for the Synchronous Flow.</t>
 
-<t anchor="_24f8c822-b6db-10ea-4393-acdde4a6e385">Additional parameters must be passed as name/value pairs when applying
-the template.</t>
+<ol anchor="_ee276213-073a-094c-8644-137f5609868b" type="1" start="15"><li><strong>DNS Provider Requests Consent for (Future) DNS Changes</strong>: The DNS Provider asks the user for consent to allow the Service Provider to make DNS changes on their behalf in the future.</li>
+<li><strong>User Grants Consent</strong>: The user grants consent for future DNS changes.</li>
+<li><strong>DNS Provider Provides OAuth Code</strong>: The DNS Provider provides an OAuth code to the Service Provider.</li>
+<li><strong>Service Provider Exchanges Code for Token</strong>: The Service Provider exchanges the OAuth code for an access token.</li>
+<li><strong>DNS Provider Returns Access Token</strong>: The DNS Provider provides an access token to the Service Provider.</li>
+<li><strong>Service Provider Sends API Request with Token (Later)</strong>: At a later time, the Service Provider uses the access token to send an API request to apply the template to the domain.</li>
+<li><strong>DNS Provider Applies Changes to DNS</strong>: The DNS Provider applies the changes to the DNS zone.</li>
+<li><strong>DNS Provider Responds with Success</strong>: The DNS Provider responds to the Service Provider with success.</li>
+<li><strong>Service Provider Queries DNS Records</strong>: The Service Provider queries the DNS records to verify that the changes have been applied.</li>
+<li><strong>DNS Server Returns New DNS Records</strong>: The DNS Server returns the updated DNS records.</li>
+<li><strong>Service Provider Reports Success (Asynchronous)</strong>: The Service Provider reports to the user that the domain has been successfully connected to the service.</li>
+</ol>
 </section>
 </section>
     <section anchor="_dns_provider_discovery"><name>DNS Provider Discovery</name>
@@ -882,8 +910,8 @@ is generally frowned upon given that various systems often log URLs.</t>
 
 <t anchor="_65214185-731a-daa6-0b74-80b403426d3a">The body of the post is application/json encoded.</t>
 
-<table anchor="_76b39d85-7434-ae59-71e0-0bd0660baa33"><name>parameters of the token end-point</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Authorization Code/Refresh Code</strong></td><td align="left">code/refresh_token</td><td align="left">(REQUIRED) The authorization code that was
-provided in the previous step when the customer accepted the
+<table anchor="_325b355c-108a-e7fa-c214-3a213d72577e"><name>parameters of the token end-point</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Authorization Code/Refresh Code</strong></td><td align="left">code/refresh_token</td><td align="left">(REQUIRED) The authorization code that was
+provided in the previous step when the user accepted the
 authorization request, or the refresh_token for a subsequent access
 token.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) This is REQUIRED if a redirect_uri was
 passed to request the authorization code. When included, it needs to be
@@ -931,7 +959,7 @@ value vs. the value returned during discovery here as well.</t>
 /{serviceId}/apply?[properties]]]></sourcecode>
 
 
-<t anchor="_8ae8141d-b166-2a71-1a2e-5bfcab2c9c4c">The primary function of the API is to apply a template to a customer
+<t anchor="_acb1c8f9-e057-45ee-124b-bb98487e961d">The primary function of the API is to apply a template to a user
 domain.</t>
 
 <t anchor="_2579abcf-72dd-816a-1bc6-431027d2e4db">While the providerId is implied in the authorization, this is on the
@@ -995,8 +1023,8 @@ exampleservice.example/services/template1/apply?IP=192.0.2.42
 &#x26;RANDOMTEXT=shm%3A1542108821%3AHello&#x26;force=1]]></sourcecode>
 
 
-<t anchor="_a1b0c7f6-306d-b165-a2ff-8a679ca1aae7">The API must validate the access token, and that the domain belongs to
-the customer and is represented by the token being presented. Any errors
+<t anchor="_7919479f-e107-5a61-6f5f-2b32e77e73c3">The API must validate the access token, and that the domain belongs to
+the user and is represented by the token being presented. Any errors
 with variables, conflicting templates, or problems with the state of the
 domain are returned; otherwise the template is applied.</t>
 
@@ -1057,7 +1085,7 @@ template. The domain had an existing service applied for hosting.</t>
 /{serviceId}/revert?domain={domain}&host={host}]]></sourcecode>
 
 
-<t anchor="_36273a0d-f6b8-5c9e-30d2-d4f7a097cd22">This API allows the removal of a template from a customer domain/host
+<t anchor="_91f7c8e6-a25e-c857-b3d8-082498e9fff7">This API allows the removal of a template from a user domain/host
 using an OAuth request.</t>
 
 <t anchor="_fb6e9ba3-ead5-69d4-17b9-747d66fe0c58">The provider and service name in the URL must match the values provided during authorization.</t>
@@ -1104,7 +1132,7 @@ aware that their access to the API may be denied.</t>
 
 <t anchor="_e9fffcaf-adc4-6a65-3c34-91a9540a1610">If a breaking change is made to a template it is recommended that a new template be created. While on the surface versioning looks appealing, in reality this is rarely needed.</t>
 
-<t anchor="_e25810e2-ea69-54ef-fc06-063ed3aed474">Any changes to the template need to account for existing customers with settings in DNS, some applied through Domain Connect and some manual. So when changes are made, they are often backward compatible.</t>
+<t anchor="_ec0cb064-4f28-e719-eadc-1923b37791fe">Any changes to the template need to account for existing users with settings in DNS, some applied through Domain Connect and some manual. So when changes are made, they are often backward compatible.</t>
 
 <t anchor="_e4a2af8e-258a-2af0-da2b-ea6e29816c1b">Note that when a template changes, it does need to be on-boarded with the DNS Providers.</t>
 
@@ -1250,8 +1278,8 @@ SPFM records into final SPF TXT record. See <xref target="spf-record-merging"></
 <t anchor="_6329133f-85fb-14f3-4ed3-cab4d1f62162">DNS Providers may chose to maintain state inside records in DNS indicating the templates
 writing the records. Other providers may chose to not maintain this state.</t>
 
-<t anchor="_7dd29f75-68ee-5ad2-18af-0518dac41ac4">A DNS Provider that maintains this state may be able to provide an improved experience for
-customers, telling them the services enabled. They also may be able to have more
+<t anchor="_ab50f861-f810-f77c-cafd-7218b0580cca">A DNS Provider that maintains this state may be able to provide an improved experience for
+users, telling them the services enabled. They also may be able to have more
 advanced handling of conflicts.</t>
 
 <t anchor="_8714ec3c-bebd-e951-cc4d-a8d7d6384f25">To make the implementation burden reasonable for DNS Providers, Domain Connect does not dictate the approach.</t>
@@ -1299,8 +1327,8 @@ a template is applied the new records must be applied in totality.</t>
 
 <t anchor="_b9237900-55e8-c463-ebe3-375681847c5e">A reasonable set of recommendations for the UX might consist of:</t>
 
-<ul anchor="_56406cad-8098-a5fe-2a94-9e23a19ca024"><li>The consent UX should inform the customer of the service that will be
-enabled. If the customer want to know the specifics, the DNS
+<ul anchor="_48cbe2e6-a3df-a664-f683-503556073737"><li>The consent UX should inform the user of the service that will be
+enabled. If the user want to know the specifics, the DNS
 Provider could provide a "show details" link to the user. This could
 display to them the specific records that are being set in DNS.</li>
 <li>If there are conflicts, either at the template or record level, the
@@ -1573,7 +1601,7 @@ Newsletter1: v=spf1 include:_spf.newsletter.example ~all</t>
 <t anchor="_97a1a3f3-5a70-a30d-06b2-b7df7f0e75fd">All of these examples use the include syntax. This is fairly common. The use of all at the end is common,
 although is often inconsistent with the modifier.</t>
 
-<t anchor="_a27d1a7b-1b46-677a-3a4c-3ce481479408">If a customer installed Mailer1 and Newsletter1, their combined SPF record ought to be something like:</t>
+<t anchor="_544bff6f-7d8c-78ad-cdbe-f4382adafc85">If a user installed Mailer1 and Newsletter1, their combined SPF record ought to be something like:</t>
 
 <sourcecode anchor="_d85934fa-4a6d-ee35-4227-e6e48188be04"><![CDATA[v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
  ~all]]></sourcecode>
@@ -1877,7 +1905,7 @@ DNS Provider to determine if they will support.</t>
       <reference target="https://www.rfc-editor.org/info/rfc1035" anchor="RFC1035"><stream>IETF</stream> <front> <title>Domain names - implementation and specification</title> <author fullname="P. Mockapetris" asciiFullname="P. Mockapetris"></author> <date month="November" year="1987"></date> <keyword>DOMAIN</keyword><keyword>DNS</keyword> <abstract>  <t anchor="_71a116f9-cd42-fd27-e40c-6721725bcb6e">This RFC is the revised specification of the protocol and format used in the implementation of the Domain Name System. It obsoletes RFC-883. This memo documents the details of the domain name client - server communication.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc1035" type="src"></format> <seriesInfo name="STD" value="13"></seriesInfo> <seriesInfo value=" 10.17487/RFC1035" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="1035" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc2119" anchor="RFC2119"><stream>IETF</stream> <front> <title>Key words for use in RFCs to Indicate Requirement Levels</title> <author fullname="S. Bradner" asciiFullname="S. Bradner"></author> <date month="March" year="1997"></date> <keyword>Standards</keyword><keyword>Track</keyword><keyword>Documents</keyword> <abstract>  <t anchor="_a0f68cf4-5af7-a002-bcaa-63a0217e16de">In many standards track documents several words are used to signify the requirements in the specification. These words are often capitalized. This document defines these words as they should be interpreted in IETF documents. This document specifies an Internet Best Current Practices for the Internet Community, and requests discussion and suggestions for improvements.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc2119" type="src"></format> <seriesInfo value=" 10.17487/RFC2119" name="DOI"></seriesInfo> <seriesInfo value="14" name="BCP"></seriesInfo> <seriesInfo value="2119" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7208" anchor="RFC7208"><stream>IETF</stream> <front> <title>Sender Policy Framework (SPF) for Authorizing Use of Domains in Email, Version 1</title> <author fullname="S. Kitterman" asciiFullname="S. Kitterman"></author> <date month="April" year="2014"></date> <keyword>spoofing</keyword><keyword>spf</keyword><keyword>anti-forgery</keyword><keyword>authentication</keyword> <abstract>  <t anchor="_60acd5df-d125-00fa-48c1-88340ffcefb5">Email on the Internet can be forged in a number of ways. In particular, existing protocols place no restriction on what a sending host can use as the "MAIL FROM" of a message or the domain given on the SMTP HELO/EHLO commands. This document describes version 1 of the Sender Policy Framework (SPF) protocol, whereby ADministrative Management Domains (ADMDs) can explicitly authorize the hosts that are allowed to use their domain names, and a receiving host can check such authorization.</t>  <t anchor="_7fdd5782-546d-2fa2-48d3-5b6f2cdeb252">This document obsoletes RFC 4408.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc7208" type="src"></format> <seriesInfo value=" 10.17487/RFC7208" name="DOI"></seriesInfo> <seriesInfo value="7208" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc6749" anchor="RFC6749"><stream>IETF</stream> <front> <title>The OAuth 2.0 Authorization Framework</title> <author fullname="D. Hardt" asciiFullname="D. Hardt"></author> <date month="October" year="2012"></date> <keyword>Client</keyword><keyword>Resource Owner</keyword><keyword>Authorization Server</keyword><keyword>Resource Server</keyword><keyword>Token Endpoint</keyword><keyword>AuthorizationÂ Endpoint</keyword><keyword>Authorization Request</keyword><keyword>Authorization Grant</keyword><keyword>Protected Resource</keyword><keyword>Access Token</keyword><keyword>RefreshÂ Token</keyword><keyword>Authorization Code</keyword><keyword>Implicit Grant</keyword><keyword>Client Identifier</keyword><keyword>Access Token Scope</keyword><keyword>Delegation</keyword> <abstract>  <t anchor="_d7a81998-0eac-148f-13bc-5ed20fef9c76">The OAuth 2.0 authorization framework enables a third-party application to obtain limited access to an HTTP service, either on behalf of a resource owner by orchestrating an approval interaction between the resource owner and the HTTP service, or by allowing the third-party application to obtain access on its own behalf. This specification replaces and obsoletes the OAuth 1.0 protocol described in RFC 5849. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc6749" type="src"></format> <seriesInfo value=" 10.17487/RFC6749" name="DOI"></seriesInfo> <seriesInfo value="6749" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc6749" anchor="RFC6749"><stream>IETF</stream> <front> <title>The OAuth 2.0 Authorization Framework</title> <author fullname="D. Hardt" asciiFullname="D. Hardt"></author> <date month="October" year="2012"></date> <keyword>Client</keyword><keyword>Resource Owner</keyword><keyword>Authorization Server</keyword><keyword>Resource Server</keyword><keyword>Token Endpoint</keyword><keyword>Authorization Endpoint</keyword><keyword>Authorization Request</keyword><keyword>Authorization Grant</keyword><keyword>Protected Resource</keyword><keyword>Access Token</keyword><keyword>Refresh Token</keyword><keyword>Authorization Code</keyword><keyword>Implicit Grant</keyword><keyword>Client Identifier</keyword><keyword>Access Token Scope</keyword><keyword>Delegation</keyword> <abstract>  <t anchor="_d7a81998-0eac-148f-13bc-5ed20fef9c76">The OAuth 2.0 authorization framework enables a third-party application to obtain limited access to an HTTP service, either on behalf of a resource owner by orchestrating an approval interaction between the resource owner and the HTTP service, or by allowing the third-party application to obtain access on its own behalf. This specification replaces and obsoletes the OAuth 1.0 protocol described in RFC 5849. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc6749" type="src"></format> <seriesInfo value=" 10.17487/RFC6749" name="DOI"></seriesInfo> <seriesInfo value="6749" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc3597" anchor="RFC3597"><stream>IETF</stream> <front> <title>Handling of Unknown DNS Resource Record (RR) Types</title> <author fullname="A. Gustafsson" asciiFullname="A. Gustafsson"></author> <date month="September" year="2003"></date> <keyword>DNS</keyword><keyword>domain name system</keyword><keyword>name server software</keyword><keyword>compression</keyword><keyword>transparency</keyword><keyword>RR</keyword><keyword>Resource Record</keyword> <abstract>  <t anchor="_02cc28cc-2bd9-a68b-4a36-06d5e7a9f08b">Extending the Domain Name System (DNS) with new Resource Record (RR) types currently requires changes to name server software. This document specifies the changes necessary to allow future DNS implementations to handle new RR types transparently. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc3597" type="src"></format> <seriesInfo value=" 10.17487/RFC3597" name="DOI"></seriesInfo> <seriesInfo value="3597" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc8552" anchor="RFC8552"><stream>IETF</stream> <front> <title>Scoped Interpretation of DNS Resource Records through "Underscored" Naming of Attribute Leaves</title> <author fullname="D. Crocker" asciiFullname="D. Crocker"></author> <date month="March" year="2019"></date> <keyword>DNS</keyword><keyword>Domain Name System</keyword> <abstract>  <t anchor="_3621576d-f762-fbbb-7c9d-819db43eb573">Formally, any DNS Resource Record (RR) may occur under any domain name. However, some services use an operational convention for defining specific interpretations of an RRset by locating the records in a DNS branch under the parent domain to which the RRset actually applies. The top of this subordinate branch is defined by a naming convention that uses a reserved node name, which begins with the underscore character (e.g., "_name"). The underscored naming construct defines a semantic scope for DNS record types that are associated with the parent domain above the underscored branch. This specification explores the nature of this DNS usage and defines the "Underscored and Globally Scoped DNS Node Names" registry with IANA. The purpose of this registry is to avoid collisions resulting from the use of the same underscored name for different services.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc8552" type="src"></format> <seriesInfo value=" 10.17487/RFC8552" name="DOI"></seriesInfo> <seriesInfo value="222" name="BCP"></seriesInfo> <seriesInfo value="8552" name="RFC"></seriesInfo></reference>
     </references>

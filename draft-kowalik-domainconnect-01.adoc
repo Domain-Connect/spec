@@ -59,13 +59,13 @@ This document provides specification of the Domain Connect Protocol that was bui
 
 Configuring a service at a Service Provider to work with a domain has historically been a complex task that is difficult for users.
 
-Typically, a customer would try to configure their service by entering their domain name with the Service Provider. The Service Provider then used a number of techniques with mixed reliability to discover the DNS Provider. This might include DNS queries for nameservers, queries to whois, and mapping tables to determine the registrar or the company providing DNS.
+Typically, a user would try to configure their service by entering their domain name with the Service Provider. The Service Provider then used a number of techniques with mixed reliability to discover the DNS Provider. This might include DNS queries for nameservers, queries to whois, and mapping tables to determine the registrar or the company providing DNS.
 
-Once the Service Provider discovered the DNS Provider, they typically gave the customer instructions for proper configuration of DNS. This might include help text, screen shots, or even links to the appropriate tools.
+Once the Service Provider discovered the DNS Provider, they typically gave the user instructions for proper configuration of DNS. This might include help text, screen shots, or even links to the appropriate tools.
 
 Discovery of the DNS Provider in this manner is unreliable, and providing instructions to users would present a number of technologies (DNS record types, TTLs, Hostnames, etc.) and processes they didn't understand. These instructions authored by the Service Provider often quickly become out of date, further confusing the issue for users.
 
-The goal of this specificatoin is to create a system where Service Providers can easily enable their applications/services to work with the domain names of their customers. This includes both discovery of the DNS Provider and subsequent modification of DNS.
+The goal of this specificatoin is to create a system where Service Providers can easily enable their applications/services to work with the domain names of their users. This includes both discovery of the DNS Provider and subsequent modification of DNS.
 
 The system will be implemented using simple web based interactions and standard authentication protocols. The creation and modification of DNS settings will be done through the application of templates instead of direct manipulation of individual DNS records.
 
@@ -76,32 +76,18 @@ The system will be implemented using simple web based interactions and standard 
 
 The key words "*MUST*", "*MUST NOT*", "*REQUIRED*", "*SHALL*", "*SHALL NOT*", "*SHOULD*", "*SHOULD NOT*", "*RECOMMENDED*", "*NOT RECOMMENDED*", "*MAY*", and "*OPTIONAL*" in this document are to be interpreted as described in BCP 14 <<RFC2119>> <<RFC8174>> when, and only when, they appear in all capitals, as shown here.
 
+The Terms like "*Registrar*", "*Authoritative server*", "*Zone*", "*Zone Apex*" or "*Sub Domain*" are used as defined in <<RFC8499>>. 
+
 [horizontal]
-Service Provider:: refers to entity that provide products and
-services attached to domain names. Examples include web hosting
-providers, email service providers and potentially even hardware manufacturers
-with DNS-enabled devices like home routers or automation controls.
+Service Provider:: An entity that offers products and services that are configured or accessed using domain names. These services typically rely on DNS for setup, discovery and/or operation. Examples include web hosting, email services, cloud platforms, and other online applications.
 
-DNS Provider:: refers to entity that provide DNS services such as
-registrars or standalone DNS services.
+DNS Provider:: An entity that offers DNS zone hosting services. DNS Providers are responsible for hosting the DNS zone for a domain name and providing the necessary tools to manage the DNS records. DNS Provider would be an Authoritative server operator for the hosted zones, or would have a contractual relationship with the operator to manage zone distribution over DNS.
 
-Registrar:: refers to entities that register domain names with registries.
-It is noted that the DNS Provider and Registrar can be different entities for a
-given domain name and DNS Zone.
+User:: Refers to the end-user who has means to control domain name's DNS configuration at DNS Provider and wishes to configure it to work with a service provided by a Service Provider. 
 
-Customer/User:: refers to the end-user of these services.
+Service Template/Template:: A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a mean of communication between Service Provider and DNS Provider.
 
-Templates/Service Templates:: refers to a file that describes a set of
-changes to DNS and domain functionality to enable a specific service.
-
-Public Template Repository:: refers to a public repository of Templates
-in a standarised format (read more: <<repository-and-integrity>>).
-
-Apex Domain:: refers to a registered domain (e.g. example.com or
-example.co.uk), or to a delegated zone in DNS.
-
-Sub Domain:: refers to a sub-domain of an Apex Domain (e.g.
-sub.example.com or sub.example.co.uk).
+Public Template Repository:: A publicly accessible repository of Service Templates, formatted in a standardized manner, intended to facilitate sharing, discovery, and reuse of service configurations. (Read more: <<repository-and-integrity>>).
 
 :sectnums:
 
@@ -120,7 +106,7 @@ both changes are fundamentally part of the same service.
 
 Templates MAY also contain variable portions, as often values of data in
 DNS change based on the implementation and/or user of the
-service (e.g. the IP address of a service, a customer id,
+service (e.g. the IP address of a service, a user id,
 etc.).
 
 The template is defined by the Service Provider and manually onboarded with the DNS
@@ -135,7 +121,7 @@ system is more secure as templates are controlled and contained.
 
 == End User Flows
 === General information
-To attach a domain name to a service provided by a Service Provider, the customer would first enter their domain name.
+To attach a domain name to a service provided by a Service Provider, the user would first enter their domain name.
 
 Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.
 
@@ -438,10 +424,8 @@ would be queried.
 }
 ----
 
-Discovery MUST work on the Apex Domain (zone) only. Bear in mind that
-zones can be delegated to other users, making this information valuable to
-Service Providers since DNS changes may be different for an apex zone vs.
-a sub-domain for an individual service.
+Discovery MUST work on the Zone Apex only. Bear in mind that
+zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.
 
 The Service Provider MUST handle the condition when a query for the
 `_domainconnect` TXT record suceeds, but a call to query for the JSON fails.
@@ -618,14 +602,11 @@ of the DNS Provider and is therefore OPTIONAL.
 
 |*Domain*
 |domain
-|(REQUIRED) The domain name being configured. This is the Apex Domain (the
-registered domain or delegated zone).
+|(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).
 
 |*Host*
 |host
-|(OPTIONAL) This is the host name of the sub domain. If left blank, the template is being
-applied to the Apex Domain. Otherwise the template is applied to the sub domain of the
-domain.
+|(OPTIONAL) This is the host name of the Sub Domain. If left blank, the template is being applied to the Zone Apex. Otherwise the template is applied to the sub domain of the domain in the same zone.
 
 |*Redirect URI*
 |redirect_uri
@@ -947,7 +928,7 @@ the end user of all possible consequences of the authorised change.
 The scope parameter is a space separated list (as per the OAuth protocol)
 of the template serviceIds. The host parameter is an OPTIONAL comma separated
 list of hosts. A blank entry for the host implies the template can be
-applied to the Apex Domain. For example:
+applied to the Zone Apex For example:
 
 [cols=",",options="header",title="examples of scope and host parameter values in the async flow"]
 |=======================================================================
@@ -982,7 +963,7 @@ The following table describes the values in the query string parameters for the 
 
 |*Domain*
 |domain
-|(REQUIRED) The domain name being configured. This is the Apex Domain.
+|(REQUIRED) The domain name being configured. This is the Zone Apex.
 
 |*Host*
 |host
@@ -1067,7 +1048,7 @@ The body of the post is application/json encoded.
 |*Authorization Code/Refresh Code*
 |code/refresh_token
 |(REQUIRED) The authorization code that was
-provided in the previous step when the customer accepted the
+provided in the previous step when the user accepted the
 authorization request, or the refresh_token for a subsequent access
 token.
 
@@ -1133,7 +1114,7 @@ call was successful. The response is the JSON described above.
 Once the Service Provider has the access token, they can call the DNS
 Provider’s API to make changes to DNS on the domain by applying and (OPTIONALLY)
 removing authorized templates. These templates can be applied to the
-Apex Domain or to any sub-domain of the Apex Domain that has been authorized.
+Zone Apex or to any Sub Domain that has been authorized.
 
 All calls to this API pass the access token in the Authorization Header
 of the request to the call to the API. More details can be found in the
@@ -1162,7 +1143,7 @@ POST
 /{serviceId}/apply?[properties]
 ----
 
-The primary function of the API is to apply a template to a customer
+The primary function of the API is to apply a template to a user
 domain.
 
 While the `providerId` is implied in the authorization, this is on the
@@ -1196,13 +1177,13 @@ The body is application/json encoded.
 
 |*Domain*
 |domain
-|(REQUIRED) The Apex Domain name being configured. It MUST match the domain that was authorized
+|(REQUIRED) The Zone Apex domain name being configured. It MUST match the domain that was authorized
 in the token.
 
 |*Host*
 |host
-|(OPTIONAL) The host name of the sub domain of the Apex Domain that was authorized in the
-token. If omitted or left blank, the template is being applied to the Apex Domain.
+|(OPTIONAL) The host name of the Sub Domain that was authorized in the
+token. If omitted or left blank, the template is being applied to the Zone Apex.
 
 |*Name/Value Pairs*
 |*
@@ -1249,7 +1230,7 @@ exampleservice.example/services/template1/apply?IP=192.0.2.42
 ----
 
 The API MUST validate the access token, and that the domain belongs to
-the customer and is represented by the token being presented. Any errors
+the user and is represented by the token being presented. Any errors
 with variables, conflicting templates, or problems with the state of the
 domain are returned; otherwise the template is applied.
 
@@ -1327,7 +1308,7 @@ POST
 /{serviceId}/revert?domain={domain}&host={host}
 ----
 
-This API allows the removal of a template from a customer domain/host
+This API allows the removal of a template from a user domain/host
 using an OAuth request.
 
 The provider and service name in the URL MUST match the values provided during authorization.
@@ -1354,13 +1335,13 @@ Allowed parameters:
 
 |*Domain*
 |domain
-|(REQUIRED) The Apex Domain name being configured. It
+|(REQUIRED) The Zone Apex domain name being configured. It
 MUST match the domain that was authorized in the token.
 
 |*Host*
 |host
-|(OPTIONAL) The host name of the sub domain of the Apex Domain that was authorized in the token.
-If omitted or left blank, the template is being applied to the Apex Domain.
+|(OPTIONAL) The host name of the Sub Domain that was authorized in the token.
+If omitted or left blank, the template is being applied to the Zone Apex.
 
 |*InstanceId*
 |instanceId
@@ -1385,7 +1366,7 @@ aware that their access to the API may be denied.
 
 If a breaking change is made to a template it is recommended that a new template be created. While on the surface versioning looks appealing, in reality this is rarely needed.
 
-Any changes to the template need to account for existing customers with settings in DNS, some applied through Domain Connect and some manual. So when changes are made, they are often backward compatible.
+Any changes to the template need to account for existing users with settings in DNS, some applied through Domain Connect and some manual. So when changes are made, they are often backward compatible.
 
 Note that when a template changes, it does need to be on-boarded with the DNS Providers.
 
@@ -1710,7 +1691,7 @@ Support of variables in this field is OPTIONAL for DNS Provider.
 
 DNS Providers may choose to maintain state inside records in DNS indicating the templates writing the records. Other providers may chose to not maintain this state.
 
-A DNS Provider that maintains this state may be able to provide an improved experience for customers, telling them the services enabled. They also may be able to have more advanced handling of conflicts.
+A DNS Provider that maintains this state may be able to provide an improved experience for users, telling them the services enabled. They also may be able to have more advanced handling of conflicts.
 
 To make the implementation burden reasonable for DNS Providers, Domain Connect does not dictate the approach.
 
@@ -1747,7 +1728,7 @@ a template is applied the new records MUST be applied in totality.
 
 A reasonable set of recommendations for the UX might consist of:
 
-* The consent UX SHOULD inform the customer of the service that will be enabled. If the customer want to know the specifics, the DNS Provider could provide a "show details" link to the user. This could display to them the specific records that are being set in DNS.
+* The consent UX SHOULD inform the user of the service that will be enabled. If the user want to know the specifics, the DNS Provider could provide a "show details" link to the user. This could display to them the specific records that are being set in DNS.
 * If there are conflicts, either at the template or record level, the consent UX SHOULD warn the user about these conflicts. For templates, this would be services that would be disabled. For records, this would be records that would be deleted or overwritten. This could be progressively disclosed.
 
 [[record-types-conflicts]]
@@ -1797,7 +1778,7 @@ Again, this setting only impacts DNS Providers that maintain applied template st
 
 === Template Scope
 
-For DNS Providers that maintain template state, an individual template is scoped to the set of records applied to a fully qualified domain. This includes the Apex Domain and the host (aka sub-domain) at apply time.
+For DNS Providers that maintain template state, an individual template is scoped to the set of records applied to a fully qualified domain. This includes the Zone Apex and the host (aka Sub Domain) at apply time.
 
 As an example, if a template is applied on `domain=example.com&host=sub1` a later application of the template on `domain=example.com&host=sub2` must be treated as a distinct template. If a conflict is detected later with the records set into `"sub2.example.com"`, only the records set with this template would be removed.
 
@@ -1968,7 +1949,7 @@ Newsletter1: v=spf1 include:_spf.newsletter.example ~all
 All of these examples use the include syntax. This is fairly common. The use of all at the end is common,
 although is often inconsistent with the modifier.
 
-If a customer installed Mailer1 and Newsletter1, their combined SPF record ought to be something like:
+If a user installed Mailer1 and Newsletter1, their combined SPF record ought to be something like:
 
 ----
 v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
@@ -2192,7 +2173,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 == Change History
 [toc=exclude,numbered=false]
 === Change from -00 to -01
-- Changed term Root Domain to Apex Domain to align with <<RFC8499>>.
+- Changed term Root Domain to Zone Apex to align with <<RFC8499>>.
 - Removed example provider names from Service Providers and DNS Providers teminology
 - Cleaned up usage of terminology
 

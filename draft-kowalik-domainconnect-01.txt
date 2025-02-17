@@ -5,12 +5,12 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 28 July 2025                                                   
+Expires: 21 August 2025                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                         24 January 2025
+                                                        17 February 2025
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 28 July 2025.
+   This Internet-Draft will expire on 21 August 2025.
 
 Copyright Notice
 
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 1]
+Kowalik, et al.          Expires 21 August 2025                 [Page 1]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    and restrictions with respect to this document.  Code Components
@@ -109,9 +109,9 @@ Table of Contents
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 2]
+Kowalik, et al.          Expires 21 August 2025                 [Page 2]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
        9.9.2.  Variable Values . . . . . . . . . . . . . . . . . . .  56
@@ -165,9 +165,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 3]
+Kowalik, et al.          Expires 21 August 2025                 [Page 3]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 2.  Introduction
@@ -175,15 +175,15 @@ Internet-Draft               Domain Connect                 January 2025
    Configuring a service at a Service Provider to work with a domain has
    historically been a complex task that is difficult for users.
 
-   Typically, a customer would try to configure their service by
-   entering their domain name with the Service Provider.  The Service
-   Provider then used a number of techniques with mixed reliability to
-   discover the DNS Provider.  This might include DNS queries for
-   nameservers, queries to whois, and mapping tables to determine the
-   registrar or the company providing DNS.
+   Typically, a user would try to configure their service by entering
+   their domain name with the Service Provider.  The Service Provider
+   then used a number of techniques with mixed reliability to discover
+   the DNS Provider.  This might include DNS queries for nameservers,
+   queries to whois, and mapping tables to determine the registrar or
+   the company providing DNS.
 
    Once the Service Provider discovered the DNS Provider, they typically
-   gave the customer instructions for proper configuration of DNS.  This
+   gave the user instructions for proper configuration of DNS.  This
    might include help text, screen shots, or even links to the
    appropriate tools.
 
@@ -196,8 +196,8 @@ Internet-Draft               Domain Connect                 January 2025
 
    The goal of this specificatoin is to create a system where Service
    Providers can easily enable their applications/services to work with
-   the domain names of their customers.  This includes both discovery of
-   the DNS Provider and subsequent modification of DNS.
+   the domain names of their users.  This includes both discovery of the
+   DNS Provider and subsequent modification of DNS.
 
    The system will be implemented using simple web based interactions
    and standard authentication protocols.  The creation and modification
@@ -212,41 +212,47 @@ Internet-Draft               Domain Connect                 January 2025
    14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
-   Service Provider  refers to entity that provide products and services
-      attached to domain names.  Examples include web hosting providers,
-      email service providers and potentially even hardware
-      manufacturers with DNS-enabled devices like home routers or
-      automation controls.
+   The Terms like "*Registrar*", "*Authoritative server*", "*Zone*",
+   "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC8499].
+
+   Service Provider  An entity that offers products and services that
 
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 4]
+
+Kowalik, et al.          Expires 21 August 2025                 [Page 4]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
-   DNS Provider  refers to entity that provide DNS services such as
-      registrars or standalone DNS services.
+      are configured or accessed using domain names.  These services
+      typically rely on DNS for setup, discovery and/or operation.
+      Examples include web hosting, email services, cloud platforms, and
+      other online applications.
 
-   Registrar  refers to entities that register domain names with
-      registries.  It is noted that the DNS Provider and Registrar can
-      be different entities for a given domain name and DNS Zone.
+   DNS Provider  An entity that offers DNS zone hosting services.  DNS
+      Providers are responsible for hosting the DNS zone for a domain
+      name and providing the necessary tools to manage the DNS records.
+      DNS Provider would be an Authoritative server operator for the
+      hosted zones, or would have a contractual relationship with the
+      operator to manage zone distribution over DNS.
 
-   Customer/User  refers to the end-user of these services.
+   User  Refers to the end-user who has means to control domain name's
+      DNS configuration at DNS Provider and wishes to configure it to
+      work with a service provided by a Service Provider.
 
-   Templates/Service Templates  refers to a file that describes a set of
-      changes to DNS and domain functionality to enable a specific
-      service.
+   Service Template/Template  A structured data format that describes a
+      set of configurations for DNS records required by a Service
+      Provider to configure a certain service together with metadata
+      related to the control flow of Domain Connect protocol.  A
+      template is used as a mean of communication between Service
+      Provider and DNS Provider.
 
-   Public Template Repository  refers to a public repository of
-      Templates in a standarised format (read more: Section 9.11).
-
-   Apex Domain  refers to a registered domain (e.g. example.com or
-      example.co.uk), or to a delegated zone in DNS.
-
-   Sub Domain  refers to a sub-domain of an Apex Domain (e.g.
-      sub.example.com or sub.example.co.uk).
+   Public Template Repository  A publicly accessible repository of
+      Service Templates, formatted in a standardized manner, intended to
+      facilitate sharing, discovery, and reuse of service
+      configurations.  (Read more: Section 9.11).
 
 4.  Protocol design
 
@@ -266,21 +272,20 @@ Internet-Draft               Domain Connect                 January 2025
 
    Templates MAY also contain variable portions, as often values of data
    in DNS change based on the implementation and/or user of the service
-   (e.g. the IP address of a service, a customer id, etc.).
+   (e.g. the IP address of a service, a user id, etc.).
+
+
+
+
+Kowalik, et al.          Expires 21 August 2025                 [Page 5]
+
+Internet-Draft               Domain Connect                February 2025
+
 
    The template is defined by the Service Provider and manually
    onboarded with the DNS Provider, according to a template definition
    published in the Public Repository (Section 9.11) or agreed out-of-
    band between the Service Provider and the DNS Provider.
-
-
-
-
-
-Kowalik, et al.           Expires 28 July 2025                  [Page 5]
-
-Internet-Draft               Domain Connect                 January 2025
-
 
    By basing the protocol on templates instead of DNS Records, several
    advantages are achieved.  The DNS Provider has very explicit
@@ -293,7 +298,7 @@ Internet-Draft               Domain Connect                 January 2025
 5.1.  General information
 
    To attach a domain name to a service provided by a Service Provider,
-   the customer would first enter their domain name.
+   the user would first enter their domain name.
 
    Instead of relying on examination of the nameservers and mapping
    these to DNS Providers, DNS Provider discovery is handled through
@@ -328,14 +333,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-
-
-
-
-
-Kowalik, et al.           Expires 28 July 2025                  [Page 6]
+Kowalik, et al.          Expires 21 August 2025                 [Page 6]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +-----------------------------------------------+
@@ -389,9 +389,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 7]
+Kowalik, et al.          Expires 21 August 2025                 [Page 7]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    After clicking the link, the user would be directed to a browser
@@ -445,9 +445,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 8]
+Kowalik, et al.          Expires 21 August 2025                 [Page 8]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +-----------------------------------------------+
@@ -501,9 +501,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                  [Page 9]
+Kowalik, et al.          Expires 21 August 2025                 [Page 9]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    The permission granted in the OAuth token is a right for the Service
@@ -557,9 +557,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 10]
+Kowalik, et al.          Expires 21 August 2025                [Page 10]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    GET
@@ -613,9 +613,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 11]
+Kowalik, et al.          Expires 21 August 2025                [Page 11]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |              |                     |        | supporting the      |
@@ -669,9 +669,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 12]
+Kowalik, et al.          Expires 21 August 2025                [Page 12]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |              |                     |        | a pop-up window to  |
@@ -725,9 +725,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 13]
+Kowalik, et al.          Expires 21 August 2025                [Page 13]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |              |                     |        | given domain.       |
@@ -769,10 +769,10 @@ Internet-Draft               Domain Connect                 January 2025
        domainsdns.example"]
    }
 
-   Discovery MUST work on the Apex Domain (zone) only.  Bear in mind
-   that zones can be delegated to other users, making this information
-   valuable to Service Providers since DNS changes may be different for
-   an apex zone vs. a sub-domain for an individual service.
+   Discovery MUST work on the Zone Apex only.  Bear in mind that zones
+   can be delegated to other users, making this information valuable to
+   Service Providers since DNS changes may be different for a Zone Apex
+   vs. a Sub Domain for an individual service.
 
    The Service Provider MUST handle the condition when a query for the
    _domainconnect TXT record suceeds, but a call to query for the JSON
@@ -781,9 +781,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 14]
+Kowalik, et al.          Expires 21 August 2025                [Page 14]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    The DNS Provider MUST return a 404 HTTP error code if they do not
@@ -837,9 +837,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 15]
+Kowalik, et al.          Expires 21 August 2025                [Page 15]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    GET
@@ -893,9 +893,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 16]
+Kowalik, et al.          Expires 21 August 2025                [Page 16]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 7.2.2.2.  New Browser Window
@@ -949,9 +949,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 17]
+Kowalik, et al.          Expires 21 August 2025                [Page 17]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
       When an error occurs, an OPTIONAL error description containing a
@@ -981,16 +981,16 @@ Internet-Draft               Domain Connect                 January 2025
    |             | Parameter    |                                      |
    +=============+==============+======================================+
    | *Domain*    | domain       | (REQUIRED) The domain name being     |
-   |             |              | configured.  This is the Apex        |
-   |             |              | Domain (the registered domain or     |
-   |             |              | delegated zone).                     |
+   |             |              | configured.  This is the Zone Apex   |
+   |             |              | (the registered domain or delegated  |
+   |             |              | zone).                               |
    +-------------+--------------+--------------------------------------+
    | *Host*      | host         | (OPTIONAL) This is the host name of  |
-   |             |              | the sub domain.  If left blank, the  |
+   |             |              | the Sub Domain.  If left blank, the  |
    |             |              | template is being applied to the     |
-   |             |              | Apex Domain.  Otherwise the          |
-   |             |              | template is applied to the sub       |
-   |             |              | domain of the domain.                |
+   |             |              | Zone Apex.  Otherwise the template   |
+   |             |              | is applied to the sub domain of the  |
+   |             |              | domain in the same zone.             |
    +-------------+--------------+--------------------------------------+
    | *Redirect   | redirect_uri | (OPTIONAL) The location to direct    |
    | URI*        |              | the client browser to upon           |
@@ -1005,9 +1005,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 18]
+Kowalik, et al.          Expires 21 August 2025                [Page 18]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    | *State*     | state        | (OPTIONAL) A random and unique       |
@@ -1061,9 +1061,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 19]
+Kowalik, et al.          Expires 21 August 2025                [Page 19]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |             |              | all groups are applied.  Multiple    |
@@ -1117,9 +1117,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 20]
+Kowalik, et al.          Expires 21 August 2025                [Page 20]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    Not all templates have this problem.  But when they do, there are
@@ -1173,9 +1173,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 21]
+Kowalik, et al.          Expires 21 August 2025                [Page 21]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +============+=====+===============================================+
@@ -1229,9 +1229,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 22]
+Kowalik, et al.          Expires 21 August 2025                [Page 22]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
@@ -1285,9 +1285,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 23]
+Kowalik, et al.          Expires 21 August 2025                [Page 23]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 7.2.4.  Shared Templates
@@ -1341,9 +1341,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 24]
+Kowalik, et al.          Expires 21 August 2025                [Page 24]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    This same technique works with Domain Connect, and if necessary can
@@ -1397,9 +1397,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 25]
+Kowalik, et al.          Expires 21 August 2025                [Page 25]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    The DNS Provider SHOULD give the Service Provider a client id and a
@@ -1445,7 +1445,7 @@ Internet-Draft               Domain Connect                 January 2025
    The scope parameter is a space separated list (as per the OAuth
    protocol) of the template serviceIds.  The host parameter is an
    OPTIONAL comma separated list of hosts.  A blank entry for the host
-   implies the template can be applied to the Apex Domain.  For example:
+   implies the template can be applied to the Zone Apex For example:
 
 
 
@@ -1453,9 +1453,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 26]
+Kowalik, et al.          Expires 21 August 2025                [Page 26]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +===============================================+==================+
@@ -1509,17 +1509,17 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 27]
+Kowalik, et al.          Expires 21 August 2025                [Page 27]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
      +===========+===============+==================================+
      | Property  | Key           | Description                      |
      +===========+===============+==================================+
      | *Domain*  | domain        | (REQUIRED) The domain name being |
-     |           |               | configured.  This is the Apex    |
-     |           |               | Domain.                          |
+     |           |               | configured.  This is the Zone    |
+     |           |               | Apex.                            |
      +-----------+---------------+----------------------------------+
      | *Host*    | host          | (OPTIONAL) An list of comma      |
      |           |               | separated host names upon which  |
@@ -1565,9 +1565,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 28]
+Kowalik, et al.          Expires 21 August 2025                [Page 28]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
      |           |               | serviceName value(s) from the    |
@@ -1621,9 +1621,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 29]
+Kowalik, et al.          Expires 21 August 2025                [Page 29]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    When the secret is provided (which is the normal case), care must be
@@ -1677,47 +1677,47 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 30]
+Kowalik, et al.          Expires 21 August 2025                [Page 30]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
-   +================+===============+=================================+
-   | Property       | Key           | Description                     |
-   +================+===============+=================================+
-   | *Authorization | code/         | (REQUIRED) The authorization    |
-   | Code/Refresh   | refresh_token | code that was provided in the   |
-   | Code*          |               | previous step when the customer |
-   |                |               | accepted the authorization      |
-   |                |               | request, or the refresh_token   |
-   |                |               | for a subsequent access token.  |
-   +----------------+---------------+---------------------------------+
-   | *Redirect URI* | redirect_uri  | (OPTIONAL) This is REQUIRED if  |
-   |                |               | a redirect_uri was passed to    |
-   |                |               | request the authorization code. |
-   |                |               | When included, it needs to be   |
-   |                |               | the same redirect_uri provided  |
-   |                |               | in this step.                   |
-   +----------------+---------------+---------------------------------+
-   | *Grant type*   | grant_type    | (REQUIRED) The type of code in  |
-   |                |               | the request.  Usually the       |
-   |                |               | string 'authorization_code' or  |
-   |                |               | 'refresh_token'                 |
-   +----------------+---------------+---------------------------------+
-   | *Client ID*    | client_id     | (REQUIRED) This is the client   |
-   |                |               | id that was provided by the DNS |
-   |                |               | Provider to the Service         |
-   |                |               | Provider during registration    |
-   +----------------+---------------+---------------------------------+
-   | *Client        | client_secret | (REQUIRED) The secret provided  |
-   | Secret*        |               | to the Service Provider during  |
-   |                |               | registration.  Typically        |
-   |                |               | required unless the rare        |
-   |                |               | circumstance with secret-less   |
-   |                |               | OAuth.                          |
-   +----------------+---------------+---------------------------------+
+    +================+===============+================================+
+    | Property       | Key           | Description                    |
+    +================+===============+================================+
+    | *Authorization | code/         | (REQUIRED) The authorization   |
+    | Code/Refresh   | refresh_token | code that was provided in the  |
+    | Code*          |               | previous step when the user    |
+    |                |               | accepted the authorization     |
+    |                |               | request, or the refresh_token  |
+    |                |               | for a subsequent access token. |
+    +----------------+---------------+--------------------------------+
+    | *Redirect URI* | redirect_uri  | (OPTIONAL) This is REQUIRED if |
+    |                |               | a redirect_uri was passed to   |
+    |                |               | request the authorization      |
+    |                |               | code.  When included, it needs |
+    |                |               | to be the same redirect_uri    |
+    |                |               | provided in this step.         |
+    +----------------+---------------+--------------------------------+
+    | *Grant type*   | grant_type    | (REQUIRED) The type of code in |
+    |                |               | the request.  Usually the      |
+    |                |               | string 'authorization_code' or |
+    |                |               | 'refresh_token'                |
+    +----------------+---------------+--------------------------------+
+    | *Client ID*    | client_id     | (REQUIRED) This is the client  |
+    |                |               | id that was provided by the    |
+    |                |               | DNS Provider to the Service    |
+    |                |               | Provider during registration   |
+    +----------------+---------------+--------------------------------+
+    | *Client        | client_secret | (REQUIRED) The secret provided |
+    | Secret*        |               | to the Service Provider during |
+    |                |               | registration.  Typically       |
+    |                |               | required unless the rare       |
+    |                |               | circumstance with secret-less  |
+    |                |               | OAuth.                         |
+    +----------------+---------------+--------------------------------+
 
-                Table 8: parameters of the token end-point
+                 Table 8: parameters of the token end-point
 
    Upon successful token exchange, the DNS Provider MUST return a
    response with 4 properties in the body of the response.
@@ -1733,9 +1733,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 31]
+Kowalik, et al.          Expires 21 August 2025                [Page 31]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
       +=================+===========================================+
@@ -1772,8 +1772,8 @@ Internet-Draft               Domain Connect                 January 2025
    Once the Service Provider has the access token, they can call the DNS
    Provider's API to make changes to DNS on the domain by applying and
    (OPTIONALLY) removing authorized templates.  These templates can be
-   applied to the Apex Domain or to any sub-domain of the Apex Domain
-   that has been authorized.
+   applied to the Zone Apex or to any Sub Domain that has been
+   authorized.
 
    All calls to this API pass the access token in the Authorization
    Header of the request to the call to the API.  More details can be
@@ -1789,9 +1789,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 32]
+Kowalik, et al.          Expires 21 August 2025                [Page 32]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    While the calls below do not have the same security consideration of
@@ -1805,7 +1805,7 @@ Internet-Draft               Domain Connect                 January 2025
    {urlAPI}/v2/domainTemplates/providers/{providerId}/services
    /{serviceId}/apply?[properties]
 
-   The primary function of the API is to apply a template to a customer
+   The primary function of the API is to apply a template to a user
    domain.
 
    While the providerId is implied in the authorization, this is on the
@@ -1839,25 +1839,24 @@ Internet-Draft               Domain Connect                 January 2025
    +==============+==============+====================================+
    | Property     | Key          | Description                        |
    +==============+==============+====================================+
-   | *Domain*     | domain       | (REQUIRED) The Apex Domain name    |
-   |              |              | being configured.  It MUST match   |
-   |              |              | the domain that was authorized in  |
+   | *Domain*     | domain       | (REQUIRED) The Zone Apex domain    |
+   |              |              | name being configured.  It MUST    |
+   |              |              | match the domain that was          |
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 33]
+Kowalik, et al.          Expires 21 August 2025                [Page 33]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
-   |              |              | the token.                         |
+   |              |              | authorized in the token.           |
    +--------------+--------------+------------------------------------+
    | *Host*       | host         | (OPTIONAL) The host name of the    |
-   |              |              | sub domain of the Apex Domain that |
-   |              |              | was authorized in the token.  If   |
-   |              |              | omitted or left blank, the         |
-   |              |              | template is being applied to the   |
-   |              |              | Apex Domain.                       |
+   |              |              | Sub Domain that was authorized in  |
+   |              |              | the token.  If omitted or left     |
+   |              |              | blank, the template is being       |
+   |              |              | applied to the Zone Apex.          |
    +--------------+--------------+------------------------------------+
    | *Name/Value  | *            | (REQUIRED) Any variable fields     |
    | Pairs*       |              | consumed by this template.  The    |
@@ -1898,15 +1897,15 @@ Internet-Draft               Domain Connect                 January 2025
    |              |              | additional context for the         |
    |              |              | serviceName that applied the       |
    |              |              | template.  It MAY be used by DNS   |
-
-
-
-Kowalik, et al.           Expires 28 July 2025                 [Page 34]
-
-Internet-Draft               Domain Connect                 January 2025
-
-
    |              |              | Providers that want to display     |
+
+
+
+Kowalik, et al.          Expires 21 August 2025                [Page 34]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |              |              | state regarding which templates    |
    |              |              | have been applied.  It is only     |
    |              |              | allowed when the                   |
@@ -1935,7 +1934,7 @@ Internet-Draft               Domain Connect                 January 2025
    &#x26;RANDOMTEXT=shm%3A1542108821%3AHello&#x26;force=1
 
    The API MUST validate the access token, and that the domain belongs
-   to the customer and is represented by the token being presented.  Any
+   to the user and is represented by the token being presented.  Any
    errors with variables, conflicting templates, or problems with the
    state of the domain are returned; otherwise the template is applied.
 
@@ -1957,9 +1956,10 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 35]
+
+Kowalik, et al.          Expires 21 August 2025                [Page 35]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +================+==========+======================================+
@@ -2013,9 +2013,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 36]
+Kowalik, et al.          Expires 21 August 2025                [Page 36]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    {
@@ -2051,7 +2051,7 @@ Internet-Draft               Domain Connect                 January 2025
    {urlAPI}/v2/domainTemplates/providers/{providerId}/services
    /{serviceId}/revert?domain={domain}&host={host}
 
-   This API allows the removal of a template from a customer domain/host
+   This API allows the removal of a template from a user domain/host
    using an OAuth request.
 
    The provider and service name in the URL MUST match the values
@@ -2069,9 +2069,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 37]
+Kowalik, et al.          Expires 21 August 2025                [Page 37]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    POST
@@ -2084,16 +2084,16 @@ Internet-Draft               Domain Connect                 January 2025
    +==============+============+======================================+
    | Property     | Key        | Description                          |
    +==============+============+======================================+
-   | *Domain*     | domain     | (REQUIRED) The Apex Domain name      |
+   | *Domain*     | domain     | (REQUIRED) The Zone Apex domain name |
    |              |            | being configured.  It MUST match the |
    |              |            | domain that was authorized in the    |
    |              |            | token.                               |
    +--------------+------------+--------------------------------------+
-   | *Host*       | host       | (OPTIONAL) The host name of the sub  |
-   |              |            | domain of the Apex Domain that was   |
-   |              |            | authorized in the token.  If omitted |
-   |              |            | or left blank, the template is being |
-   |              |            | applied to the Apex Domain.          |
+   | *Host*       | host       | (OPTIONAL) The host name of the Sub  |
+   |              |            | Domain that was authorized in the    |
+   |              |            | token.  If omitted or left blank,    |
+   |              |            | the template is being applied to the |
+   |              |            | Zone Apex.                           |
    +--------------+------------+--------------------------------------+
    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to        |
    |              |            | templates supporting multiple        |
@@ -2125,9 +2125,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 38]
+Kowalik, et al.          Expires 21 August 2025                [Page 38]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 8.1.  Template Versioning
@@ -2136,10 +2136,9 @@ Internet-Draft               Domain Connect                 January 2025
    new template be created.  While on the surface versioning looks
    appealing, in reality this is rarely needed.
 
-   Any changes to the template need to account for existing customers
-   with settings in DNS, some applied through Domain Connect and some
-   manual.  So when changes are made, they are often backward
-   compatible.
+   Any changes to the template need to account for existing users with
+   settings in DNS, some applied through Domain Connect and some manual.
+   So when changes are made, they are often backward compatible.
 
    Note that when a template changes, it does need to be on-boarded with
    the DNS Providers.
@@ -2178,15 +2177,15 @@ Internet-Draft               Domain Connect                 January 2025
    |             |        |                   |Provider consent UX.    |
    +-------------+--------+-------------------+------------------------+
    |*Service Id* |String  |serviceId          |(REQUIRED) The name or  |
-
-
-
-Kowalik, et al.           Expires 28 July 2025                 [Page 39]
-
-Internet-Draft               Domain Connect                 January 2025
-
-
    |             |        |                   |identifier of the       |
+
+
+
+Kowalik, et al.          Expires 21 August 2025                [Page 39]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |        |                   |template.  This is used |
    |             |        |                   |in URLs to identify the |
    |             |        |                   |template.  It is also   |
@@ -2234,15 +2233,15 @@ Internet-Draft               Domain Connect                 January 2025
    |             |        |                   |user.                   |
    +-------------+--------+-------------------+------------------------+
    |*Variable    |Text    |variableDescription|(OPTIONAL) A textual    |
-
-
-
-Kowalik, et al.           Expires 28 July 2025                 [Page 40]
-
-Internet-Draft               Domain Connect                 January 2025
-
-
    |Description* |        |                   |description of what the |
+
+
+
+Kowalik, et al.          Expires 21 August 2025                [Page 40]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |        |                   |variables are.  This is |
    |             |        |                   |meant to assist         |
    |             |        |                   |developers and MUST NOT |
@@ -2290,15 +2289,15 @@ Internet-Draft               Domain Connect                 January 2025
    |             |        |                   |caller to pass in       |
    |             |        |                   |additional information  |
    |             |        |                   |for the serviceName.    |
-
-
-
-Kowalik, et al.           Expires 28 July 2025                 [Page 41]
-
-Internet-Draft               Domain Connect                 January 2025
-
-
    |             |        |                   |This information SHOULD |
+
+
+
+Kowalik, et al.          Expires 21 August 2025                [Page 41]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |        |                   |augment the display of  |
    |             |        |                   |the serviceName from the|
    |             |        |                   |template.  The default  |
@@ -2346,15 +2345,15 @@ Internet-Draft               Domain Connect                 January 2025
    |             |        |                   |provider is unable to   |
    |             |        |                   |digitally sign the      |
    |             |        |                   |requests.  When set the |
-
-
-
-Kowalik, et al.           Expires 28 July 2025                 [Page 42]
-
-Internet-Draft               Domain Connect                 January 2025
-
-
    |             |        |                   |DNS Provider SHOULD     |
+
+
+
+Kowalik, et al.          Expires 21 August 2025                [Page 42]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |        |                   |display warnings to the |
    |             |        |                   |user and be more verbose|
    |             |        |                   |about the changes       |
@@ -2405,9 +2404,10 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 43]
+
+Kowalik, et al.          Expires 21 August 2025                [Page 43]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    For the host/name field it is a shortcut for the value "%fqdn%.".
@@ -2461,9 +2461,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 44]
+Kowalik, et al.          Expires 21 August 2025                [Page 44]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |of records A, AAAA,   |
@@ -2517,9 +2517,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 45]
+Kowalik, et al.          Expires 21 August 2025                [Page 45]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |* MX: host, pointsTo, |
@@ -2573,9 +2573,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 46]
+Kowalik, et al.          Expires 21 August 2025                [Page 46]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |trailed by a ".".     |
@@ -2629,9 +2629,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 47]
+Kowalik, et al.          Expires 21 August 2025                [Page 47]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |contain variables     |
@@ -2685,9 +2685,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 48]
+Kowalik, et al.          Expires 21 August 2025                [Page 48]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |indicates the host and|
@@ -2741,9 +2741,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 49]
+Kowalik, et al.          Expires 21 August 2025                [Page 49]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    |           |      |                         |value field.          |
@@ -2797,9 +2797,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 50]
+Kowalik, et al.          Expires 21 August 2025                [Page 50]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    +-----------+------+-------------------------+----------------------+
@@ -2833,7 +2833,7 @@ Internet-Draft               Domain Connect                 January 2025
    chose to not maintain this state.
 
    A DNS Provider that maintains this state may be able to provide an
-   improved experience for customers, telling them the services enabled.
+   improved experience for users, telling them the services enabled.
    They also may be able to have more advanced handling of conflicts.
 
    To make the implementation burden reasonable for DNS Providers,
@@ -2853,9 +2853,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 51]
+Kowalik, et al.          Expires 21 August 2025                [Page 51]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    For conflict detection, one DNS Provider may simply overwrite changed
@@ -2894,11 +2894,10 @@ Internet-Draft               Domain Connect                 January 2025
 
    A reasonable set of recommendations for the UX might consist of:
 
-   *  The consent UX SHOULD inform the customer of the service that will
-      be enabled.  If the customer want to know the specifics, the DNS
-      Provider could provide a "show details" link to the user.  This
-      could display to them the specific records that are being set in
-      DNS.
+   *  The consent UX SHOULD inform the user of the service that will be
+      enabled.  If the user want to know the specifics, the DNS Provider
+      could provide a "show details" link to the user.  This could
+      display to them the specific records that are being set in DNS.
 
    *  If there are conflicts, either at the template or record level,
       the consent UX SHOULD warn the user about these conflicts.  For
@@ -2909,9 +2908,10 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 52]
+
+Kowalik, et al.          Expires 21 August 2025                [Page 52]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 9.3.  Record Types and Conflicts
@@ -2965,9 +2965,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 53]
+Kowalik, et al.          Expires 21 August 2025                [Page 53]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    This may not be desireable for all templates, as a limited set of
@@ -3001,8 +3001,8 @@ Internet-Draft               Domain Connect                 January 2025
 
    For DNS Providers that maintain template state, an individual
    template is scoped to the set of records applied to a fully qualified
-   domain.  This includes the Apex Domain and the host (aka sub-domain)
-   at apply time.
+   domain.  This includes the Zone Apex and the host (aka Sub Domain) at
+   apply time.
 
    As an example, if a template is applied on
    domain=example.com&host=sub1 a later application of the template on
@@ -3021,9 +3021,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 54]
+Kowalik, et al.          Expires 21 August 2025                [Page 54]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    Consider a template record of type A with a host value of "xyz".
@@ -3077,9 +3077,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 55]
+Kowalik, et al.          Expires 21 August 2025                [Page 55]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    {
@@ -3133,9 +3133,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 56]
+Kowalik, et al.          Expires 21 August 2025                [Page 56]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    For example, with the query string "domain=example.com=", %fqdn% in a
@@ -3189,9 +3189,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 57]
+Kowalik, et al.          Expires 21 August 2025                [Page 57]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    alternatively
@@ -3245,16 +3245,16 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 58]
+Kowalik, et al.          Expires 21 August 2025                [Page 58]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    All of these examples use the include syntax.  This is fairly common.
    The use of all at the end is common, although is often inconsistent
    with the modifier.
 
-   If a customer installed Mailer1 and Newsletter1, their combined SPF
+   If a user installed Mailer1 and Newsletter1, their combined SPF
    record ought to be something like:
 
    v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
@@ -3301,9 +3301,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 59]
+Kowalik, et al.          Expires 21 August 2025                [Page 59]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    The implementation would be left to the DNS Provider, but to
@@ -3357,9 +3357,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 60]
+Kowalik, et al.          Expires 21 August 2025                [Page 60]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 9.10.4.  Alternatives
@@ -3413,9 +3413,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 61]
+Kowalik, et al.          Expires 21 August 2025                [Page 61]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 9.11.4.  Template Integrity
@@ -3469,9 +3469,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 62]
+Kowalik, et al.          Expires 21 August 2025                [Page 62]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
 11.1.  General information
@@ -3525,9 +3525,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 63]
+Kowalik, et al.          Expires 21 August 2025                [Page 63]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    Please note, that setting up an HTTP redirect typically involves
@@ -3581,9 +3581,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 64]
+Kowalik, et al.          Expires 21 August 2025                [Page 64]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
                +=========+================+================+
@@ -3637,12 +3637,12 @@ Change from -00 to -01
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 65]
+Kowalik, et al.          Expires 21 August 2025                [Page 65]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
-   *  Changed term Root Domain to Apex Domain to align with [RFC8499].
+   *  Changed term Root Domain to Zone Apex to align with [RFC8499].
 
    *  Removed example provider names from Service Providers and DNS
       Providers teminology
@@ -3693,9 +3693,9 @@ Normative References
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 66]
+Kowalik, et al.          Expires 21 August 2025                [Page 66]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [RFC1035]  Mockapetris, P., "Domain names - implementation and
@@ -3749,9 +3749,9 @@ Informative References
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 67]
+Kowalik, et al.          Expires 21 August 2025                [Page 67]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [RFC8499]  Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
@@ -3805,9 +3805,9 @@ A.1.  Example Template
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 68]
+Kowalik, et al.          Expires 21 August 2025                [Page 68]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    {
@@ -3861,9 +3861,9 @@ A.2.  Example Records: Single static host record
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 69]
+Kowalik, et al.          Expires 21 August 2025                [Page 69]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [{
@@ -3917,9 +3917,9 @@ A.4.  Example Records: Unspecified record type CAA
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 70]
+Kowalik, et al.          Expires 21 August 2025                [Page 70]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [
@@ -3973,9 +3973,9 @@ A.5.  Example: DNS Zone merging
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 71]
+Kowalik, et al.          Expires 21 August 2025                [Page 71]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [
@@ -4029,9 +4029,9 @@ A.6.  Example: SPF Record Merging
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 72]
+Kowalik, et al.          Expires 21 August 2025                [Page 72]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    [
@@ -4085,9 +4085,9 @@ Internet-Draft               Domain Connect                 January 2025
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 73]
+Kowalik, et al.          Expires 21 August 2025                [Page 73]
 
-Internet-Draft               Domain Connect                 January 2025
+Internet-Draft               Domain Connect                February 2025
 
 
    $ORIGIN example.com.
@@ -4141,4 +4141,4 @@ Authors' Addresses
 
 
 
-Kowalik, et al.           Expires 28 July 2025                 [Page 74]
+Kowalik, et al.          Expires 21 August 2025                [Page 74]

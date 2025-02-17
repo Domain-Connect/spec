@@ -5,12 +5,12 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 18 August 2025                                                 
+Expires: 21 August 2025                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                        14 February 2025
+                                                        17 February 2025
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 18 August 2025.
+   This Internet-Draft will expire on 21 August 2025.
 
 Copyright Notice
 
@@ -59,68 +59,71 @@ Table of Contents
 
    1.  Acknowledgements
    2.  Introduction
-   4.  Protocol design
-     4.1.  Templates
-   5.  Protocol Flows
-     5.1.  General information
-     5.2.  The Synchronous Flow
-     5.3.  The Asynchronous Flow
-   6.  DNS Provider Discovery
-   7.  Applying Domain Connect
-     7.1.  Endpoints
-     7.2.  Synchronous Flow
-       7.2.1.  Query Supported Template
-       7.2.2.  Apply Template
-       7.2.3.  Security Considerations
-       7.2.4.  Shared Templates
-       7.2.5.  Verification of Changes
-     7.3.  Asynchronous Flow: OAuth
-       7.3.1.  General information
-       7.3.2.  OAuth Flow: Setup
-       7.3.3.  OAuth Flow: Getting an Authorization Code
-       7.3.4.  OAuth Flow: Requesting an Access Token
-       7.3.5.  OAuth Flow: Making Requests with Access Tokens
-       7.3.6.  OAuth Flow: Apply Template to Domain.
-       7.3.7.  OAuth Flow: Revert Template
-       7.3.8.  OAuth Flow: Revoking access
-   8.  Domain Connect Objects and Templates
-     8.1.  Template Versioning
-     8.2.  Template Definition
-     8.3.  Template Record
-   9.  Template Considerations
-     9.1.  Template State in DNS
-     9.2.  Disclosure of Changes and Conflicts
-     9.3.  Record Types and Conflicts
-     9.4.  Apply, Re-apply, and Multi-Instance
-     9.5.  Non-essential records
-     9.6.  Template Scope
-     9.7.  Host/Name in Template
-     9.8.  PointsTo in Template
-     9.9.  Variables
-       9.9.1.  Variables and Host/Name in Template
-       9.9.2.  Variable Values
-       9.9.3.  Variables and Security
-       9.9.4.  Variable Examples
-     9.10. SPF TXT Record
-       9.10.1.  What is SPF?
-       9.10.2.  Multiple Services
-       9.10.3.  SPF Record Merging
-       9.10.4.  Alternatives
-     9.11. Public Template Repository
-       9.11.1.  General information
-       9.11.2.  Repository Location
-       9.11.3.  File naming requirements
-       9.11.4.  Template Integrity
-   10. General considerations
-     10.1.  Onboarding
-     10.2.  Case Sensitivity
-   11. Extensions/Exclusions
-     11.1.  General information
-     11.2.  APEXCNAME
-     11.3.  Redirection
-     11.4.  Nameservers
-     11.5.  DS (DNSSEC)
-   12. IANA Considerations
+   3.  Use Cases
+     3.1.  Primary Use Cases
+     3.2.  Use Cases out of scope
+   5.  Protocol design
+     5.1.  Templates
+   6.  Protocol Flows
+     6.1.  General information
+     6.2.  The Synchronous Flow
+     6.3.  The Asynchronous Flow
+   7.  DNS Provider Discovery
+   8.  Applying Domain Connect
+     8.1.  Endpoints
+     8.2.  Synchronous Flow
+       8.2.1.  Query Supported Template
+       8.2.2.  Apply Template
+       8.2.3.  Security Considerations
+       8.2.4.  Shared Templates
+       8.2.5.  Verification of Changes
+     8.3.  Asynchronous Flow: OAuth
+       8.3.1.  General information
+       8.3.2.  OAuth Flow: Setup
+       8.3.3.  OAuth Flow: Getting an Authorization Code
+       8.3.4.  OAuth Flow: Requesting an Access Token
+       8.3.5.  OAuth Flow: Making Requests with Access Tokens
+       8.3.6.  OAuth Flow: Apply Template to Domain.
+       8.3.7.  OAuth Flow: Revert Template
+       8.3.8.  OAuth Flow: Revoking access
+   9.  Domain Connect Objects and Templates
+     9.1.  Template Versioning
+     9.2.  Template Definition
+     9.3.  Template Record
+   10. Template Considerations
+     10.1.  Template State in DNS
+     10.2.  Disclosure of Changes and Conflicts
+     10.3.  Record Types and Conflicts
+     10.4.  Apply, Re-apply, and Multi-Instance
+     10.5.  Non-essential records
+     10.6.  Template Scope
+     10.7.  Host/Name in Template
+     10.8.  PointsTo in Template
+     10.9.  Variables
+       10.9.1.  Variables and Host/Name in Template
+       10.9.2.  Variable Values
+       10.9.3.  Variables and Security
+       10.9.4.  Variable Examples
+     10.10. SPF TXT Record
+       10.10.1.  What is SPF?
+       10.10.2.  Multiple Services
+       10.10.3.  SPF Record Merging
+       10.10.4.  Alternatives
+     10.11. Public Template Repository
+       10.11.1.  General information
+       10.11.2.  Repository Location
+       10.11.3.  File naming requirements
+       10.11.4.  Template Integrity
+   11. General considerations
+     11.1.  Onboarding
+     11.2.  Case Sensitivity
+   12. Extensions/Exclusions
+     12.1.  General information
+     12.2.  APEXCNAME
+     12.3.  Redirection
+     12.4.  Nameservers
+     12.5.  DS (DNSSEC)
+   13. IANA Considerations
    Implementation Status
    Change History
    Normative References
@@ -145,39 +148,96 @@ Table of Contents
 
 2.  Introduction
 
-   Configuring a service at a Service Provider to work with a domain has
-   historically been a complex task that is difficult for users.
+   Connecting a domain name to a service should be a simple and
+   straightforward process.  However, historically, users have faced a
+   complex and often frustrating task involving manual DNS
+   configuration.  Traditional methods are unreliable, require deep
+   technical knowledge of DNS, and result in outdated and confusing
+   instructions from Service Providers.  This leads to user frustration,
+   support overhead, and abandoned setups.
 
-   Typically, a user would try to configure their service by entering
-   their domain name with the Service Provider.  The Service Provider
-   then used a number of techniques with mixed reliability to discover
-   the DNS Provider.  This might include DNS queries for nameservers,
-   queries to whois, and mapping tables to determine the registrar or
-   the company providing DNS.
+   To address these challenges, Domain Connect offers a streamlined and
+   automated solution.  It empowers Service Providers to easily enable
+   their services to work with user domains, simplifying both DNS
+   provider discovery and DNS configuration.  By abstracting away the
+   complexities of manual DNS management through user-friendly web
+   interactions, standard authentication, and template-based
+   configurations, Domain Connect significantly improves the user
+   experience.
 
-   Once the Service Provider discovered the DNS Provider, they typically
-   gave the user instructions for proper configuration of DNS.  This
-   might include help text, screen shots, or even links to the
-   appropriate tools.
+3.  Use Cases
 
-   Discovery of the DNS Provider in this manner is unreliable, and
-   providing instructions to users would present a number of
-   technologies (DNS record types, TTLs, Hostnames, etc.) and processes
-   they didn't understand.  These instructions authored by the Service
-   Provider often quickly become out of date, further confusing the
-   issue for users.
+3.1.  Primary Use Cases
 
-   The goal of this specificatoin is to create a system where Service
-   Providers can easily enable their applications/services to work with
-   the domain names of their users.  This includes both discovery of the
-   DNS Provider and subsequent modification of DNS.
+   The following use cases illustrate the wide range of applications
+   where Domain Connect simplifies and automates DNS configuration, from
+   basic service onboarding to complex, dynamic DNS management
+   scenarios.
 
-   The system will be implemented using simple web based interactions
-   and standard authentication protocols.  The creation and modification
-   of DNS settings will be done through the application of templates
-   instead of direct manipulation of individual DNS records.
+   *  *SaaS Provider with One-Off DNS Configuration:* A Software as a
+      Service (SaaS) Provider offering functionality with an option to
+      assign own domain name, such as web hosting or email, can utilize
+      Domain Connect to streamline the process of configuring DNS
+      records for their customers.  This automation eliminates the need
+      for manual configuration and simplifies the onboarding experience
+      for users.
 
-3.  Terminology
+   *  *SaaS Provider with Multi-Step DNS Configuration:* Some SaaS
+      Providers may require a multi-step DNS configuration process,
+      potentially involving asynchronous operations.  For example, a
+      service might require initial verification of domain ownership
+      through a TXT record, followed by the creation of CNAME records
+      for different subdomains.  Domain Connect can handle such
+      scenarios by utilizing its asynchronous flow.  This allows the
+      Service Provider to obtain user consent and apply the necessary
+      DNS changes in multiple steps, even if the user is not actively
+      present during the entire process.
+
+   *  *On-Premise Service with Publicly Accessible DNS Service:* An on-
+      premise service, such as a local network device or server, can
+      also benefit from Domain Connect if it utilizes a publicly
+      accessible DNS service.  By leveraging Domain Connect, the service
+      can automatically update DNS records as needed, ensuring that the
+      service remains accessible through its domain name.
+
+   *  *Tool or Service with Regularly Updated DNS Entries:* A tool or
+      service that requires regular updates to DNS entries, such as a
+      dynamic DNS service or a DNS-based load balancer, can use Domain
+      Connect to automate the process.
+
+   *  *Packaged Software Provider:* A packaged software provider,
+      whether open-source or proprietary, can integrate Domain Connect
+      into their installation and configuration process.  This allows
+      the software to automatically configure necessary DNS records
+      during installation, simplifying the setup process for users.
+      However, if the software is installed on a private network with a
+      private DNS service, it might not be directly compatible with
+      Domain Connect, unless the DNS service provides Domain Connect
+      endpoints accessible to the installation process.
+
+3.2.  Use Cases out of scope
+
+   While Domain Connect offers significant advantages in automating DNS
+   configuration, it's important to recognize scenarios where it might
+   not be the ideal solution:
+
+   *  *Automation or CI/CD Pipelines:* Domain Connect is primarily
+      designed for user-driven DNS configuration, where an end user
+      grants consent and applies changes.  Automating this process
+      within CI/CD pipelines or other automated workflows can be
+      challenging, as it requires obtaining and securely storing OAuth
+      tokens beforehand.  However, if authorisation tokens are pre-
+      obtained from a user-driven setup process, Domain Connect can be
+      also integrated into automation workflows.
+
+   *  *Private/Enterprise DNS with Public SaaS Providers:* Domain
+      Connect relies on public DNS records and endpoints to facilitate
+      discovery and configuration.  If a private or enterprise DNS
+      service is used, it might not be directly compatible with Domain
+      Connect, unless the DNS service provides publicly accessible
+      Domain Connect endpoints.
+
+4.  Terminology
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
@@ -207,7 +267,7 @@ Table of Contents
       service.
 
    Public Template Repository  refers to a public repository of
-      Templates in a standarised format (read more: Section 9.11).
+      Templates in a standarised format (read more: Section 10.11).
 
    Root Domain  refers to a registered domain (e.g. example.com or
       example.co.uk), or to a delegated zone in DNS.
@@ -215,9 +275,9 @@ Table of Contents
    Sub Domain  refers to a sub-domain of a root domain (e.g.
       sub.example.com or sub.example.co.uk).
 
-4.  Protocol design
+5.  Protocol design
 
-4.1.  Templates
+5.1.  Templates
 
    Templates are core to Domain Connect, as they fully describe a
    service owned by a Service Provider and contain all of the
@@ -237,7 +297,7 @@ Table of Contents
 
    The template is defined by the Service Provider and manually
    onboarded with the DNS Provider, according to a template definition
-   published in the Public Repository (Section 9.11) or agreed out-of-
+   published in the Public Repository (Section 10.11) or agreed out-of-
    band between the Service Provider and the DNS Provider.
 
    By basing the protocol on templates instead of DNS Records, several
@@ -246,9 +306,9 @@ Table of Contents
    service.  And the system is more secure as templates are controlled
    and contained.
 
-5.  Protocol Flows
+6.  Protocol Flows
 
-5.1.  General information
+6.1.  General information
 
    To attach a domain name to a service provided by a Service Provider,
    the user would first enter their domain name.
@@ -272,7 +332,7 @@ Table of Contents
    Individual Service Providers MAY work with the synchronous flow only,
    the asynchronous flow only, or with both.
 
-5.2.  The Synchronous Flow
+6.2.  The Synchronous Flow
 
    This flow is tailored for the Service Provider that requires a one
    time synchronous change to DNS.
@@ -439,7 +499,7 @@ Table of Contents
         to the user that the domain has been successfully connected to
         the service.
 
-5.3.  The Asynchronous Flow
+6.3.  The Asynchronous Flow
 
    The asynchronous OAuth flow is tailored for the Service Provider that
    wishes to make changes to DNS asynchronously with respect to the user
@@ -536,7 +596,7 @@ Table of Contents
         Provider reports to the user that the domain has been
         successfully connected to the service.
 
-6.  DNS Provider Discovery
+7.  DNS Provider Discovery
 
    To facilitate discovery of the DNS Provider from a domain name DNS is
    utilized.  This is done by returning a TXT record for
@@ -732,9 +792,9 @@ Table of Contents
 
           Table 2: HTTP status codes for the settings end-point
 
-7.  Applying Domain Connect
+8.  Applying Domain Connect
 
-7.1.  Endpoints
+8.1.  Endpoints
 
    The Domain Connect endpoints returned in the JSON during discovery
    are in the form of URLs.
@@ -759,9 +819,9 @@ Table of Contents
    The root URLs for the UX endpoints and the API endpoints are returned
    in the JSON payload during DNS Provider discovery.
 
-7.2.  Synchronous Flow
+8.2.  Synchronous Flow
 
-7.2.1.  Query Supported Template
+8.2.1.  Query Supported Template
 
    GET
 
@@ -774,7 +834,7 @@ Table of Contents
    Returning a status of 200 without a body indicates the template is
    supported.  The DNS provider may decide to disclose the version of
    the template in a JSON object with field _version_ (see: version
-   field (Section 8.2) or the full JSON object of deployed template.
+   field (Section 9.2) or the full JSON object of deployed template.
 
    Returning a status of 404 indicates the template is not supported.
 
@@ -793,9 +853,9 @@ Table of Contents
             Table 3: https status codes for the Query Supported
                              Template end-point
 
-7.2.2.  Apply Template
+8.2.2.  Apply Template
 
-7.2.2.1.  Apply Template URL
+8.2.2.1.  Apply Template URL
 
    GET
 
@@ -808,7 +868,7 @@ Table of Contents
 
    This URL can be called in one of two ways.
 
-7.2.2.2.  New Browser Window
+8.2.2.2.  New Browser Window
 
    The first is through a new browser tab or in a popup browser window.
    The DNS Provider signs the user in if necessary, verifies domain
@@ -816,7 +876,7 @@ Table of Contents
    template.  After application of the template, the DNS Provider should
    automatically close the browser tab or window.
 
-7.2.2.3.  Same Browser Window
+8.2.2.3.  Same Browser Window
 
    The second is in the current browser tab/window.  As above the DNS
    Provider signs the user in if necessary, verifies the user control of
@@ -868,7 +928,7 @@ Table of Contents
    the redirect_uri must be within the domains specified in the template
    in syncRedirectDomain.
 
-7.2.2.4.  Parameters/properties
+8.2.2.4.  Parameters/properties
 
    +=============+==============+======================================+
    | Property    | Request      | Description                          |
@@ -975,9 +1035,9 @@ Table of Contents
    are two variables in this template, "IP" and "RANDOMTEXT".  These
    variables are passed as name/value pairs.
 
-7.2.3.  Security Considerations
+8.2.3.  Security Considerations
 
-7.2.3.1.  Risk of phishing with open template parameters
+8.2.3.1.  Risk of phishing with open template parameters
 
    By applying a template with parameters there is a security
    consideration that must be taken into account.
@@ -993,7 +1053,7 @@ Table of Contents
    Not all templates have this problem.  But when they do, there are
    several options.
 
-7.2.3.2.  Disable Synchronous
+8.2.3.2.  Disable Synchronous
 
    One option is to disable the synchronous flow and use asynchronous
    OAuth.  This can be controlled with the syncBlock value from the
@@ -1001,7 +1061,7 @@ Table of Contents
    implementation burden and requires onboarding between each Service
    and DNS Provider.
 
-7.2.3.3.  Digitally Sign Requests
+8.2.3.3.  Digitally Sign Requests
 
    Another option is to digitally sign the query string.  A signature is
    appended as an additional query string parameter, properly URL
@@ -1079,7 +1139,7 @@ Table of Contents
    The values of each query string value key/value pair must be properly
    URL Encoded before the signature is generated.
 
-7.2.3.4.  Warnings
+8.2.3.4.  Warnings
 
    Some applications aren't able to use OAuth and/or sign requests.
 
@@ -1091,7 +1151,7 @@ Table of Contents
    extra warnings to the user to have them verify the link was/is from a
    reputable source before applying the template.
 
-7.2.4.  Shared Templates
+8.2.4.  Shared Templates
 
    Some templates can be called by multiple companies, or be used for
    different purposes.
@@ -1130,7 +1190,7 @@ Table of Contents
    Formatting.  But this would be required if the template required
    signatures.
 
-7.2.5.  Verification of Changes
+8.2.5.  Verification of Changes
 
    There are circumstances where the Service Provider may wish to verify
    that the template was successfully applied.  Without Domain Donnect,
@@ -1148,9 +1208,9 @@ Table of Contents
    return url in the browser.  As such it is recommend that enablement
    of a service be based on verification of changes to DNS.
 
-7.3.  Asynchronous Flow: OAuth
+8.3.  Asynchronous Flow: OAuth
 
-7.3.1.  General information
+8.3.1.  General information
 
    Using the OAuth flow is a more advanced use case needed by Service
    Providers that have more complex configurations that may require
@@ -1164,7 +1224,7 @@ Table of Contents
    is recommended that Service Providers relying on an OAuth
    implementation also implement a synchronous implementation.
 
-7.3.2.  OAuth Flow: Setup
+8.3.2.  OAuth Flow: Setup
 
    Service providers wishing to use the OAuth flow must register as an
    OAuth client with each DNS provider.  This is a manual process.
@@ -1182,7 +1242,7 @@ Table of Contents
    id and a secret which will be used when requesting tokens.  For
    simplicity the client id should be the same as the providerId.
 
-7.3.3.  OAuth Flow: Getting an Authorization Code
+8.3.3.  OAuth Flow: Getting an Authorization Code
 
    GET
 
@@ -1337,7 +1397,7 @@ Table of Contents
        Table 6: query parameters of the authorization end-point in
                                 async flow
 
-7.3.4.  OAuth Flow: Requesting an Access Token
+8.3.4.  OAuth Flow: Requesting an Access Token
 
    POST
 
@@ -1447,7 +1507,7 @@ Table of Contents
 
         Table 9: http status codes of the token end-point response
 
-7.3.5.  OAuth Flow: Making Requests with Access Tokens
+8.3.5.  OAuth Flow: Making Requests with Access Tokens
 
    Once the Service Provider has the access token, they can call the DNS
    Provider's API to make changes to DNS on the domain by applying and
@@ -1469,7 +1529,7 @@ Table of Contents
    passing the secret, it is recommend that the urlAPI be from a stored
    value vs. the value returned during discovery here as well.
 
-7.3.6.  OAuth Flow: Apply Template to Domain.
+8.3.6.  OAuth Flow: Apply Template to Domain.
 
    POST
 
@@ -1571,7 +1631,7 @@ Table of Contents
     | *InstanceId* | instanceId   | (OPTIONAL) Only applicable to     |
     |              |              | templates supporting multiple     |
     |              |              | instances (see multiInstance      |
-    |              |              | (Section 8.2) template property). |
+    |              |              | (Section 9.2) template property). |
     |              |              | Allows for later removal of one   |
     |              |              | template instance by DNS          |
     |              |              | Providers storing this            |
@@ -1670,7 +1730,7 @@ Table of Contents
    In this example, the Service Provider tried to apply a new hosting
    template.  The domain had an existing service applied for hosting.
 
-7.3.7.  OAuth Flow: Revert Template
+8.3.7.  OAuth Flow: Revert Template
 
    This call reverts the application of a specific template from a
    domain.
@@ -1719,7 +1779,7 @@ Table of Contents
    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to        |
    |              |            | templates supporting multiple        |
    |              |            | instances (see multiInstance         |
-   |              |            | (Section 8.2) template property).    |
+   |              |            | (Section 9.2) template property).    |
    |              |            | For DNS Provider storing information |
    |              |            | about applied templates allows       |
    |              |            | removal of single instance of        |
@@ -1735,15 +1795,15 @@ Table of Contents
    Response codes Success, Authorization, and Errors are identical to
    above with the addition of the 501 code.
 
-7.3.8.  OAuth Flow: Revoking access
+8.3.8.  OAuth Flow: Revoking access
 
    Like all OAuth flows, the user may revoke the access at any time
    using UX at the DNS Provider site.  As such the Service Provider
    needs to be aware that their access to the API may be denied.
 
-8.  Domain Connect Objects and Templates
+9.  Domain Connect Objects and Templates
 
-8.1.  Template Versioning
+9.1.  Template Versioning
 
    If a breaking change is made to a template it is recommended that a
    new template be created.  While on the surface versioning looks
@@ -1756,11 +1816,11 @@ Table of Contents
    Note that when a template changes, it does need to be on-boarded with
    the DNS Providers.
 
-   The version field (Section 8.2) of the template definition serves the
+   The version field (Section 9.2) of the template definition serves the
    purpose of transparency between the DNS Provider and the Service
    Provider in case of such changes.
 
-8.2.  Template Definition
+9.2.  Template Definition
 
    A template is defined as a standard JSON data structure containing
    the following data.  Fields are required unless otherwise indicated.
@@ -1959,7 +2019,7 @@ Table of Contents
 
               Table 13: properties of the template definition
 
-8.3.  Template Record
+9.3.  Template Record
 
    Each template record is an entry that contains a type and several
    other values depending on the type.
@@ -2241,7 +2301,7 @@ Table of Contents
    |           |      |                         |None, All, or Prefix. |
    |           |      |                         |The default value is  |
    |           |      |                         |None.  See below      |
-   |           |      |                         |(Section 9.3).        |
+   |           |      |                         |(Section 10.3).       |
    +-----------+------+-------------------------+----------------------+
    |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
    |Conflict   |      |                         |conflicts when        |
@@ -2250,7 +2310,7 @@ Table of Contents
    |           |      |                         |"Prefix".  This MUST  |
    |           |      |                         |NOT contain variables.|
    |           |      |                         |See below             |
-   |           |      |                         |(Section 9.3).        |
+   |           |      |                         |(Section 10.3).       |
    +-----------+------+-------------------------+----------------------+
    |*Priority* |Int or|priority                 |The priority for an MX|
    |           |string|                         |or SRV record.  This  |
@@ -2328,14 +2388,14 @@ Table of Contents
    |           |      |                         |other SPFM records    |
    |           |      |                         |into final SPF TXT    |
    |           |      |                         |record.  See          |
-   |           |      |                         |Section 9.10.         |
+   |           |      |                         |Section 10.10.        |
    +-----------+------+-------------------------+----------------------+
 
            Table 14: properties of the template record definition
 
-9.  Template Considerations
+10.  Template Considerations
 
-9.1.  Template State in DNS
+10.1.  Template State in DNS
 
    DNS Providers may chose to maintain state inside records in DNS
    indicating the templates writing the records.  Other providers may
@@ -2348,7 +2408,7 @@ Table of Contents
    To make the implementation burden reasonable for DNS Providers,
    Domain Connect does not dictate the approach.
 
-9.2.  Disclosure of Changes and Conflicts
+10.2.  Disclosure of Changes and Conflicts
 
    It is left to the discretion of the DNS Provider to determine what is
    disclosed to the user when granting permission and/or applying
@@ -2407,7 +2467,7 @@ Table of Contents
       records, this would be records that would be deleted or
       overwritten.  This could be progressively disclosed.
 
-9.3.  Record Types and Conflicts
+10.3.  Record Types and Conflicts
 
    Conflict detection done by the DNS provider prior to template
    application has to take into consideration specifics of each DNS
@@ -2444,7 +2504,7 @@ Table of Contents
       -  Prefix: This indicates that TXT record conflict with any other
          TXT containing value starting with txtConflictMatchingPrefix
 
-9.4.  Apply, Re-apply, and Multi-Instance
+10.4.  Apply, Re-apply, and Multi-Instance
 
    There is an additional consideration for DNS Providers that maintain
    the state of an applied template when re-applying a template.
@@ -2455,7 +2515,7 @@ Table of Contents
 
    This may not be desireable for all templates, as a limited set of
    templates are designed to be applied multiple times.  To faciliate
-   this the template can have the flag multiInstance (Section 8.2) set.
+   this the template can have the flag multiInstance (Section 9.2) set.
    This tells the DNS Provider that the template is expected to be
    written multiple times and that a re-apply MUST NOT remove previous
    instances.
@@ -2465,7 +2525,7 @@ Table of Contents
    state must rely on the normal conflict resolution rules, and this
    flag has no impact.
 
-9.5.  Non-essential records
+10.5.  Non-essential records
 
    Typically a template specifies a list of DNS records which are
    required for the service.  There may be cases where some records are
@@ -2474,13 +2534,13 @@ Table of Contents
    application of another template) should not trigger conflict
    detection.
 
-   This can be controlled by the essential (Section 8.3) property of a
+   This can be controlled by the essential (Section 9.3) property of a
    record in the template.
 
    Again, this setting only impacts DNS Providers that maintain applied
    template state.
 
-9.6.  Template Scope
+10.6.  Template Scope
 
    For DNS Providers that maintain template state, an individual
    template is scoped to the set of records applied to a fully qualified
@@ -2493,7 +2553,7 @@ Table of Contents
    the records set into "sub2.example.com", only the records set with
    this template would be removed.
 
-9.7.  Host/Name in Template
+10.7.  Host/Name in Template
 
    Template records contain the host name of the record to set into the
    zone (called name for SRV records).  This value must be considered
@@ -2514,7 +2574,7 @@ Table of Contents
    value.  In other words @ would point to "bar.example.com." when the
    same template is applied to domain=example.com and host=bar.
 
-9.8.  PointsTo in Template
+10.8.  PointsTo in Template
 
    Template records of certain types contain the pointsTo value to set
    in the zone.  For record types such as CNAME where this can be a
@@ -2533,9 +2593,9 @@ Table of Contents
    Any domain in a pointsTo field in a template must be considered fully
    qualified and not relative.
 
-9.9.  Variables
+10.9.  Variables
 
-9.9.1.  Variables and Host/Name in Template
+10.9.1.  Variables and Host/Name in Template
 
    While templates do allow for variables in a host or name field
    values, these should be used very sparingly.
@@ -2587,7 +2647,7 @@ Table of Contents
    To support this use case, variables are allowed for the host name.
    But only in this limited circumstance.
 
-9.9.2.  Variable Values
+10.9.2.  Variable Values
 
    To allow for the use of the host name or domain name in templates,
    the values of %host% and %domain% are available.  A third value of
@@ -2598,7 +2658,7 @@ Table of Contents
    template would be "example.com", and with "domain=example.com=sub1",
    %fqdn% in a template would be "sub1.example.com".
 
-9.9.3.  Variables and Security
+10.9.3.  Variables and Security
 
    As discussed, with variables consideration is necessary to prevent
    certain styles of phishing attacks.
@@ -2609,7 +2669,7 @@ Table of Contents
 
    Mitigations to this are discussed above.
 
-9.9.4.  Variable Examples
+10.9.4.  Variable Examples
 
    Example template:
 
@@ -2647,9 +2707,9 @@ Table of Contents
    www.bar.example.com.    1800 IN CNAME bar.example.com.
    bar.example.com.        1800 IN A 192.0.2.1
 
-9.10.  SPF TXT Record
+10.10.  SPF TXT Record
 
-9.10.1.  What is SPF?
+10.10.1.  What is SPF?
 
    SPF stands for Sender Policy Framework specified in [RFC7208].  It is
    a record that specifies a list of authorized host names and/or IP
@@ -2678,7 +2738,7 @@ Table of Contents
    SPF record is tuned based on what services are attached to a domain.
    Not just one individual service.
 
-9.10.2.  Multiple Services
+10.10.2.  Multiple Services
 
    If only one email sending service were active, the SPF record
    recommended by the provider is sufficient.  But mail from a domain
@@ -2704,7 +2764,7 @@ Table of Contents
    We combined the two rules, and in this case picked the least
    restrictive all modifier.
 
-9.10.3.  SPF Record Merging
+10.10.3.  SPF Record Merging
 
    The challenge with SPF records and Domain Connect is that an
    individual service might recommend an SPF record.  If only one
@@ -2745,7 +2805,7 @@ Table of Contents
 
    spfRules  Determines the desired rules, basically everything but
       leading "v=spf1" and trailing _all_ rule - see: SPF Rules
-      (Section 8.3)
+      (Section 9.3)
 
    When a template is added or removed with an _SPFM_ record in the
    template, some code would need to take the aggregate value of all
@@ -2760,9 +2820,9 @@ Table of Contents
    after merging.
 
    Due to merging step in between, the resulting SPF TXT records are
-   considered non-essential (see: Section 9.5).  That means the user may
-   decide to override the final calculated value or remove the whole SPF
-   record.  This action MUST NOT lead to removal of any related
+   considered non-essential (see: Section 10.5).  That means the user
+   may decide to override the final calculated value or remove the whole
+   SPF record.  This action MUST NOT lead to removal of any related
    templates in conflict detection and template integrity routines if
    implemented by the DNS provider.
 
@@ -2779,7 +2839,7 @@ Table of Contents
 
    See Appendix A.6.
 
-9.10.4.  Alternatives
+10.10.4.  Alternatives
 
    Some DNS Providers may decide not to support the SPFM record.  The
    following alternative solution should allow general interoperability
@@ -2789,15 +2849,15 @@ Table of Contents
    _essential=OnApply_ set to avoid removal of the whole template by a
    conflict.
 
-9.11.  Public Template Repository
+10.11.  Public Template Repository
 
-9.11.1.  General information
+10.11.1.  General information
 
    The Public Template Repository is an open accessible location where
    Service Providers MAY publish their Service Templates in the format
    specified in this specification.  DNS Providers MAY support all of
    the published templates, just a subset or none of them according to
-   own onboarding policies (see also: Section 10.1).
+   own onboarding policies (see also: Section 11.1).
 
    The template format is intended largely for documentation and
    communication between the DNS Providers and Service Providers, and
@@ -2809,12 +2869,12 @@ Table of Contents
    format, it is believed it will make it easier for Service Providers
    to share their configuration across DNS Providers.
 
-9.11.2.  Repository Location
+10.11.2.  Repository Location
 
    The repository of the templates is maintained under
    https://github.com/Domain-Connect/templates.
 
-9.11.3.  File naming requirements
+10.11.3.  File naming requirements
 
    The file names in this repository MUST be all lower case, including
    the providerId and serviceId.  As a result, while the providerId and
@@ -2829,7 +2889,7 @@ Table of Contents
 
    Template file name: example.com.websitebuilder.json
 
-9.11.4.  Template Integrity
+10.11.4.  Template Integrity
 
    Implementers are responsible for data integrity and should use the
    record type field to validate that variable input meets the criteria
@@ -2841,9 +2901,9 @@ Table of Contents
    mail.) or internal names that provide critical functionality that is
    outside the scope of this specification.
 
-10.  General considerations
+11.  General considerations
 
-10.1.  Onboarding
+11.1.  Onboarding
 
    This specification is an open standard that describes the protocol,
    messages and formats used to enable Domain Connect between a Service
@@ -2862,7 +2922,7 @@ Table of Contents
    between unique DNS Providers.  The DNS providerId is typically a
    domain name.
 
-10.2.  Case Sensitivity
+11.2.  Case Sensitivity
 
    All values are case sensitive.  This includes variable names, values,
    parameters and objects returned.
@@ -2873,11 +2933,11 @@ Table of Contents
    The values for providerId/serviceId in the template and passed
    through URIs in the path or query string are case sensitive.
    Different rules apply to the file naming in the Public Template
-   Repository (Section 9.11.3).
+   Repository (Section 10.11.3).
 
-11.  Extensions/Exclusions
+12.  Extensions/Exclusions
 
-11.1.  General information
+12.1.  General information
 
    Additional record types and/or extensions to records in the template
    can be implemented on a per DNS Provider basis.  However, care should
@@ -2891,7 +2951,7 @@ Table of Contents
    initial OPTIONAL extensions a DNS Provider/Service Provider may
    support.
 
-11.2.  APEXCNAME
+12.2.  APEXCNAME
 
    Some Service Providers desire the behavior of a CNAME record, but in
    the apex record.  This would allow for an A Record at the root of the
@@ -2906,7 +2966,7 @@ Table of Contents
    functionality, using the same record type name across DNS Providers
    allows template reuse.
 
-11.3.  Redirection
+12.3.  Redirection
 
    Some Service Providers desire a redirection service associated with
    the A Record.  A typical example is a service that requires a
@@ -2926,7 +2986,7 @@ Table of Contents
    respectively.  Associated with this record would be a single field
    called the "target", containing the target url of the redirect.
 
-11.4.  Nameservers
+12.4.  Nameservers
 
    Several service providers have asked for functionality supporting an
    update to the nameserver records at the registry associated with the
@@ -2941,7 +3001,7 @@ Table of Contents
    This functionality is again deemed as OPTIONAL and up to the DNS
    Provider to determine if they will support this.
 
-11.5.  DS (DNSSEC)
+12.5.  DS (DNSSEC)
 
    Requests have been made to allow for updates to the DS record for
    DNSSEC.  This record is required at the registry to enable DNSSEC,
@@ -2954,7 +3014,7 @@ Table of Contents
    Provider is the registrar, and is again deemed as optional and up to
    the DNS Provider to determine if they will support.
 
-12.  IANA Considerations
+13.  IANA Considerations
 
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:

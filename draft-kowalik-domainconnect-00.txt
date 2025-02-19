@@ -5,12 +5,12 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 21 August 2025                                                 
+Expires: 23 August 2025                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                        17 February 2025
+                                                        19 February 2025
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 21 August 2025.
+   This Internet-Draft will expire on 23 August 2025.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 1]
+Kowalik, et al.          Expires 23 August 2025                 [Page 1]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -72,86 +72,89 @@ Table of Contents
      3.2.  Use Cases out of scope  . . . . . . . . . . . . . . . . .   5
    5.  Protocol design . . . . . . . . . . . . . . . . . . . . . . .   6
      5.1.  Templates . . . . . . . . . . . . . . . . . . . . . . . .   6
-   6.  Protocol Flows  . . . . . . . . . . . . . . . . . . . . . . .   7
-     6.1.  General information . . . . . . . . . . . . . . . . . . .   7
-     6.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .   8
-     6.3.  The Asynchronous Flow . . . . . . . . . . . . . . . . . .  11
-   7.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .  13
-   8.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  17
-     8.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  18
-     8.2.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  18
-       8.2.1.  Query Supported Template  . . . . . . . . . . . . . .  18
-       8.2.2.  Apply Template  . . . . . . . . . . . . . . . . . . .  19
-       8.2.3.  Security Considerations . . . . . . . . . . . . . . .  23
-       8.2.4.  Shared Templates  . . . . . . . . . . . . . . . . . .  25
-       8.2.5.  Verification of Changes . . . . . . . . . . . . . . .  26
-     8.3.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  26
-       8.3.1.  General information . . . . . . . . . . . . . . . . .  27
-       8.3.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  27
-       8.3.3.  OAuth Flow: Getting an Authorization Code . . . . . .  27
-       8.3.4.  OAuth Flow: Requesting an Access Token  . . . . . . .  31
-       8.3.5.  OAuth Flow: Making Requests with Access Tokens  . . .  34
-       8.3.6.  OAuth Flow: Apply Template to Domain. . . . . . . . .  35
-       8.3.7.  OAuth Flow: Revert Template . . . . . . . . . . . . .  39
-       8.3.8.  OAuth Flow: Revoking access . . . . . . . . . . . . .  40
-   9.  Domain Connect Objects and Templates  . . . . . . . . . . . .  40
-     9.1.  Template Versioning . . . . . . . . . . . . . . . . . . .  41
-     9.2.  Template Definition . . . . . . . . . . . . . . . . . . .  41
-     9.3.  Template Record . . . . . . . . . . . . . . . . . . . . .  45
-   10. Template Considerations . . . . . . . . . . . . . . . . . . .  53
-     10.1.  Template State in DNS  . . . . . . . . . . . . . . . . .  53
-     10.2.  Disclosure of Changes and Conflicts  . . . . . . . . . .  53
-     10.3.  Record Types and Conflicts . . . . . . . . . . . . . . .  55
-     10.4.  Apply, Re-apply, and Multi-Instance  . . . . . . . . . .  55
-     10.5.  Non-essential records  . . . . . . . . . . . . . . . . .  56
-     10.6.  Template Scope . . . . . . . . . . . . . . . . . . . . .  56
-     10.7.  Host/Name in Template  . . . . . . . . . . . . . . . . .  56
+     5.2.  Trust Model . . . . . . . . . . . . . . . . . . . . . . .   7
+       5.2.1.  Trust Establishment . . . . . . . . . . . . . . . . .   7
+       5.2.2.  Template Security . . . . . . . . . . . . . . . . . .   8
+   6.  Protocol Flows  . . . . . . . . . . . . . . . . . . . . . . .   8
+     6.1.  General information . . . . . . . . . . . . . . . . . . .   8
+     6.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .   9
+     6.3.  The Asynchronous Flow . . . . . . . . . . . . . . . . . .  12
+   7.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .  14
+   8.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  18
+     8.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  19
+     8.2.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  19
+       8.2.1.  Query Supported Template  . . . . . . . . . . . . . .  19
+       8.2.2.  Apply Template  . . . . . . . . . . . . . . . . . . .  20
+       8.2.3.  Security Considerations . . . . . . . . . . . . . . .  24
+       8.2.4.  Shared Templates  . . . . . . . . . . . . . . . . . .  26
+       8.2.5.  Verification of Changes . . . . . . . . . . . . . . .  27
+     8.3.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  27
+       8.3.1.  General information . . . . . . . . . . . . . . . . .  28
+       8.3.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  28
+       8.3.3.  OAuth Flow: Getting an Authorization Code . . . . . .  28
+       8.3.4.  OAuth Flow: Requesting an Access Token  . . . . . . .  32
+       8.3.5.  OAuth Flow: Making Requests with Access Tokens  . . .  35
+       8.3.6.  OAuth Flow: Apply Template to Domain. . . . . . . . .  36
+       8.3.7.  OAuth Flow: Revert Template . . . . . . . . . . . . .  40
+       8.3.8.  OAuth Flow: Revoking access . . . . . . . . . . . . .  41
+   9.  Domain Connect Objects and Templates  . . . . . . . . . . . .  41
+     9.1.  Template Versioning . . . . . . . . . . . . . . . . . . .  42
+     9.2.  Template Definition . . . . . . . . . . . . . . . . . . .  42
+     9.3.  Template Record . . . . . . . . . . . . . . . . . . . . .  46
+   10. Template Considerations . . . . . . . . . . . . . . . . . . .  54
+     10.1.  Template State in DNS  . . . . . . . . . . . . . . . . .  54
+     10.2.  Disclosure of Changes and Conflicts  . . . . . . . . . .  54
+     10.3.  Record Types and Conflicts . . . . . . . . . . . . . . .  56
+     10.4.  Apply, Re-apply, and Multi-Instance  . . . . . . . . . .  56
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 2]
+Kowalik, et al.          Expires 23 August 2025                 [Page 2]
 
 Internet-Draft               Domain Connect                February 2025
 
 
-     10.8.  PointsTo in Template . . . . . . . . . . . . . . . . . .  57
-     10.9.  Variables  . . . . . . . . . . . . . . . . . . . . . . .  57
-       10.9.1.  Variables and Host/Name in Template  . . . . . . . .  57
-       10.9.2.  Variable Values  . . . . . . . . . . . . . . . . . .  58
-       10.9.3.  Variables and Security . . . . . . . . . . . . . . .  59
-       10.9.4.  Variable Examples  . . . . . . . . . . . . . . . . .  59
-     10.10. SPF TXT Record . . . . . . . . . . . . . . . . . . . . .  60
-       10.10.1.  What is SPF?  . . . . . . . . . . . . . . . . . . .  60
-       10.10.2.  Multiple Services . . . . . . . . . . . . . . . . .  60
-       10.10.3.  SPF Record Merging  . . . . . . . . . . . . . . . .  61
-       10.10.4.  Alternatives  . . . . . . . . . . . . . . . . . . .  63
-     10.11. Public Template Repository . . . . . . . . . . . . . . .  63
-       10.11.1.  General information . . . . . . . . . . . . . . . .  63
-       10.11.2.  Repository Location . . . . . . . . . . . . . . . .  63
-       10.11.3.  File naming requirements  . . . . . . . . . . . . .  63
-       10.11.4.  Template Integrity  . . . . . . . . . . . . . . . .  64
-   11. General considerations  . . . . . . . . . . . . . . . . . . .  64
-     11.1.  Onboarding . . . . . . . . . . . . . . . . . . . . . . .  64
-     11.2.  Case Sensitivity . . . . . . . . . . . . . . . . . . . .  64
-   12. Extensions/Exclusions . . . . . . . . . . . . . . . . . . . .  65
-     12.1.  General information  . . . . . . . . . . . . . . . . . .  65
-     12.2.  APEXCNAME  . . . . . . . . . . . . . . . . . . . . . . .  65
-     12.3.  Redirection  . . . . . . . . . . . . . . . . . . . . . .  65
-     12.4.  Nameservers  . . . . . . . . . . . . . . . . . . . . . .  66
-     12.5.  DS (DNSSEC)  . . . . . . . . . . . . . . . . . . . . . .  66
-   13. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  66
-   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  67
-   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  67
-   Normative References  . . . . . . . . . . . . . . . . . . . . . .  68
-   Informative References  . . . . . . . . . . . . . . . . . . . . .  69
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  69
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  69
-     A.2.  Example Records: Single static host record  . . . . . . .  70
-     A.3.  Example Records: Single variable host record for A  . . .  71
-     A.4.  Example Records: Unspecified record type CAA  . . . . . .  71
-     A.5.  Example: DNS Zone merging . . . . . . . . . . . . . . . .  72
-     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  73
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  75
+     10.5.  Non-essential records  . . . . . . . . . . . . . . . . .  57
+     10.6.  Template Scope . . . . . . . . . . . . . . . . . . . . .  57
+     10.7.  Host/Name in Template  . . . . . . . . . . . . . . . . .  57
+     10.8.  PointsTo in Template . . . . . . . . . . . . . . . . . .  58
+     10.9.  Variables  . . . . . . . . . . . . . . . . . . . . . . .  58
+       10.9.1.  Variables and Host/Name in Template  . . . . . . . .  58
+       10.9.2.  Variable Values  . . . . . . . . . . . . . . . . . .  59
+       10.9.3.  Variables and Security . . . . . . . . . . . . . . .  60
+       10.9.4.  Variable Examples  . . . . . . . . . . . . . . . . .  60
+     10.10. SPF TXT Record . . . . . . . . . . . . . . . . . . . . .  61
+       10.10.1.  What is SPF?  . . . . . . . . . . . . . . . . . . .  61
+       10.10.2.  Multiple Services . . . . . . . . . . . . . . . . .  61
+       10.10.3.  SPF Record Merging  . . . . . . . . . . . . . . . .  62
+       10.10.4.  Alternatives  . . . . . . . . . . . . . . . . . . .  64
+     10.11. Public Template Repository . . . . . . . . . . . . . . .  64
+       10.11.1.  General information . . . . . . . . . . . . . . . .  64
+       10.11.2.  Repository Location . . . . . . . . . . . . . . . .  64
+       10.11.3.  File naming requirements  . . . . . . . . . . . . .  64
+       10.11.4.  Template Integrity  . . . . . . . . . . . . . . . .  65
+   11. General considerations  . . . . . . . . . . . . . . . . . . .  65
+     11.1.  Onboarding . . . . . . . . . . . . . . . . . . . . . . .  65
+     11.2.  Case Sensitivity . . . . . . . . . . . . . . . . . . . .  65
+   12. Extensions/Exclusions . . . . . . . . . . . . . . . . . . . .  66
+     12.1.  General information  . . . . . . . . . . . . . . . . . .  66
+     12.2.  APEXCNAME  . . . . . . . . . . . . . . . . . . . . . . .  66
+     12.3.  Redirection  . . . . . . . . . . . . . . . . . . . . . .  66
+     12.4.  Nameservers  . . . . . . . . . . . . . . . . . . . . . .  67
+     12.5.  DS (DNSSEC)  . . . . . . . . . . . . . . . . . . . . . .  67
+   13. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  67
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  68
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  68
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  69
+   Informative References  . . . . . . . . . . . . . . . . . . . . .  70
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  70
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  70
+     A.2.  Example Records: Single static host record  . . . . . . .  71
+     A.3.  Example Records: Single variable host record for A  . . .  72
+     A.4.  Example Records: Unspecified record type CAA  . . . . . .  72
+     A.5.  Example: DNS Zone merging . . . . . . . . . . . . . . . .  73
+     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  74
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  76
 
 1.  Acknowledgements
 
@@ -160,15 +163,14 @@ Internet-Draft               Domain Connect                February 2025
 
    *  Roger Carney of GoDaddy Inc.
 
-   *  Chris Ambler of GoDaddy Inc.
 
 
-
-
-Kowalik, et al.          Expires 21 August 2025                 [Page 3]
+Kowalik, et al.          Expires 23 August 2025                 [Page 3]
 
 Internet-Draft               Domain Connect                February 2025
 
+
+   *  Chris Ambler of GoDaddy Inc.
 
 2.  Introduction
 
@@ -219,9 +221,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-
-
-Kowalik, et al.          Expires 21 August 2025                 [Page 4]
+Kowalik, et al.          Expires 23 August 2025                 [Page 4]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -277,7 +277,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 5]
+Kowalik, et al.          Expires 23 August 2025                 [Page 5]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -333,7 +333,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 6]
+Kowalik, et al.          Expires 23 August 2025                 [Page 6]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -354,11 +354,69 @@ Internet-Draft               Domain Connect                February 2025
    published in the Public Repository (Section 10.11) or agreed out-of-
    band between the Service Provider and the DNS Provider.
 
-   By basing the protocol on templates instead of DNS Records, several
-   advantages are achieved.  The DNS Provider has very explicit
-   knowledge and control of the settings being changed to enable a
-   service.  And the system is more secure as templates are controlled
-   and contained.
+5.2.  Trust Model
+
+   The Domain Connect protocol relies on a robust trust model to ensure
+   the security and reliability of DNS configuration delegation between
+   Service Providers and DNS Providers.  This model addresses the
+   necessary trust relationships between users, Service Providers, and
+   DNS Providers, centering on secure template utilization and DNS
+   Provider vetting processes.
+
+5.2.1.  Trust Establishment
+
+   User trust in the DNS Provider is an essential factor.  DNS Provider
+   is a trusted party by the fact that DNS Provider has full technical
+   access to the DNS zone already.  Users depend on their DNS Providers
+   to accurately reflect DNS record modifications initiated through
+   Domain Connect.  Consequently, DNS Providers are expected implement
+   authorization checks to validate user permissions prior to enacting
+   any DNS zone changes.  Furthermore, DNS Providers are responsible for
+   translating template specifications into a human-readable format,
+   enabling users to readily comprehend the nature and impact of
+   proposed DNS record changes.
+
+   Users would typically place trust in Service Providers to act
+   responsibly and only make DNS modifications that are within the scope
+   defined by the approved template, however it shall be observed that a
+   malicious actor may try to exploit this trust by acting as a benign
+   Service Provider or building a fake one, therefore by default Service
+   Provider shall not be assumed to be a trusted party in the protocol
+   considerations.
+
+
+
+
+
+
+Kowalik, et al.          Expires 23 August 2025                 [Page 7]
+
+Internet-Draft               Domain Connect                February 2025
+
+
+   A foundational element to close this gap is the establishment of
+   trust between DNS Providers and Service Providers.  DNS Providers
+   verify the legitimacy and security of templates provided by Service
+   Providers as well as they are able to verify textual information
+   included in the template and provided to the user, such as provider
+   name or service name.  This trust is typically established through an
+   onboarding process which may involve contractual agreements or
+   appropriate template acceptance policies.
+
+5.2.2.  Template Security
+
+   Templates are central to the trust model, defining the permitted
+   scope of DNS zone modifications and restricting Service Provider
+   actions, preventing unauthorized changes beyond the template's
+   specified parameters.  The template defines the types of DNS records
+   within the zone and together with a distinct domain name and
+   optionally sub-domain with user consent it defines clearly the part
+   of the zone that the Service Provider is authorized to modify via the
+   template application.  Service Providers create templates which are
+   then onboarded by DNS Providers, either adhering to a published
+   template definition or based on bilateral agreements.  The DNS
+   Provider has very explicit knowledge and control of the settings
+   being changed to enable a service.
 
 6.  Protocol Flows
 
@@ -383,16 +441,17 @@ Internet-Draft               Domain Connect                February 2025
    the flows, however it is RECOMMENDED to implement Synchronous Flow
    which fulfill needs of most Service Providers.
 
-   Individual Service Providers MAY work with the synchronous flow only,
-   the asynchronous flow only, or with both.
 
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 7]
+Kowalik, et al.          Expires 23 August 2025                 [Page 8]
 
 Internet-Draft               Domain Connect                February 2025
 
+
+   Individual Service Providers MAY work with the synchronous flow only,
+   the asynchronous flow only, or with both.
 
 6.2.  The Synchronous Flow
 
@@ -439,17 +498,17 @@ Internet-Draft               Domain Connect                February 2025
          ! ALT  /  if the template requires signing               !
          !_____/        |                  |                      !
          !              10 Lookup URL      |                      !
-         !              signature keys (DNS)                      !
-         !              |<-----------------|                      !
-         !              |                  |                      !
 
 
 
-Kowalik, et al.          Expires 21 August 2025                 [Page 8]
+Kowalik, et al.          Expires 23 August 2025                 [Page 9]
 
 Internet-Draft               Domain Connect                February 2025
 
 
+         !              signature keys (DNS)                      !
+         !              |<-----------------|                      !
+         !              |                  |                      !
          !              |                  |----.                 !
          !              |                  |    | 11 Check        !
          !              |                  |<---' request URL     !
@@ -495,16 +554,16 @@ Internet-Draft               Domain Connect                February 2025
 
    Steps:
 
-   1.   *User Provides Domain Name*: The user initiates the process by
-        providing their domain name to the Service Provider.
 
 
 
-
-Kowalik, et al.          Expires 21 August 2025                 [Page 9]
+Kowalik, et al.          Expires 23 August 2025                [Page 10]
 
 Internet-Draft               Domain Connect                February 2025
 
+
+   1.   *User Provides Domain Name*: The user initiates the process by
+        providing their domain name to the Service Provider.
 
    2.   *Service Provider Initiates DNS Discovery*: The Service Provider
         queries the DNS provider to discover the Domain Connect settings
@@ -554,10 +613,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-
-
-
-Kowalik, et al.          Expires 21 August 2025                [Page 10]
+Kowalik, et al.          Expires 23 August 2025                [Page 11]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -613,7 +669,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 11]
+Kowalik, et al.          Expires 23 August 2025                [Page 12]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -669,7 +725,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 12]
+Kowalik, et al.          Expires 23 August 2025                [Page 13]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -725,7 +781,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 13]
+Kowalik, et al.          Expires 23 August 2025                [Page 14]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -781,7 +837,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 14]
+Kowalik, et al.          Expires 23 August 2025                [Page 15]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -837,7 +893,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 15]
+Kowalik, et al.          Expires 23 August 2025                [Page 16]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -893,7 +949,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 16]
+Kowalik, et al.          Expires 23 August 2025                [Page 17]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -949,7 +1005,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 17]
+Kowalik, et al.          Expires 23 August 2025                [Page 18]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1005,7 +1061,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 18]
+Kowalik, et al.          Expires 23 August 2025                [Page 19]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1061,7 +1117,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 19]
+Kowalik, et al.          Expires 23 August 2025                [Page 20]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1117,7 +1173,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 20]
+Kowalik, et al.          Expires 23 August 2025                [Page 21]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1173,7 +1229,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 21]
+Kowalik, et al.          Expires 23 August 2025                [Page 22]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1229,7 +1285,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 22]
+Kowalik, et al.          Expires 23 August 2025                [Page 23]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1285,7 +1341,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 23]
+Kowalik, et al.          Expires 23 August 2025                [Page 24]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1341,7 +1397,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 24]
+Kowalik, et al.          Expires 23 August 2025                [Page 25]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1397,7 +1453,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 25]
+Kowalik, et al.          Expires 23 August 2025                [Page 26]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1453,7 +1509,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 26]
+Kowalik, et al.          Expires 23 August 2025                [Page 27]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1509,7 +1565,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 27]
+Kowalik, et al.          Expires 23 August 2025                [Page 28]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1565,7 +1621,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 28]
+Kowalik, et al.          Expires 23 August 2025                [Page 29]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1621,7 +1677,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 29]
+Kowalik, et al.          Expires 23 August 2025                [Page 30]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1677,7 +1733,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 30]
+Kowalik, et al.          Expires 23 August 2025                [Page 31]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1733,7 +1789,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 31]
+Kowalik, et al.          Expires 23 August 2025                [Page 32]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1789,7 +1845,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 32]
+Kowalik, et al.          Expires 23 August 2025                [Page 33]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1845,7 +1901,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 33]
+Kowalik, et al.          Expires 23 August 2025                [Page 34]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1901,7 +1957,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 34]
+Kowalik, et al.          Expires 23 August 2025                [Page 35]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -1957,7 +2013,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 35]
+Kowalik, et al.          Expires 23 August 2025                [Page 36]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2013,7 +2069,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 36]
+Kowalik, et al.          Expires 23 August 2025                [Page 37]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2069,7 +2125,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 37]
+Kowalik, et al.          Expires 23 August 2025                [Page 38]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2125,7 +2181,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 38]
+Kowalik, et al.          Expires 23 August 2025                [Page 39]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2181,7 +2237,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 39]
+Kowalik, et al.          Expires 23 August 2025                [Page 40]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2237,7 +2293,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 40]
+Kowalik, et al.          Expires 23 August 2025                [Page 41]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2293,7 +2349,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 41]
+Kowalik, et al.          Expires 23 August 2025                [Page 42]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2349,7 +2405,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 42]
+Kowalik, et al.          Expires 23 August 2025                [Page 43]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2405,7 +2461,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 43]
+Kowalik, et al.          Expires 23 August 2025                [Page 44]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2461,7 +2517,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 44]
+Kowalik, et al.          Expires 23 August 2025                [Page 45]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2517,7 +2573,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 45]
+Kowalik, et al.          Expires 23 August 2025                [Page 46]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2573,7 +2629,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 46]
+Kowalik, et al.          Expires 23 August 2025                [Page 47]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2629,7 +2685,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 47]
+Kowalik, et al.          Expires 23 August 2025                [Page 48]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2685,7 +2741,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 48]
+Kowalik, et al.          Expires 23 August 2025                [Page 49]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2741,7 +2797,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 49]
+Kowalik, et al.          Expires 23 August 2025                [Page 50]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2797,7 +2853,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 50]
+Kowalik, et al.          Expires 23 August 2025                [Page 51]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2853,7 +2909,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 51]
+Kowalik, et al.          Expires 23 August 2025                [Page 52]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2909,7 +2965,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 52]
+Kowalik, et al.          Expires 23 August 2025                [Page 53]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -2965,7 +3021,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 53]
+Kowalik, et al.          Expires 23 August 2025                [Page 54]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3021,7 +3077,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 54]
+Kowalik, et al.          Expires 23 August 2025                [Page 55]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3077,7 +3133,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 55]
+Kowalik, et al.          Expires 23 August 2025                [Page 56]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3133,7 +3189,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 56]
+Kowalik, et al.          Expires 23 August 2025                [Page 57]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3189,7 +3245,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 57]
+Kowalik, et al.          Expires 23 August 2025                [Page 58]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3245,7 +3301,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 58]
+Kowalik, et al.          Expires 23 August 2025                [Page 59]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3301,7 +3357,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 59]
+Kowalik, et al.          Expires 23 August 2025                [Page 60]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3357,7 +3413,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 60]
+Kowalik, et al.          Expires 23 August 2025                [Page 61]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3413,7 +3469,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 61]
+Kowalik, et al.          Expires 23 August 2025                [Page 62]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3469,7 +3525,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 62]
+Kowalik, et al.          Expires 23 August 2025                [Page 63]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3525,7 +3581,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 63]
+Kowalik, et al.          Expires 23 August 2025                [Page 64]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3581,7 +3637,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 64]
+Kowalik, et al.          Expires 23 August 2025                [Page 65]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3637,7 +3693,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 65]
+Kowalik, et al.          Expires 23 August 2025                [Page 66]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3693,7 +3749,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 66]
+Kowalik, et al.          Expires 23 August 2025                [Page 67]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3749,7 +3805,7 @@ domainconnect-00
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 67]
+Kowalik, et al.          Expires 23 August 2025                [Page 68]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3805,7 +3861,7 @@ Normative References
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 68]
+Kowalik, et al.          Expires 23 August 2025                [Page 69]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3861,7 +3917,7 @@ A.1.  Example Template
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 69]
+Kowalik, et al.          Expires 23 August 2025                [Page 70]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3917,7 +3973,7 @@ A.2.  Example Records: Single static host record
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 70]
+Kowalik, et al.          Expires 23 August 2025                [Page 71]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -3973,7 +4029,7 @@ A.4.  Example Records: Unspecified record type CAA
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 71]
+Kowalik, et al.          Expires 23 August 2025                [Page 72]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -4029,7 +4085,7 @@ A.5.  Example: DNS Zone merging
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 72]
+Kowalik, et al.          Expires 23 August 2025                [Page 73]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -4085,7 +4141,7 @@ A.6.  Example: SPF Record Merging
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 73]
+Kowalik, et al.          Expires 23 August 2025                [Page 74]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -4141,7 +4197,7 @@ Internet-Draft               Domain Connect                February 2025
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 74]
+Kowalik, et al.          Expires 23 August 2025                [Page 75]
 
 Internet-Draft               Domain Connect                February 2025
 
@@ -4197,4 +4253,4 @@ Authors' Addresses
 
 
 
-Kowalik, et al.          Expires 21 August 2025                [Page 75]
+Kowalik, et al.          Expires 23 August 2025                [Page 76]

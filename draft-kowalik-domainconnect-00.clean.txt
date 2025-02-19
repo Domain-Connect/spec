@@ -5,12 +5,12 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 21 August 2025                                                 
+Expires: 23 August 2025                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                        17 February 2025
+                                                        19 February 2025
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 21 August 2025.
+   This Internet-Draft will expire on 23 August 2025.
 
 Copyright Notice
 
@@ -64,6 +64,9 @@ Table of Contents
      3.2.  Use Cases out of scope
    5.  Protocol design
      5.1.  Templates
+     5.2.  Trust Model
+       5.2.1.  Trust Establishment
+       5.2.2.  Template Security
    6.  Protocol Flows
      6.1.  General information
      6.2.  The Synchronous Flow
@@ -300,11 +303,59 @@ Table of Contents
    published in the Public Repository (Section 10.11) or agreed out-of-
    band between the Service Provider and the DNS Provider.
 
-   By basing the protocol on templates instead of DNS Records, several
-   advantages are achieved.  The DNS Provider has very explicit
-   knowledge and control of the settings being changed to enable a
-   service.  And the system is more secure as templates are controlled
-   and contained.
+5.2.  Trust Model
+
+   The Domain Connect protocol relies on a robust trust model to ensure
+   the security and reliability of DNS configuration delegation between
+   Service Providers and DNS Providers.  This model addresses the
+   necessary trust relationships between users, Service Providers, and
+   DNS Providers, centering on secure template utilization and DNS
+   Provider vetting processes.
+
+5.2.1.  Trust Establishment
+
+   User trust in the DNS Provider is an essential factor.  DNS Provider
+   is a trusted party by the fact that DNS Provider has full technical
+   access to the DNS zone already.  Users depend on their DNS Providers
+   to accurately reflect DNS record modifications initiated through
+   Domain Connect.  Consequently, DNS Providers are expected implement
+   authorization checks to validate user permissions prior to enacting
+   any DNS zone changes.  Furthermore, DNS Providers are responsible for
+   translating template specifications into a human-readable format,
+   enabling users to readily comprehend the nature and impact of
+   proposed DNS record changes.
+
+   Users would typically place trust in Service Providers to act
+   responsibly and only make DNS modifications that are within the scope
+   defined by the approved template, however it shall be observed that a
+   malicious actor may try to exploit this trust by acting as a benign
+   Service Provider or building a fake one, therefore by default Service
+   Provider shall not be assumed to be a trusted party in the protocol
+   considerations.
+
+   A foundational element to close this gap is the establishment of
+   trust between DNS Providers and Service Providers.  DNS Providers
+   verify the legitimacy and security of templates provided by Service
+   Providers as well as they are able to verify textual information
+   included in the template and provided to the user, such as provider
+   name or service name.  This trust is typically established through an
+   onboarding process which may involve contractual agreements or
+   appropriate template acceptance policies.
+
+5.2.2.  Template Security
+
+   Templates are central to the trust model, defining the permitted
+   scope of DNS zone modifications and restricting Service Provider
+   actions, preventing unauthorized changes beyond the template's
+   specified parameters.  The template defines the types of DNS records
+   within the zone and together with a distinct domain name and
+   optionally sub-domain with user consent it defines clearly the part
+   of the zone that the Service Provider is authorized to modify via the
+   template application.  Service Providers create templates which are
+   then onboarded by DNS Providers, either adhering to a published
+   template definition or based on bilateral agreements.  The DNS
+   Provider has very explicit knowledge and control of the settings
+   being changed to enable a service.
 
 6.  Protocol Flows
 

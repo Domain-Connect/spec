@@ -5,12 +5,12 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 28 August 2025                                                 
+Expires: 30 August 2025                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                        24 February 2025
+                                                        26 February 2025
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 28 August 2025.
+   This Internet-Draft will expire on 30 August 2025.
 
 Copyright Notice
 
@@ -68,21 +68,21 @@ Table of Contents
    6.  DNS Provider Discovery
    7.  Applying Domain Connect
      7.1.  Endpoints
-     7.2.  Synchronous Flow
-       7.2.1.  Query Supported Template
-       7.2.2.  Apply Template
-       7.2.3.  Security Considerations
-       7.2.4.  Shared Templates
-       7.2.5.  Verification of Changes
-     7.3.  Asynchronous Flow: OAuth
-       7.3.1.  General information
-       7.3.2.  OAuth Flow: Setup
-       7.3.3.  OAuth Flow: Getting an Authorization Code
-       7.3.4.  OAuth Flow: Requesting an Access Token
-       7.3.5.  OAuth Flow: Making Requests with Access Tokens
-       7.3.6.  OAuth Flow: Apply Template to Domain.
-       7.3.7.  OAuth Flow: Revert Template
-       7.3.8.  OAuth Flow: Revoking access
+     7.2.  Query Supported Template
+     7.3.  Synchronous Flow
+       7.3.1.  Apply Template
+       7.3.2.  Security Considerations
+       7.3.3.  Shared Templates
+     7.4.  Asynchronous Flow: OAuth
+       7.4.1.  General information
+       7.4.2.  OAuth Flow: Setup
+       7.4.3.  OAuth Flow: Getting an Authorization Code
+       7.4.4.  OAuth Flow: Requesting an Access Token
+       7.4.5.  OAuth Flow: Making Requests with Access Tokens
+       7.4.6.  OAuth Flow: Apply Template to Domain.
+       7.4.7.  OAuth Flow: Revert Template
+       7.4.8.  OAuth Flow: Revoking access
+     7.5.  Verification of Changes
    8.  Domain Connect Objects and Templates
      8.1.  Template Versioning
      8.2.  Template Definition
@@ -447,9 +447,14 @@ Table of Contents
    to determine the additional settings for using Domain Connect on this
    domain at the DNS Provider.  This is done by calling a REST API.
 
+   Normative URI template of the settings end-point per [RFC6570]:
+
    GET
 
-   https://{_domainconnect}/v2/{domain}/settings
+   https://{+_domainconnect}/v2/{domain}/settings
+
+   _domainconnect parameter is the URL prefix returned in the
+   _domainconnect TXT record.
 
    This must return a JSON structure containing the settings to use for
    Domain Connect on the domain name (passed in on the path) at the DNS
@@ -643,17 +648,35 @@ Table of Contents
    The root URLs for the UX endpoints and the API endpoints are returned
    in the JSON payload during DNS Provider discovery.
 
-7.2.  Synchronous Flow
+7.2.  Query Supported Template
 
-7.2.1.  Query Supported Template
+   Normative URI template of the template query end-point per [RFC6570]:
 
    GET
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   {+urlAPI}/v2/domainTemplates/providers/{providerId}/services
    /{serviceId}
 
    This URL is be used by the Service Provider to determine if the DNS
-   Provider supports a specific template through the synchronous flow.
+   Provider supports a specific template.
+
+   The following table describes the parameters of the URI template:
+
+     +==============+============+===================================+
+     | Property     | Key        | Description                       |
+     +==============+============+===================================+
+     | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from   |
+     |              |            | the settings endpoint.            |
+     +--------------+------------+-----------------------------------+
+     | *Service     | providerId | (REQUIRED) identifier of the      |
+     | Provider Id* |            | Service Provider of the template. |
+     +--------------+------------+-----------------------------------+
+     | *Service Id* | serviceId  | (REQUIRED) The name or identifier |
+     |              |            | of the template.                  |
+     +--------------+------------+-----------------------------------+
+
+          Table 3: URI template parameters for the query supported
+                             template end-point
 
    Returning a status of 200 without a body indicates the template is
    supported.  The DNS provider may decide to disclose the version of
@@ -674,25 +697,31 @@ Table of Contents
       | Found*    |          | the template is not supported        |
       +-----------+----------+--------------------------------------+
 
-            Table 3: https status codes for the Query Supported
+            Table 4: https status codes for the Query Supported
                              Template end-point
 
-7.2.2.  Apply Template
+7.3.  Synchronous Flow
 
-7.2.2.1.  Apply Template URL
+7.3.1.  Apply Template
+
+7.3.1.1.  Apply Template URL
+
+   Normative URI template of the synchronous template apply end-point
+   per [RFC6570]:
 
    GET
 
-   {urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
-   /{serviceId}/apply?[properties]
+   {+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/apply{?domain,host,groupId,force,providerName,
+   serviceName,instanceId,redirect_uri,properties*}{&sig,key}
 
-   This is the URL where the user is sent to apply a template to a
+   This is the URL, where the user is sent to apply a template to a
    domain they own.  It is called from the Service Provider to start the
    synchronous Domain Connect Protocol.
 
    This URL can be called in one of two ways.
 
-7.2.2.2.  New Browser Window
+7.3.1.2.  New Browser Window
 
    The first is through a new browser tab or in a popup browser window.
    The DNS Provider signs the user in if necessary, verifies domain
@@ -700,7 +729,7 @@ Table of Contents
    template.  After application of the template, the DNS Provider should
    automatically close the browser tab or window.
 
-7.2.2.3.  Same Browser Window
+7.3.1.3.  Same Browser Window
 
    The second is in the current browser tab/window.  As above the DNS
    Provider signs the user in if necessary, verifies the user control of
@@ -752,12 +781,23 @@ Table of Contents
    the redirect_uri must be within the domains specified in the template
    in syncRedirectDomain.
 
-7.2.2.4.  Parameters/properties
+7.3.1.4.  Parameters/properties
 
    +=============+==============+======================================+
    | Property    | Request      | Description                          |
    |             | Parameter    |                                      |
    +=============+==============+======================================+
+   | *URL Sync   | urlSyncUX    | (REQUIRED) Value of urlSyncUX        |
+   | UX*         |              | property from the settings           |
+   |             |              | endpoint.                            |
+   +-------------+--------------+--------------------------------------+
+   | *Service    | providerId   | (REQUIRED) identifier of the         |
+   | Provider    |              | Service Provider of the template to  |
+   | Id*         |              | be applied                           |
+   +-------------+--------------+--------------------------------------+
+   | *Service    | serviceId    | (REQUIRED) identifier of the         |
+   | Id*         |              | template to be applied               |
+   +-------------+--------------+--------------------------------------+
    | *Domain*    | domain       | (REQUIRED) The domain name being     |
    |             |              | configured.  This is the root        |
    |             |              | domain (the registered domain or     |
@@ -787,7 +827,7 @@ Table of Contents
    |             |              | when redirecting to the              |
    |             |              | redirect_uri described above.        |
    +-------------+--------------+--------------------------------------+
-   | *Name/Value | *            | (REQUIRED) Any key that will be      |
+   | *Name/Value | properties   | (REQUIRED) Any key that will be      |
    | Pairs*      |              | used as a replacement for the "%     |
    |             |              | surrounded" variables in the         |
    |             |              | template.  The name portion of this  |
@@ -842,7 +882,7 @@ Table of Contents
    |             |              | below.                               |
    +-------------+--------------+--------------------------------------+
 
-        Table 4: query parameters of the apply call in the sync flow
+    Table 5: URI template parameters of the apply call in the sync flow
 
    An example query string:
 
@@ -859,9 +899,9 @@ Table of Contents
    are two variables in this template, "IP" and "RANDOMTEXT".  These
    variables are passed as name/value pairs.
 
-7.2.3.  Security Considerations
+7.3.2.  Security Considerations
 
-7.2.3.1.  Risk of phishing with open template parameters
+7.3.2.1.  Risk of phishing with open template parameters
 
    By applying a template with parameters there is a security
    consideration that must be taken into account.
@@ -877,7 +917,7 @@ Table of Contents
    Not all templates have this problem.  But when they do, there are
    several options.
 
-7.2.3.2.  Disable Synchronous
+7.3.2.2.  Disable Synchronous
 
    One option is to disable the synchronous flow and use asynchronous
    OAuth.  This can be controlled with the syncBlock value from the
@@ -885,7 +925,7 @@ Table of Contents
    implementation burden and requires onboarding between each Service
    and DNS Provider.
 
-7.2.3.3.  Digitally Sign Requests
+7.3.2.3.  Digitally Sign Requests
 
    Another option is to digitally sign the query string.  A signature is
    appended as an additional query string parameter, properly URL
@@ -963,7 +1003,7 @@ Table of Contents
    The values of each query string value key/value pair must be properly
    URL Encoded before the signature is generated.
 
-7.2.3.4.  Warnings
+7.3.2.4.  Warnings
 
    Some applications aren't able to use OAuth and/or sign requests.
 
@@ -975,7 +1015,7 @@ Table of Contents
    extra warnings to the user to have them verify the link was/is from a
    reputable source before applying the template.
 
-7.2.4.  Shared Templates
+7.3.3.  Shared Templates
 
    Some templates can be called by multiple companies, or be used for
    different purposes.
@@ -1014,27 +1054,9 @@ Table of Contents
    Formatting.  But this would be required if the template required
    signatures.
 
-7.2.5.  Verification of Changes
+7.4.  Asynchronous Flow: OAuth
 
-   There are circumstances where the Service Provider may wish to verify
-   that the template was successfully applied.  Without Domain Donnect,
-   this typically involved the Service Provider querying DNS to see if
-   the changes to DNS had been made.
-
-   This same technique works with Domain Connect, and if necessary can
-   be triggered either manually on the Service Provider site or
-   automatically upon page/window activation in the browser when the
-   browser window for the DNS Provider is closed.
-
-   When the redirect_uri is used and an error is not present in the URI,
-   the Service Provider can not assume the changes were applied to DNS.
-   While true in most circumstances, users can tamper with or alter the
-   return url in the browser.  As such it is recommend that enablement
-   of a service be based on verification of changes to DNS.
-
-7.3.  Asynchronous Flow: OAuth
-
-7.3.1.  General information
+7.4.1.  General information
 
    Using the OAuth flow is a more advanced use case needed by Service
    Providers that have more complex configurations that may require
@@ -1048,7 +1070,7 @@ Table of Contents
    is recommended that Service Providers relying on an OAuth
    implementation also implement a synchronous implementation.
 
-7.3.2.  OAuth Flow: Setup
+7.4.2.  OAuth Flow: Setup
 
    Service providers wishing to use the OAuth flow must register as an
    OAuth client with each DNS provider.  This is a manual process.
@@ -1066,11 +1088,17 @@ Table of Contents
    id and a secret which will be used when requesting tokens.  For
    simplicity the client id should be the same as the providerId.
 
-7.3.3.  OAuth Flow: Getting an Authorization Code
+7.4.3.  OAuth Flow: Getting an Authorization Code
+
+   Normative URI template of the authorization code end-point per
+   [RFC6570]:
 
    GET
 
-   {urlAsyncUX}/v2/domainTemplates/providers/{providerId}
+   {+urlAsyncUX}/v2/domainTemplates/providers/{providerId}{?domain,host,
+   client_id,redirect_uri,response_type,scope,providerName,serviceName,
+   state,properties*}
+   }
 
    To initiate the OAuth flow the Service Provider first links to the
    DNS Provider to gain consent.
@@ -1122,7 +1150,7 @@ Table of Contents
         |                                   | sub1.example.com    |
         +-----------------------------------+---------------------+
 
-          Table 5: examples of scope and host parameter values in
+          Table 6: examples of scope and host parameter values in
                                the async flow
 
    Upon successful authorization/verification/consent from the user, the
@@ -1143,13 +1171,21 @@ Table of Contents
    The state value passed into the call must be passed back on the query
    string as "state=".
 
-   The following table describes the values in the query string
-   parameters for the request for the OAuth consent flow that must be
-   included unless otherwise indicated
+   The following table describes the values of the URI template for the
+   request for the OAuth consent flow that must be included unless
+   otherwise indicated
 
      +===========+===============+==================================+
      | Property  | Key           | Description                      |
      +===========+===============+==================================+
+     | *URL Sync | urlAsyncUX    | (REQUIRED) Value of urlAsyncUX   |
+     | UX*       |               | property from the settings       |
+     |           |               | endpoint.                        |
+     +-----------+---------------+----------------------------------+
+     | *Service  | providerId    | (REQUIRED) identifier of the     |
+     | Provider  |               | Service Provider of the template |
+     | Id*       |               | to be applied                    |
+     +-----------+---------------+----------------------------------+
      | *Domain*  | domain        | (REQUIRED) The domain name being |
      |           |               | configured.  This is the root    |
      |           |               | domain (the registered domain or |
@@ -1209,7 +1245,7 @@ Table of Contents
      |           |               | appended to the redirect_url     |
      |           |               | described above.                 |
      +-----------+---------------+----------------------------------+
-     | *Name/    | *             | (OPTIONAL) Any key that will be  |
+     | *Name/    | properties    | (OPTIONAL) Any key that will be  |
      | Value     |               | used as a replacement for the "% |
      | Pairs*    |               | surrounded" value(s) in a        |
      |           |               | template required for conflict   |
@@ -1218,14 +1254,26 @@ Table of Contents
      |           |               | in certain TXT records.          |
      +-----------+---------------+----------------------------------+
 
-       Table 6: query parameters of the authorization end-point in
-                                async flow
+        Table 7: URI template parameters of the authorization end-
+                           point in async flow
 
-7.3.4.  OAuth Flow: Requesting an Access Token
+7.4.4.  OAuth Flow: Requesting an Access Token
+
+   Normative URI template of the access token end-point per [RFC6570]:
 
    POST
 
-   {urlAPI}/v2/oauth/access_token
+   {+urlAPI}/v2/oauth/access_token
+
+      +==========+===========+=====================================+
+      | Property | Request   | Description                         |
+      |          | Parameter |                                     |
+      +==========+===========+=====================================+
+      | *URL     | urlAPI    | (REQUIRED) Value of urlAPI property |
+      | API*     |           | from the settings endpoint.         |
+      +----------+-----------+-------------------------------------+
+
+      Table 8: URI template parameters of the access token end-point
 
    Once authorization has been granted, the Service Provider must use
    the Authorization Code provided to request an Access Token.  The
@@ -1297,7 +1345,7 @@ Table of Contents
    |                |               | OAuth.                          |
    +----------------+---------------+---------------------------------+
 
-                Table 7: parameters of the token end-point
+                Table 9: parameters of the token end-point
 
    Upon successful token exchange, the DNS Provider will return a
    response with 4 properties in the body of the response.
@@ -1317,7 +1365,7 @@ Table of Contents
       |                 | access tokens when this one has expired.  |
       +-----------------+-------------------------------------------+
 
-            Table 8: properties of the token end-point response
+            Table 10: properties of the token end-point response
 
    +===========+==========+===========================================+
    | Status    | Response | Description                               |
@@ -1329,9 +1377,9 @@ Table of Contents
    | *Errors*  | 4**      | All other responses indicate an error.    |
    +-----------+----------+-------------------------------------------+
 
-        Table 9: http status codes of the token end-point response
+       Table 11: http status codes of the token end-point response
 
-7.3.5.  OAuth Flow: Making Requests with Access Tokens
+7.4.5.  OAuth Flow: Making Requests with Access Tokens
 
    Once the Service Provider has the access token, they can call the DNS
    Provider's API to make changes to DNS on the domain by applying and
@@ -1353,12 +1401,16 @@ Table of Contents
    passing the secret, it is recommend that the urlAPI be from a stored
    value vs. the value returned during discovery here as well.
 
-7.3.6.  OAuth Flow: Apply Template to Domain.
+7.4.6.  OAuth Flow: Apply Template to Domain.
+
+   Normative URI template of the asynchronous apply end-point per
+   [RFC6570]:
 
    POST
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
-   /{serviceId}/apply?[properties]
+   {+urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/apply{?domain,host,groupId,force,providerName,
+   serviceName,instanceId,properties*}
 
    The primary function of the API is to apply a template to a customer
    domain.
@@ -1394,6 +1446,16 @@ Table of Contents
     +==============+==============+===================================+
     | Property     | Key          | Description                       |
     +==============+==============+===================================+
+    | *URL API*    | urlAPI       | (REQUIRED) Value of urlAPI from   |
+    |              |              | the settings endpoint.            |
+    +--------------+--------------+-----------------------------------+
+    | *Service     | providerId   | (REQUIRED) identifier of the      |
+    | Provider Id* |              | Service Provider of the template  |
+    |              |              | to be applied                     |
+    +--------------+--------------+-----------------------------------+
+    | *Service Id* | serviceId    | (REQUIRED) The name or identifier |
+    |              |              | of the template to be applied.    |
+    +--------------+--------------+-----------------------------------+
     | *Domain*     | domain       | (REQUIRED) The root domain name   |
     |              |              | being configured.  It must match  |
     |              |              | the domain that was authorized in |
@@ -1462,7 +1524,8 @@ Table of Contents
     |              |              | information.                      |
     +--------------+--------------+-----------------------------------+
 
-    Table 10: query parameters of the apply end-point in the async flow
+      Table 12: URI template parameters of the apply end-point in the
+                                 async flow
 
    An example call is below.  In this example, it is contemplated that
    there are two variables in this template, "IP" and "RANDOMTEXT" which
@@ -1523,7 +1586,7 @@ Table of Contents
      |                |          | account and requires attention.  |
      +----------------+----------+----------------------------------+
 
-        Table 11: http status codes of the apply end-point in the
+        Table 13: http status codes of the apply end-point in the
                                 async flow
 
    When a 409 is returned, the body of the response should contain
@@ -1554,7 +1617,7 @@ Table of Contents
    In this example, the Service Provider tried to apply a new hosting
    template.  The domain had an existing service applied for hosting.
 
-7.3.7.  OAuth Flow: Revert Template
+7.4.7.  OAuth Flow: Revert Template
 
    This call reverts the application of a specific template from a
    domain.
@@ -1562,10 +1625,13 @@ Table of Contents
    Implementation of this call is OPTIONAL.  If not supported a 501 MUST
    be returned.
 
+   Normative URI template of the asynchronous template revert end-point
+   per [RFC6570]:
+
    POST
 
-   {urlAPI}/v2/domainTemplates/providers/{providerId}/services
-   /{serviceId}/revert?domain={domain}&host={host}
+   {+urlAPI}/v2/domainTemplates/providers/{providerId}/services
+   /{serviceId}/revert{?domain,host,instanceId}
 
    This API allows the removal of a template from a customer domain/host
    using an OAuth request.
@@ -1577,7 +1643,7 @@ Table of Contents
    to the domain by the Service Provider, or a warning must be returned
    that the call would have no effect.
 
-   An example query string might look like:
+   An example URL might look like:
 
    POST
 
@@ -1589,6 +1655,16 @@ Table of Contents
    +==============+============+======================================+
    | Property     | Key        | Description                          |
    +==============+============+======================================+
+   | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from the  |
+   |              |            | settings endpoint.                   |
+   +--------------+------------+--------------------------------------+
+   | *Service     | providerId | (REQUIRED) identifier of the Service |
+   | Provider Id* |            | Provider of the template to be       |
+   |              |            | applied                              |
+   +--------------+------------+--------------------------------------+
+   | *Service Id* | serviceId  | (REQUIRED) The name or identifier of |
+   |              |            | the template to be applied.          |
+   +--------------+------------+--------------------------------------+
    | *Domain*     | domain     | (REQUIRED) The root domain name      |
    |              |            | being configured.  It must match the |
    |              |            | domain that was authorized in the    |
@@ -1611,7 +1687,8 @@ Table of Contents
    |              |            | of template should be removed.       |
    +--------------+------------+--------------------------------------+
 
-   Table 12: query parameters of the revert end-point in the async flow
+     Table 14: URI template parameters of the revert end-point in the
+                                async flow
 
    The DNS Provider should be able to accept these on the query string
    or in the body of the POST with application/json encoding.
@@ -1619,11 +1696,29 @@ Table of Contents
    Response codes Success, Authorization, and Errors are identical to
    above with the addition of the 501 code.
 
-7.3.8.  OAuth Flow: Revoking access
+7.4.8.  OAuth Flow: Revoking access
 
    Like all OAuth flows, the user may revoke the access at any time
    using UX at the DNS Provider site.  As such the Service Provider
    needs to be aware that their access to the API may be denied.
+
+7.5.  Verification of Changes
+
+   There are circumstances where the Service Provider may wish to verify
+   that the template was successfully applied.  Without Domain Donnect,
+   this typically involved the Service Provider querying DNS to see if
+   the changes to DNS had been made.
+
+   This same technique works with Domain Connect, and if necessary can
+   be triggered either manually on the Service Provider site or
+   automatically upon page/window activation in the browser when the
+   browser window for the DNS Provider is closed.
+
+   When the redirect_uri is used and an error is not present in the URI,
+   the Service Provider can not assume the changes were applied to DNS.
+   While true in most circumstances, users can tamper with or alter the
+   return url in the browser.  As such it is recommend that enablement
+   of a service be based on verification of changes to DNS.
 
 8.  Domain Connect Objects and Templates
 
@@ -1842,7 +1937,7 @@ Table of Contents
    |             |Records |                   |template.               |
    +-------------+--------+-------------------+------------------------+
 
-              Table 13: properties of the template definition
+              Table 15: properties of the template definition
 
 8.3.  Template Record
 
@@ -2216,7 +2311,7 @@ Table of Contents
    |           |      |                         |Section 9.10.         |
    +-----------+------+-------------------------+----------------------+
 
-           Table 14: properties of the template record definition
+           Table 16: properties of the template record definition
 
 9.  Template Considerations
 
@@ -2851,7 +2946,8 @@ Table of Contents
                | TXT     | _domainconnect | This document. |
                +---------+----------------+----------------+
 
-                                  Table 15
+                      Table 17: IANA Registration for
+                               _domainconnect
 
 Implementation Status
 
@@ -2957,6 +3053,11 @@ Normative References
               Records through "Underscored" Naming of Attribute Leaves",
               IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
               <https://www.rfc-editor.org/info/rfc8552>.
+
+   [RFC6570]  Gregorio, J., Fielding, R., Hadley, M., Nottingham, M.,
+              and D. Orchard, "URI Template", IETF,
+              DOI 10.17487/RFC6570, RFC 6570, March 2012,
+              <https://www.rfc-editor.org/info/rfc6570>.
 
 Informative References
 

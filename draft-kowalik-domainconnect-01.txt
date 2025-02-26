@@ -79,7 +79,7 @@ Table of Contents
      7.2.  Query Supported Template  . . . . . . . . . . . . . . . .  14
      7.3.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  15
        7.3.1.  Apply Template  . . . . . . . . . . . . . . . . . . .  15
-       7.3.2.  Security Considerations . . . . . . . . . . . . . . .  19
+       7.3.2.  Security Considerations . . . . . . . . . . . . . . .  20
        7.3.3.  Shared Templates  . . . . . . . . . . . . . . . . . .  22
      7.4.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  23
        7.4.1.  General information . . . . . . . . . . . . . . . . .  23
@@ -848,81 +848,12 @@ Internet-Draft               Domain Connect                February 2025
    /{serviceId}/apply{?domain,host,groupId,force,providerName,
    serviceName,instanceId,redirect_uri,properties*}{&sig,key}
 
-   This is the URL, where the user is sent to apply a template to a
-   domain they own.  It is called from the Service Provider to start the
+   This is the URL, where the user agent (typically web browser) is sent
+   to apply a template to a dns zone the user controls.  It is
+   redirected to or linked from the Service Provider to start the
    synchronous Domain Connect Protocol.
 
-   This URL can be called in one of two ways.
-
-7.3.1.2.  New Browser Window
-
-   The first is through a new browser tab or in a popup browser window.
-   The DNS Provider signs the user in if necessary, verifies domain
-   ownership, and asks for confirmation before application of the
-   template.  After application of the template, the DNS Provider should
-   automatically close the browser tab or window.
-
-7.3.1.3.  Same Browser Window
-
-   The second is in the current browser tab/window.  As above the DNS
-   Provider signs the user in if necessary, verifies the user control of
-   the DNS Zone for the domain, and asks for confirmation before
-   application of the template.  After application of the template (or
-   cancellation by the user), the DNS Provider must redirect the browser
-   to a return URL (redirect_uri).
-
-   Several parameters must be appended to the end of this redirect_uri.
-
-   *  State
-
-      If a state parameter is passed in on the query string, this must
-      be passed back as state= on the redirect_uri.
-
-   *  Error
-
-      If authorization could not be obtained or an error has occurred,
-      the parameter error= must be appended.  For consistency with the
-      asynchronous OAuth flows the valid values for the error parameter
-      will be as specified in OAuth 2.0 [RFC6749] (4.1.2.1.  Error
-      Response - "error" parameter).  Valid values are: invalid_request,
-      unauthorized_client, access_denied, unsupported_response_type,
-      invalid_scope, server_error, and temporarily_unavailable.
-
-   *  Error Description
-
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 16]
-
-Internet-Draft               Domain Connect                February 2025
-
-
-      When an error occurs, an OPTIONAL error description containing a
-      developer focused error description may be returned.
-
-      Under normal operation the access_denied error can be returned for
-      a number of reasons.  For example, the user may not have access to
-      the account that owns the domain.  Even if they do and
-      successfully sign-in, the account or the domain may be suspended.
-
-      It is unlikely that the DNS Provider would want to leak this
-      information to the Service Provider, and as such the description
-      may be vague.
-
-      There is one piece of information that may be interesting to
-      communicate to the Service Provider.  This is when the end user
-      decided to cancel the operation.  If the DNS Provider wishes to
-      communicate this to the Service Provider, when the
-      error=access_denied the error_description may contain the prefix
-      "user_cancel".  Again, this is left to the discretion of the DNS
-      Provider.
-
-   To prevent an open redirect, unless the request is digitally signed
-   the redirect_uri must be within the domains specified in the template
-   in syncRedirectDomain.
-
-7.3.1.4.  Parameters/properties
+7.3.1.2.  Parameters/properties
 
    +=============+==============+======================================+
    | Property    | Request      | Description                          |
@@ -946,14 +877,6 @@ Internet-Draft               Domain Connect                February 2025
    +-------------+--------------+--------------------------------------+
    | *Host*      | host         | (OPTIONAL) This is the host name of  |
    |             |              | the sub domain.  If left blank, the  |
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 17]
-
-Internet-Draft               Domain Connect                February 2025
-
-
    |             |              | template is being applied to the     |
    |             |              | root domain.  Otherwise the          |
    |             |              | template is applied to the sub       |
@@ -967,6 +890,14 @@ Internet-Draft               Domain Connect                February 2025
    |             |              | completion.  It must be scoped to    |
    |             |              | the syncRedirectDomain from the      |
    |             |              | template, or the request must be     |
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 16]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |              | signed.                              |
    +-------------+--------------+--------------------------------------+
    | *State*     | state        | (OPTIONAL) A random and unique       |
@@ -1002,14 +933,6 @@ Internet-Draft               Domain Connect                February 2025
    +-------------+--------------+--------------------------------------+
    | *Service    | serviceName  | (OPTIONAL) This parameter allows     |
    | Name*       |              | for the caller to provide            |
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 18]
-
-Internet-Draft               Domain Connect                February 2025
-
-
    |             |              | additional text for display with     |
    |             |              | the template serviceName.  It        |
    |             |              | should be used to augment the        |
@@ -1023,6 +946,14 @@ Internet-Draft               Domain Connect                February 2025
    |             |              | the groups from the template to      |
    |             |              | apply.  If no group is specified,    |
    |             |              | all groups are applied.  Multiple    |
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 17]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    |             |              | groups may be specified in a comma   |
    |             |              | delimited format.                    |
    +-------------+--------------+--------------------------------------+
@@ -1056,8 +987,77 @@ Internet-Draft               Domain Connect                February 2025
    are two variables in this template, "IP" and "RANDOMTEXT".  These
    variables are passed as name/value pairs.
 
-7.3.2.  Security Considerations
+7.3.1.3.  Browser handling considerations
 
+   The synchronous template apply URL can be called in one of two ways.
+
+7.3.1.3.1.  New Browser Window
+
+   The first is through a new browser tab or in a popup browser window.
+   The DNS Provider authenticates the user if necessary, verifies domain
+   ownership, and asks for confirmation before application of the
+   template.  After application of the template, the DNS Provider should
+   automatically close the browser tab or window.
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 18]
+
+Internet-Draft               Domain Connect                February 2025
+
+
+   Please note that in this case the only way Service Provider would
+   know if the user has completed the setup or cancelled the operation
+   is if the user closes the browser window.  The Service Provider needs
+   to verify via DNS what actually happened (See: Section 7.5).
+
+7.3.1.3.2.  Same Browser Window
+
+   The second is in the current browser tab/window.  As above the DNS
+   Provider authenticates the user in if necessary, verifies the user
+   control of the DNS Zone for the domain, and asks for confirmation
+   before application of the template.  After application of the
+   template (or cancellation by the user), the DNS Provider must
+   redirect the browser to a return URL (redirect_uri).
+
+   Several parameters must be appended to the end of this redirect_uri.
+
+   *  State
+
+      If a state parameter is passed in on the query string, this must
+      be passed back as state= on the redirect_uri.
+
+   *  Error
+
+      If authorization could not be obtained or an error has occurred,
+      the parameter error= must be appended.  For consistency with the
+      asynchronous OAuth flows the valid values for the error parameter
+      will be as specified in OAuth 2.0 [RFC6749] (4.1.2.1.  Error
+      Response - "error" parameter).  Valid values are: invalid_request,
+      unauthorized_client, access_denied, unsupported_response_type,
+      invalid_scope, server_error, and temporarily_unavailable.
+
+   *  Error Description
+
+      When an error occurs, an OPTIONAL error description containing a
+      developer focused error description may be returned.
+
+      Under normal operation the access_denied error can be returned for
+      a number of reasons.  For example, the user may not have access to
+      the account that owns the domain.  Even if they do and
+      successfully sign-in, the account or the domain may be suspended.
+
+      It is unlikely that the DNS Provider would want to leak this
+      information to the Service Provider, and as such the description
+      may be vague.
+
+      There is one piece of information that may be interesting to
+      communicate to the Service Provider.  This is when the end user
+      decided to cancel the operation.  If the DNS Provider wishes to
 
 
 
@@ -1065,6 +1065,23 @@ Kowalik, et al.          Expires 30 August 2025                [Page 19]
 
 Internet-Draft               Domain Connect                February 2025
 
+
+      communicate this to the Service Provider, when the
+      error=access_denied the error_description may contain the prefix
+      "user_cancel".  Again, this is left to the discretion of the DNS
+      Provider.
+
+   To prevent an open redirect, unless the request is digitally signed
+   the redirect_uri must be within the domains specified in the template
+   in syncRedirectDomain.
+
+   Please note that even though in this case Service Provider is
+   informed whether the process finished without error, by receiving
+   request to redirect_uri without error parameter, the Service Provider
+   still SHOULD verify via DNS to be sure that the changes have been
+   applied (See: Section 7.5).
+
+7.3.2.  Security Considerations
 
 7.3.2.1.  Risk of phishing with open template parameters
 
@@ -1096,6 +1113,15 @@ Internet-Draft               Domain Connect                February 2025
    appended as an additional query string parameter, properly URL
    encoded and of the form:
 
+
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 20]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
    7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
    F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
@@ -1114,13 +1140,6 @@ Internet-Draft               Domain Connect                February 2025
    of the form:
 
    key=_dcpubkeyv1
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 20]
-
-Internet-Draft               Domain Connect                February 2025
-
 
    This example indicates that the public key can be found by doing a
    DNS query for a TXT record called _dcpubkeyv1 in the domain specified
@@ -1149,6 +1168,16 @@ Internet-Draft               Domain Connect                February 2025
 
    p=3,a=RS256,d=weDjXrJwIDAQAB
 
+
+
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 21]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    Here the public key is broken into four records in DNS, and the data
    also indicates that the signing algorithm is an RSA Signature with
    SHA-256 using an x509 certificate.  The value for "a" if omitted will
@@ -1167,16 +1196,6 @@ Internet-Draft               Domain Connect                February 2025
    template indicates that the template requires signature verification.
 
    Notes:
-
-
-
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 21]
-
-Internet-Draft               Domain Connect                February 2025
-
 
    The digital signature will be generated on the full query string
    only, excluding the sig and key parameters.  This is everything after
@@ -1208,6 +1227,13 @@ Internet-Draft               Domain Connect                February 2025
    third parties.  It is often this third party reseller that configures
    DNS.
 
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 22]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    While each reseller could enable Domain Connect, this is inefficient
    for the DNS Providers.  Enabling a single template that is shared by
    multiple resellers would be more optimal.
@@ -1223,16 +1249,6 @@ Internet-Draft               Domain Connect                February 2025
 
    Note: The shared flag used to be used for this purpose, but has been
    deprecated.
-
-
-
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 22]
-
-Internet-Draft               Domain Connect                February 2025
-
 
    The exact message presented to the user is up to the DNS Provider.
    However it is recommended that these fields be used to augment the
@@ -1267,6 +1283,13 @@ Internet-Draft               Domain Connect                February 2025
    Service providers wishing to use the OAuth flow must register as an
    OAuth client with each DNS provider.  This is a manual process.
 
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 23]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    To register, the Service Provider would provide (in addition to their
    template) any configuration necessary for the DNS Providers OAuth
    implementation.  This includes valid URLs and Domains for redirects
@@ -1279,16 +1302,6 @@ Internet-Draft               Domain Connect                February 2025
    In return, the DNS provider will give the Service Provider a client
    id and a secret which will be used when requesting tokens.  For
    simplicity the client id should be the same as the providerId.
-
-
-
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 23]
-
-Internet-Draft               Domain Connect                February 2025
-
 
 7.4.3.  OAuth Flow: Getting an Authorization Code
 
@@ -1325,6 +1338,14 @@ Internet-Draft               Domain Connect                February 2025
    multiple templates.  These templates are specified in the *scope*
    parameter.  It also allows for the Service Provider to gain consent
    to apply these templates to the domain or to the domain with multiple
+
+
+
+Kowalik, et al.          Expires 30 August 2025                [Page 24]
+
+Internet-Draft               Domain Connect                February 2025
+
+
    sub-domains.  These are specified in the *domain* and *host*
    parameter.  If conflict detection is implemented by the DNS Provider,
    they should account for all permutations.
@@ -1333,18 +1354,6 @@ Internet-Draft               Domain Connect                February 2025
    protocol) of the template serviceIds.  The host parameter is an
    OPTIONAL comma separated list of hosts.  A blank entry for the host
    implies the template can be applied to the root domain.  For example:
-
-
-
-
-
-
-
-
-Kowalik, et al.          Expires 30 August 2025                [Page 24]
-
-Internet-Draft               Domain Connect                February 2025
-
 
         +===================================+=====================+
         | *Query String*                    | *Description*       |
@@ -1385,15 +1394,6 @@ Internet-Draft               Domain Connect                February 2025
    The state value passed into the call must be passed back on the query
    string as "state=".
 
-   The following table describes the values of the URI template for the
-   request for the OAuth consent flow that must be included unless
-   otherwise indicated
-
-
-
-
-
-
 
 
 
@@ -1401,6 +1401,10 @@ Kowalik, et al.          Expires 30 August 2025                [Page 25]
 
 Internet-Draft               Domain Connect                February 2025
 
+
+   The following table describes the values of the URI template for the
+   request for the OAuth consent flow that must be included unless
+   otherwise indicated
 
      +===========+===============+==================================+
      | Property  | Key           | Description                      |
@@ -1446,10 +1450,6 @@ Internet-Draft               Domain Connect                February 2025
      | *Scope*   | scope         | (REQUIRED) The OAuth scope       |
      |           |               | corresponds to the requested     |
      |           |               | templates.  This is list of      |
-     |           |               | space separated serviceIds.      |
-     +-----------+---------------+----------------------------------+
-     | *Provider | providerName  | (OPTIONAL) This parameter allows |
-     | Name*     |               | for the caller to provide        |
 
 
 
@@ -1458,6 +1458,10 @@ Kowalik, et al.          Expires 30 August 2025                [Page 26]
 Internet-Draft               Domain Connect                February 2025
 
 
+     |           |               | space separated serviceIds.      |
+     +-----------+---------------+----------------------------------+
+     | *Provider | providerName  | (OPTIONAL) This parameter allows |
+     | Name*     |               | for the caller to provide        |
      |           |               | additional text for display with |
      |           |               | the template providerName.  This |
      |           |               | text should be used to augment   |
@@ -1499,10 +1503,6 @@ Internet-Draft               Domain Connect                February 2025
    POST
 
    {+urlAPI}/v2/oauth/access_token
-
-
-
-
 
 
 

@@ -715,73 +715,12 @@ Table of Contents
    /{serviceId}/apply{?domain,host,groupId,force,providerName,
    serviceName,instanceId,redirect_uri,properties*}{&sig,key}
 
-   This is the URL, where the user is sent to apply a template to a
-   domain they own.  It is called from the Service Provider to start the
+   This is the URL, where the user agent (typically web browser) is sent
+   to apply a template to a dns zone the user controls.  It is
+   redirected to or linked from the Service Provider to start the
    synchronous Domain Connect Protocol.
 
-   This URL can be called in one of two ways.
-
-7.3.1.2.  New Browser Window
-
-   The first is through a new browser tab or in a popup browser window.
-   The DNS Provider signs the user in if necessary, verifies domain
-   ownership, and asks for confirmation before application of the
-   template.  After application of the template, the DNS Provider should
-   automatically close the browser tab or window.
-
-7.3.1.3.  Same Browser Window
-
-   The second is in the current browser tab/window.  As above the DNS
-   Provider signs the user in if necessary, verifies the user control of
-   the DNS Zone for the domain, and asks for confirmation before
-   application of the template.  After application of the template (or
-   cancellation by the user), the DNS Provider must redirect the browser
-   to a return URL (redirect_uri).
-
-   Several parameters must be appended to the end of this redirect_uri.
-
-   *  State
-
-      If a state parameter is passed in on the query string, this must
-      be passed back as state= on the redirect_uri.
-
-   *  Error
-
-      If authorization could not be obtained or an error has occurred,
-      the parameter error= must be appended.  For consistency with the
-      asynchronous OAuth flows the valid values for the error parameter
-      will be as specified in OAuth 2.0 [RFC6749] (4.1.2.1.  Error
-      Response - "error" parameter).  Valid values are: invalid_request,
-      unauthorized_client, access_denied, unsupported_response_type,
-      invalid_scope, server_error, and temporarily_unavailable.
-
-   *  Error Description
-
-      When an error occurs, an OPTIONAL error description containing a
-      developer focused error description may be returned.
-
-      Under normal operation the access_denied error can be returned for
-      a number of reasons.  For example, the user may not have access to
-      the account that owns the domain.  Even if they do and
-      successfully sign-in, the account or the domain may be suspended.
-
-      It is unlikely that the DNS Provider would want to leak this
-      information to the Service Provider, and as such the description
-      may be vague.
-
-      There is one piece of information that may be interesting to
-      communicate to the Service Provider.  This is when the end user
-      decided to cancel the operation.  If the DNS Provider wishes to
-      communicate this to the Service Provider, when the
-      error=access_denied the error_description may contain the prefix
-      "user_cancel".  Again, this is left to the discretion of the DNS
-      Provider.
-
-   To prevent an open redirect, unless the request is digitally signed
-   the redirect_uri must be within the domains specified in the template
-   in syncRedirectDomain.
-
-7.3.1.4.  Parameters/properties
+7.3.1.2.  Parameters/properties
 
    +=============+==============+======================================+
    | Property    | Request      | Description                          |
@@ -898,6 +837,81 @@ Table of Contents
    service template owned by them (template1).  In this example, there
    are two variables in this template, "IP" and "RANDOMTEXT".  These
    variables are passed as name/value pairs.
+
+7.3.1.3.  Browser handling considerations
+
+   The synchronous template apply URL can be called in one of two ways.
+
+7.3.1.3.1.  New Browser Window
+
+   The first is through a new browser tab or in a popup browser window.
+   The DNS Provider authenticates the user if necessary, verifies domain
+   ownership, and asks for confirmation before application of the
+   template.  After application of the template, the DNS Provider should
+   automatically close the browser tab or window.
+
+   Please note that in this case the only way Service Provider would
+   know if the user has completed the setup or cancelled the operation
+   is if the user closes the browser window.  The Service Provider needs
+   to verify via DNS what actually happened (See: Section 7.5).
+
+7.3.1.3.2.  Same Browser Window
+
+   The second is in the current browser tab/window.  As above the DNS
+   Provider authenticates the user in if necessary, verifies the user
+   control of the DNS Zone for the domain, and asks for confirmation
+   before application of the template.  After application of the
+   template (or cancellation by the user), the DNS Provider must
+   redirect the browser to a return URL (redirect_uri).
+
+   Several parameters must be appended to the end of this redirect_uri.
+
+   *  State
+
+      If a state parameter is passed in on the query string, this must
+      be passed back as state= on the redirect_uri.
+
+   *  Error
+
+      If authorization could not be obtained or an error has occurred,
+      the parameter error= must be appended.  For consistency with the
+      asynchronous OAuth flows the valid values for the error parameter
+      will be as specified in OAuth 2.0 [RFC6749] (4.1.2.1.  Error
+      Response - "error" parameter).  Valid values are: invalid_request,
+      unauthorized_client, access_denied, unsupported_response_type,
+      invalid_scope, server_error, and temporarily_unavailable.
+
+   *  Error Description
+
+      When an error occurs, an OPTIONAL error description containing a
+      developer focused error description may be returned.
+
+      Under normal operation the access_denied error can be returned for
+      a number of reasons.  For example, the user may not have access to
+      the account that owns the domain.  Even if they do and
+      successfully sign-in, the account or the domain may be suspended.
+
+      It is unlikely that the DNS Provider would want to leak this
+      information to the Service Provider, and as such the description
+      may be vague.
+
+      There is one piece of information that may be interesting to
+      communicate to the Service Provider.  This is when the end user
+      decided to cancel the operation.  If the DNS Provider wishes to
+      communicate this to the Service Provider, when the
+      error=access_denied the error_description may contain the prefix
+      "user_cancel".  Again, this is left to the discretion of the DNS
+      Provider.
+
+   To prevent an open redirect, unless the request is digitally signed
+   the redirect_uri must be within the domains specified in the template
+   in syncRedirectDomain.
+
+   Please note that even though in this case Service Provider is
+   informed whether the process finished without error, by receiving
+   request to redirect_uri without error parameter, the Service Provider
+   still SHOULD verify via DNS to be sure that the changes have been
+   applied (See: Section 7.5).
 
 7.3.2.  Security Considerations
 

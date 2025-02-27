@@ -103,10 +103,12 @@ Table of Contents
      10.7.  Host/Name in Template
      10.8.  PointsTo in Template
      10.9.  Variables
-       10.9.1.  Variables and Host/Name in Template
-       10.9.2.  Variable Values
-       10.9.3.  Variables and Security
-       10.9.4.  Variable Examples
+       10.9.1.  Variable Syntax
+       10.9.2.  Special and Built-In Variables
+       10.9.3.  Variable substitution
+       10.9.4.  Variables and Host/Name in Template
+       10.9.5.  Variables and Security
+       10.9.6.  Variable Examples
      10.10. SPF TXT Record
        10.10.1.  What is SPF?
        10.10.2.  Multiple Services
@@ -258,6 +260,13 @@ Table of Contents
 
    The Terms like "*Registrar*", "*Authoritative server*", "*Zone*",
    "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC8499].
+
+   This specification uses the Augmented Backus-Naur Form (ABNF)
+   notation of [RFC5234].  The following ABNF rules are imported from
+   the normative references [RFC5234].
+
+        ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
+        DIGIT          =  %x30-39             ; 0-9
 
    Service Provider  An entity that offers products and services that
       are configured or accessed using domain names.  These services
@@ -2286,35 +2295,10 @@ Table of Contents
    Each template record is an entry that contains a type and several
    other values depending on the type.
 
-   Many of these values can contain variables.  There are three built in
-   variables.
-
-   *  %host%: This is the host passed from the query string
-
-   *  %domain%: This is the domain passed from the query string
-
-   *  %fqdn%: This is the fully qualified domain name e.g. [host.]domain
-
-   The @ symbol has special meaning, and can be used in the host/name
-   field or in the pointsTo/data field in isolation.
-
-   For the host/name field it is a shortcut for the value "%fqdn%.".
-   When applying the template to a domain only, it represents
-   "example.com.".  When applying with a sub-domain (host) it represents
-   "subdomain.example.com.".
-
-   Note: The trailing dot here is equal to the DNS master file notation
-   [RFC1035], which indicates the value is absolute.  Without the
-   trailing ".", the value in this field is relative to the
-   [host.]example.com value.
-
-   For the pointsTo/data field it is a shortcut for for the "%fqdn%".
-   When appling the template to a domain only, it represents
-   "example.com".  When applying with a sub- domain (host) it represents
-   "subdomain.example.com".
-
-   Note: The pointsTo and data files are always absolute for these
-   fields.
+   Many of these values can contain variables, which are expressed as
+   strings surrounded with "%" or special variable "@" (See:
+   Section 10.9).  Variables are replaced with values when the template
+   is applied.
 
    It is noted that as a best practice the variable portions SHOULD be
    constrained to as small as possible a portion of the resulting DNS
@@ -2858,7 +2842,81 @@ Table of Contents
 
 10.9.  Variables
 
-10.9.1.  Variables and Host/Name in Template
+10.9.1.  Variable Syntax
+
+   Variable expressions are the parameterized parts of a Domain Connect
+   Template.  Each expression contains one variable specifier (which can
+   be either a named variable or a special variable "@") that is
+   replaced with a value during template application.
+
+        variable-expression    =  named-variable / template-apex-var
+        named-variable         = "%" variable-name "%"
+        template-apex-var      = "@"
+        variable-name          =  1*(ALPHA / DIGIT / "-" / "_" )
+
+10.9.2.  Special and Built-In Variables
+
+   There are three Built-In variables:
+
+   *  %host%: This is the host passed from the query string
+
+   *  %domain%: This is the domain passed from the query string
+
+   *  %fqdn%: This is the fully qualified domain name or template
+      application e.g. [host.]domain
+
+   For example, with the query string "domain=example.com=", %fqdn% in a
+   template would be "example.com", and with "domain=example.com=sub1",
+   %fqdn% in a template would be "sub1.example.com".
+
+   The @ variable has special meaning, and can be used in the host/name
+   field or in the pointsTo/data field in isolation.
+
+   For the host/name field it is a shortcut for the value "%fqdn%.".
+   The trailing dot here is equal to the DNS master file notation
+   [RFC1035], which indicates the value is absolute.  Without the
+   trailing ".", the value in this field is relative to the
+   [host.]example.com value.
+
+   For the pointsTo/data field it is a shortcut for for the "%fqdn%".
+   The pointsTo and data files are always absolute for these fields.
+
+10.9.3.  Variable substitution
+
+10.9.3.1.  Input Values
+
+   Input values for variable substitution MUST be treated as strings.
+   While the underlying data source (e.g., query string, JSON string)
+   might represent values in different data types, the Domain Connect
+   protocol mandates that these values are interpreted and substituted
+   as strings within the templates.
+
+   If the data source requires encoding of certain characters (e.g.,
+   special characters, spaces), the DNS Provider implementation MUST
+   handle decoding of the value before variable substitution.  The
+   resulting substituted value MUST reflect the exact original input
+   value string.
+
+10.9.3.2.  Processing
+
+   When a template is applied, the variables in the template are
+   replaced with the values passed as input.
+
+   Variables are only allowed in template fields of type string,
+   therefore the input field values from the template MUST be decoded
+   from JSON string encoding before variable substitution.
+
+   Variables are replaced in the template fields in the order they are
+   found.  If a variable is not found in the input, the processing MUST
+   fail.  After a variable is replaced, only the remaining string is
+   used for further variable substitution.
+
+   The result of the processing MAY still contain variable expressions
+   coming from Input Values of variable substitution.  The processing
+   MUST NOT fail in this case, and the variable expressions MUST be left
+   as is.
+
+10.9.4.  Variables and Host/Name in Template
 
    While templates do allow for variables in a host or name field
    values, these SHOULD be used very sparingly.
@@ -2909,19 +2967,7 @@ Table of Contents
    risk of issues mentioned above.  In all other cases it is RECOMMENDED
    not to define variables in the host field.
 
-10.9.2.  Variable Values
-
-   To allow for the use of the host name or domain name in templates,
-   the values of %host% and %domain% are available.  A third value of
-   %fqdn% is also available.  This value is the result of combining the
-   host and domain name with the necessary ".".
-
-   For example, with the query string "domain=example.com&host=", %fqdn%
-   in a template would be "example.com", and with
-   "domain=example.com&host=sub1", %fqdn% in a template would be
-   "sub1.example.com".
-
-10.9.3.  Variables and Security
+10.9.5.  Variables and Security
 
    As discussed, with variables consideration is necessary to prevent
    certain styles of phishing attacks.
@@ -2932,7 +2978,7 @@ Table of Contents
 
    Mitigations to this are discussed above.
 
-10.9.4.  Variable Examples
+10.9.6.  Variable Examples
 
    Example template:
 
@@ -3440,6 +3486,11 @@ Normative References
               and D. Orchard, "URI Template", IETF,
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
               <https://www.rfc-editor.org/info/rfc6570>.
+
+   [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
+              Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
+              BCP 68, RFC 5234, January 2008,
+              <https://www.rfc-editor.org/info/rfc5234>.
 
 Informative References
 

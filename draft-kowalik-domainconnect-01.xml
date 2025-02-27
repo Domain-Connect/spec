@@ -109,6 +109,12 @@
 
 <t anchor="_b450a161-469c-7035-2c4e-0110aefd95df">The Terms like "<strong>Registrar</strong>", "<strong>Authoritative server</strong>", "<strong>Zone</strong>", "<strong>Zone Apex</strong>" or "<strong>Sub Domain</strong>" are used as defined in <xref target="RFC8499" section="" relative=""></xref>.</t>
 
+<t anchor="_0c5205c7-2ea5-49bf-f70c-b2aa74eee4dc">This specification uses the Augmented Backus-Naur Form (ABNF) notation of <xref target="RFC5234" section="" relative=""></xref>. The following ABNF rules are imported from the normative references <xref target="RFC5234" section="" relative=""></xref>.</t>
+
+<sourcecode anchor="_771fcaec-bced-2d0c-b1c4-b548eae26097" type="abnf"><![CDATA[     ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
+     DIGIT          =  %x30-39             ; 0-9]]></sourcecode>
+
+
 <dl anchor="_9e4125ca-6588-314c-9dbe-dae2000577d6"><dt>Service Provider</dt><dd><t anchor="_e601eaf3-f4da-0498-5ee7-6d66552c7feb">An entity that offers products and services that are configured or accessed using domain names. These services typically rely on DNS for setup, discovery and/or operation. Examples include web hosting, email services, cloud platforms, and other online applications.</t>
 </dd><dt>DNS Provider</dt><dd><t anchor="_91a03db6-6d8c-7f76-0066-60c5d6307908">An entity that offers DNS zone hosting services. DNS Providers are responsible for hosting the DNS zone for a domain name and providing the necessary tools to manage the DNS records. DNS Provider would be an Authoritative server operator for the hosted zones, or would have a contractual relationship with the operator to manage zone distribution over DNS.</t>
 </dd><dt>User</dt><dd><t anchor="_0460cf74-e9e1-d230-799d-5f3ff5ec1302">Refers to the end-user who has means to control domain name's DNS configuration at DNS Provider and wishes to configure it to work with a service provided by a Service Provider.</t>
@@ -1145,40 +1151,18 @@ Defaults to false. When present this indicates that the template has been author
 <t anchor="_d2d223ff-36f8-8143-d6e0-a97908d0d0ec">Each template record is an entry that contains a type and several
 other values depending on the type.</t>
 
-<t anchor="_9df423a5-2767-5f1b-377a-6b4d5d828039">Many of these values can contain variables. There are three built in variables.</t>
+<t anchor="_1f938376-930f-0d82-2abd-a49257e6e1ed">Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <xref target="variables"></xref>). Variables are replaced with values when the template is applied.</t>
 
-<ul anchor="_f7ea2063-ccd6-86f8-2861-c3c32d88f92a"><li>%host%: This is the host passed from the query string</li>
-<li>%domain%: This is the domain passed from the query string</li>
-<li>%fqdn%: This is the fully qualified domain name e.g. [host.]domain</li>
-</ul>
+<t anchor="_1e282e23-7683-92b8-f48e-e21730346d3b">It is noted that as a best practice the variable portions SHOULD be constrained to as small as possible a portion of the resulting DNS record.</t>
 
-<t anchor="_66936557-6aa5-8d7a-4b61-ea0b449adf70">The @ symbol has special meaning, and can be used in the host/name field or in
-the pointsTo/data field in isolation.</t>
-
-<t anchor="_41623e6b-a9de-7e8a-8e46-23012d4c6116">For the host/name field it is a shortcut for the value "%fqdn%.". When applying the
-template to a domain only, it represents "example.com.". When applying with a sub-domain
-(host) it represents "subdomain.example.com.".</t>
-
-<t anchor="_97e3e108-fe30-1251-6f0b-c8d774d6f8e9">Note: The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value
-is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com
-value.</t>
-
-<t anchor="_e3472f1a-8c3c-772d-4280-fd3d40bb0389">For the pointsTo/data field it is a shortcut for for the "%fqdn%". When appling
-the template to a domain only, it represents "example.com". When applying with a sub-
-domain (host) it represents "subdomain.example.com".</t>
-
-<t anchor="_d70e7969-50de-96df-11fa-586c9d88ef6b">Note: The pointsTo and data files are always absolute for these fields.</t>
-
-<t anchor="_e1ed7b9f-4d2c-5a2e-01d7-83ab518a378b">It is noted that as a best practice the variable portions SHOULD be constrained to as small as possible a portion of the resulting DNS record.</t>
-
-<t anchor="_50859a7c-f3fb-b6aa-40e1-1e238f087f08">For example, say a Service Provider requires a CNAME of one of three
+<t anchor="_408b34b7-6210-fa96-d3d6-736a27576f1c">For example, say a Service Provider requires a CNAME of one of three
 values for their users: s01.example.com, s02.example.com, and
 s03.example.com.</t>
 
-<t anchor="_fe93ac83-1241-87d7-54a4-8a5a3a342464">The value in the template could simply contain <tt>%servercluster%</tt>, and the fully qualified string passed in. Alternatively, the value in the
+<t anchor="_09c76cfa-c6f6-6573-aa8e-ad0fc5d28009">The value in the template could simply contain <tt>%servercluster%</tt>, and the fully qualified string passed in. Alternatively, the value in the
 template could contain <tt>%var%.example.com</tt> and a value of <tt>01</tt>, <tt>02</tt>, or <tt>03</tt> passed in. By placing more fixed data into the template, the template is more secure.</t>
 
-<t anchor="_86a9e64e-acf3-5172-28f2-8795ed3719b4">Each record MUST contain the following elements unless otherwise specified.</t>
+<t anchor="_d7a2b897-cdee-a850-cb53-4254ec7b1eb2">Each record MUST contain the following elements unless otherwise specified.</t>
 
 <table anchor="_107fc1c6-a59a-6669-21a5-550a93786df0"><name>properties of the template record definition</name><thead><tr><th align="left">Data Element</th><th align="left">Type</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Type</strong></td><td align="left">enum</td><td align="left">type</td><td align="left">(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.<br />
 
@@ -1371,17 +1355,67 @@ would point to "bar.example.com." when the same template is applied to domain=ex
 <t anchor="_142e2245-f5b0-c63a-de26-5a3c62016452">Any domain in a <tt>pointsTo</tt> field in a template MUST be considered fully qualified and not relative.</t>
 </section>
 
-<section anchor="_variables"><name>Variables</name>
+<section anchor="variables"><name>Variables</name>
+
+<section anchor="_variable_syntax"><name>Variable Syntax</name>
+
+<t anchor="_5f1136e4-e1a4-f813-26cc-aebfbc92f529">Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable "@") that is replaced with a value during template application.</t>
+
+<sourcecode anchor="_381f3444-6a92-f328-282e-c187b9783c4c" type="abnf"><![CDATA[     variable-expression    =  named-variable / template-apex-var
+     named-variable         = "%" variable-name "%"
+     template-apex-var      = "@"
+     variable-name          =  1*(ALPHA / DIGIT / "-" / "_" )]]></sourcecode>
+
+</section>
+
+<section anchor="_special_and_built_in_variables"><name>Special and Built-In Variables</name>
+
+<t anchor="_959116b5-45a2-f3b2-b781-77678f502895">There are three Built-In variables:</t>
+
+<ul anchor="_3aa50756-b516-325d-ca53-ca2d1068658c"><li>%host%: This is the host passed from the query string</li>
+<li>%domain%: This is the domain passed from the query string</li>
+<li>%fqdn%: This is the fully qualified domain name or template application e.g. [host.]domain</li>
+</ul>
+
+<t anchor="_3f3a2f57-ad80-c520-a60a-837651b1faa1">For example, with the query string "domain=example.com=", %fqdn% in a template would be "example.com", and with "domain=example.com=sub1", %fqdn% in a template would be "sub1.example.com".</t>
+
+<t anchor="_ecd6ed17-6176-a70f-6078-182cb5861a6a">The @ variable has special meaning, and can be used in the host/name field or in the pointsTo/data field in isolation.</t>
+
+<t anchor="_2619c437-caed-d11e-b9cd-1e34ebe9b40b">For the host/name field it is a shortcut for the value "%fqdn%.". The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com value.</t>
+
+<t anchor="_9d4a45eb-22fc-ddaa-0bd6-f0dcbd848f87">For the pointsTo/data field it is a shortcut for for the "%fqdn%". The pointsTo and data files are always absolute for these fields.</t>
+</section>
+
+<section anchor="_variable_substitution"><name>Variable substitution</name>
+
+<section anchor="_input_values"><name>Input Values</name>
+
+<t anchor="_8de64dc2-0fe5-9d45-d4c4-225acb19a88c">Input values for variable substitution MUST be treated as strings.  While the underlying data source (e.g., query string, JSON string) might represent values in different data types, the Domain Connect protocol mandates that these values are interpreted and substituted as strings within the templates.</t>
+
+<t anchor="_5952e87a-0f7a-167c-c81f-085481862b5d">If the data source requires encoding of certain characters (e.g., special characters, spaces), the DNS Provider implementation MUST handle decoding of the value before variable substitution. The resulting substituted value MUST reflect the exact original input value string.</t>
+</section>
+
+<section anchor="_processing"><name>Processing</name>
+
+<t anchor="_6a31715f-0a4c-6a56-457c-0499fea12cd8">When a template is applied, the variables in the template are replaced with the values passed as input.</t>
+
+<t anchor="_edf793a0-9ceb-45ff-203d-395f0e0d86bd">Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.</t>
+
+<t anchor="_a8a2965d-667b-1db4-e728-eb1f8502dab5">Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.</t>
+
+<t anchor="_f86f9710-df18-3fef-34eb-99f000c5160a">The result of the processing MAY still contain variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is.</t>
+</section>
+</section>
 
 <section anchor="variables-and-hosts"><name>Variables and Host/Name in Template</name>
 
-<t anchor="_a030fff2-510e-a852-d4c7-a51e2b4e24b9">While templates do allow for variables in a host or name field values, these SHOULD be used very sparingly.</t>
+<t anchor="_52e3b36c-a9c2-708e-8019-b809448183b7">While templates do allow for variables in a host or name field values, these SHOULD be used very sparingly.</t>
 
-<t anchor="_2e59a7f8-d432-b44f-3c76-5dd986676dc6">As an example, consider setting up hosting for a site. But instead of applying the template to a domain/host, the name of the host is placed as a variable in the template.</t>
+<t anchor="_d1ae7a95-e5a7-1556-744f-157e7e94571f">As an example, consider setting up hosting for a site. But instead of applying the template to a domain/host, the name of the host is placed as a variable in the template.</t>
 
-<t anchor="_5a9683e9-17aa-3284-19e4-bdb273da116c">Such a template might contain an A record of the form:</t>
+<t anchor="_d25c5067-984d-a3c7-bbac-1a1fe4980be6">Such a template might contain an A record of the form:</t>
 
-<sourcecode anchor="_37928be3-15b5-3cb5-ea4e-ecde33d3bea1" type="json"><![CDATA[{
+<sourcecode anchor="_3876ec16-6f34-4d70-aa05-bd6b3cca0d8a" type="json"><![CDATA[{
     "type": "A",
     "host": "%var%",
     "pointsTo": "192.0.2.2",
@@ -1389,42 +1423,35 @@ would point to "bar.example.com." when the same template is applied to domain=ex
 }]]></sourcecode>
 
 
-<t anchor="_7ae55530-1a8c-a2f0-063d-97f14fd7d50c">This template could be applied on a domain like example.com with the var set to <tt>"sub"</tt>, <tt>"sub1"</tt>, <tt>"sub2"</tt>, etc.</t>
+<t anchor="_3bdcd5e2-a48e-f501-b61c-14a2f2611464">This template could be applied on a domain like example.com with the var set to <tt>"sub"</tt>, <tt>"sub1"</tt>, <tt>"sub2"</tt>, etc.</t>
 
-<t anchor="_7765b6ba-3ac4-274b-1e56-1992e40fa701">Application of this template would be at the domain level for <tt>"example.com"</tt>. This causes problems for application/re-application of the template, conflict detection, and template removal.</t>
+<t anchor="_dbe27945-98d2-bea2-eaf3-499aca272f8a">Application of this template would be at the domain level for <tt>"example.com"</tt>. This causes problems for application/re-application of the template, conflict detection, and template removal.</t>
 
-<t anchor="_270f6a11-6579-e48b-98d8-9cdc63573176">Since this template would be applied to the domain only, DNS Providers that maintain template state would remove previous instances of the template before re-application.
+<t anchor="_1e30338a-e106-7007-a33b-7f53f20f989e">Since this template would be applied to the domain only, DNS Providers that maintain template state would remove previous instances of the template before re-application.
 This means applying this template with <tt>var=sub</tt> would result in the A record for sub.example.com to be set to the value <tt>192.0.2.2</tt>. Later, applying the template on "example.com" with the <tt>var=sub2</tt> should remove the old template before setting the new one. <tt>sub.example.com</tt> would be removed, and <tt>sub2.example.com</tt> would be set to the value <tt>192.0.2.2</tt>.</t>
 
-<t anchor="_b5c37903-ac57-0709-8ee4-684a4536c3c0">Furthermore, determining conflicts would be impossible when the user is granting consent for asynchronous operations (OAuth). This is because the host would be indeterminate.</t>
+<t anchor="_e8e1778e-02db-04aa-bae0-f512e09738b0">Furthermore, determining conflicts would be impossible when the user is granting consent for asynchronous operations (OAuth). This is because the host would be indeterminate.</t>
 
-<t anchor="_2e608da6-8a13-b589-13f7-e7a9396d1e68">To solve this problem, templates MUST be considered as scoped to a <tt>domain</tt> and a <tt>host</tt> value. For synchronous operations, the <tt>host</tt> value is specified in the url.
+<t anchor="_ac82311d-ef66-efcc-6e75-edff6c1744ac">To solve this problem, templates MUST be considered as scoped to a <tt>domain</tt> and a <tt>host</tt> value. For synchronous operations, the <tt>host</tt> value is specified in the url.
 For asynchronous operations, permissions are granted for specific <tt>host</tt> values, whose value is later specified when applying the template.</t>
 
-<t anchor="_b93b8616-9c1a-7d1f-7d2a-2408651aac1b">Some templates might want to utilize CNAME or TXT records with host values containing some form of user identification for validation of domain ownership, and these are often passed in variables. In those cases usage of variables in <tt>host</tt> field value can be applied without risk of issues mentioned above. In all other cases it is RECOMMENDED not to define variables in the <tt>host</tt> field.</t>
-</section>
-
-<section anchor="_variable_values"><name>Variable Values</name>
-
-<t anchor="_ee536b47-2236-a436-ef3d-c0af6d914e5e">To allow for the use of the host name or domain name in templates, the values of <tt>%host%</tt> and <tt>%domain%</tt> are available. A third value of %fqdn% is also available. This value is the result of combining the host and domain name with the necessary ".".</t>
-
-<t anchor="_3f3a2f57-ad80-c520-a60a-837651b1faa1">For example, with the query string <tt>"domain=example.com&#x26;host="</tt>, <tt>%fqdn%</tt> in a template would be <tt>"example.com"</tt>, and with <tt>"domain=example.com&#x26;host=sub1"</tt>, <tt>%fqdn%</tt> in a template would be <tt>"sub1.example.com"</tt>.</t>
+<t anchor="_e079c4b6-b102-697b-405a-dd8b02f9faba">Some templates might want to utilize CNAME or TXT records with host values containing some form of user identification for validation of domain ownership, and these are often passed in variables. In those cases usage of variables in <tt>host</tt> field value can be applied without risk of issues mentioned above. In all other cases it is RECOMMENDED not to define variables in the <tt>host</tt> field.</t>
 </section>
 
 <section anchor="_variables_and_security"><name>Variables and Security</name>
 
-<t anchor="_3d948963-ef4c-7970-524d-9f70d0987392">As discussed, with variables consideration is necessary to prevent certain styles of phishing attacks.</t>
+<t anchor="_91c5c4b5-4bc0-0524-bcc4-e16e559eb9de">As discussed, with variables consideration is necessary to prevent certain styles of phishing attacks.</t>
 
-<t anchor="_1e2f2ddd-5548-f156-183d-8ac9d973b850">The more static the value in the template record, the more secure the template. When static values are not possible, a carefully crafted link could hijack DNS settings.</t>
+<t anchor="_105ee7c4-b766-8074-44f2-01cfc82df502">The more static the value in the template record, the more secure the template. When static values are not possible, a carefully crafted link could hijack DNS settings.</t>
 
-<t anchor="_fc8d066e-9817-9a4e-3f7b-ef1706c9a567">Mitigations to this are discussed above.</t>
+<t anchor="_564ffda2-7552-ef18-cc6e-563724eb19dd">Mitigations to this are discussed above.</t>
 </section>
 
 <section anchor="_variable_examples"><name>Variable Examples</name>
 
-<t anchor="_80bde947-1586-497a-8bb5-d285b8a75996">Example template:</t>
+<t anchor="_44e2b56c-15b9-6aef-18eb-8d18471b755c">Example template:</t>
 
-<sourcecode anchor="_38d83cab-19a9-802f-f9a9-5dace86e5449" type="json"><![CDATA[[{
+<sourcecode anchor="_a1d0cd80-0899-173d-2ae5-73d757f35338" type="json"><![CDATA[[{
     "type": "CNAME",
     "host": "www",
     "pointsTo": "@",
@@ -1438,27 +1465,27 @@ For asynchronous operations, permissions are granted for specific <tt>host</tt> 
 }]]]></sourcecode>
 
 
-<t anchor="_9ed163d6-b01b-a8d4-1af9-07f879b2fe22">Template applied with <tt>domain=example.com</tt> and <tt>host</tt> parameter missing or empty:</t>
+<t anchor="_e6292bb6-3f42-5274-b768-8a25e1a804a1">Template applied with <tt>domain=example.com</tt> and <tt>host</tt> parameter missing or empty:</t>
 
-<sourcecode anchor="_5451ac21-4512-dddc-7d76-139dd5ceeb38"><![CDATA[www 1800 IN CNAME example.com.
+<sourcecode anchor="_b6a59b21-595c-c80a-4c71-5f6d6b89e9db"><![CDATA[www 1800 IN CNAME example.com.
 @   1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_b6d784bd-4ab9-1715-87b1-5201d7b9e124"><em>alternatively</em></t>
+<t anchor="_4869ab66-c532-888e-6d34-bb6eab8921bc"><em>alternatively</em></t>
 
-<sourcecode anchor="_91581754-2be2-ffb0-74e3-47a4f652cf5a"><![CDATA[www.example.com.    1800 IN CNAME example.com.
+<sourcecode anchor="_d5679b88-800c-e8c5-3789-b86f8d620228"><![CDATA[www.example.com.    1800 IN CNAME example.com.
 example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_cd6e90f7-9a2b-bcbb-ed74-ee701f92cdb6">Template applied with <tt>domain=example.com</tt> and <tt>host=bar</tt>:</t>
+<t anchor="_c460671c-f269-d4fb-12b6-eb67d0e2dd45">Template applied with <tt>domain=example.com</tt> and <tt>host=bar</tt>:</t>
 
-<sourcecode anchor="_8af8c590-378e-3c8a-0f21-ebdd2b3abf34"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
+<sourcecode anchor="_313778f0-ae3f-bb50-c663-72e64c6bd4f3"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
 bar     1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_0ff1d01f-efd8-18c4-2c19-8e7931a1fc97">alternatively</t>
+<t anchor="_c7ded87c-ac06-ef89-f4f5-89a474b85999">alternatively</t>
 
-<sourcecode anchor="_680070ed-aa16-8581-ae0e-c87965514d06"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
+<sourcecode anchor="_49e6ca0e-a51b-04c1-b8b5-55f172435327"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
 bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 </section>
@@ -1787,6 +1814,7 @@ DNSSEC. This record is required at the registry to enable DNSSEC, but can only b
       <reference target="https://www.rfc-editor.org/info/rfc3986" anchor="RFC3986"><stream>IETF</stream> <front> <title>Uniform Resource Identifier (URI): Generic Syntax</title> <author fullname="T. Berners-Lee" asciiFullname="T. Berners-Lee"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="L. Masinter" asciiFullname="L. Masinter"></author> <date month="January" year="2005"></date> <keyword>Internet protocol</keyword><keyword>IP</keyword><keyword>uniform resource identifier</keyword><keyword>URI</keyword><keyword>www</keyword><keyword>world wide web</keyword> <abstract>  <t anchor="_40c7f1f1-ba0d-4f77-dfa8-cba0581c99ce">A Uniform Resource Identifier (URI) is a compact sequence of characters that identifies an abstract or physical resource. This specification defines the generic URI syntax and a process for resolving URI references that might be in relative form, along with guidelines and security considerations for the use of URIs on the Internet. The URI syntax defines a grammar that is a superset of all valid URIs, allowing an implementation to parse the common components of a URI reference without knowing the scheme-specific requirements of every possible identifier. This specification does not define a generative grammar for URIs; that task is performed by the individual specifications of each URI scheme. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc3986" type="src"></format> <seriesInfo name="STD" value="66"></seriesInfo> <seriesInfo value=" 10.17487/RFC3986" name="DOI"></seriesInfo> <seriesInfo value="66" name="BCP"></seriesInfo> <seriesInfo value="3986" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7518" anchor="RFC7518"><stream>IETF</stream> <front> <title>JSON Web Algorithms (JWA)</title> <author fullname="M. Jones" asciiFullname="M. Jones"></author> <date month="May" year="2015"></date> <abstract>  <t anchor="_42348283-c817-93e5-af76-289de0e943f4">This specification registers cryptographic algorithms and identifiers to be used with the JSON Web Signature (JWS), JSON Web Encryption (JWE), and JSON Web Key (JWK) specifications. It defines several IANA registries for these identifiers.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc7518" type="src"></format> <seriesInfo value=" 10.17487/RFC7518" name="DOI"></seriesInfo> <seriesInfo value="7518" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc6570" anchor="RFC6570"><stream>IETF</stream> <front> <title>URI Template</title> <author fullname="J. Gregorio" asciiFullname="J. Gregorio"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Hadley" asciiFullname="M. Hadley"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="D. Orchard" asciiFullname="D. Orchard"></author> <date month="March" year="2012"></date> <keyword>template</keyword><keyword>Uniform Resource Identifier</keyword><keyword>URI</keyword><keyword>URI Template</keyword><keyword>Internationalized Resource Identifier</keyword><keyword>IRI</keyword><keyword>IRI Template</keyword> <abstract>  <t anchor="_73e7db2c-97e5-a984-ea38-51e02b3f1898">A URI Template is a compact sequence of characters for describing a range of Uniform Resource Identifiers through variable expansion. This specification defines the URI Template syntax and the process for expanding a URI Template into a URI reference, along with guidelines for the use of URI Templates on the Internet. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc6570" type="src"></format> <seriesInfo value=" 10.17487/RFC6570" name="DOI"></seriesInfo> <seriesInfo value="6570" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc5234" anchor="RFC5234"><stream>IETF</stream> <front> <title>Augmented BNF for Syntax Specifications: ABNF</title> <author fullname="P. Overell" asciiFullname="P. Overell"></author> <author fullname="D. Crocker" asciiFullname="D. Crocker"></author> <date month="January" year="2008"></date> <keyword>ABNF</keyword><keyword>backus-naur form</keyword><keyword>augmented backus-naur form</keyword><keyword>rule definitions</keyword><keyword>encoding</keyword><keyword>core lexical analyzer</keyword> <abstract>  <t anchor="_b300b328-2105-079a-a690-71a8aab296cb">Internet technical specifications often need to define a formal syntax. Over the years, a modified version of Backus-Naur Form (BNF), called Augmented BNF (ABNF), has been popular among many Internet specifications. The current specification documents ABNF. It balances compactness and simplicity with reasonable representational power. The differences between standard BNF and ABNF involve naming rules, repetition, alternatives, order-independence, and value ranges. This specification also supplies additional rule definitions and encoding for a core lexical analyzer of the type common to several Internet specifications. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc5234" type="src"></format> <seriesInfo name="STD" value="68"></seriesInfo> <seriesInfo value=" 10.17487/RFC5234" name="DOI"></seriesInfo> <seriesInfo value="68" name="BCP"></seriesInfo> <seriesInfo value="5234" name="RFC"></seriesInfo></reference>
     </references>
     <references anchor="_informative_references">
       <name>Informative References</name>

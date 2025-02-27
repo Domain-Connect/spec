@@ -386,12 +386,16 @@ the data in each zone.</t>
 determine the additional settings for using Domain Connect on this
 domain at the DNS Provider. This is done by calling a REST API.</t>
 
-<sourcecode anchor="_81e030f5-cab5-860a-7581-d75563525ff5"><![CDATA[GET
+<t anchor="_ebe24713-33e1-2131-1eb2-7441f873a55f">Normative URI template of the settings end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-https://{_domainconnect}/v2/{domain}/settings]]></sourcecode>
+<sourcecode anchor="_17ccbde1-cbf1-4541-a90c-1367d1d354b8"><![CDATA[GET
+
+https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 
-<t anchor="_010aaa92-6706-75e7-7bb7-e5dc8de69b82">This MUST return a JSON structure containing the settings to use for
+<t anchor="_8db9dbe1-8a60-4234-7c00-3334ba7bc61e"><tt>_domainconnect</tt> parameter is the URL prefix returned in the _domainconnect TXT record.</t>
+
+<t anchor="_58ae3833-d002-119d-1ca4-7b63490ff3a9">This MUST return a JSON structure containing the settings to use for
 Domain Connect on the domain name (passed in on the path) at the DNS
 Provider. This JSON structure MUST contain the following fields unless
 otherwise specified.</t>
@@ -437,15 +441,15 @@ would be queried.</td></tr></tbody></table>
 }]]></sourcecode>
 
 
-<t anchor="_84fe43ee-d348-6218-4c59-0367acba5ecb">Discovery MUST work on the Zone Apex only. Bear in mind that
+<t anchor="_82c47bca-01e4-6e7f-033e-dd32b0b49310">Discovery MUST work on the Zone Apex only. Bear in mind that
 zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
 
-<t anchor="_6329c6c4-59c4-6ad7-e016-21b5567e1941">The Service Provider MUST handle the condition when a query for the
+<t anchor="_17678e88-6274-c1a1-aa8a-ada55959237a">The Service Provider MUST handle the condition when a query for the
 <tt>_domainconnect</tt> TXT record suceeds, but a call to query for the JSON fails.
 This can happen if the zone is hosted with another DNS Provider, but contains an
 incorrect <tt>_domainconnect</tt> TXT record.</t>
 
-<t anchor="_dd2341e0-6a4c-a4d2-8d29-02e44e47409e">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
+<t anchor="_3bfb8c75-0cd9-d066-a22b-47d18eb23a9b">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
 
 <table anchor="_827e884f-9fbb-2f6f-3b91-b7b55ce871f7"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the
 call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
@@ -480,92 +484,56 @@ For example:</t>
 the JSON payload during DNS Provider discovery.</t>
 </section>
 
-<section anchor="_synchronous_flow"><name>Synchronous Flow</name>
-
 <section anchor="_query_supported_template"><name>Query Supported Template</name>
 
-<sourcecode anchor="_84d48574-bf4e-0d58-60e4-15667cbd228e"><![CDATA[GET
+<t anchor="_09f636b1-0487-52dc-98e0-086091dc97e5">Normative URI template of the template query end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services
+<sourcecode anchor="_eefb8005-0276-846d-d6d1-166492bf0793"><![CDATA[GET
+
+{+urlAPI}/v2/domainTemplates/providers/{providerId}/services
 /{serviceId}]]></sourcecode>
 
 
-<t anchor="_c6437a70-5d90-377d-bf3f-5531be99e371">This URL is be used by the Service Provider to determine if the DNS
-Provider supports a specific template through the synchronous flow.</t>
+<t anchor="_f45c073e-bb7f-3d8c-8631-773ffcb78cf9">This URL is be used by the Service Provider to determine if the DNS
+Provider supports a specific template.</t>
 
-<t anchor="_4bc7d768-9b0d-09b4-d0bd-11f4d1edcf99">Returning a status of 200 without a body indicates the template is supported.
+<t anchor="_1151850e-1317-d807-6376-090419fba14e">The following table describes the parameters of the URI template:</t>
+
+<table anchor="_04295e11-6b2e-cb4c-7cb0-a40aebdbc39c"><name>URI template parameters for the query supported template end-point</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL API</strong></td><td align="left">urlAPI</td><td align="left">(REQUIRED) Value of urlAPI from the settings endpoint.</td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) identifier of the Service Provider of the template.</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) The name or identifier of the template.</td></tr></tbody></table>
+
+<t anchor="_0d93a465-36e5-f426-ab13-6a84c62906d0">Returning a status of 200 without a body indicates the template is supported.
 The DNS Provider MAY disclose the version of the template
 in a JSON object with field <tt>version</tt> (see: <xref target="template-definition">version field</xref>
 or the full JSON object of deployed template.</t>
 
-<t anchor="_5d097ed5-01c6-c19c-2f13-b46c32180e28">Returning a status of 404 indicates the template is not supported.</t>
+<t anchor="_92a82d72-5222-557d-f319-08130f3bd8b0">Returning a status of 404 indicates the template is not supported.</t>
 
-<table anchor="_4ff76db4-6a52-8c75-f12b-b8074af2713c"><name>https status codes for the Query Supported Template end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the
+<table anchor="_63a319b3-80d4-cd7d-9eec-b785d0f09be9"><name>https status codes for the Query Supported Template end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the
 call was successful. The response OPTIONALLY contains the version or template.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the template is not supported</td></tr></tbody></table>
 </section>
+
+<section anchor="_synchronous_flow"><name>Synchronous Flow</name>
 
 <section anchor="_apply_template"><name>Apply Template</name>
 
 <section anchor="_apply_template_url"><name>Apply Template URL</name>
 
-<sourcecode anchor="_d399385e-12e4-e1a8-19e4-7dec9b475608"><![CDATA[GET
+<t anchor="_0d9bb6f0-6367-9448-be90-420ff4b32aab">Normative URI template of the synchronous template apply end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
-/{serviceId}/apply?[properties]]]></sourcecode>
+<sourcecode anchor="_49cf0ed5-531e-63a8-5db2-4e2ea4f6d75d"><![CDATA[GET
+
+{+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/apply{?domain,host,groupId,force,providerName,
+serviceName,instanceId,redirect_uri,properties*}{&sig,key}]]></sourcecode>
 
 
-<t anchor="_167f04b1-6f0a-f7d4-49ab-cee985ac8bd5">This is the URL where the user is sent to apply a template to a domain they own.
-It is called from the Service Provider to start the synchronous Domain Connect Protocol.</t>
-
-<t anchor="_06b6e657-928a-0fcf-9dca-99e03113ddb6">This URL can be called in one of two ways.</t>
-</section>
-
-<section anchor="_new_browser_window"><name>New Browser Window</name>
-
-<t anchor="_72b20072-c0b3-6f29-af3c-ae52e4250985">The first is through a new browser tab or in a popup browser window.
-The DNS Provider signs the user
-in if necessary, verifies domain ownership, and asks for confirmation
-before application of the template. After application of the template,
-the DNS Provider SHOULD automatically close the browser tab or window or direct the user to the user interface of Service Provider in other appropriate way, in order to maintain good user experience.</t>
-</section>
-
-<section anchor="_same_browser_window"><name>Same Browser Window</name>
-
-<t anchor="_9ee90f33-8275-19ef-6b22-e9298f946605">The second is in the current browser tab/window. As above the DNS
-Provider signs the user in if necessary, verifies the user control of the DNS Zone for the domain,
-and asks for confirmation before application of the template. After
-application of the template (or cancellation by the user), the DNS
-Provider SHOULD redirect the browser to a return URL (redirect_uri), also in error scenarios in any of the mentioned steps, in order for the user to be able to continue the setup with the Service Provider.
-The DNS Provider MAY restrain from this redirection if such redirection would be a security threat (for example if redirect_uri is not considered safe).</t>
-
-<t anchor="_4ed2aa0d-d7dd-9b6d-6215-19160628fd33">To prevent an open redirect, unless the request is digitally signed, the redirect_uri
-MUST be within the domains specified in the template in <tt>syncRedirectDomain</tt>.</t>
-
-<t anchor="_c0011860-f188-b376-5b94-86b16cfd88c6">Several query parameters MUST be appended to the end of this redirect_uri.</t>
-
-<ul anchor="_20a29c6b-50e3-58f5-30df-a9470f55344a"><li><t anchor="_65936df4-d954-a269-f9db-0d60dc7cb806">State</t>
-<t anchor="_df54b01c-62f6-6bbd-ff4b-d6abc06a80ac">If a state parameter is passed in on the query string, this MUST be
-passed back as state= on the redirect_uri.</t>
-</li>
-<li><t anchor="_f37d4041-e909-31af-1c36-45732b11f6ee">Error</t>
-<t anchor="_13eba39b-3055-e7c4-ab83-488b8a2a5a9e">If authorization could not be obtained or an error has occurred, the query parameter <tt>error</tt> MUST be appended. For consistency with the asynchronous OAuth flows the valid values for the error parameter MUST be as specified in OAuth 2.0 <xref target="RFC6749" section="" relative=""></xref> (4.1.2.1. Error Response - "error" parameter). Valid values are: <tt>invalid_request</tt>, <tt>unauthorized_client</tt>, <tt>access_denied</tt>, <tt>unsupported_response_type</tt>, <tt>invalid_scope</tt>, <tt>server_error</tt>, and <tt>temporarily_unavailable</tt>.</t>
-</li>
-<li><t anchor="_8e2bb032-b7a1-0e78-5706-dfd6a291d398">Error Description</t>
-<t anchor="_37d09206-4848-03ae-23f2-e140c6b7eb55">When an error occurs, an OPTIONAL error description containing a developer focused error description MAY be returned. It would be conveyed using <tt>error_description</tt> query parameter as per <xref target="RFC6749" section="" relative=""></xref>.+</t>
-
-<t anchor="_8ab2c4ff-ce25-5c81-ef73-a181eb8b0ea9">Under normal operation the <tt>access_denied</tt> error can be returned for a number of reasons. For example, the user may not have access to the account that owns the domain. Even if they do and successfully sign-in, the account or the domain may be suspended.<br /></t>
-
-<t anchor="_0ad598a0-d3c6-2e85-14f7-626f2cffce97">It is unlikely that the DNS Provider would want to leak this information to the Service Provider, and as such the description MAY be vague.</t>
-
-<t anchor="_5c48baac-aa72-c4c9-ff74-20692e5adfba">There is one piece of information that may be interesting to communicate to the Service Provider. This is when the end user decided to cancel the operation. If the DNS Provider wishes to communicate this to the Service Provider the <tt>error_description</tt> MAY contain the prefix <tt>"user_cancel"</tt>. Again, this is left to the discretion of the DNS Provider and is therefore OPTIONAL.</t>
-</li>
-</ul>
+<t anchor="_fd239ecc-a35b-cbd8-1fed-f8be96adf9a8">This is the URL, where the user agent (typically web browser) is sent to apply a template to a dns zone the user controls. It is redirected to or linked from the Service Provider to start the synchronous Domain Connect Protocol.</t>
 </section>
 
 <section anchor="_parametersproperties"><name>Parameters/properties</name>
 
-<table anchor="_aa6db042-9b6c-698d-4fa5-a987124072d9"><name>query parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) This is the host name of the Sub Domain. If left blank, the template is being applied to the Zone Apex. Otherwise the template is applied to the sub domain of the domain in the same zone.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the client browser to upon successful authorization, or upon error. If omitted the DNS Provider SHOULD close the browser window upon completion. It MUST be scoped to the <tt>syncRedirectDomain</tt> authority from the template, or the request MUST be signed.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.
-It MUST be returned as a query parameter when redirecting to the <tt>redirect_uri</tt> described above.</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">*</td><td align="left">(REQUIRED) Any key that is to be used as a replacement for the <tt>"% surrounded"</tt> variables in the template. The name portion of this API parameter corresponds to the variable(s) specified in the template and the value corresponds to the value that is to be used to replace the variable when applying the template.
+<table anchor="_ea787bfd-e3f6-922f-e40f-3062ac80879e"><name>URI template parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlSyncUX</td><td align="left">(REQUIRED) Value of urlSyncUX property from the settings endpoint.</td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) identifier of the Service Provider of the template to be applied</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) identifier of the template to be applied</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) This is the host name of the Sub Domain. If left blank, the template is being applied to the Zone Apex. Otherwise the template is applied to the sub domain of the domain in the same zone.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the client browser to upon successful authorization, or upon error. If omitted the DNS Provider SHOULD close the browser window upon completion. It MUST be scoped to the <tt>syncRedirectDomain</tt> authority from the template, or the request MUST be signed.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.
+It MUST be returned as a query parameter when redirecting to the <tt>redirect_uri</tt> described above.</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(REQUIRED) Any key that will be used as a replacement for the "% surrounded" variables in the template. The name portion of this API call corresponds to the variable(s) specified in the template and the value corresponds to the value that will be used when applying the template.<br />
 The client MUST ignore any unknown parameters, not referenced in the template.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional text for display
 with the template providerName. This text SHOULD be used to augment the providerName value
 from the template, not replace it. This parameter is only allowed when the
@@ -578,20 +546,79 @@ comma delimited format.</td></tr><tr><td align="left"><strong>Signature</strong>
 obtained. The domain for this host is in the template in syncPubKeyDomain. See Security
 Considerations section below.</td></tr></tbody></table>
 
-<t anchor="_53440c47-04ca-bfc8-6e68-8dee36b452ae">An example query string:</t>
+<t anchor="_7ea0c30d-b747-b7ab-4811-c43a72759075">An example query string:</t>
 
-<sourcecode anchor="_45053e61-2931-8c5d-d2d2-1784f3bb2256"><![CDATA[GET
+<sourcecode anchor="_e01d3cb7-0ea4-9ad1-bb55-ec0a3981d685"><![CDATA[GET
 
 https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
 exampleservice.example/services/template1/apply?domain=example.com&
 IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 
 
-<t anchor="_c5eb076f-910e-32a3-ac84-c8dd56f8094a">This call indicates that the Service Provider wishes to connect the
+<t anchor="_36406e34-9ce4-c577-f70c-d13451442067">This call indicates that the Service Provider wishes to connect the
 domain example.com to the service using the template identified by the
 composite key of the provider (exampleservice.example) and the service template
 owned by them (template1). In this example, there are two variables in this
 template, "IP" and "RANDOMTEXT". These variables are passed as name/value pairs.</t>
+</section>
+
+<section anchor="_browser_handling_considerations"><name>Browser handling considerations</name>
+
+<t anchor="_6b052286-4c11-2ace-5b38-78e9f933b79e">The synchronous template apply URL can be called in one of two ways.</t>
+
+<section anchor="_new_browser_window"><name>New Browser Window</name>
+
+<t anchor="_7bc13faa-8a95-59e3-7cb7-036e15bf45f6">The first is through a new browser tab or in a popup browser window. The DNS Provider authenticates the user if necessary, verifies domain ownership, and asks for confirmation before application of the template. After application of the template, the DNS Provider should automatically close the browser tab or window.</t>
+
+<t anchor="_910327ee-07c7-d43e-555c-4370d90ae063">Please note that in this case the only way Service Provider would know if the user has completed the setup or cancelled the operation is if the user closes the browser window. The Service Provider needs to verify via DNS what actually happened (See: <xref target="verification-of-changes"></xref>).</t>
+</section>
+
+<section anchor="_same_browser_window"><name>Same Browser Window</name>
+
+<t anchor="_ea3788fc-7b9b-12b2-6b8b-df206c42a740">The second is in the current browser tab/window. As above the DNS Provider authenticates the user in if necessary, verifies the user control of the DNS Zone for the domain, and asks for confirmation before application of the template. After application of the template (or cancellation by the user), the DNS Provider must redirect the browser to a return URL (redirect_uri query parameter of the Apply Template URL).</t>
+
+<t anchor="_e9312cd9-d9a1-2b81-5307-62a5e392bcc0">Several parameters must be appended to the end of this redirect_uri.</t>
+
+<ul anchor="_3f2dcefc-579c-fa1e-0bea-81352c9e6693"><li><t anchor="_6bddd766-1436-79a0-5e6a-e166f16ae510">State</t>
+<t anchor="_57b6ce93-15c8-2bac-5d68-afc32ff3eeb3">If a state parameter is passed in on the query string, this must be
+passed back as state= on the redirect_uri.</t>
+</li>
+<li><t anchor="_4a7bf2e5-2215-151b-7a1a-3109b55b354f">Error</t>
+<t anchor="_b5b6e483-34a6-d9a3-8999-7cba183db398">If authorization could not be obtained or an error has occurred, the
+parameter error= must be appended. For consistency with the asynchronous
+OAuth flows the valid values for the error parameter will be as
+specified in OAuth 2.0 <xref target="RFC6749" section="" relative=""></xref> (4.1.2.1. Error Response - "error"
+parameter). Valid values are: invalid_request, unauthorized_client,
+access_denied, unsupported_response_type, invalid_scope, server_error,
+and temporarily_unavailable.</t>
+</li>
+<li><t anchor="_ea0ec388-04ac-67c9-ea2b-f79dadbe5751">Error Description</t>
+<t anchor="_2c28a4cc-8d32-5ddc-cbfc-07564f2ce0f3">When an error occurs, an OPTIONAL error description containing a
+developer focused error description may be returned.</t>
+
+<t anchor="_85059c87-37bd-7d0f-9ba7-364b93b9b079">Under normal
+operation the access_denied error can be returned for a number of
+reasons. For example, the user may not have access to the account that
+owns the domain. Even if they do and successfully sign-in, the account
+or the domain may be suspended.</t>
+
+<t anchor="_e59d80a6-5539-502e-e010-a4e41e71fc82">It is unlikely that the DNS Provider would want to leak this information
+to the Service Provider, and as such the description may be vague.</t>
+
+<t anchor="_0fa23c2b-f7e0-64b8-f836-2445cef19365">There is one piece of information that may be interesting to communicate
+to the Service Provider. This is when the end user decided to cancel the
+operation. If the DNS Provider wishes to communicate this to the
+Service Provider, when the error=access_denied the error_description may
+contain the prefix "user_cancel". Again, this is left to the discretion
+of the DNS Provider.</t>
+</li>
+</ul>
+
+<t anchor="_c66e7b99-25a0-d9d8-9a9f-ca90074c81ba">To prevent an open redirect, unless the request is digitally signed the redirect_uri
+must be within the domains specified in the template in syncRedirectDomain.</t>
+
+<t anchor="_dadf84b4-6855-d9d9-e97d-b2569a0dce7a">Please note that even though in this case Service Provider is informed whether the process finished without error, by receiving request to redirect_uri without error parameter, the Service Provider still SHOULD verify via DNS to be sure that the changes have been applied (See: <xref target="verification-of-changes"></xref>).</t>
+</section>
 </section>
 </section>
 
@@ -599,10 +626,10 @@ template, "IP" and "RANDOMTEXT". These variables are passed as name/value pairs.
 
 <section anchor="_risk_of_phishing_with_open_template_parameters"><name>Risk of phishing with open template parameters</name>
 
-<t anchor="_8c413efb-6170-3a3f-1b11-cfc6837f6b21">By applying a template with parameters there is a security
+<t anchor="_0c6717e6-ea34-45d3-097f-645bd2f077a7">By applying a template with parameters there is a security
 consideration that must be taken into account.</t>
 
-<t anchor="_665e0af4-30ab-7a82-4151-50715379dc75">Consider the template above where the IP address of the A record is
+<t anchor="_e4be79c5-a394-d81f-01af-10aa6ac0a0fb">Consider the template above where the IP address of the A record is
 passed in through a variable. A bad actor could generate a URL with a
 malicious IP and phish users by sending out emails asking them to "re-configure" their
 service. If an end user is convinced to click on
@@ -610,22 +637,22 @@ this link, they would land on the DNS Provider site to confirm the
 change. To the user, this would appear to be a valid request to
 configure the domain. Yet the IP would be hijacking the service.</t>
 
-<t anchor="_363c776c-254d-6aa5-b865-47ae1ef8a36f">Not all templates have this problem. But when they do, there are several options.</t>
+<t anchor="_fd3e6f4b-b472-f282-5b3d-fb7f6cf4cfed">Not all templates have this problem. But when they do, there are several options.</t>
 </section>
 
 <section anchor="_disable_synchronous"><name>Disable Synchronous</name>
 
-<t anchor="_f499c353-47c3-86d3-9983-d63915b55ef1">One option is to disable the synchronous flow and use
+<t anchor="_1e2f10f4-f5ba-a3c0-31ac-db70625bed2a">One option is to disable the synchronous flow and use
 asynchronous OAuth. This can be controlled with the <tt>syncBlock</tt> value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.</t>
 </section>
 
 <section anchor="_digitally_sign_requests"><name>Digitally Sign Requests</name>
 
-<t anchor="_1f21d3fb-d679-bb77-f809-9ae5c8c67d9b">Another option is to digitally sign the query string. A
+<t anchor="_66885f68-0d2b-33d2-6e8d-44cf58593b90">Another option is to digitally sign the query string. A
 signature is appended as an additional query string parameter,
 properly URL encoded and of the form:</t>
 
-<sourcecode anchor="_f8880263-93e9-6714-7fe9-c34f76a8dc34"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+<sourcecode anchor="_c2a2b8dc-3714-5909-2a6f-28a38ee148a7"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
@@ -633,30 +660,30 @@ HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
 SHgJq9%2FXoMTTw%3D%3D]]></sourcecode>
 
 
-<t anchor="_062163b9-7c73-cce2-7db9-7ca865393975">The Service Provider generates this signature using a private key. As indicated,
+<t anchor="_cc072363-4cca-276b-2df5-2585e8eb6fea">The Service Provider generates this signature using a private key. As indicated,
 this signature is generated from the query string properly URL encoded.</t>
 
-<t anchor="_0ed4c69b-dd67-6183-3ba9-4fb5d5bed311">The Service Provider MUST publish their public key and place it in a DNS TXT record in a domain specified in the template in <tt>syncPubKeyDomain</tt> at a host of their choice.
+<t anchor="_d835ce47-b53c-978b-278c-2148c5ea3089">The Service Provider MUST publish their public key and place it in a DNS TXT record in a domain specified in the template in <tt>syncPubKeyDomain</tt> at a host of their choice.
 The TXT record MUST be published as a comma-separated list of key-value
 properties.</t>
 
-<table anchor="_4007612b-5aac-70ab-2e83-0aba7af1f07b"><name>Properties of the public key TXT record</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Fragment Index</strong></td><td align="left">p</td><td align="left">(REQUIRED) The index value of the public key fragment</td></tr><tr><td align="left"><strong>Fragment Payload</strong></td><td align="left">d</td><td align="left">(REQUIRED) The payload of public key fragment</td></tr><tr><td align="left"><strong>Signing Algorithm</strong></td><td align="left">a</td><td align="left">(OPTIONAL) The parameter identifies the algorithm intended for use with the key. The values used SHALL be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <xref target="RFC7518" section="" relative=""></xref>.
+<table anchor="_ef58b3e8-819d-0432-27cd-6f8ea7844950"><name>Properties of the public key TXT record</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Fragment Index</strong></td><td align="left">p</td><td align="left">(REQUIRED) The index value of the public key fragment</td></tr><tr><td align="left"><strong>Fragment Payload</strong></td><td align="left">d</td><td align="left">(REQUIRED) The payload of public key fragment</td></tr><tr><td align="left"><strong>Signing Algorithm</strong></td><td align="left">a</td><td align="left">(OPTIONAL) The parameter identifies the algorithm intended for use with the key. The values used SHALL be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <xref target="RFC7518" section="" relative=""></xref>.
 If omitted it MUST be assumed to be RS256.
 The support of RS256 is MANDATORY for both DNS Providers and Service Providers.</td></tr><tr><td align="left"><strong>Public Key Format</strong></td><td align="left">t</td><td align="left">(OPTIONAL) The format of the public key.
 If omitted MUST be assumed to be x509.</td></tr></tbody></table>
 
-<t anchor="_0d8bc350-8a31-4b6f-91e1-f8ec12a2f072">To allow for key rotation or usage of multiple keys, the host name of the TXT record MUST be appended as another query parameter on the query string of the form:</t>
+<t anchor="_808c85cf-6ab3-da6d-5152-574a9313cef1">To allow for key rotation or usage of multiple keys, the host name of the TXT record MUST be appended as another query parameter on the query string of the form:</t>
 
-<sourcecode anchor="_691b4e77-bd32-0946-0527-70c009476efc"><![CDATA[key=_dcpubkeyv1]]></sourcecode>
+<sourcecode anchor="_cfaab778-d4e0-74fd-f7d5-b9d30935000d"><![CDATA[key=_dcpubkeyv1]]></sourcecode>
 
 
-<t anchor="_6971a19f-ae2d-eec2-6afb-b6f68eee36f8">This example indicates that the public key can be found by doing a DNS
+<t anchor="_82fc2430-eaea-0af8-ef02-ec4753fadcd3">This example indicates that the public key can be found by doing a DNS
 query for a TXT record called _dcpubkeyv1 in the domain specified in the
 <tt>syncPubKeyDomain</tt> from the template.</t>
 
-<t anchor="_93e5d688-cf97-4f27-b901-3082b828552e">To account for DNS Servers with limits to the size of a TXT record, the public key MAY be split into multiple TXT records at the specified host. For example, a public key of:</t>
+<t anchor="_f409ff7f-2fb5-8288-b104-e4c46f136148">To account for DNS Servers with limits to the size of a TXT record, the public key MAY be split into multiple TXT records at the specified host. For example, a public key of:</t>
 
-<sourcecode anchor="_d83b12bd-7572-4493-78a5-df77a43f6e4d"><![CDATA[MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+<sourcecode anchor="_f5beca38-4838-f6e7-c919-81906b084401"><![CDATA[MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
 4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
 +HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
 NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
@@ -664,9 +691,9 @@ tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
 2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB]]></sourcecode>
 
 
-<t anchor="_2ee2d61e-d0de-768b-cc20-3e2804be47fd">may contain several TXT records. The records would be of the form:</t>
+<t anchor="_847e0321-a7bf-faa2-bccd-6cd740e9d25f">may contain several TXT records. The records would be of the form:</t>
 
-<sourcecode anchor="_aa84281f-522d-20c8-3360-204199f65a96"><![CDATA[p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+<sourcecode anchor="_52fae660-1e4b-c806-f16c-274877497f29"><![CDATA[p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
 4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
 IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
 
@@ -677,36 +704,36 @@ qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
 p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 
 
-<t anchor="_2bc2b0b2-7d53-b4b6-9168-59aadbd46829">Here the public key is broken into three records in DNS, and the data
+<t anchor="_80bc1659-22f5-b06e-c0ae-2c68abcc89b7">Here the public key is broken into three records in DNS, and the data
 also indicates that the signing algorithm is an RSA Signature with
 SHA-256. The representation as x509 certificate is the default in this case.</t>
 
-<t anchor="_5f88d1e0-5cd3-b3a2-e679-1da653ba8007">The above data was generated for a query string:</t>
+<t anchor="_1a206e9f-4eb5-bfb3-fa82-0d750f858919">The above data was generated for a query string:</t>
 
-<sourcecode anchor="_57a6128f-69e7-fc83-52ff-2a15a15395ee"><![CDATA[a=1&b=2&ip=10.10.10.10&domain=example.net]]></sourcecode>
+<sourcecode anchor="_cad9715d-5f99-8704-0c38-69ac4bde0dd8"><![CDATA[a=1&b=2&ip=10.10.10.10&domain=example.net]]></sourcecode>
 
 
-<t anchor="_92ab00e4-6d03-5547-0362-9631500c3e66">Signing the query string by the Service Provider is OPTIONAL. Not
+<t anchor="_5d2863bd-81f1-54d5-1059-fe373d031df2">Signing the query string by the Service Provider is OPTIONAL. Not
 all Services Provider templates require or are able to provide this level of security.
 Presence of the <tt>syncPubKeyDomain</tt> in the template indicates that the
 template requires signature verification.</t>
 
-<t anchor="_b9ca6e09-820c-6e5c-ce0d-89f069b6249f">DNS Providers MUST reject any request to apply a template with <tt>syncPubKeyDomain</tt> present and no signing of a query string in place.</t>
+<t anchor="_d4a705c4-b4a1-d628-20ba-9b26c879133c">DNS Providers MUST reject any request to apply a template with <tt>syncPubKeyDomain</tt> present and no signing of a query string in place.</t>
 
-<t anchor="_e48a01da-56ae-abbf-0f8d-bb35be9314c3">The digital signature MUST be generated on the full query string only,
+<t anchor="_a8e8bf8b-e21b-e1d7-a9f6-f71c49b7306b">The digital signature MUST be generated on the full query string only,
 excluding the sig and key parameters. This is everything after the ?, except the sig and key values which MUST be appended to the signed query string.</t>
 
-<t anchor="_22659ee7-4190-d422-43c4-38f45b4b65ba">The values of each query string value key/value pair MUST be properly URL Encoded before the signature is generated.</t>
+<t anchor="_4682f442-b4fc-be15-d2ab-81a0cf688f14">The values of each query string value key/value pair MUST be properly URL Encoded before the signature is generated.</t>
 </section>
 
 <section anchor="_warnings"><name>Warnings</name>
 
-<t anchor="_94672d56-d278-7345-9c8c-a421c527fef7">Some applications aren't able to use OAuth and/or sign requests.</t>
+<t anchor="_640c037c-925d-23e5-9047-1b563686c251">Some applications aren't able to use OAuth and/or sign requests.</t>
 
-<t anchor="_2dd429d7-4d49-ef1a-7168-f24d009a767c">If the template require variables, and OAuth and signing isn't available,
+<t anchor="_1b2eab5c-38d2-b701-9d59-eda15fc070e0">If the template require variables, and OAuth and signing isn't available,
 the flag <tt>warnPhishing</tt> SHOULD be set to true in the template in order to offer transparency to the DNS Provider about security properties of the template.</t>
 
-<t anchor="_5849edf1-e8aa-0f0d-ee48-9c44b6f01d96">When set this indicates to the DNS Provider that they SHOULD display additional warnings to
+<t anchor="_216c41fd-c68c-16b5-7243-cb2f94105c4e">When set this indicates to the DNS Provider that they SHOULD display additional warnings to
 the user to have them verify the link was/is from a reputable source before applying
 the template.</t>
 </section>
@@ -714,53 +741,34 @@ the template.</t>
 
 <section anchor="_shared_templates"><name>Shared Templates</name>
 
-<t anchor="_962d0a51-e3d0-4a17-2f13-a86d84496524">Some templates can be called by multiple companies, or be used for different purposes.</t>
+<t anchor="_9bfa8e5a-09ee-c961-74f9-e83124337afa">Some templates can be called by multiple companies, or be used for different purposes.</t>
 
-<t anchor="_e74f9a97-8bb3-2757-bb9c-bebe54a20abc">For example, most services are sold and provided by the same company. However, some
+<t anchor="_b1a8cca5-f486-24ef-9835-ef3c47dced5a">For example, most services are sold and provided by the same company. However, some
 Service Providers have a reseller channel. This allows the service to be
 provided by the Service Provider, but sold through third parties.
 It is often this third party reseller that configures DNS.</t>
 
-<t anchor="_70b6b290-3183-d52d-ec12-fa338325427a">While each reseller could enable Domain Connect, this is inefficient for
+<t anchor="_c67af2ee-5d00-2da7-7cdd-3686ef705ba4">While each reseller could enable Domain Connect, this is inefficient for
 the DNS Providers. Enabling a single template that is shared by multiple
 resellers would be more optimal.</t>
 
-<t anchor="_6e8c1d37-cbeb-eb68-c859-cc9c1d559a9e">As another example, some templates may be used for different purposes by the same company.</t>
+<t anchor="_e9557b3d-09f4-fc15-10de-71d26967f684">As another example, some templates may be used for different purposes by the same company.</t>
 
-<t anchor="_9ea1d88d-13a0-6653-38d3-dc9326207697">To facilitate these use cases, the ability to pass in additional context for the display
+<t anchor="_e6eef177-6ff5-031e-cbe9-f80637090a67">To facilitate these use cases, the ability to pass in additional context for the display
 of the providerName and serviceName is enabled. This is only allowed when the template enables the capability
 through the sharedProviderName and/or sharedServiceName flags.</t>
 
-<t anchor="_7f6ea6f3-2803-323d-c86a-76423a569844">Note: The shared flag used to be used for this purpose, but has been deprecated.</t>
+<t anchor="_1b52b90b-f4d4-1ade-be7c-0b45d606977b">Note: The shared flag used to be used for this purpose, but has been deprecated.</t>
 
-<t anchor="_55500432-b820-5352-7ca1-7c7d302c7538">The exact message presented to the user is up to the DNS Provider. However it is recommended
+<t anchor="_5363d5c5-b5c5-cda9-f3b2-657db7bfb312">The exact message presented to the user is up to the DNS Provider. However it is recommended
 that these fields be used to augment the display of the serviceName and providerName from the template,
 not replace it.</t>
 
-<t anchor="_f7f3c2cb-5b6b-c426-bf02-23b34502f168">Note: When a Service Provider has a large reseller channel, it is highly
+<t anchor="_138b43d2-8d78-df91-b065-0f82ee6355ea">Note: When a Service Provider has a large reseller channel, it is highly
 recommended that the Service Provider creates an API for their resellers
 to ease the implementation of Domain Connect. There are elements of convenience in doing
 this around Domain Discovery and URL Formatting. But this would be required
 if the template required signatures.</t>
-</section>
-
-<section anchor="_verification_of_changes"><name>Verification of Changes</name>
-
-<t anchor="_d7416747-2d4e-ce38-d5a1-67b164f608dc">There are circumstances where the Service Provider may wish to verify
-that the template was successfully applied. Without Domain Donnect, this
-typically involved the Service Provider querying DNS to see if the
-changes to DNS had been made.</t>
-
-<t anchor="_aedfc2ff-9dd0-a75a-37f6-a9d309607df5">This same technique works with Domain Connect, and if necessary can be
-triggered either manually on the Service Provider site or automatically
-upon page/window activation in the browser when the browser window for
-the DNS Provider is closed.</t>
-
-<t anchor="_c7c1b36e-caf6-f365-0994-43527cc49749">When the redirect_uri is used and an error is not present in the URI,
-the Service Provider can not assume the changes were applied to DNS. While true in most
-circumstances, users can tamper with or alter the return
-url in the browser. As such it is recommend that enablement of a service
-be based on verification of changes to DNS.</t>
 </section>
 </section>
 
@@ -768,43 +776,48 @@ be based on verification of changes to DNS.</t>
 
 <section anchor="_general_information_2"><name>General information</name>
 
-<t anchor="_a7ad9670-b365-ce73-862c-18c1c9b080cd">Using the OAuth flow is a more advanced use case needed by Service Providers that have more complex configurations that may require multiple steps and/or are asynchronous from the user's interaction.</t>
+<t anchor="_f4195532-6a14-4cb5-6695-644dbfcad7d5">Using the OAuth flow is a more advanced use case needed by Service Providers that have more complex configurations that may require multiple steps and/or are asynchronous from the user's interaction.</t>
 
-<t anchor="_24c21750-f45c-53bc-a610-2a5b312bea0f">Details of an OAuth implementation are beyond the scope of this specification. Instead, an overview of how OAuth is used by Domain Connect is given here.</t>
+<t anchor="_f86c8e1f-ca48-c20c-07c1-ac2f5c2a6fa2">Details of an OAuth implementation are beyond the scope of this specification. Instead, an overview of how OAuth is used by Domain Connect is given here.</t>
 
-<t anchor="_311e2d44-8f18-12fc-b92e-16a5a5886252">Not all DNS Providers will support the asyncronous flow. As such it is recommended that Service Providers relying on an OAuth implementation also implement a synchronous implementation.</t>
+<t anchor="_eaf1d50e-e9a8-4633-ec29-68f0adad2b2a">Not all DNS Providers will support the asyncronous flow. As such it is recommended that Service Providers relying on an OAuth implementation also implement a synchronous implementation.</t>
 </section>
 
 <section anchor="_oauth_flow_setup"><name>OAuth Flow: Setup</name>
 
-<t anchor="_4a3e8e8d-6b6e-1464-445a-45b42d623d24">Service Providers wishing to use the OAuth flow MUST register as an
+<t anchor="_bad1bcc4-3db6-8314-889f-4616f92bc34d">Service Providers wishing to use the OAuth flow MUST register as an
 OAuth client with each DNS Provider. This is typically a manual
 process, however other solutions like OAuth Dynamic Client Registration <xref target="RFC7591" section="" relative=""></xref> MAY be offered by DNS Provider as well.</t>
 
-<t anchor="_8528a5db-e4c2-e94d-bce5-99ee39bcffb9">To register, the Service Provider would provide (in addition to their
+<t anchor="_4804b7f9-75cb-2626-9a09-34c3776d04e2">To register, the Service Provider would provide (in addition to their
 template) any configuration necessary for the DNS Providers OAuth
 implementation. This includes valid URLs and Domains for redirects upon
 success or errors of OAuth flow, token validity, presence and validity of refresh tokens etc.</t>
 
-<t anchor="_6b157699-927b-da23-a052-d67d92e6f1c9">Note: The validity of redirects are very important in any OAuth implementation.
+<t anchor="_434bffe3-b3f3-c266-d1c9-8d5672a7a911">Note: The validity of redirects are very important in any OAuth implementation.
 Most OAuth vulnerabilities are a combination of an open redirect and/or a
 compromised secret.</t>
 
-<t anchor="_a18f1ec3-0133-ed4c-de2b-d8a02146d392">The DNS Provider SHOULD give the Service Provider a client id and a secret which will be used when requesting tokens. For simplicity the client id MAY be the same as the providerId, however it is up to the agreement between the parties involved.
+<t anchor="_eb827cbf-5b24-f43f-8df4-bee992dcc121">The DNS Provider SHOULD give the Service Provider a client id and a secret which will be used when requesting tokens. For simplicity the client id MAY be the same as the providerId, however it is up to the agreement between the parties involved.
 Any other form of client authentication within OAuth framework MAY be agreed between the parties.</t>
 </section>
 
 <section anchor="_oauth_flow_getting_an_authorization_code"><name>OAuth Flow: Getting an Authorization Code</name>
 
-<sourcecode anchor="_6393364b-679b-fcdd-98ac-4b81faff7ddd"><![CDATA[GET
+<t anchor="_acd6b39e-0545-2267-fd69-9d3641766d3f">Normative URI template of the authorization code end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlAsyncUX}/v2/domainTemplates/providers/{providerId}]]></sourcecode>
+<sourcecode anchor="_7846031c-9088-f064-5afd-bd3302c9c700" type="http"><![CDATA[GET
+
+{+urlAsyncUX}/v2/domainTemplates/providers/{providerId}{?domain,host,
+client_id,redirect_uri,response_type,scope,providerName,serviceName,
+state,properties*}
+}]]></sourcecode>
 
 
-<t anchor="_178af996-6ab6-0a1b-e915-b3132219d731">To initiate the OAuth flow the Service Provider first links to the DNS
+<t anchor="_7dce12dc-35e0-9182-9e01-7ca603954dcf">To initiate the OAuth flow the Service Provider first links to the DNS
 Provider to gain consent.</t>
 
-<t anchor="_9c9ee323-ca9a-ec09-5735-ca78f21036a7">This endpoint is similar to the synchronous flow described above. The DNS Provider
+<t anchor="_76f4b237-b1c3-815b-d078-52aeac50bf4e">This endpoint is similar to the synchronous flow described above. The DNS Provider
 MUST authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for
 permission. Instead of permission to make a change to DNS, the permission
 is now to allow the Service Provider to
@@ -813,13 +826,13 @@ DNS Provider MAY warn the user that (the eventual)
 application of a template might change existing records and/or disrupt
 existing services attached to the domain.</t>
 
-<t anchor="_4ac52418-09f3-d256-df88-f890746b04a8">While the variables for the applied template would be provided later,
+<t anchor="_5ca615eb-e6dd-9a97-99c2-6d56e71f38df">While the variables for the applied template would be provided later,
 the values of some variables may be necessary to determine conflicts. As
 such, any variables impacting conflicting records SHOULD be provided
 in the consent flow. This primarly includes variables in hosts, and
 variables in the data portion for certain TXT records.</t>
 
-<t anchor="_d7a9be8a-20b5-9036-e34b-e2036cf84acd">The protocol allows for the Service Provider to gain consent to apply
+<t anchor="_4b5ce516-83c0-b89f-ea72-fb88490be671">The protocol allows for the Service Provider to gain consent to apply
 multiple templates. These templates are specified in the <tt>scope</tt> parameter. It
 also allows for the Service Provider to gain consent to apply these templates to the domain
 or to the domain with multiple sub-domains. These are specified in the <tt>domain</tt> and <tt>host</tt>
@@ -827,62 +840,68 @@ parameter. If conflict detection is implemented
 by the DNS Provider, they SHOULD account for all permutations, in order to inform
 the end user of all possible consequences of the authorised change.</t>
 
-<t anchor="_8a6d550b-3dc0-86cb-00b4-4465734ad60a">The scope parameter is a space separated list (as per the OAuth protocol)
+<t anchor="_88c8bde4-d249-2005-757c-651650f3dcb9">The scope parameter is a space separated list (as per the OAuth protocol)
 of the template serviceIds. The host parameter is an OPTIONAL comma separated
 list of hosts. A blank entry for the host implies the template can be
 applied to the Zone Apex For example:</t>
 
-<table anchor="_b4b72b7b-eebc-1ce5-0d68-9040ad9a2452"><name>examples of scope and host parameter values in the async flow</name><thead><tr><th align="left"><strong>Query String</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com</tt></td><td align="left">Templates "t1" and "t2" can be applied to example.com</td></tr><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com&#x26;host=sub1,sub2</tt></td><td align="left">Templates "t1" and "t2" can be applied to sub1.example.com or sub2.example.com</td></tr><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com&#x26;host=sub1,</tt></td><td align="left">Templates "t1" and "t2" can be applied to example.com or sub1.example.com</td></tr></tbody></table>
+<table anchor="_c0014b3b-76d9-df0e-126f-0467c83ab8a2"><name>examples of scope and host parameter values in the async flow</name><thead><tr><th align="left"><strong>Query String</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com</tt></td><td align="left">Templates "t1" and "t2" can be applied to example.com</td></tr><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com&#x26;host=sub1,sub2</tt></td><td align="left">Templates "t1" and "t2" can be applied to sub1.example.com or sub2.example.com</td></tr><tr><td align="left"><tt>scope=t1%20t2&#x26;domain=example.com&#x26;host=sub1,</tt></td><td align="left">Templates "t1" and "t2" can be applied to example.com or sub1.example.com</td></tr></tbody></table>
 
-<t anchor="_12222748-eb01-f020-f20f-cb7d351be184">Upon successful authorization/verification/consent from the user, the DNS Provider MUST direct the end user's browser to the redirect URI. The authorization code MUST be appended to this URI as a query parameter of <tt>"code="</tt> as per the OAuth specification.</t>
+<t anchor="_23497ed3-a7ce-4be0-a363-102fed4516d7">Upon successful authorization/verification/consent from the user, the DNS Provider MUST direct the end user's browser to the redirect URI. The authorization code MUST be appended to this URI as a query parameter of <tt>"code="</tt> as per the OAuth specification.</t>
 
-<t anchor="_ac93aec6-d911-d554-0c47-2243fc46b556">Similar to the synchronous flow, upon error the DNS Provider MAY append an error code as query parameter <tt>"error"</tt>. These errors are also from the OAuth 2.0 <xref target="RFC6749" section="" relative=""></xref> (4.1.2.1. Error Response - "error" parameter). Valid values include: <tt>invalid_request</tt>, <tt>unauthorized_client</tt>, <tt>access_denied</tt>, <tt>unsupported_response_type</tt>, <tt>invalid_scope</tt>, <tt>server_error</tt>, and <tt>temporarilly_unavailable</tt>. An OPTIONAL <tt>error_description</tt> suitable for developers may also be returned at the discretion of the DNS Provider.
+<t anchor="_85eb312b-3a42-f7e8-b779-d3c066c4c756">Similar to the synchronous flow, upon error the DNS Provider MAY append an error code as query parameter <tt>"error"</tt>. These errors are also from the OAuth 2.0 <xref target="RFC6749" section="" relative=""></xref> (4.1.2.1. Error Response - "error" parameter). Valid values include: <tt>invalid_request</tt>, <tt>unauthorized_client</tt>, <tt>access_denied</tt>, <tt>unsupported_response_type</tt>, <tt>invalid_scope</tt>, <tt>server_error</tt>, and <tt>temporarilly_unavailable</tt>. An OPTIONAL <tt>error_description</tt> suitable for developers may also be returned at the discretion of the DNS Provider.
 The same considerations as in the synchronous flow apply here.</t>
 
-<t anchor="_07492a80-4308-86e1-f359-1c574ce3dc36">The state value passed into the call MUST be passed back on the query
+<t anchor="_1cb8f1d8-59c3-d4b2-99bc-88f19520d329">The state value passed into the call MUST be passed back on the query
 string as <tt>state=</tt>.</t>
 
-<t anchor="_ccb8852e-b90e-1b57-5f22-c6d9a202bbb5">The following table describes the values in the query string parameters for the request for the OAuth consent flow that MUST be included unless otherwise indicated</t>
+<t anchor="_9abefd58-07a1-f715-1308-870b6e8e6e41">The following table describes the values of the URI template for the request for the OAuth consent flow that must be included unless otherwise
+indicated</t>
 
-<table anchor="_bbc335b2-8f7b-91f4-1ec5-3b984681d830"><name>query parameters of the authorization end-point in async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex.</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) An list of comma separated host names upon which the template may be applied. An empty string implies the root.</td></tr><tr><td align="left"><strong>Client Id</strong></td><td align="left">client_id</td><td align="left">(REQUIRED) The client id that was provided by the DNS Provider to the Service Provider during registration.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(REQUIRED) The location to direct the client's browser upon successful authorization or upon error.
-Validation of the redirect_uri MUST be done by the DNS Provider to match the values provided during onboarding.</td></tr><tr><td align="left"><strong>Response type</strong></td><td align="left">response_type</td><td align="left">(OPTIONAL) If included it MUST be the string 'code' to indicate an authorization code is being requested.</td></tr><tr><td align="left"><strong>Scope</strong></td><td align="left">scope</td><td align="left">(REQUIRED) The OAuth scope corresponds to the requested templates. This is list of space separated serviceIds.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template providerName. This text SHOULD be used to augment the providerName value from the template, not replace it.</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template serviceName(s). It SHOULD be used to augment the serviceName value(s) from the template, not replace.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) This is a random, unique string passed along to prevent CSRF or to pass state value back to the caller. If present it MUST be returned as a parameter appended to the <tt>redirect_url</tt> described above.</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">*</td><td align="left">(OPTIONAL) Any key that will be used as a replacement for the "% surrounded" value(s) in a template required for conflict detection. This includes variables used in hosts and data in certain TXT records.</td></tr></tbody></table>
+<table anchor="_16ed867b-2e4d-3fab-4d25-15c2eca11b52"><name>URI template parameters of the authorization end-point in async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlAsyncUX</td><td align="left">(REQUIRED) Value of urlAsyncUX property from the settings endpoint.</td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) identifier of the Service Provider of the template to be applied</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex.</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) An list of comma separated host names upon which the template may be applied. An empty string implies the root.</td></tr><tr><td align="left"><strong>Client Id</strong></td><td align="left">client_id</td><td align="left">(REQUIRED) The client id that was provided by the DNS Provider to the Service Provider during registration.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(REQUIRED) The location to direct the client's browser upon successful authorization or upon error.
+Validation of the redirect_uri MUST be done by the DNS Provider to match the values provided during onboarding.</td></tr><tr><td align="left"><strong>Response type</strong></td><td align="left">response_type</td><td align="left">(OPTIONAL) If included it MUST be the string 'code' to indicate an authorization code is being requested.</td></tr><tr><td align="left"><strong>Scope</strong></td><td align="left">scope</td><td align="left">(REQUIRED) The OAuth scope corresponds to the requested templates. This is list of space separated serviceIds.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template providerName. This text SHOULD be used to augment the providerName value from the template, not replace it.</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template serviceName(s). It SHOULD be used to augment the serviceName value(s) from the template, not replace.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) This is a random, unique string passed along to prevent CSRF or to pass state value back to the caller. If present it MUST be returned as a parameter appended to the <tt>redirect_url</tt> described above.</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(OPTIONAL) Any key that will be used as a replacement for the "% surrounded" value(s) in a template required for conflict detection.<br />
+This includes variables used in hosts and data in certain TXT records.</td></tr></tbody></table>
 </section>
 
 <section anchor="_oauth_flow_requesting_an_access_token"><name>OAuth Flow: Requesting an Access Token</name>
 
-<sourcecode anchor="_4c9f424b-fae6-f2b9-ad8d-af88f34e0ec9"><![CDATA[POST
+<t anchor="_31804aee-30fa-1d22-8e73-53b35a2fe175">Normative URI template of the access token end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlAPI}/v2/oauth/access_token]]></sourcecode>
+<sourcecode anchor="_5b58cfc8-7540-dcba-62e0-6cbeb27a9a1c"><![CDATA[POST
+
+{+urlAPI}/v2/oauth/access_token]]></sourcecode>
 
 
-<t anchor="_d91508ad-e3ed-ce36-86e3-944bd8858c3e">Once authorization has been granted, the Service Provider MUST use the Authorization Code provided to request an Access Token. The OAuth specification recommends that the Authorization Code be a short lived token, and a reasonable recommended setting is ten minutes, however the specific setup would depend on specifics of DNS Provider's implementation. As such this exchange needs to be completed before that time has expired or the process will need to be repeated.</t>
+<table anchor="_6d984ec5-1534-9b48-7381-560db1272d3c"><name>URI template parameters of the access token end-point</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL API</strong></td><td align="left">urlAPI</td><td align="left">(REQUIRED) Value of urlAPI property from the settings endpoint.</td></tr></tbody></table>
 
-<t anchor="_73ee474d-5765-85a7-e749-77c86f5d342c">This token exchange is typically done via a server to server API call from the
+<t anchor="_fa45c503-602f-6110-1c39-41488850019c">Once authorization has been granted, the Service Provider MUST use the Authorization Code provided to request an Access Token. The OAuth specification recommends that the Authorization Code be a short lived token, and a reasonable recommended setting is ten minutes, however the specific setup would depend on specifics of DNS Provider's implementation. As such this exchange needs to be completed before that time has expired or the process will need to be repeated.</t>
+
+<t anchor="_23b90a92-f6a6-78f5-c00f-66257db1d5f9">This token exchange is typically done via a server to server API call from the
 Service Provider to the DNS Provider using a POST. When called in this manner a
 secret is provided
 along with the Authorization Code.</t>
 
-<t anchor="_b0d955cc-8f49-9e5b-5e02-6d58d314a356">OAuth does allow for retrieving the access token without a secret. This is typically
+<t anchor="_0a420c38-c929-c68a-33b3-558fa385f577">OAuth does allow for retrieving the access token without a secret. This is typically
 done when the OAuth client is a client application.
 When onboarding with the DNS Provider this would need to be enabled.</t>
 
-<t anchor="_44e91723-6924-7d5c-e6e0-27d426e7aa60">When the secret is provided (which is the normal case), care must be taken. A malicious
+<t anchor="_f9e561ad-7af6-46e4-9c3d-7e964d74d010">When the secret is provided (which is the normal case), care must be taken. A malicious
 user could create a domain that returns a false _`domainconnect` TXT record, and
 subsequently a JSON call to their own server for the API end point. By doing so, they
 could then run Domain Connect on their domain and retrieve the secret.</t>
 
-<t anchor="_aefe7c45-ee56-d766-b207-ac8a4dee2d0f">As such the urlAPI used for OAuth by the Service Provider SHOULD be maintained per DNS Provider and not the value retrieved during discovery or other measures have to be implemented to prevent token leakage.</t>
+<t anchor="_99373c56-48e6-de50-d79e-4557b0bc2046">As such the urlAPI used for OAuth by the Service Provider SHOULD be maintained per DNS Provider and not the value retrieved during discovery or other measures have to be implemented to prevent token leakage.</t>
 
-<t anchor="_6696e999-309b-24a3-6c21-9407a5315b76">The following table describes the POST parameters that MUST be included in the
+<t anchor="_7c725337-d158-80f3-e836-f513a08fb672">The following table describes the POST parameters that MUST be included in the
 request for the access token unless otherwise indicated.
 The parameters SHALL be accepted via the
 query string or the body of the post. This is again particularly
 important for the <tt>client_secret</tt>, as passing secrets via a query string
 is generally frowned upon given that various systems often log URLs.</t>
 
-<t anchor="_949cdc5f-7756-2bc8-6a9a-8baae21f0a2a">The body of the post is application/json encoded.</t>
+<t anchor="_19b2c0bc-5a85-6a76-e1ff-bae1df251cb9">The body of the post is application/json encoded.</t>
 
-<table anchor="_b1790759-18ca-69af-355c-db3ae521d350"><name>parameters of the token end-point</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Authorization Code/Refresh Code</strong></td><td align="left">code/refresh_token</td><td align="left">(REQUIRED) The authorization code that was
+<table anchor="_1c36a5e1-7f20-323d-c77b-da6369f36961"><name>parameters of the token end-point</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Authorization Code/Refresh Code</strong></td><td align="left">code/refresh_token</td><td align="left">(REQUIRED) The authorization code that was
 provided in the previous step when the user accepted the
 authorization request, or the refresh_token for a subsequent access
 token.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) This is REQUIRED if a redirect_uri was
@@ -891,72 +910,75 @@ the same redirect_uri provided in this step.</td></tr><tr><td align="left"><stro
 registration</td></tr><tr><td align="left"><strong>Client Secret</strong></td><td align="left">client_secret</td><td align="left">(REQUIRED) The secret provided to the Service Provider during registration. Typically required
 unless the rare circumstance with secret-less OAuth.</td></tr></tbody></table>
 
-<t anchor="_3b5cb383-107c-affe-d692-9ca3aa006a1e">Upon successful token exchange, the DNS Provider MUST return a response with 4 properties in the body of the response.</t>
+<t anchor="_5fb4f66b-c4b3-d8bf-ee07-3e69a23343e8">Upon successful token exchange, the DNS Provider MUST return a response with 4 properties in the body of the response.</t>
 
-<table anchor="_21a4bce2-0d9c-6972-2b82-a9377e44b84d"><name>properties of the token end-point response</name><thead><tr><th align="left">Property</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>access_token</strong></td><td align="left">The access token to be used when making API requests</td></tr><tr><td align="left"><strong>token_type</strong></td><td align="left">Always the string "bearer"</td></tr><tr><td align="left"><strong>expires_in</strong></td><td align="left">The number of seconds until the access_token expires</td></tr><tr><td align="left"><strong>refresh_token</strong></td><td align="left">The token that can be used to request new access tokens when this one has expired.</td></tr></tbody></table>
+<table anchor="_8ddfbc8e-13a9-3296-0782-91105522ebd3"><name>properties of the token end-point response</name><thead><tr><th align="left">Property</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>access_token</strong></td><td align="left">The access token to be used when making API requests</td></tr><tr><td align="left"><strong>token_type</strong></td><td align="left">Always the string "bearer"</td></tr><tr><td align="left"><strong>expires_in</strong></td><td align="left">The number of seconds until the access_token expires</td></tr><tr><td align="left"><strong>refresh_token</strong></td><td align="left">The token that can be used to request new access tokens when this one has expired.</td></tr></tbody></table>
 
-<table anchor="_4589e8fa-c569-9d3d-0c27-9162a1d67c85"><name>http status codes of the token end-point response</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the
+<table anchor="_97c83190-133d-8c07-2c04-5ea534a935bd"><name>http status codes of the token end-point response</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the
 call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Errors</strong></td><td align="left">4**</td><td align="left">All other responses indicate an error.</td></tr></tbody></table>
 </section>
 
 <section anchor="_oauth_flow_making_requests_with_access_tokens"><name>OAuth Flow: Making Requests with Access Tokens</name>
 
-<t anchor="_14f84f21-899b-7fa3-8af7-092c21784c90">Once the Service Provider has the access token, they can call the DNS
+<t anchor="_b8b09fd6-3729-1d35-a3b1-e6e5d7e8143e">Once the Service Provider has the access token, they can call the DNS
 Provider's API to make changes to DNS on the domain by applying and (OPTIONALLY)
 removing authorized templates. These templates can be applied to the
 Zone Apex or to any Sub Domain that has been authorized.</t>
 
-<t anchor="_670120d9-f907-b507-4153-7f79de3196cf">All calls to this API pass the access token in the Authorization Header
+<t anchor="_c3288dbd-ceba-e73a-c1b3-384ba66e2012">All calls to this API pass the access token in the Authorization Header
 of the request to the call to the API. More details can be found in the
 OAuth specifications, but as an example:</t>
 
-<sourcecode anchor="_ab8998f9-8c2c-e107-bf0d-4274bc6c502f"><![CDATA[GET /resource/1 HTTP/1.1
+<sourcecode anchor="_c6a179f1-28b0-7724-2052-fb0ad8b1ca73"><![CDATA[GET /resource/1 HTTP/1.1
 
 Host: example.com
 
 Authorization: Bearer mF_9.B5f-4.1JqM]]></sourcecode>
 
 
-<t anchor="_c29dc184-a154-1810-5008-59d8fe7459b7">While the calls below do not have the same security consideration of
+<t anchor="_c59a6c92-5d77-07d6-e66b-aa3cbacc39a0">While the calls below do not have the same security consideration of
 passing the secret, it is recommend that the urlAPI be from a stored
 value vs. the value returned during discovery here as well.</t>
 </section>
 
 <section anchor="_oauth_flow_apply_template_to_domain"><name>OAuth Flow: Apply Template to Domain.</name>
 
-<sourcecode anchor="_3c5a0984-284a-45c8-cd7c-68f33c182e43"><![CDATA[POST
+<t anchor="_8b3c0f11-1fa6-5647-4adf-666bfe70761b">Normative URI template of the asynchronous apply end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services
-/{serviceId}/apply?[properties]]]></sourcecode>
+<sourcecode anchor="_fac6edea-5476-efcf-7ae4-552f7a496cd7"><![CDATA[POST
+
+{+urlAPI}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/apply{?domain,host,groupId,force,providerName,
+serviceName,instanceId,properties*}]]></sourcecode>
 
 
-<t anchor="_6799981f-ac5e-296b-99b9-46cca27e0037">The primary function of the API is to apply a template to a user
+<t anchor="_658955a0-ff98-f12a-415b-935a7a79c6d5">The primary function of the API is to apply a template to a user
 domain.</t>
 
-<t anchor="_8a5ec8b7-b5d2-538c-f895-6a5906fdda46">While the <tt>providerId</tt> is implied in the authorization, this is on the
+<t anchor="_c1ad48f3-2643-aea3-127a-08cf53f67565">While the <tt>providerId</tt> is implied in the authorization, this is on the
 path for consistency with the synchronous flows and other APIs. If not
 matching what was authorized, an error MUST be returned.</t>
 
-<t anchor="_e08368d9-376f-4765-038a-f0353180b20f">When applying a template to a domain, it is possible that a conflict may
+<t anchor="_471fef12-f72d-4f70-956c-b727e3f9424e">When applying a template to a domain, it is possible that a conflict may
 exist with previous settings. While it is recommended that conflicts be
 detected when the user grants consent, because OAuth is asynchronous it
 is possible that a new conflict was introduced by the user.</t>
 
-<t anchor="_e0384d37-3870-f52b-e973-d33fabff6c03">While it is up to the DNS Provider to determine what constitutes a
+<t anchor="_f9396488-38b4-45b4-7e33-8c02cc0a1d77">While it is up to the DNS Provider to determine what constitutes a
 conflict (see section on Conflicts below), when one is detected calling
 this API MUST return an error. This error SHOULD enumerate the
 conflicting records in a format described below.</t>
 
-<t anchor="_62a2cc35-d999-7283-46ab-761ed9ec5d6a">Because the user often isn't present at the time of this error, it is up the Service Provider to determine how to handle this condition. Some providers may decide to notify the user. Others may decide to apply their template anyway using the <tt>"force"</tt> parameter. This parameter will bypass error checks for conflicts, and after the call the service will be in its desired state.</t>
+<t anchor="_8b36ae14-ef0c-3e06-94f1-d0fa667ce96a">Because the user often isn't present at the time of this error, it is up the Service Provider to determine how to handle this condition. Some providers may decide to notify the user. Others may decide to apply their template anyway using the <tt>"force"</tt> parameter. This parameter will bypass error checks for conflicts, and after the call the service will be in its desired state.</t>
 
-<t anchor="_86c79dc2-4c52-6858-0619-beee12ee0c15">Calls to apply a template via OAuth require the following parameters
+<t anchor="_4c1dd350-0a1b-c5f6-fd7e-ad68310b332c">Calls to apply a template via OAuth require the following parameters
 posted to the above URL unless otherwise indicated.
 The DNS Provider MUST accept parameters in query string or body of this
 post.</t>
 
-<t anchor="_ad3e74b5-479c-4c1d-edf8-e8856e740e62">The body is application/json encoded.</t>
+<t anchor="_d3fdb7fe-ce91-b172-ab3b-51b42bab663d">The body is application/json encoded.</t>
 
-<table anchor="_0ec56dcb-3c98-c7b8-1c2e-a8ae83aef6d7"><name>query parameters of the apply end-point in the async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The Zone Apex domain name being configured. It MUST match the domain that was authorized
+<table anchor="_ea2b7e52-d6e0-10aa-c5ad-7341fd1d3fd8"><name>URI template parameters of the apply end-point in the async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL API</strong></td><td align="left">urlAPI</td><td align="left">(REQUIRED) Value of urlAPI from the settings endpoint.</td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) identifier of the Service Provider of the template to be applied</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) The name or identifier of the template to be applied.</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The Zone Apex domain name being configured. It MUST match the domain that was authorized
 in the token.</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain that was authorized in the
 token. If omitted or left blank, the template is being applied to the Zone Apex.</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">*</td><td align="left">(REQUIRED) Any variable fields consumed by
 this template. The name portion of this API call corresponds to the
@@ -968,32 +990,32 @@ This can also be a comma separated list of groupIds.</td></tr><tr><td align="lef
 domain. This can be a value of 0 or 1.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional context for the <tt>providerName</tt> that applied the template. It MAY be used by DNS Providers that want to display state regarding which templates have been applied. It is only allowed when the <tt>"sharedProviderName"</tt> attribute is set in the template being applied.</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) This parameter allows for the caller to provide additional context for the <tt>serviceName</tt> that applied the template. It MAY be used by DNS Providers that want to display state regarding which templates have been applied. It is only allowed when the <tt>"sharedProviderName"</tt> attribute is set in the template being applied.</td></tr><tr><td align="left"><strong>InstanceId</strong></td><td align="left">instanceId</td><td align="left">(OPTIONAL) Only applicable to templates supporting multiple instances
 (see <xref target="template-definition">multiInstance</xref> template property). Allows for later removal of one template instance by DNS Providers storing this information.</td></tr></tbody></table>
 
-<t anchor="_2d3ba33c-b75a-8754-8cdb-c26644580ab7">An example call is below. In this example, it is contemplated that there are two variables in this template, <tt>"IP"</tt> and <tt>"RANDOMTEXT"</tt> which both require values. These variables are passed as name/value pairs.</t>
+<t anchor="_46ab87d4-113b-6d52-58a1-94db82a4b4f1">An example call is below. In this example, it is contemplated that there are two variables in this template, <tt>"IP"</tt> and <tt>"RANDOMTEXT"</tt> which both require values. These variables are passed as name/value pairs.</t>
 
-<sourcecode anchor="_8cd30f20-1e97-282b-b78f-1bec1b0eb673"><![CDATA[POST
+<sourcecode anchor="_96d07746-eb7e-f471-6ce6-7967886e9fbc"><![CDATA[POST
 
 https://connect.dnsprovider.example/v2/domainTemplates/providers/
 exampleservice.example/services/template1/apply?IP=192.0.2.42&
 RANDOMTEXT=shm%3A1542108821%3AHello&force=1]]></sourcecode>
 
 
-<t anchor="_78cca39e-04e7-6171-416b-44882fda2b57">The API MUST validate the access token, and that the domain belongs to
+<t anchor="_e9f4264a-5c1d-7586-b006-f78d68724f65">The API MUST validate the access token, and that the domain belongs to
 the user and is represented by the token being presented. Any errors
 with variables, conflicting templates, or problems with the state of the
 domain are returned; otherwise the template is applied.</t>
 
-<t anchor="_3aa4e2ef-11da-0851-f750-404bd8726b8e">Results of this call can include information indicating success or an error. Errors MUST be 400 status codes, with the following codes defined.</t>
+<t anchor="_c07d2649-ff40-6d59-c043-711826452f6b">Results of this call can include information indicating success or an error. Errors MUST be 400 status codes, with the following codes defined.</t>
 
-<table anchor="_69a2fd50-e968-de01-7ebe-82902962269b"><name>http status codes of the apply end-point in the async flow</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">Any 200 level code MUST be considered a success. The response MAY be of status 200 with a response body, but also 204 without a body.</td></tr><tr><td align="left"><strong>Bad Request</strong></td><td align="left">400</td><td align="left">A response of a 400 indicates that the server cannot process the request because it
+<table anchor="_81975ab8-cc18-a916-766b-afadc6da8039"><name>http status codes of the apply end-point in the async flow</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">Any 200 level code MUST be considered a success. The response MAY be of status 200 with a response body, but also 204 without a body.</td></tr><tr><td align="left"><strong>Bad Request</strong></td><td align="left">400</td><td align="left">A response of a 400 indicates that the server cannot process the request because it
 was malformed or had errors. This response code is intended for programming errors.</td></tr><tr><td align="left"><strong>Unauthorized</strong></td><td align="left">401</td><td align="left">A response of a 401 indicates that caller is not
 authorized to make this call. This can be because the token was revoked,
 or other access issues.</td></tr><tr><td align="left"><strong>Conflict</strong></td><td align="left">409</td><td align="left">This indicates that the call was good, and the caller authorized, but the change could not be applied due to a conflicting template. Errors due to conflicts MUST NOT be returned when force is equal to 1.</td></tr><tr><td align="left"><strong>Error</strong></td><td align="left">4xx</td><td align="left">Other 4xx error codes SHOULD be returned when something is wrong with the request that makes applying the template problematic; most often something that is wrong with the account and requires attention.</td></tr></tbody></table>
 
-<t anchor="_55d4f6c4-6d8a-bb93-2b2a-197bcad1f58a">When a 409 is returned, the body of the response SHOULD contain details of the conflicting records. If present this MUST be JSON containing the error code, a message suitable for developers, and an array of tuples containing the conflicting records type, host, and data element.</t>
+<t anchor="_a449cec2-8d3b-6a52-c132-685473ad7d2b">When a 409 is returned, the body of the response SHOULD contain details of the conflicting records. If present this MUST be JSON containing the error code, a message suitable for developers, and an array of tuples containing the conflicting records type, host, and data element.</t>
 
-<t anchor="_56b0fbe9-08d1-6831-5b65-f78daaefa920">As an example:</t>
+<t anchor="_7e1106e9-48d5-d99f-145d-4948a63d6167">As an example:</t>
 
-<sourcecode anchor="_1cdcedaa-9356-6641-e2c7-a1d29ed8db0d" type="json"><![CDATA[{
+<sourcecode anchor="_11b66e0e-9601-ebe9-03f7-fdd9b694098e" type="json"><![CDATA[{
     "code": "409",
     "message": "Conflicting records",
     "records": [
@@ -1011,57 +1033,78 @@ or other access issues.</td></tr><tr><td align="left"><strong>Conflict</strong><
 }]]></sourcecode>
 
 
-<t anchor="_c20ebd38-81b9-5a9d-611d-edd46bca311d">In this example, the Service Provider tried to apply a new hosting
+<t anchor="_d6a9d045-aafd-34ba-5718-a68516d337bc">In this example, the Service Provider tried to apply a new hosting
 template. The domain had an existing service applied for hosting.</t>
 </section>
 
 <section anchor="_oauth_flow_revert_template"><name>OAuth Flow: Revert Template</name>
 
-<t anchor="_808d96ed-4ba3-57d3-8d37-7fe6f0efcd45">This call reverts the application of a specific template from a domain.</t>
+<t anchor="_b4947bd5-ff88-9a92-479c-b8de673bf023">This call reverts the application of a specific template from a domain.</t>
 
-<t anchor="_4426608c-8c5b-fadf-b9f9-5ec9541d2c77">Implementation of this call is OPTIONAL. If not supported a 501 MUST be returned.</t>
+<t anchor="_14421dc5-023f-bd83-3d73-7e61125f99bf">Implementation of this call is OPTIONAL. If not supported a 501 MUST be returned.</t>
 
-<sourcecode anchor="_1410b839-e767-fab6-d53f-5b4e89d892d1"><![CDATA[POST
+<t anchor="_6f0e6867-b68e-f07f-25d3-351d7b6b2485">Normative URI template of the asynchronous template revert end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-{urlAPI}/v2/domainTemplates/providers/{providerId}/services
-/{serviceId}/revert?domain={domain}&host={host}]]></sourcecode>
+<sourcecode anchor="_5e464f16-3cac-0988-a251-a9f0d4b3b3ef"><![CDATA[POST
+
+{+urlAPI}/v2/domainTemplates/providers/{providerId}/services
+/{serviceId}/revert{?domain,host,instanceId}]]></sourcecode>
 
 
-<t anchor="_15197e6e-a4b4-2293-928d-6b31913833ca">This API allows the removal of a template from a user domain/host
+<t anchor="_353e8302-14f2-a8b8-a137-f6e045ac58d3">This API allows the removal of a template from a user domain/host
 using an OAuth request.</t>
 
-<t anchor="_e6c8269d-8882-eb8b-83c6-714e59d91f6c">The provider and service name in the URL MUST match the values provided during authorization.</t>
+<t anchor="_c5d62cb8-db8e-a854-a554-739dcaabd443">The provider and service name in the URL MUST match the values provided during authorization.</t>
 
-<t anchor="_db161e52-7783-36b3-9e4a-9eade1640c87">This call MUST validate that the template exists and has been
+<t anchor="_94d515d6-f18c-7aff-d727-4532873f4b61">This call MUST validate that the template exists and has been
 applied to the domain by the Service Provider, or an error response with code 410 SHOULD be returned that the call would have no effect.</t>
 
-<t anchor="_9fe8e30d-f461-9017-813f-c6d1bb3bdab4">An example query string might look like:</t>
+<t anchor="_8af51f93-8b84-b7ae-ec9c-08494d7a9076">An example URL might look like:</t>
 
-<sourcecode anchor="_420ca461-546a-d20e-8b51-81fa06ea3b7e"><![CDATA[POST
+<sourcecode anchor="_200fc0c3-77a3-672c-26b1-d55126392bfc"><![CDATA[POST
 
 https://connect.dnsprovider.example/v2/domainTemplates/providers
 /exampleservice.example/services/template1/revert?domain=example.com]]></sourcecode>
 
 
-<t anchor="_42cce2cc-6280-4866-5ec9-dac6f7787446">Allowed parameters:</t>
+<t anchor="_807fee95-d0b0-10bb-c8d4-ecf4e0ae5359">Allowed parameters:</t>
 
-<table anchor="_7d4a62b1-8f04-fc68-460c-3d4834e435da"><name>query parameters of the revert end-point in the async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The Zone Apex domain name being configured. It
+<table anchor="_b6a12f8b-0af1-252e-e48f-028eebb1c23a"><name>URI template parameters of the revert end-point in the async flow</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL API</strong></td><td align="left">urlAPI</td><td align="left">(REQUIRED) Value of urlAPI from the settings endpoint.</td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) identifier of the Service Provider of the template to be applied</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) The name or identifier of the template to be applied.</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The Zone Apex domain name being configured. It
 MUST match the domain that was authorized in the token.</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain that was authorized in the token.
 If omitted or left blank, the template is being applied to the Zone Apex.</td></tr><tr><td align="left"><strong>InstanceId</strong></td><td align="left">instanceId</td><td align="left">(OPTIONAL) Only applicable to templates supporting multiple instances
 (see <xref target="template-definition">multiInstance</xref> template property). For DNS Provider storing information about applied templates allows removal of single instance of template. If missing all instances of template MUST be removed.</td></tr></tbody></table>
 
-<t anchor="_5de0c4ed-9dc6-60a5-feb5-36247c33acce">The DNS Provider MUST be able to accept these on the query string or in the body of the POST with <tt>application/json</tt> encoding.</t>
+<t anchor="_524b9d45-89c6-3655-e5f8-41ed847e872b">The DNS Provider MUST be able to accept these on the query string or in the body of the POST with <tt>application/json</tt> encoding.</t>
 
-<t anchor="_5cf571cb-ecd7-b425-6382-be7eb89359f4">Response codes Success, Authorization, and Errors are identical to
+<t anchor="_6f691533-e0e3-bd30-ea64-7c42b4d71e90">Response codes Success, Authorization, and Errors are identical to
 above with the addition of the 501 code.</t>
 </section>
 
 <section anchor="_oauth_flow_revoking_access"><name>OAuth Flow: Revoking access</name>
 
-<t anchor="_a4d5ee13-f6df-6b5f-2e3a-b2a937abdd23">Like all OAuth flows, the user may revoke the access at any time using
+<t anchor="_b032d845-ca10-693c-1fc0-25cfb8ca8e39">Like all OAuth flows, the user may revoke the access at any time using
 UX at the DNS Provider site. As such the Service Provider needs to be
 aware that their access to the API may be denied.</t>
 </section>
+</section>
+
+<section anchor="verification-of-changes"><name>Verification of Changes</name>
+
+<t anchor="_3654af82-4e40-0afd-4e64-eb8d0d7b2a0a">There are circumstances where the Service Provider may wish to verify
+that the template was successfully applied. Without Domain Donnect, this
+typically involved the Service Provider querying DNS to see if the
+changes to DNS had been made.</t>
+
+<t anchor="_becf8b04-79c3-6949-215a-0f4b7cdbe922">This same technique works with Domain Connect, and if necessary can be
+triggered either manually on the Service Provider site or automatically
+upon page/window activation in the browser when the browser window for
+the DNS Provider is closed.</t>
+
+<t anchor="_398753f1-20c4-e610-9fdb-d7ad46cfdffa">When the redirect_uri is used and an error is not present in the URI,
+the Service Provider can not assume the changes were applied to DNS. While true in most
+circumstances, users can tamper with or alter the return
+url in the browser. As such it is recommend that enablement of a service
+be based on verification of changes to DNS.</t>
 </section>
 </section>
     <section anchor="_domain_connect_objects_and_templates"><name>Domain Connect Objects and Templates</name>
@@ -1644,7 +1687,7 @@ DNSSEC. This record is required at the registry to enable DNSSEC, but can only b
 
 <t anchor="_d19cb766-39e2-54af-6219-8e894105a386">Per <xref target="RFC8552" section="" relative=""></xref>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:</t>
 
-<table anchor="_6a918a82-5cfc-709b-0191-b49d018bcdbd"><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
+<table anchor="_e21cd921-3146-5d3e-5fec-9a3985204daf"><name>IANA Registration for _domainconnect</name><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
 </section>
     <section anchor="_implementation_status" numbered="false" removeInRFC="true" toc="include"><name>Implementation Status</name>
 
@@ -1743,6 +1786,7 @@ DNSSEC. This record is required at the registry to enable DNSSEC, but can only b
       <reference target="https://www.rfc-editor.org/info/rfc8552" anchor="RFC8552"><stream>IETF</stream> <front> <title>Scoped Interpretation of DNS Resource Records through "Underscored" Naming of Attribute Leaves</title> <author fullname="D. Crocker" asciiFullname="D. Crocker"></author> <date month="March" year="2019"></date> <keyword>DNS</keyword><keyword>Domain Name System</keyword> <abstract>  <t anchor="_81103822-70ca-0563-f7af-4095bb800ecb">Formally, any DNS Resource Record (RR) may occur under any domain name. However, some services use an operational convention for defining specific interpretations of an RRset by locating the records in a DNS branch under the parent domain to which the RRset actually applies. The top of this subordinate branch is defined by a naming convention that uses a reserved node name, which begins with the underscore character (e.g., "_name"). The underscored naming construct defines a semantic scope for DNS record types that are associated with the parent domain above the underscored branch. This specification explores the nature of this DNS usage and defines the "Underscored and Globally Scoped DNS Node Names" registry with IANA. The purpose of this registry is to avoid collisions resulting from the use of the same underscored name for different services.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc8552" type="src"></format> <seriesInfo value=" 10.17487/RFC8552" name="DOI"></seriesInfo> <seriesInfo value="222" name="BCP"></seriesInfo> <seriesInfo value="8552" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc3986" anchor="RFC3986"><stream>IETF</stream> <front> <title>Uniform Resource Identifier (URI): Generic Syntax</title> <author fullname="T. Berners-Lee" asciiFullname="T. Berners-Lee"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="L. Masinter" asciiFullname="L. Masinter"></author> <date month="January" year="2005"></date> <keyword>Internet protocol</keyword><keyword>IP</keyword><keyword>uniform resource identifier</keyword><keyword>URI</keyword><keyword>www</keyword><keyword>world wide web</keyword> <abstract>  <t anchor="_40c7f1f1-ba0d-4f77-dfa8-cba0581c99ce">A Uniform Resource Identifier (URI) is a compact sequence of characters that identifies an abstract or physical resource. This specification defines the generic URI syntax and a process for resolving URI references that might be in relative form, along with guidelines and security considerations for the use of URIs on the Internet. The URI syntax defines a grammar that is a superset of all valid URIs, allowing an implementation to parse the common components of a URI reference without knowing the scheme-specific requirements of every possible identifier. This specification does not define a generative grammar for URIs; that task is performed by the individual specifications of each URI scheme. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc3986" type="src"></format> <seriesInfo name="STD" value="66"></seriesInfo> <seriesInfo value=" 10.17487/RFC3986" name="DOI"></seriesInfo> <seriesInfo value="66" name="BCP"></seriesInfo> <seriesInfo value="3986" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7518" anchor="RFC7518"><stream>IETF</stream> <front> <title>JSON Web Algorithms (JWA)</title> <author fullname="M. Jones" asciiFullname="M. Jones"></author> <date month="May" year="2015"></date> <abstract>  <t anchor="_42348283-c817-93e5-af76-289de0e943f4">This specification registers cryptographic algorithms and identifiers to be used with the JSON Web Signature (JWS), JSON Web Encryption (JWE), and JSON Web Key (JWK) specifications. It defines several IANA registries for these identifiers.</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc7518" type="src"></format> <seriesInfo value=" 10.17487/RFC7518" name="DOI"></seriesInfo> <seriesInfo value="7518" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc6570" anchor="RFC6570"><stream>IETF</stream> <front> <title>URI Template</title> <author fullname="J. Gregorio" asciiFullname="J. Gregorio"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Hadley" asciiFullname="M. Hadley"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="D. Orchard" asciiFullname="D. Orchard"></author> <date month="March" year="2012"></date> <keyword>template</keyword><keyword>Uniform Resource Identifier</keyword><keyword>URI</keyword><keyword>URI Template</keyword><keyword>Internationalized Resource Identifier</keyword><keyword>IRI</keyword><keyword>IRI Template</keyword> <abstract>  <t anchor="_73e7db2c-97e5-a984-ea38-51e02b3f1898">A URI Template is a compact sequence of characters for describing a range of Uniform Resource Identifiers through variable expansion. This specification defines the URI Template syntax and the process for expanding a URI Template into a URI reference, along with guidelines for the use of URI Templates on the Internet. [STANDARDS-TRACK]</t></abstract> </front> <format target="https://www.rfc-editor.org/info/rfc6570" type="src"></format> <seriesInfo value=" 10.17487/RFC6570" name="DOI"></seriesInfo> <seriesInfo value="6570" name="RFC"></seriesInfo></reference>
     </references>
     <references anchor="_informative_references">
       <name>Informative References</name>

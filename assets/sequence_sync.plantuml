@@ -1,0 +1,34 @@
+@startuml
+skinparam maxAsciiMessageLength 7
+skinparam PageMargin 0
+actor "User" as U
+participant "Service Provider" as SP
+participant "DNS Provider" as DP
+participant "DNS Server" as DNS
+autonumber
+
+U->SP: Provides domain name
+SP->DNS: Initiates DNS discovery
+DNS->SP: Responds with\ndiscovery URL fragment
+SP->DP: Requests DNS Provider settings
+DP->SP: Provides settings
+SP->DP: Queries for supported template
+DP->SP: Responds template\nsupport status
+
+SP->U: Presents connection link
+U->DP: Navigates to DNS Provider
+alt if the template requires signing 
+    DP->SP: Lookup URL\nsignature keys (DNS)
+    DP->DP: Check\nrequest URL\nsignature
+end
+DP->U: Requests authentication
+U->DP: Authenticate
+DP->DP: Check domain\name in\ncustomer's\naccount
+DP->U: Requests consent for DNS changes
+U->DP: Confirms consent
+DP->DNS: Apply changes to DNS
+DP-->SP: Redirect/ Close window
+SP->DNS: Query DNS records
+DNS->SP: New DNS records
+SP->U: Report success
+@enduml

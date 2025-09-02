@@ -1,5 +1,12 @@
 FROM ubuntu:24.04
 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
+
+# .bashrc configuration
+RUN echo 'xml2rfc --version' >> ~/.bashrc && \
+    echo 'if [ -d ~/xml2rfc ]; then cd ~/xml2rfc; fi' >> ~/.bashrc
+
 RUN apt-get -y update && apt-get -y install curl gpg build-essential && apt-get -y clean
 
 RUN bash -c curl -L https://raw.githubusercontent.com/metanorma/metanorma-linux-setup/master/ubuntu.sh | bash && curl -L https://raw.githubusercontent.com/metanorma/metanorma-linux-setup/master/install-gems.sh | bash
@@ -7,8 +14,10 @@ RUN bash -c curl -L https://raw.githubusercontent.com/metanorma/metanorma-linux-
 # Put the md2rfc script in place
 COPY bin/md2rfc /usr/bin/
 
+# Install Java JRE needed for plantuml
 RUN apt-get -y update && apt-get -y install git nano default-jre wget && apt-get -y clean
 
+# Install Plantuml
 RUN wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/share/java/plantuml.jar
 
 # Install required fonts

@@ -90,45 +90,25 @@ Table of Contents
        8.4.8.  OAuth Flow: Revoking access
      8.5.  Verification of Changes
    9.  Domain Connect Objects and Templates
-     9.1.  Template Versioning
-     9.2.  Template Definition
-     9.3.  Template Record
-   10. Template Considerations
-     10.1.  Template State in DNS
-     10.2.  Disclosure of Changes and Conflicts
-     10.3.  Record Types and Conflicts
-     10.4.  Apply, Re-apply, and Multi-Instance
-     10.5.  Non-essential records
-     10.6.  Template Scope
-     10.7.  Host/Name in Template
-     10.8.  PointsTo in Template
-     10.9.  Variables
-       10.9.1.  Variable Syntax
-       10.9.2.  Special and Built-In Variables
-       10.9.3.  Variable substitution
-       10.9.4.  Variables and Host/Name in Template
-       10.9.5.  Variables and Security
-       10.9.6.  Variable Examples
-     10.10. SPF TXT Record
-       10.10.1.  What is SPF?
-       10.10.2.  Multiple Services
-       10.10.3.  SPF Record Merging
-       10.10.4.  Alternatives
-     10.11. Public Template Repository
-       10.11.1.  General information
-       10.11.2.  Repository Location
-       10.11.3.  File naming requirements
-       10.11.4.  Template Integrity
-   11. General considerations
-     11.1.  Onboarding
-     11.2.  Case Sensitivity
-   12. Extensions/Exclusions
-     12.1.  General information
-     12.2.  APEXCNAME
-     12.3.  Redirection
-     12.4.  Nameservers
-     12.5.  DS (DNSSEC)
-   13. IANA Considerations
+     9.1.  Template Definition
+     9.2.  Template Record
+     9.3.  Resource Record and Variable Processing
+       9.3.1.  Variable Syntax
+       9.3.2.  Special and Built-In Variables
+       9.3.3.  Variable substitution
+       9.3.4.  Variables and Host/Name in Template
+       9.3.5.  SPF Record Merging
+       9.3.6.  Variables and Security
+       9.3.7.  Variable Examples
+   10. Template Application
+     10.1.  Template State in DNS Providers system
+     10.2.  Steps to Apply a Template
+     10.3.  Conflict Detection
+       10.3.1.  Conflict Detection Special Handling
+     10.4.  Conflict Resolution
+     10.5.  User Authorization of Changes
+     10.6.  Template Application
+   11. IANA Considerations
    Implementation Status
    Change History
    Normative References
@@ -292,11 +272,6 @@ Table of Contents
       template is used as a mean of communication between Service
       Provider and DNS Provider.
 
-   Public Template Repository:  A publicly accessible repository of
-      Service Templates, formatted in a standardized manner, intended to
-      facilitate sharing, discovery, and reuse of service
-      configurations.  (Read more: Section 10.11).
-
 5.  Protocol design
 
 5.1.  Templates
@@ -318,9 +293,9 @@ Table of Contents
    (e.g. the IP address of a service, a user id, etc.).
 
    The template is defined by the Service Provider and manually
-   onboarded with the DNS Provider, according to a template definition
-   published in the Public Repository (Section 10.11) or agreed out-of-
-   band between the Service Provider and the DNS Provider.
+   onboarded with the DNS Provider.  This is an out-of-band process
+   between the Service Provider and the DNS Provider and not covered by
+   this specification.
 
 5.2.  Trust Model
 
@@ -688,7 +663,7 @@ Table of Contents
    As a practical matter of implementation, the DNS Provider may or may
    not contain a copy of this data in each and every zone.  Instead, the
    DNS Provider MUST simply respond to the DNS query for the
-   _`domainconnect` TXT record with the appropriate data.
+   _`"domainconnect"` TXT record with the appropriate data.
 
    How this is implemented is up to the DNS Provider.
 
@@ -760,7 +735,7 @@ Table of Contents
    |              |                     |        | synchronous flow    |
    |              |                     |        | on this domain.     |
    |              |                     |        | This URL MUST be    |
-   |              |                     |        | of https schema     |
+   |              |                     |        | of "https" schema   |
    |              |                     |        | and MUST NOT        |
    |              |                     |        | contain query or    |
    |              |                     |        | fragment part.      |
@@ -779,7 +754,7 @@ Table of Contents
    |              |                     |        | asynchronous flow   |
    |              |                     |        | on this domain.     |
    |              |                     |        | This URL MUST be    |
-   |              |                     |        | of https schema     |
+   |              |                     |        | of "https" schema   |
    |              |                     |        | and MUST NOT        |
    |              |                     |        | contain query or    |
    |              |                     |        | fragment part.      |
@@ -787,7 +762,7 @@ Table of Contents
    | *API URL     | urlAPI              | String | (REQUIRED) The URL  |
    | Prefix*      |                     |        | Prefix for the      |
    |              |                     |        | REST API This URL   |
-   |              |                     |        | MUST be of https    |
+   |              |                     |        | MUST be of "https"  |
    |              |                     |        | schema and MUST     |
    |              |                     |        | NOT contain query   |
    |              |                     |        | or fragment part.   |
@@ -845,7 +820,7 @@ Table of Contents
    |              |                     |        | deep links to the   |
    |              |                     |        | specific domain,    |
    |              |                     |        | this string MAY     |
-   |              |                     |        | contain %domain%    |
+   |              |                     |        | contain "%domain%"  |
    |              |                     |        | which MUST be       |
    |              |                     |        | replaced with the   |
    |              |                     |        | domain name when    |
@@ -854,7 +829,7 @@ Table of Contents
    |              |                     |        | control panel of a  |
    |              |                     |        | given domain.       |
    |              |                     |        | This URL MUST be    |
-   |              |                     |        | of https schema     |
+   |              |                     |        | of "https" schema   |
    |              |                     |        | and MAY contain     |
    |              |                     |        | query or fragment   |
    |              |                     |        | part.               |
@@ -976,8 +951,8 @@ Table of Contents
 
    Returning a status of 200 without a body indicates the template is
    supported.  The DNS Provider MAY disclose the version of the template
-   in a JSON object with field version (see: version field (Section 9.2)
-   or the full JSON object of deployed template.
+   in a JSON object with field "version" (see: version field
+   (Section 9.1) or the full JSON object of deployed template.
 
    Returning a status of 404 indicates the template is not supported.
 
@@ -1008,7 +983,7 @@ Table of Contents
    GET
 
    {+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
-   /{serviceId}/apply{?domain,host,groupId,force,providerName,
+   /{serviceId}/apply{?domain,host,groupId,providerName,
    serviceName,instanceId,redirect_uri,properties*}{&sig,key}
 
    This is the URL, where the user agent (typically web browser) is sent
@@ -1051,9 +1026,9 @@ Table of Contents
    |             |              | error.  If omitted the DNS Provider  |
    |             |              | SHOULD close the browser window      |
    |             |              | upon completion.  It MUST be scoped  |
-   |             |              | to the syncRedirectDomain authority  |
-   |             |              | from the template, or the request    |
-   |             |              | MUST be signed.                      |
+   |             |              | to the "syncRedirectDomain"          |
+   |             |              | authority from the template, or the  |
+   |             |              | request MUST be signed.              |
    +-------------+--------------+--------------------------------------+
    | *State*     | state        | (OPTIONAL) A random and unique       |
    |             |              | string passed along to prevent       |
@@ -1092,9 +1067,9 @@ Table of Contents
    | *Service    | serviceName  | (OPTIONAL) This parameter allows     |
    | Name*       |              | for the caller to provide            |
    |             |              | additional text for display with     |
-   |             |              | the template serviceName.  It        |
+   |             |              | the template "serviceName".  It      |
    |             |              | SHOULD be used to augment the        |
-   |             |              | serviceName value from the           |
+   |             |              | "serviceName" value from the         |
    |             |              | template, not replace it.  This      |
    |             |              | parameter is only allowed when the   |
    |             |              | "sharedServiceName" attribute is     |
@@ -1234,7 +1209,7 @@ Table of Contents
 8.3.2.2.  Disable Synchronous
 
    One option is to disable the synchronous flow and use asynchronous
-   OAuth.  This can be controlled with the syncBlock value from the
+   OAuth.  This can be controlled with the "syncBlock" value from the
    template.  However, as will be seen below OAuth has a higher
    implementation burden and requires onboarding between each Service
    and DNS Provider.
@@ -1258,7 +1233,7 @@ Table of Contents
 
    The Service Provider MUST publish their public key and place it in a
    DNS TXT record in a domain specified in the template in
-   syncPubKeyDomain at a host of their choice.  The TXT record MUST be
+   "syncPubKeyDomain" at a host of their choice.  The TXT record MUST be
    published as a comma-separated list of key-value properties.
 
    +============+=====+===============================================+
@@ -1294,7 +1269,7 @@ Table of Contents
 
    This example indicates that the public key can be found by doing a
    DNS query for a TXT record called _dcpubkeyv1 in the domain specified
-   in the syncPubKeyDomain from the template.
+   in the "syncPubKeyDomain" from the template.
 
    To account for DNS Servers with limits to the size of a TXT record,
    the public key MAY be split into multiple TXT records at the
@@ -1330,11 +1305,11 @@ Table of Contents
 
    Signing the query string by the Service Provider is OPTIONAL.  Not
    all Services Provider templates require or are able to provide this
-   level of security.  Presence of the syncPubKeyDomain in the template
-   indicates that the template requires signature verification.
+   level of security.  Presence of the "syncPubKeyDomain" in the
+   template indicates that the template requires signature verification.
 
    DNS Providers MUST reject any request to apply a template with
-   syncPubKeyDomain present and no signing of a query string in place.
+   "syncPubKeyDomain" present and no signing of a query string in place.
 
    The digital signature MUST be generated on the full query string
    only, excluding the sig and key parameters.  This is everything after
@@ -1349,7 +1324,7 @@ Table of Contents
    Some applications aren't able to use OAuth and/or sign requests.
 
    If the template require variables, and OAuth and signing isn't
-   available, the flag warnPhishing SHOULD be set to true in the
+   available, the flag "warnPhishing" SHOULD be set to true in the
    template in order to offer transparency to the DNS Provider about
    security properties of the template.
 
@@ -1467,13 +1442,13 @@ Table of Contents
    hosts, and variables in the data portion for certain TXT records.
 
    The protocol allows for the Service Provider to gain consent to apply
-   multiple templates.  These templates are specified in the scope
+   multiple templates.  These templates are specified in the "scope"
    parameter.  It also allows for the Service Provider to gain consent
    to apply these templates to the domain or to the domain with multiple
-   sub-domains.  These are specified in the domain and host parameter.
-   If conflict detection is implemented by the DNS Provider, they SHOULD
-   account for all permutations, in order to inform the end user of all
-   possible consequences of the authorised change.
+   sub-domains.  These are specified in the "domain" and "host"
+   parameter.  If conflict detection is implemented by the DNS Provider,
+   they SHOULD account for all permutations, in order to inform the end
+   user of all possible consequences of the authorised change.
 
    The scope parameter is a space separated list (as per the OAuth
    protocol) of the template serviceIds.  The host parameter is an
@@ -1521,7 +1496,7 @@ Table of Contents
    considerations as in the synchronous flow apply here.
 
    The state value passed into the call MUST be passed back on the query
-   string as state=.
+   string as "state=".
 
    The following table describes the values of the URI template for the
    request for the OAuth consent flow that must be included unless
@@ -1644,7 +1619,7 @@ Table of Contents
 
    When the secret is provided (which is the normal case), care must be
    taken.  A malicious user could create a domain that returns a false
-   _`domainconnect` TXT record, and subsequently a JSON call to their
+   _`"domainconnect"` TXT record, and subsequently a JSON call to their
    own server for the API end point.  By doing so, they could then run
    Domain Connect on their domain and retrieve the secret.
 
@@ -1767,9 +1742,9 @@ Table of Contents
    The primary function of the API is to apply a template to a user
    domain.
 
-   While the providerId is implied in the authorization, this is on the
-   path for consistency with the synchronous flows and other APIs.  If
-   not matching what was authorized, an error MUST be returned.
+   While the "providerId" is implied in the authorization, this is on
+   the path for consistency with the synchronous flows and other APIs.
+   If not matching what was authorized, an error MUST be returned.
 
    When applying a template to a domain, it is possible that a conflict
    may exist with previous settings.  While it is recommended that
@@ -1844,7 +1819,7 @@ Table of Contents
    | *Provider    | providerName | (OPTIONAL) This parameter allows   |
    | Name*        |              | for the caller to provide          |
    |              |              | additional context for the         |
-   |              |              | providerName that applied the      |
+   |              |              | "providerName" that applied the    |
    |              |              | template.  It MAY be used by DNS   |
    |              |              | Providers that want to display     |
    |              |              | state regarding which templates    |
@@ -1856,7 +1831,7 @@ Table of Contents
    | *Service     | serviceName  | (OPTIONAL) This parameter allows   |
    | Name*        |              | for the caller to provide          |
    |              |              | additional context for the         |
-   |              |              | serviceName that applied the       |
+   |              |              | "serviceName" that applied the     |
    |              |              | template.  It MAY be used by DNS   |
    |              |              | Providers that want to display     |
    |              |              | state regarding which templates    |
@@ -1868,7 +1843,7 @@ Table of Contents
    | *InstanceId* | instanceId   | (OPTIONAL) Only applicable to      |
    |              |              | templates supporting multiple      |
    |              |              | instances (see multiInstance       |
-   |              |              | (Section 9.2) template property).  |
+   |              |              | (Section 9.1) template property).  |
    |              |              | Allows for later removal of one    |
    |              |              | template instance by DNS Providers |
    |              |              | storing this information.          |
@@ -2023,7 +1998,7 @@ Table of Contents
    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to        |
    |              |            | templates supporting multiple        |
    |              |            | instances (see multiInstance         |
-   |              |            | (Section 9.2) template property).    |
+   |              |            | (Section 9.1) template property).    |
    |              |            | For DNS Provider storing information |
    |              |            | about applied templates allows       |
    |              |            | removal of single instance of        |
@@ -2066,24 +2041,7 @@ Table of Contents
 
 9.  Domain Connect Objects and Templates
 
-9.1.  Template Versioning
-
-   If a breaking change is made to a template it is recommended that a
-   new template be created.  While on the surface versioning looks
-   appealing, in reality this is rarely needed.
-
-   Any changes to the template need to account for existing users with
-   settings in DNS, some applied through Domain Connect and some manual.
-   So when changes are made, they are often backward compatible.
-
-   Note that when a template changes, it does need to be on-boarded with
-   the DNS Providers.
-
-   The version field (Section 9.2) of the template definition serves the
-   purpose of transparency between the DNS Provider and the Service
-   Provider in case of such changes.
-
-9.2.  Template Definition
+9.1.  Template Definition
 
    A template is defined as a standard JSON data structure containing
    the following data.  Field values MUST be defined unless otherwise
@@ -2180,21 +2138,22 @@ Table of Contents
    |             |        |                   |been deprecated.  It    |
    |             |        |                   |used to indicate that   |
    |             |        |                   |the template allowed a  |
-   |             |        |                   |dynamic providerName on |
-   |             |        |                   |the query string.  It is|
-   |             |        |                   |replaced with the       |
-   |             |        |                   |sharedProviderName flag |
-   |             |        |                   |in v2.2 of the spec.    |
+   |             |        |                   |dynamic "providerName"  |
+   |             |        |                   |on the query string.  It|
+   |             |        |                   |is replaced with the    |
+   |             |        |                   |"sharedProviderName"    |
+   |             |        |                   |flag in v2.2 of the     |
+   |             |        |                   |spec.                   |
    +-------------+--------+-------------------+------------------------+
    |*Shared      |Boolean |sharedProviderName |(OPTIONAL) This flag    |
    |Provider     |        |                   |indicates that the      |
    |Name*        |        |                   |template allows the     |
    |             |        |                   |caller to pass in       |
    |             |        |                   |additional information  |
-   |             |        |                   |for the providerName.   |
+   |             |        |                   |for the "providerName". |
    |             |        |                   |This information SHOULD |
    |             |        |                   |augment the display of  |
-   |             |        |                   |the providerName from   |
+   |             |        |                   |the "providerName" from |
    |             |        |                   |the template.  The      |
    |             |        |                   |default for this is     |
    |             |        |                   |false.  For backward    |
@@ -2209,12 +2168,13 @@ Table of Contents
    |             |        |                   |template allows the     |
    |             |        |                   |caller to pass in       |
    |             |        |                   |additional information  |
-   |             |        |                   |for the serviceName.    |
+   |             |        |                   |for the "serviceName".  |
    |             |        |                   |This information SHOULD |
    |             |        |                   |augment the display of  |
-   |             |        |                   |the serviceName from the|
-   |             |        |                   |template.  The default  |
-   |             |        |                   |for this is false.      |
+   |             |        |                   |the "serviceName" from  |
+   |             |        |                   |the template.  The      |
+   |             |        |                   |default for this is     |
+   |             |        |                   |false.                  |
    +-------------+--------+-------------------+------------------------+
    |*Synchronous |String  |syncPubKeyDomain   |(OPTIONAL) When present,|
    |Public Key   |        |                   |indicates that calls to |
@@ -2290,14 +2250,14 @@ Table of Contents
 
               Table 16: properties of the template definition
 
-9.3.  Template Record
+9.2.  Template Record
 
    Each template record is an entry that contains a type and several
    other values depending on the type.
 
    Many of these values can contain variables, which are expressed as
    strings surrounded with "%" or special variable "@" (See:
-   Section 10.9).  Variables are replaced with values when the template
+   Section 9.3).  Variables are replaced with values when the template
    is applied.
 
    It is noted that as a best practice the variable portions SHOULD be
@@ -2308,11 +2268,11 @@ Table of Contents
    values for their users: s01.example.com, s02.example.com, and
    s03.example.com.
 
-   The value in the template could simply contain %servercluster%, and
+   The value in the template could simply contain "%servercluster%", and
    the fully qualified string passed in.  Alternatively, the value in
-   the template could contain %var%.example.com and a value of 01, 02,
-   or 03 passed in.  By placing more fixed data into the template, the
-   template is more secure.
+   the template could contain "%var%.example.com" and a value of "01",
+   "02", or "03" passed in.  By placing more fixed data into the
+   template, the template is more secure.
 
    Each record MUST contain the following elements unless otherwise
    specified.
@@ -2364,14 +2324,14 @@ Table of Contents
    |           |      |                         |* CNAME: host,        |
    |           |      |                         |pointsTo, TTL (host   |
    |           |      |                         |MUST NOT be null or @ |
-   |           |      |                         |unless hostRequired is|
-   |           |      |                         |defined true for the  |
-   |           |      |                         |template)             |
+   |           |      |                         |unless "hostRequired" |
+   |           |      |                         |is defined "true" for |
+   |           |      |                         |the template)         |
    |           |      |                         |* NS: host, pointsTo, |
    |           |      |                         |TTL (host MUST NOT be |
    |           |      |                         |null or @ unless      |
-   |           |      |                         |hostRequired is       |
-   |           |      |                         |defined true for the  |
+   |           |      |                         |"hostRequired" is     |
+   |           |      |                         |defined "true" for the|
    |           |      |                         |template)             |
    |           |      |                         |* TXT: host, data,    |
    |           |      |                         |TTL, txtConflict-     |
@@ -2427,10 +2387,10 @@ Table of Contents
    |           |      |                         |to the applied host   |
    |           |      |                         |and domain, unless    |
    |           |      |                         |trailed by a ".".     |
-   |           |      |                         |A value of empty or @ |
-   |           |      |                         |indicates the root of |
-   |           |      |                         |the applied host and  |
-   |           |      |                         |domain.  In other     |
+   |           |      |                         |A value of empty or   |
+   |           |      |                         |"@" indicates the root|
+   |           |      |                         |of the applied host   |
+   |           |      |                         |and domain.  In other |
    |           |      |                         |words                 |
    |           |      |                         |"[host.]example.com.".|
    |           |      |                         |This value SHOULD NOT |
@@ -2444,7 +2404,7 @@ Table of Contents
    |           |      |                         |This value is relative|
    |           |      |                         |to the applied host   |
    |           |      |                         |and domain.  A value  |
-   |           |      |                         |of empty or @         |
+   |           |      |                         |of empty or "@"       |
    |           |      |                         |indicates the root of |
    |           |      |                         |the applied host and  |
    |           |      |                         |domain.               |
@@ -2635,214 +2595,14 @@ Table of Contents
    |           |      |                         |other SPFM records    |
    |           |      |                         |into final SPF TXT    |
    |           |      |                         |record.  See          |
-   |           |      |                         |Section 10.10.        |
+   |           |      |                         |Section 9.3.5.        |
    +-----------+------+-------------------------+----------------------+
 
            Table 17: properties of the template record definition
 
-10.  Template Considerations
+9.3.  Resource Record and Variable Processing
 
-10.1.  Template State in DNS
-
-   DNS Providers may choose to maintain state inside records in DNS
-   indicating the templates writing the records.
-
-   A DNS Provider that maintains this state may be able to provide an
-   improved experience for users, telling them the services enabled.
-   They also may be able to have more advanced handling of conflicts.
-
-   To make the implementation burden reasonable for DNS Providers,
-   Domain Connect does not dictate the approach.
-
-10.2.  Disclosure of Changes and Conflicts
-
-   It is left to the discretion of the DNS Provider to determine what is
-   disclosed to the user when granting permission and/or applying
-   changes to DNS.  This includes disclosing the records being applied
-   and the records that may be overwritten.
-
-   For changes being made, one DNS Provider may decide to simply tell
-   the user the name of the service being enabled.  Another may decide
-   to display the records being set.  And another may progressively
-   display both.
-
-   For conflict detection, one DNS Provider may simply overwrite changed
-   records without warning.  Another may detect conflicts and warn the
-   user of the records that will change.  And another may implement
-   logic to further detect, warn, and remove any of the existing
-   templates that overlap with the new template once applied (this
-   assumes they are a DNS Provider that maintains template state in
-   DNS).
-
-   As an example, consider applying a template that sets two records
-   (recordA and recordB) into a zone.  Next consider applying a second
-   template that overlaps with the first template (recordB and recordC).
-   If the DNS maintains template state and removes conflicting
-   templates, applying the second template would remove the first
-   template.  Application of the second template would conflict with
-   recordB and the entire first template would be removed.
-
-   Manual changes made by the user at the DNS Provider may also have
-   appropriate warnings in place to prevent unwanted changes; with
-   overrides being possible and removal of conflicting templates.
-
-   For the synchronous flow, this happens while the user is present.
-
-   For the asynchronous flow, the consent UX is similar.  However, the
-   changes are made later using the API and OAuth.  The DNS Provider MAY
-   decide to detect conflicts and return these from the API without
-   applying the change using the proper response code.  If the force
-   parameter is set, the changes MUST be applied regardless of
-   conflicts.
-
-   It is ultimately left to the DNS Provider to determine the amount of
-   disclosure and/or conflict detection.  The only requirement is that
-   after a template is applied the new records MUST be applied in
-   totality.
-
-   A reasonable set of recommendations for the UX might consist of:
-
-   *  The consent UX SHOULD inform the user of the service that will be
-      enabled.  If the user want to know the specifics, the DNS Provider
-      could provide a "show details" link to the user.  This could
-      display to them the specific records that are being set in DNS.
-
-   *  If there are conflicts, either at the template or record level,
-      the consent UX SHOULD warn the user about these conflicts.  For
-      templates, this would be services that would be disabled.  For
-      records, this would be records that would be deleted or
-      overwritten.  This could be progressively disclosed.
-
-10.3.  Record Types and Conflicts
-
-   Conflict detection done by the DNS Provider prior to template
-   application has to take into consideration specifics of each DNS
-   record type.  The rules outlined below ensure predictable conflict
-   resolution between DNS Providers.  Each rule applies to the records
-   on the very same host, unless specifed otherwise.
-
-   *  CNAME record conflicts with TXT, MX, AAAA, A and existing CNAME
-      records, and any other records of these types conflict with an
-      existing CNAME record.  Note: CNAME records cannot be at the root
-      of the zone.
-
-   *  NS records conflict with all other records.  This includes of the
-      same host, and for any record ending with the NS host.  For
-      example, an NS record of foo will conflict with any foo, www.foo,
-      bar.foo, etc.  Similarly all other record type conflict with NS
-      records in the same manner.
-
-   *  MX, SRV records always conflict with records of the same type
-
-   *  A and AAAA records conflict with any other A and/or AAAA record,
-      to avoid IPv4 and IPv6 pointing to different services.
-
-   *  TXT records conflict detection is handled looking at
-      txtConflictMatchingMode parameter
-
-      -  None: This indicates that the TXT records do not conflict with
-         any other TXT record.  This is the default setting, if not
-         specified.
-
-      -  All: This indicates that the TXT records conflict with any
-         other TXT record
-
-      -  Prefix: This indicates that TXT record conflict with any other
-         TXT containing value starting with txtConflictMatchingPrefix
-
-10.4.  Apply, Re-apply, and Multi-Instance
-
-   There is an additional consideration for DNS Providers that maintain
-   the state of an applied template when re-applying a template.
-
-   To avoid unnecessary conflict warnings to the user, under normal use
-   when re-applying a template such a DNS Provider SHOULD remove the
-   previously applied template on the same host.
-
-   This may not be desireable for all templates, as a limited set of
-   templates are designed to be applied multiple times.  To faciliate
-   this the template can have the flag multiInstance (Section 9.2) set.
-   This tells the DNS Provider that the template is expected to be
-   written multiple times and that a re-apply MUST NOT remove previous
-   instances.
-
-   This setting only impacts DNS Providers that maintain applied
-   template state.  DNS Providers that do not maintain applied template
-   state can only rely on the normal conflict resolution rules, and this
-   flag has no impact.
-
-10.5.  Non-essential records
-
-   Typically a template specifies a list of DNS records which are
-   required for the service.  There may be cases where some records are
-   only required for a very short period of time, and removing or
-   altering the record later (either by the end user or through
-   application of another template) should not trigger conflict
-   detection.
-
-   This can be controlled by the essential (Section 9.3) property of a
-   record in the template.
-
-   Again, this setting only impacts DNS Providers that maintain applied
-   template state.
-
-10.6.  Template Scope
-
-   For DNS Providers that maintain template state, an individual
-   template is scoped to the set of records applied to a fully qualified
-   domain.  This includes the Zone Apex and the host (aka Sub Domain) at
-   apply time.
-
-   As an example, if a template is applied on
-   domain=example.com&host=sub1 a later application of the template on
-   domain=example.com&host=sub2 must be treated as a distinct template.
-   If a conflict is detected later with the records set into
-   "sub2.example.com", only the records set with this template would be
-   removed.
-
-10.7.  Host/Name in Template
-
-   Template records contain the host name of the record to set into the
-   zone (called name for SRV records).  This value MUST be considered
-   relative to the domain/host when the template is applied, unless
-   followed by a trailing ".".
-
-   Consider a template record of type A with a host value of "xyz".
-   When the template is applied to a domain=example.com and an empty
-   host value, the resulting zone after the template is applied will
-   contain an A record of "xyz" (or "xyz.example.com." as absolute
-   domain name in DNS master file notation).
-
-   If the same template is applied to a domain=example.com and host=bar,
-   the zone will contain an A record of "xyz.bar" (or
-   "xyz.bar.example.com." as absolute domain name).
-
-   A value of @ for host in the template is a placeholder for an empty
-   value.  In other words @ would point to "bar.example.com." when the
-   same template is applied to domain=example.com and host=bar.
-
-10.8.  PointsTo in Template
-
-   Template records of certain types contain the pointsTo value to set
-   in the zone.  For record types such as CNAME where this can be a
-   fully qualified domain name.
-
-   A value of @ in pointsTo field in the template is a shortcut for the
-   fully qualified domain name of the domain/host being applied.
-
-   Consider a template record of type CNAME with a pointsTo value of
-   "@".  After a template of domain=example.com and an empty host is
-   applied, the pointsTo value (or corresponding field) in the resulting
-   zone would be "example.com".  After a template of domain=example.com
-   with host=bar is applied, the points to value would be
-   "bar.example.com".
-
-   Any domain in a pointsTo field in a template MUST be considered fully
-   qualified and not relative.
-
-10.9.  Variables
-
-10.9.1.  Variable Syntax
+9.3.1.  Variable Syntax
 
    Variable expressions are the parameterized parts of a Domain Connect
    Template.  Each expression contains one variable specifier (which can
@@ -2854,24 +2614,24 @@ Table of Contents
         template-apex-var      = "@"
         variable-name          =  1*(ALPHA / DIGIT / "-" / "_" )
 
-10.9.2.  Special and Built-In Variables
+9.3.2.  Special and Built-In Variables
 
    There are three Built-In variables:
 
-   *  %host%: This is the host passed from the query string
+   *  "%host%"`: This is the host passed from the query string
 
-   *  %domain%: This is the domain passed from the query string
+   *  "%domain%"`: This is the domain passed from the query string
 
-   *  %fqdn%: This is the fully qualified domain name or template
+   *  "%fqdn%": This is the fully qualified domain name or template
       application e.g. [host.]domain
 
-   For example, with the query string "domain=example.com&host=", %fqdn%
-   in a template would be "example.com", and with
-   "domain=example.com&host=sub1", %fqdn% in a template would be
+   For example, with the query string "domain=example.com&host=",
+   "%fqdn%" in a template would be "example.com", and with
+   "domain=example.com&host=sub1", "%fqdn%" in a template would be
    "sub1.example.com".
 
-   The @ variable has special meaning, and can be used in the host/name
-   field or in the pointsTo/data field in isolation.
+   The "@" variable has special meaning, and can be used in the host/
+   name field or in the pointsTo/data field in isolation.
 
    For the host/name field it is a shortcut for the value "%fqdn%.".
    The trailing dot here is equal to the DNS master file notation
@@ -2882,9 +2642,9 @@ Table of Contents
    For the pointsTo/data field it is a shortcut for for the "%fqdn%".
    The pointsTo and data files are always absolute for these fields.
 
-10.9.3.  Variable substitution
+9.3.3.  Variable substitution
 
-10.9.3.1.  Input Values
+9.3.3.1.  Input Values
 
    Input values for variable substitution MUST be treated as strings.
    While the underlying data source (e.g., query string, JSON string)
@@ -2898,7 +2658,7 @@ Table of Contents
    resulting substituted value MUST reflect the exact original input
    value string.
 
-10.9.3.2.  Processing
+9.3.3.2.  Processing
 
    When a template is applied, the variables in the template are
    replaced with the values passed as input.
@@ -2917,7 +2677,7 @@ Table of Contents
    MUST NOT fail in this case, and the variable expressions MUST be left
    as is.
 
-10.9.4.  Variables and Host/Name in Template
+9.3.4.  Variables and Host/Name in Template
 
    While templates do allow for variables in a host or name field
    values, these SHOULD be used very sparingly.
@@ -2945,153 +2705,47 @@ Table of Contents
    Since this template would be applied to the domain only, DNS
    Providers that maintain template state would remove previous
    instances of the template before re-application.  This means applying
-   this template with var=sub would result in the A record for
-   sub.example.com to be set to the value 192.0.2.2.  Later, applying
-   the template on "example.com" with the var=sub2 should remove the old
-   template before setting the new one. sub.example.com would be
-   removed, and sub2.example.com would be set to the value 192.0.2.2.
+   this template with "var=sub" would result in the A record for
+   sub.example.com to be set to the value "192.0.2.2".  Later, applying
+   the template on "example.com" with the "var=sub2" should remove the
+   old template before setting the new one. "sub.example.com" would be
+   removed, and "sub2.example.com" would be set to the value
+   "192.0.2.2".
 
    Furthermore, determining conflicts would be impossible when the user
    is granting consent for asynchronous operations (OAuth).  This is
    because the host would be indeterminate.
 
    To solve this problem, templates MUST be considered as scoped to a
-   domain and a host value.  For synchronous operations, the host value
-   is specified in the url.  For asynchronous operations, permissions
-   are granted for specific host values, whose value is later specified
-   when applying the template.
+   "domain" and a "host" value.  For synchronous operations, the "host"
+   value is specified in the url.  For asynchronous operations,
+   permissions are granted for specific "host" values, whose value is
+   later specified when applying the template.
 
    Some templates might want to utilize CNAME or TXT records with host
    values containing some form of user identification for validation of
    domain ownership, and these are often passed in variables.  In those
-   cases usage of variables in host field value can be applied without
+   cases usage of variables in "host" field value can be applied without
    risk of issues mentioned above.  In all other cases it is RECOMMENDED
-   not to define variables in the host field.
+   not to define variables in the "host" field.
 
-10.9.5.  Variables and Security
+9.3.5.  SPF Record Merging
 
-   As discussed, with variables consideration is necessary to prevent
-   certain styles of phishing attacks.
-
-   The more static the value in the template record, the more secure the
-   template.  When static values are not possible, a carefully crafted
-   link could hijack DNS settings.
-
-   Mitigations to this are discussed above.
-
-10.9.6.  Variable Examples
-
-   Example template:
-
-   [{
-       "type": "CNAME",
-       "host": "www",
-       "pointsTo": "@",
-       "ttl": 1800
-   },
-   {
-       "type": "A",
-       "host": "@",
-       "pointsTo": "192.0.2.1",
-       "ttl": 1800
-   }]
-
-   Template applied with domain=example.com and host parameter missing
-   or empty:
-
-   www 1800 IN CNAME example.com.
-   @   1800 IN A 192.0.2.1
-
-   _alternatively_
-
-   www.example.com.    1800 IN CNAME example.com.
-   example.com.        1800 IN A 192.0.2.1
-
-   Template applied with domain=example.com and host=bar:
-
-   www.bar 1800 IN CNAME bar.example.com.
-   bar     1800 IN A 192.0.2.1
-
-   alternatively
-
-   www.bar.example.com.    1800 IN CNAME bar.example.com.
-   bar.example.com.        1800 IN A 192.0.2.1
-
-10.10.  SPF TXT Record
-
-10.10.1.  What is SPF?
-
-   SPF stands for Sender Policy Framework specified in [RFC7208].  It is
-   a record that specifies a list of authorized host names and/or IP
-   addresses from which mail can originate from for a given domain name.
-
-   It manifests itself as a TXT record.  The format of which starts with
-   v=spf1 followed by a list of "rules" of what to include/exclude.  If
-   a rule passes, the mail is allowed.  If it fails, it moves to the
-   next rule.  Typical record might appear as:
-
-   v=spf1 include:policy.exampleprovider.example -all
-
-   This is an SPF record with two rules.  The first rule indicates that
-   the rules for SPF record _policy.exampleprovider.example be included
-   in this record.  The second rule is a catch all (all).  The default
-   modifier for a rule is pass (+).  Other modifiers are hard failure
-   (-), soft failure (~) and neutral (?).
-
-   Note: A failure in SPF doesn't mean delivery won't happen, however
-   depending on the policies of the receiving system, messages
-   classified with hard failure or soft failure may not be delivered or
-   marked as spam.
-
-   The use of "all" at the end is pretty common, although some providers
-   mark it as ~ (soft fail) or ? (neutral).  The reality is that a good
-   SPF record is tuned based on what services are attached to a domain.
-   Not just one individual service.
-
-10.10.2.  Multiple Services
-
-   If only one email sending service were active, the SPF record
-   recommended by the provider is sufficient.  But mail from a domain
-   can often come from several different services.
-
-   A very typical use case might be end user mail and an email
-   newsletter service.  Let's look at the SPF records recommended for
-   individual services.
-
-   Mailer1: v=spf1 include:spf.mailer1.example -all Newsletter1: v=spf1
-   include:_spf.newsletter.example ~all
-
-   All of these examples use the include syntax.  This is fairly common.
-   The use of all at the end is common, although is often inconsistent
-   with the modifier.
-
-   If a user installed Mailer1 and Newsletter1, their combined SPF
-   record ought to be something like:
-
-   v=spf1 include:spf.mailer1.example include:_spf.newsletter.example
-    ~all
-
-   We combined the two rules, and in this case picked the least
-   restrictive all modifier.
-
-10.10.3.  SPF Record Merging
-
-   The challenge with SPF records and Domain Connect is that an
-   individual service might recommend an SPF record.  If only one
-   service were active, this would be accurate.  But with several
+   The challenge with SPF RFC 7208 [RFC7208] records and Domain Connect
+   is that an individual service might recommend an SPF record.  If only
+   one service were active, this would be accurate.  But with several
    services together only the DNS Provider is able to determine the
    valid shape of a SPF TXT record.
 
    One solution to this problem is to merge all related records.  At the
    highest level, this means taking everything between the "v=spf1" and
    the "all" from each of the records and merging them together,
-   terminating with hard-coded modifier on all at the end.  For an SPF
+   terminating with hard-coded modifier on "all" at the end.  For an SPF
    record to fulfill it's purpose of protection against malicious email
-   delivery, Domain Connect advises a fixed modifier "~" advising lower
-   rating of the messages from other sources not specified in SPF.  This
-   setup offers a reasonable level of protection of mail delivery, on
-   the other side does not reject the message in case forwarding
-   facility is in place.
+   delivery, it is RECOMMENDED to use a fixed modifier "~" advising
+   lower rating of the messages from other sources not specified in SPF,
+   however DNS Provider MAY set this modifier at their own discretion
+   and according to the current best practice.
 
    @ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
    ple ~all
@@ -3111,37 +2765,34 @@ Table of Contents
    The implementation would be left to the DNS Provider, but to
    facilitate this SPF records SHOULD NOT be included in templates.
    Instead, a new pseudo-record type is introduced in the template
-   called SPFM.  This has the following attribute:
+   called "SPFM".  This has the following attribute:
 
-   spfRules:  Determines the desired rules, basically everything but
-      leading "v=spf1" and trailing all rule - see: SPF Rules
-      (Section 9.3)
+   "spfRules":  Determines the desired rules, basically everything but
+      leading "v=spf1" and trailing "all" rule - see: SPF Rules
+      (Section 9.2)
 
-   When a template is added or removed with an SPFM record in the
+   When a template is added or removed with an "SPFM" record in the
    template, some code would need to take the aggregate value of all
-   SPFM records in all templates applied as well as existing SPF TXT
+   "SPFM" records in all templates applied as well as existing SPF TXT
    record on the host and recalculate the resulting SPF TXT record.  In
    case several sources specify the same rule with a different policy
    DNS Provider SHOULD apply the least restrictive one as a result. soft
-   failure SHOULD be preferred over hard failure, neutral SHOULD be
+   failure SHOULD be preferred over hard failure, "neutral" SHOULD be
    preferred over soft failure.
 
    DNS Provider SHOULD also allow the end user to modify the SPF record
    after merging.
 
    Due to merging step in between, the resulting SPF TXT records are
-   considered non-essential (see: Section 10.5).  That means the user
-   may decide to override the final calculated value or remove the whole
-   SPF record.  This action MUST NOT lead to removal of any related
-   templates in conflict detection and template integrity routines if
-   implemented by the DNS Provider.
+   considered non-essential.  That means the user may decide to override
+   the final calculated value or remove the whole SPF record.  This
+   action MUST NOT lead to removal of any related templates in conflict
+   detection and template integrity routines if implemented by the DNS
+   Provider.
 
    If the existing TXT record makes the merging operation not possible,
    the DNS Provider MUST handle this situation the same way as a
-   conflict and either let the end-user resolve it in the UX (both in
-   Synchronous and Asynchronous flow) or return the conflict as an error
-   in the Asynchronous flow unless the force=true parameter is used,
-   effectively removing the existing record.
+   conflict and either let the end-user resolve it in the UX.
 
    Service Providers MUST NOT check content of TXT SPF record for an
    exact match, as it might be strongly influenced by the DNS Provider
@@ -3149,199 +2800,265 @@ Table of Contents
 
    See Appendix A.6.
 
-10.10.4.  Alternatives
+9.3.6.  Variables and Security
 
-   Some DNS Providers MAY decide not to support the SPFM record.  The
-   following alternative solution would allow general interoperability
-   of the templates for those providers: onboard the templates with SPFM
-   record in variable-compatible form using a regular TXT record with
-   content "v=spf1 %spfRules% ~all", using property essential=OnApply
-   set to avoid removal of the whole template by a conflict.
+   As discussed, with variables consideration is necessary to prevent
+   certain styles of phishing attacks.
 
-10.11.  Public Template Repository
+   The more static the value in the template record, the more secure the
+   template.  When static values are not possible, a carefully crafted
+   link could hijack DNS settings.
 
-10.11.1.  General information
+   Mitigations to this are discussed above.
 
-   The Public Template Repository is an open accessible location where
-   Service Providers MAY publish their Service Templates in the format
-   specified in this specification.  DNS Providers MAY support all of
-   the published templates, just a subset or none of them according to
-   own onboarding policies (see also: Section 11.1).
+9.3.7.  Variable Examples
 
-   The template format is intended largely for documentation and
-   communication between the DNS Providers and Service Providers, and
-   there are no codified endpoints for creation or modification of these
-   objects.  Instead, Domain Connect references a template by ID.
+   Example template:
 
-   As such, DNS Providers may or may not use templates in this format in
-   their internal implementations.  By defining a standard template
-   format, it is believed it will make it easier for Service Providers
-   to share their configuration across DNS Providers.
+   [{
+       "type": "CNAME",
+       "host": "www",
+       "pointsTo": "@",
+       "ttl": 1800
+   },
+   {
+       "type": "A",
+       "host": "@",
+       "pointsTo": "192.0.2.1",
+       "ttl": 1800
+   }]
 
-10.11.2.  Repository Location
+   Template applied with "domain=example.com" and "host" parameter
+   missing or empty:
 
-   The repository of the templates is maintained under
-   https://github.com/Domain-Connect/templates.
+   www 1800 IN CNAME example.com.
+   @   1800 IN A 192.0.2.1
 
-10.11.3.  File naming requirements
+   _alternatively_
 
-   The file names in this repository MUST be all lower case, including
-   the providerId and serviceId.  As a result, while the providerId and
-   serviceId can be mixed case, all `providerIds and serviceIds in this
-   repository MUST be unique when lower case.
+   www.example.com.    1800 IN CNAME example.com.
+   example.com.        1800 IN A 192.0.2.1
 
-   Templates MUST be named according the following pattern:
-   {providerId}.{serviceId}.json
+   Template applied with "domain=example.com" and "host=bar":
 
-   providerId: example.com
-   serviceId: WebsiteBuilder
+   www.bar 1800 IN CNAME bar.example.com.
+   bar     1800 IN A 192.0.2.1
 
-   Template file name: example.com.websitebuilder.json
+   alternatively
 
-10.11.4.  Template Integrity
+   www.bar.example.com.    1800 IN CNAME bar.example.com.
+   bar.example.com.        1800 IN A 192.0.2.1
 
-   Implementers are responsible for data integrity and MUST use the
-   record type field to validate that variable input meets the criteria
-   for each different data type.
+10.  Template Application
 
-   Hard-coded host names are the responsibility of the DNS Provider to
-   protect.  That is, DNS Providers MUST ensure that host names do not
-   interfere with known values (such as m. or www. or mail.) or internal
-   names that provide critical functionality that is outside the scope
-   of this specification.
+10.1.  Template State in DNS Providers system
 
-11.  General considerations
+   DNS Providers MAY choose to maintain state inside records in DNS
+   indicating the templates writing the records.
 
-11.1.  Onboarding
+   A DNS Provider that maintains this state may be able to provide an
+   improved experience for users, telling them the services enabled.
+   They also may be able to have more advanced handling of conflicts.
 
-   This specification is an open standard that describes the protocol,
-   messages and formats used to enable Domain Connect between a Service
-   Provider and a DNS Provider.
+   A template instance is identified by the pair "domain" and "host"
+   where the template has been applied.  Therefore, the same template
+   MUST be able to be applied more than once to the same DNS zone
+   identified by "domain", as long as the value of "host" parameter
+   differs.  Application of the same template with same "host" MAY be
+   handled as an update by DNS provider, or just trigger a regular
+   conflict detection and resolution routine by DNS Provider - removal
+   of the previous instance and apply of the new instance.
 
-   Any Service Provider is free to define and publish a template.
-   However, the terms and conditions for a DNS Provider onboarding a
-   Service Provider template is beyond the scope of this document.  A
-   DNS Provider can be selective in what templates they support, can
-   require a contractual relationship, or even charge a fee for
-   onboarding.
+10.2.  Steps to Apply a Template
 
-   One way a Service Provider can be selective in which DNS Providers
-   they accept is to implement a whitelist of providerIds.  A Service
-   Provider who chooses to whitelist MUST use providerId to distinguish
-   between unique DNS Providers.  The DNS Provider's providerId would
-   typically be a domain name.
+   The following steps give an overview of the template application
+   process.  Each step is described in detail in the sections below.
 
-11.2.  Case Sensitivity
+   1.  *Verify zone ownership* - The DNS Provider MUST verify that the
+       target zone identified by "domain" is present in the user's
+       account and that the user is authorized to make changes to it.
 
-   All values are case sensitive.  This includes variable names, values,
-   parameters and objects returned.
+   2.  *Resolve variables* - All variable expressions in the template
+       records are substituted with the values provided by the caller,
+       producing a concrete set of DNS resource records (RRs) to be
+       applied.
 
-   One exception is the domain/host name.  This is because a fully
-   qualified domain name is case insensitive.
+       a.  abort if rendered RRs are not possible to be applied to the
+           target zone
 
-   The values for providerId/serviceId in the template and passed
-   through URIs in the path or query string are case sensitive.
-   Different rules apply to the file naming in the Public Template
-   Repository (Section 10.11.3).
+   3.  *Perform conflict detection* - The DNS Provider checks the
+       resolved RR set against the existing zone content according to
+       the conflict detection rules (see Section 10.3).
 
-12.  Extensions/Exclusions
+       a.  Identify individual zone records that conflict with the
+           resolved RR set.
 
-12.1.  General information
+       b.  (only DNS Providers tracking template state): Check each
+           resolved RR against essential records of previously applied
+           templates.  Identify which previously applied templates own
+           conflicting records and would be removed in their entirety
+           (see Section 10.3.1.2).
 
-   Additional record types and/or extensions to records in the template
-   can be implemented on a per DNS Provider basis.  However, care should
-   be taken when defining extensions so as to not conflict with other
-   protocols and standards.  Certain record names are reserved for use
-   in DNS for protocols like DNSSEC (DNSKEY, RRSIG) [RFC9364] at the
-   registry level.
+       c.  (only DNS Providers tracking template state): Mark instances
+           of the same template applied on the same "host" for removal
+           unless "multiInstance" is set for the template (see
+           Section 10.3.1.1).
 
-   Defining these OPTIONAL extensions in an open manner as part of this
-   specification is done to provide consistency.  The following are the
-   initial OPTIONAL extensions a DNS Provider/Service Provider may
-   support.
+   4.  *Pre-calculate conflict resolution* - Determine the full set of
+       records and, where applicable, template instances that would be
+       removed upon application.
 
-12.2.  APEXCNAME
+   5.  *Obtain user authorization* - The DNS Provider MUST present the
+       intended changes and the pre-calculated conflict consequences to
+       the user and obtain explicit authorization before proceeding (see
+       Section 10.5).
 
-   Some Service Providers desire the behavior of a CNAME record, but in
-   the apex record.  This would allow for an A Record at the root of the
-   domain but dynamically determined at runtime.
+       a.  abort if authorization not granted
 
-   The recommended record type for DNS Providers that wish to support
-   this is an APEXCNAME record.  Additional fields included with this
-   record would include pointsTo and TTL.
+   6.  *Apply changes* - After authorization is granted:
 
-   Defining a standard for such functionality in DNS is beyond the scope
-   of this specification.  But for DNS Providers that support this
-   functionality, using the same record type name across DNS Providers
-   allows template reuse.
+       a.  Remove all records pre-calculated for removal from the zone.
 
-12.3.  Redirection
+       b.  Write the resolved RR set to the zone in totality.
 
-   Some Service Providers desire a redirection service associated with
-   the A Record.  A typical example is a service that requires a
-   redirect of the domain (e.g. example.com) to the www variant
-   (www.example.com).  The www would often contain a CNAME.
+       c.  (olny DNS Providers tracking template state): Record the new
+           template instance for the "domain" and "host" pair and remove
+           the state of any template instances that were resolved for
+           removal.
 
-   Since implementation of a redirection service is typically simple, it
-   is recommended that Service Providers implement redirection on their
-   own.  But for DNS Providers that have a redirection service,
-   supporting simple templates with this functionality may be desired.
+10.3.  Conflict Detection
 
-   While technically not a "record" in DNS, when supporting this
-   OPTIONAL functionality it is recommended that this SHOULD be
-   implemented using two new record types.
+   Conflict detection is performed by the DNS Provider prior to template
+   application.  The rules below ensure predictable conflict resolution
+   between DNS Providers.  Each rule applies to records on the same
+   host, unless otherwise specified.
 
-   REDIR301 and REDIR302 would implement 301 and 302 redirects
-   respectively.  Associated with this record would be a single field
-   called the "target", containing the target url of the redirect.
+   *  A CNAME record conflicts with any other record on the same host,
+      and any existing records conflict with a CNAME.
 
-   Please note, that setting up an HTTP redirect typically involves
-   setting up a webserver and configuring A and AAAA records pointing to
-   this webserver accordingly.  The template may or may not explicitly
-   define those records, as the orchestration and the values would we
-   controlled by the DNS provider, not the Service Provider.  The DNS
-   Provider SHOULD however consider those records during the conflict
-   resolution in order to give transparency of the changes to the user.
+   *  An NS record conflicts with all other records on the same host,
+      and with any record whose host is subordinate to the NS host.  For
+      example, an NS record for "foo" conflicts with any record at
+      "foo", "www.foo", "bar.foo", etc.  Conversely, any other record
+      type conflicts with NS records in the same manner.
 
-12.4.  Nameservers
+   *  MX and SRV records conflict with any other record of the same type
+      on the same host.
 
-   Several Service Providers have asked for functionality supporting an
-   update to the nameserver records at the registry associated with the
-   domain.
+   *  A and AAAA records conflict with any other A or AAAA record on the
+      same host, to avoid IPv4 and IPv6 addresses pointing to different
+      services.
 
-   When implementing this functionality a template defined at DNS
-   Provider would need to define a set of NS records, typically a
-   minimum of 2 and a maximum depending on the number supported by the
-   registrar system of the DNS Provider, likely with groupIds to allow
-   for optionality of those additional nameservers.  Each NS entry would
-   then contain a data field with desired host names or variables to
-   allow for dynamic setup.
+   *  TXT record conflict detection is governed by the
+      "txtConflictMatchingMode" property of the template record:
 
-   It will be noted that a nameserver update would require that the
-   entity implementing DNS Provider side of the protocol is the
-   Registrar.  This is not always the case.
+      -  "None" - the record does not conflict with any other TXT
+         record.  This is the default.
 
-   Additional care would have to be taken by the DNS Provider informing
-   the user about the change happening and the impact of the change.
+      -  "All" - the record conflicts with any other TXT record on the
+         same host.
 
-   This functionality is again deemed as OPTIONAL and up to the DNS
-   Provider to determine if they will support this.
+      -  "Prefix" - the record conflicts with any other TXT record on
+         the same host whose value starts with
+         "txtConflictMatchingPrefix".
 
-12.5.  DS (DNSSEC)
+   Note: DNS Provider MUST also check applicability of all generated
+   records to the target DNS zone in its own system.  For example it is
+   very common for DNS provider not to allow CNAME records to be at the
+   zone apex.
 
-   Requests have been made to allow for updates to the DS record for
-   DNSSEC.  This record is required at the registry to enable DNSSEC,
-   but can only be written by the registrar.
+10.3.1.  Conflict Detection Special Handling
 
-   For DNS Providers that support this record, the record type would be
-   DS.  Values will be keyTag, algorithm, digestType, and digest.
+10.3.1.1.  Multi-Instance
 
-   Again it should be noted that a DS update would require that the
-   entity implementing DNS Provider side of the protocol is the
-   registrar, and is again deemed as OPTIONAL and up to the DNS Provider
-   to determine if they will support.
+   This processing only REQUIRED for DNS Providers that maintain applied
+   template state.
 
-13.  IANA Considerations
+   By default a template is expected to be applied only once to a target
+   "domain" and "host", therefore any consecutive attempt to apply the
+   same template would be treated as an update.  For some templates
+   however it is desirable to be able to create multiple instances (for
+   example add second TXT record on the same host as opposed to
+   replacing the current value).
+
+   A template flag multiInstance (Section 9.1) can be set in order to
+   allow for that.  This tells the DNS Provider that the template is
+   expected to be written multiple times and that a re-apply MUST NOT
+   remove previous instances with the same "host".  Regular conflict
+   detection rules MUST still be processed between instances, therefore
+   such a template MUST be designed so that it does not conflict with
+   itself.
+
+10.3.1.2.  Essential Records
+
+   This processing only REQUIRED for DNS Providers that maintain applied
+   template state.
+
+   A template record is considered essential when it MUST be present and
+   remain consistent with the applied template for the entire lifetime
+   of the service.  The *essential* property of a template record
+   controls this behavior and MUST be set to "Always" (the default) for
+   such records.
+
+   A DNS Provider that maintains applied template state MUST treat an
+   attempt of removal or modification of such an essential record as a
+   conflict indicator, and MUST require the full template to be removed
+   or abort.
+
+   Records with "essential=OnApply" MUST be applied when the template is
+   first applied, but MAY be subsequently removed or altered - by the
+   user or through the application of another template - without
+   triggering conflict detection or removal of the owning template.
+
+10.4.  Conflict Resolution
+
+   A DNS Provider not maintainig applied template state, applying a
+   template whose records conflict with any existing record in the zone
+   MUST remove all those conflicting records.
+
+   When a DNS Provider maintains applied template state, applying a
+   template whose records conflict with records written by a previously
+   applied template MUST cause the conflicting prior template to be
+   removed in its entirety, unless a conflicting record is explicitly
+   marked as non essential and eligible for removal.  As an example: if
+   template T1 wrote records A and B, and template T2 is applied with
+   records B and C, record B conflicts, and T1 is removed together with
+   all its records before T2 is applied.
+
+   Manual changes made by the user at the DNS Provider MAY also trigger
+   conflict detection against applied templates.
+
+10.5.  User Authorization of Changes
+
+   It is ultimately left to the DNS Provider to determine the amount of
+   disclosure and/or conflict detection.
+
+   The DNS Provider MUST inform the user of the service that is about to
+   be enabled when requesting authorization.  If the user wishes to
+   review the specifics, the DNS Provider SHOULD make the individual DNS
+   records being set available, in order to allow informed decision
+   before changes are applied.
+
+   If conflicts are detected - at either the template or record level -
+   the DNS Provider SHOULD present these to the user before
+   authorization is granted.  For templates this means identifying
+   services that would be disabled; for records this means identifying
+   records that would be deleted or overwritten.
+
+   The DNS Provider MUST allow the user to override a detected conflict
+   and proceed with the template application, or to abort the process.
+
+10.6.  Template Application
+
+   After authorization is granted, the DNS Provider applies the template
+   to the DNS zone.
+
+   The DNS Provider MUST remove all conflicting templates and records
+   from the target zone.
+
+   The DNS Provider MUST apply all records of the template in totality.
+
+11.  IANA Considerations
 
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:
@@ -3395,6 +3112,19 @@ Change History
    This section is to be removed before publishing as an RFC.
 
 Change from draft-ietf-dconn-domainconnect-00 to -01
+
+   *  Added Essential Records subsection under Template Considerations,
+      reformulated from non-essential records concept to a definition-
+      style description of essential records.
+
+   *  Replaced Disclosure of Changes and Conflicts and Record Types and
+      Conflicts sections with three focused sections: Conflict
+      Detection, User Authorization of Changes, and Template
+      Application.
+
+   *  Added Steps to Apply a Template overview section with ordered
+      steps and branching for DNS Providers tracking template state vs.
+      those that do not.
 
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00

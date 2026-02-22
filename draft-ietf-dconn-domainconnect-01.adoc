@@ -115,6 +115,13 @@ The following definitions and rules are imported normatively from other document
 `"response_type"`:: "response_type" as defined in Section 3.1.1 of <<RFC6749>>.
 `"redirect_uri"`:: "redirect_uri" as defined in Appendix A, Section A.6 of <<RFC6749>>.
 `"unicode-assignable"`:: "Unicode Assignables" as defined in Section 4.3 of <<RFC9839>>.
+`"JSON number"`:: "number" as defined in Section 6 of <<RFC8259>>.
+`"srv-rdata"`:: SRV RDATA fields as defined in Section 3.1 of <<RFC2782>>.
+`"service-name"`:: "Service Name" as defined in Section 5.1 of <<RFC6335>>.
+
+The following additional syntax rules are defined in this document and used normatively throughout.
+
+`"dc-name-char"`:: any Unicode Assignable code point allowed in `"domain-name"` except "%" and "@"
 
 The following additional ABNF rules are defined in this document and used normatively throughout.
 
@@ -171,6 +178,68 @@ dc-description-text =  0*2048unicode-assignable
 dc-force       =  "0" / "1"
                 ; used for force parameter                     
                 ; 0 = respect conflicts, 1 = override conflicts
+
+dc-version     =  %x31-39 *DIGIT
+                ; positive integer, no leading zeros,
+                ; no fraction, no exponent;
+                ; a strict subset of JSON number (RFC 8259
+                ; Section 6); used for template version
+
+; ---- Template record field rules ----
+
+dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
+                  / "SRV" / "SPFM" / "NS" )
+                ; named core and pseudo record types
+                /  "TYPE" 1*DIGIT
+                ; unknown type per RFC 3597
+                /  1*(ALPHA / DIGIT / "-")
+                ; any other IANA-registered RR type name
+
+dc-essential   =  "Always" / "OnApply"
+                ; default is "Always"
+
+dc-txt-conflict-mode =  "None" / "All" / "Prefix"
+                ; default is "None"
+
+dc-conflict-prefix =  1*(%x21-7E)
+                ; non-empty printable ASCII (U+0021..U+007E);
+                ; no variable expressions permitted
+
+; -- host / name / pointsTo / target fields --
+
+ 
+ dc-host-tmpl    =  template-apex-var
+                 ; "@" alone
+                 /  1*( named-variable / dc-name-char )
+                 ; mix of literal chars and %-variables
+ 
+ dc-pointsto-tmpl =  template-apex-var
+                 ; "@" alone
+                 /  1*( dc-name-char / named-variable )
+                 ; mix of literal chars and %-variables
+
+; -- integer fields with optional variable --
+
+dc-ttl-tmpl    =  1*DIGIT / named-variable
+                ; constant seconds, or a sole %-variable
+
+dc-ttl-value   =  1*DIGIT
+                ; non-negative integer seconds, resolved
+
+dc-uint16-tmpl  =  ( %x30-39 *4DIGIT ) / named-variable
+                ; 0-65535 literal, or a sole %-variable
+
+dc-uint16-value =  %x30-39 *4DIGIT
+                ; resolved non-negative integer, max 5 digits,
+                ; semantic range 0-65535
+
+; -- SRV-specific string fields --
+
+dc-srv-protocol =  "_tcp" / "_udp" / "_sctp" / "_dccp"
+                ; underscore-prefixed transport per RFC 2782
+
+dc-srv-service  =  dc-underscore-label
+                ; underscore-prefixed service name per RFC 6335
 ----
 
 Internationalized domain names (IDN) are handled in accordance with <<RFC5891>>.
@@ -1716,7 +1785,9 @@ The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 |(OPTIONAL)
 If present this represents a version of the template and SHOULD be changed with each update of the template content. This opaque value is mainly informational to improve communication and transparency between providers. +
 
-When present, the value MUST be a non-negative integer.
+The value MUST conform to the `dc-version` syntax (see <<terminology>>). +
+
+This is a strict subset of the `"JSON number"`: a positive integer with no leading zeros, no fractional part, and no exponent part.
 
 |*Logo*
 |String
@@ -1866,6 +1937,8 @@ For each type, additional fields would be REQUIRED. +
 * SPFM: host, spfRules +
 * other record types: host, data, TTL +
 
+The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
+
 
 |*Group Id*
 |String
@@ -1890,6 +1963,10 @@ Always (default) - record MUST be applied and kept with the template +
 OnApply - record MUST be applied but can be later removed without dropping the whole
 template +
 
+The value MUST conform to the `dc-essential` syntax (see <<terminology>>). +
+
+If omitted, the value MUST be assumed to be `"Always"`.
+
 |*Host*
 |String
 |host
@@ -1902,6 +1979,10 @@ A value of empty or `"@"` indicates the root of the applied host and domain. In 
 
 This value SHOULD NOT contain variables unless absolutely necessary. This is discussed below. +
 
+When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
 |*Name*
 |String
 |name
@@ -1911,6 +1992,10 @@ This value is relative to the applied host and domain. A value of empty or `"@"`
 
 This value SHOULD NOT contain variables unless absolutely necessary. This is discussed below. +
 
+When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
 |[[pointsto-record]]*Points To*
 |String
 |pointsTo
@@ -1919,12 +2004,20 @@ The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 
 A value of empty or @ indicates the host and domain name being applied or [host.]example.com +
 
+When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
 |*TTL*
 |Int or string repr. of Int
 |ttl
 |The time-to-live for the record in DNS. Valid
 for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
-In order to avoid operational unpredactibility of the template and the challenges outlined below this SHOULD NOT contain variables unless absolutely necessary. If it does, the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only value content. Prefixes, suffixes or multiple variables MUST NOT be used.
+This SHOULD NOT contain variables unless absolutely necessary. +
+
+When used in a template definition, the value MUST conform to the `dc-ttl-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-ttl-value` syntax.
 
 This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
 
@@ -1943,53 +2036,76 @@ For any unspecified record type this field contains the canonical presentation f
 |String
 |txtConflictMatchingMode
 |Describes how conflicts on the TXT record are detected. Possible values are
-None, All, or Prefix. The default value is None. <<record-types-conflicts, See below>>.
+None, All, or Prefix. <<record-types-conflicts, See below>>. +
+
+The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
+
+If omitted, the value MUST be assumed to be `"None"`.
 
 |*TXT Conflict Matching Prefix*
 |String
 |txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflict-MatchingMode is "Prefix".
-The value MUST be a non-empty string consisting of printable ASCII characters only.
-It MUST NOT contain variable expressions. <<record-types-conflicts, See below>>.
+|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<record-types-conflicts, See below>>. +
+
+The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
 
 |*Priority*
 |Int or string repr. of Int
 |priority
-|The priority for an MX or SRV record.
-This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+|The priority for an MX or SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
 Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Weight*
 |Int or string repr. of Int
 |weight
-|The weight for the SRV record.
-This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+|The weight for the SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
 Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Port*
 |Int or string repr. of Int
 |port
-|The port for the SRV record.
-This MAY contain variable but if it does the variable MUST be included as string in the template definition to build a valid JSON and the variable MUST be the only content of the value field. Prefixes, suffixes or multiple variables MUST NOT be used.
+|The port for the SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
+
+The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>. +
 
 Support of variables in this field is OPTIONAL for DNS Provider.
 
 |*Protocol*
 |String
 |protocol
-|The protocol for the SRV record.
+|The protocol for the SRV record. +
+
+The value MUST conform to the `dc-srv-protocol` syntax (see <<terminology>>).
 
 |*Service*
 |String
 |service
-|The symbolic name for the SRV record.
+|The symbolic service name for the SRV record. +
+
+The value MUST conform to the `dc-srv-service` syntax (see <<terminology>>).
 
 |*Target*
 |String
 |target
-|The target for the SRV record.
+|The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
+
+When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
 
 |[[spf-rules]]*SPF Rules*
 |String
@@ -2363,7 +2479,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Clarified `groupId` (in endpoint parameters and template records) must conform to `dc-id` and MUST NOT contain variable expressions.
 - Added normative reference to `spfRules` field: must contain only SPF mechanism/modifier terms per RFC 7208 Section 5, excluding version prefix and `all` qualifier.
 - Added normative constraint on `txtConflictMatchingPrefix`: printable ASCII only, no variable expressions.
-- Added normative constraint on `version`: MUST be a non-negative integer when present.
+- Added normative constraint on `version`: replaced prose "non-negative integer" constraint with the `dc-version` ABNF rule (positive integer, no leading zeros, no fractional or exponent part; strict subset of JSON `"number"` per RFC 8259 Section 6); added RFC 8259 as a normative reference.
 - Added normative references: RFC 4648 (Base64), RFC 5891 (IDNA 2008).
 - Added `dc-underscore-label` ABNF rule for RFC 8552 underscore-prefixed DNS labels; added `dc-key-label` rule (plain ACE or underscore label) replacing the former `dc-key-host` single-label rule for the `key` parameter; added `dc-pubkey-domain` rule allowing zero or more underscore-label prefixes on `syncPubKeyDomain`; updated normative constraints on `syncPubKeyDomain` and `key` parameter accordingly.
 - Added `dc-display-name` ABNF rule referencing `unicode-assignable` (RFC 9839 Section 4.3) for display-name fields; replaced informal UTF-8/printable-characters prose constraints on `providerName` (DNS Provider discovery and template) and `serviceName` (template) with a normative reference to `dc-display-name`; added RFC 9839 as a normative reference.
@@ -2380,6 +2496,9 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (`"access_token"` A.12, `"token_type"` A.13 with mandatory `"bearer"` value, `"expires_in"` A.14, `"refresh_token"` A.17).
 - Added normative constraints to the asynchronous OAuth apply endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `host` A-label normalisation rule reinstated for token comparison; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as correct actor; `instanceId` required to conform to `dc-id`; corrected `"serviceName"` guard attribute from `"sharedProviderName"` to `"sharedServiceName"`.
 - Added normative constraints to the asynchronous OAuth revert endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id` and updated to use "reverted" wording; `host` A-label normalisation rule added for token comparison; `instanceId` required to conform to `dc-id` with clarified removal semantics (single instance vs. all instances).
+- Added `dc-version` ABNF rule for the `version` field of the template definition (positive integer, no leading zeros, no fractional or exponent part), as a strict subset of the JSON `"number"` type per RFC 8259 Section 6; added normative import of the `"number"` rule from RFC 8259; added RFC 8259 as a normative reference.
+- Added normative ABNF rules for all Template Record fields: `dc-record-type` (type enum covering named, IANA-registered, and RFC 3597 unknown types), `dc-essential` (conflict-detection treatment enum with normative default `"Always"`), `dc-txt-conflict-mode` (TXT conflict mode enum with normative default `"None"`), `dc-conflict-prefix` (printable ASCII, U+0021–U+007E), `dc-name-char` (Unicode Assignable code point, RFC 9839 §4.3, excluding `"%"` and `"@"`), `dc-host-tmpl` (template form for host/name: `"@"` apex shorthand or mix of literal `dc-name-char` and `%var%` expressions), `dc-pointsto-tmpl` (template form for pointsTo/data/target: same structure), resolved forms reference `domain-name` (RFC 5890) directly; `dc-ttl-tmpl` / `dc-ttl-value` (template and resolved forms for TTL), `dc-uint16-tmpl` / `dc-uint16-value` (template and resolved forms for priority, weight, port), `dc-srv-protocol` (underscore-prefixed transport), `dc-srv-service` (underscore-prefixed service name per RFC 6335); added normative references RFC 2782 and RFC 6335; added normative imports of `"srv-rdata"` (RFC 2782) and `"service-name"` (RFC 6335); fixed missing `"number"` import (RFC 8259) in Terminology.
+- Replaced `dc-label-chars`, `dc-host-literal`, `dc-host-value`, and `dc-pointsto-value` ABNF rules with `dc-name-char` (Unicode Assignable code points excluding `"%"` and `"@"`) as the literal-character unit in `dc-host-tmpl` and `dc-pointsto-tmpl`; resolved values for host, name, pointsTo, and target now reference `domain-name` (RFC 5890) directly in the table prose.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00
@@ -2432,14 +2551,17 @@ The authors wish to thank the following persons for their feedback and suggestio
 == Normative References
 
 * [[[RFC1035,RFC 1035]]] Mockapetris, P., "Domain names - implementation and specification", IETF, STD 13, DOI 10.17487/RFC1035, BCP 13, RFC 1035, November 1987, <https://www.rfc-editor.org/info/rfc1035>.
+* [[[RFC2782,RFC 2782]]] Gulbrandsen, A., Vixie, P., and L. Esibov, "A DNS RR for specifying the location of services (DNS SRV)", IETF, DOI 10.17487/RFC2782, RFC 2782, February 2000, <https://www.rfc-editor.org/info/rfc2782>.
 * [[[RFC2119,RFC 2119]]] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14, RFC 2119, March 1997, <https://www.rfc-editor.org/info/rfc2119>.
 * [[[RFC8174,RFC 8174]]] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", IETF, DOI 10.17487/RFC8174, BCP 14, RFC 8174, May 2017, <https://www.rfc-editor.org/info/rfc8174>
 * [[[RFC7208,RFC 7208]]] Kitterman, S., "Sender Policy Framework (SPF) for Authorizing Use of Domains in Email, Version 1", IETF, DOI 10.17487/RFC7208, RFC 7208, April 2014, <https://www.rfc-editor.org/info/rfc7208>
 * [[[RFC6749,RFC 6749]]] Hardt, D., "The OAuth 2.0 Authorization Framework", IETF, DOI 10.17487/RFC6749, RFC 6749, October 2012, <https://www.rfc-editor.org/info/rfc6749>.
 * [[[RFC3597,RFC 3597]]] Gustafsson, A., "Handling of Unknown DNS Resource Record (RR) Types", IETF, DOI 10.17487/RFC3597, RFC 3597, September 2003, <https://www.rfc-editor.org/info/rfc3597>.
+* [[[RFC8259,RFC 8259]]] Bray, T., Ed., "The JavaScript Object Notation (JSON) Data Interchange Format", IETF, STD 90, DOI 10.17487/RFC8259, RFC 8259, December 2017, <https://www.rfc-editor.org/info/rfc8259>.
 * [[[RFC8552,RFC 8552]]] Crocker, D., "Scoped Interpretation of DNS Resource Records through "Underscored" Naming of Attribute Leaves", IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019, <https://www.rfc-editor.org/info/rfc8552>.
 * [[[RFC3986, RFC 3986]]] Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform Resource Identifier (URI): Generic Syntax", IETF, STD 66, DOI 10.17487/RFC3986, BCP 66, RFC 3986, January 2005, <https://www.rfc-editor.org/info/rfc3986>.
 * [[[RFC7518, RFC 7518]]] Jones, M., "JSON Web Algorithms (JWA)", IETF, RFC 7518, DOI 10.17487/RFC7518, May 2015, <http://www.rfc-editor.org/info/rfc7518>.
+* [[[RFC6335,RFC 6335]]] Cotton, M., Eggert, L., Touch, J., Westerlund, M., and S. Cheshire, "Internet Assigned Numbers Authority (IANA) Procedures for the Management of the Service Name and Transport Protocol Port Number Registry", IETF, STD 76, DOI 10.17487/RFC6335, RFC 6335, August 2011, <https://www.rfc-editor.org/info/rfc6335>.
 * [[[RFC6570,RFC 6570]]] Gregorio, J., Fielding, R., Hadley, M., Nottingham, M., and D. Orchard, "URI Template", IETF, DOI 10.17487/RFC6570, RFC 6570, March 2012, <https://www.rfc-editor.org/info/rfc6570>.
 * [[[RFC5234,RFC 5234]]] Crocker, D., Ed., and P. Overell, "Augmented BNF for Syntax Specifications: ABNF", IETF, STD 68, RFC 5234, DOI 10.17487/RFC5234, January 2008, <https://www.rfc-editor.org/info/rfc5234>.
 * [[[RFC4648,RFC 4648]]] Josefsson, S., "The Base16, Base32, and Base64 Data Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October 2006, <https://www.rfc-editor.org/info/rfc4648>.

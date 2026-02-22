@@ -257,6 +257,20 @@ Table of Contents
    "unicode-assignable":  "Unicode Assignables" as defined in
       Section 4.3 of [RFC9839].
 
+   "JSON number":  "number" as defined in Section 6 of [RFC8259].
+
+   "srv-rdata":  SRV RDATA fields as defined in Section 3.1 of
+      [RFC2782].
+
+   "service-name":  "Service Name" as defined in Section 5.1 of
+      [RFC6335].
+
+   The following additional syntax rules are defined in this document
+   and used normatively throughout.
+
+   "dc-name-char":  any Unicode Assignable code point allowed in
+      "domain-name" except "%" and "@"
+
    The following additional ABNF rules are defined in this document and
    used normatively throughout.
 
@@ -311,6 +325,68 @@ Table of Contents
    dc-force       =  "0" / "1"
                    ; used for force parameter
                    ; 0 = respect conflicts, 1 = override conflicts
+
+   dc-version     =  %x31-39 *DIGIT
+                   ; positive integer, no leading zeros,
+                   ; no fraction, no exponent;
+                   ; a strict subset of JSON number (RFC 8259
+                   ; Section 6); used for template version
+
+   ; ---- Template record field rules ----
+
+   dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
+                     / "SRV" / "SPFM" / "NS" )
+                   ; named core and pseudo record types
+                   /  "TYPE" 1*DIGIT
+                   ; unknown type per RFC 3597
+                   /  1*(ALPHA / DIGIT / "-")
+                   ; any other IANA-registered RR type name
+
+   dc-essential   =  "Always" / "OnApply"
+                   ; default is "Always"
+
+   dc-txt-conflict-mode =  "None" / "All" / "Prefix"
+                   ; default is "None"
+
+   dc-conflict-prefix =  1*(%x21-7E)
+                   ; non-empty printable ASCII (U+0021..U+007E);
+                   ; no variable expressions permitted
+
+   ; -- host / name / pointsTo / target fields --
+
+
+    dc-host-tmpl    =  template-apex-var
+                    ; "@" alone
+                    /  1*( named-variable / dc-name-char )
+                    ; mix of literal chars and %-variables
+
+    dc-pointsto-tmpl =  template-apex-var
+                    ; "@" alone
+                    /  1*( dc-name-char / named-variable )
+                    ; mix of literal chars and %-variables
+
+   ; -- integer fields with optional variable --
+
+   dc-ttl-tmpl    =  1*DIGIT / named-variable
+                   ; constant seconds, or a sole %-variable
+
+   dc-ttl-value   =  1*DIGIT
+                   ; non-negative integer seconds, resolved
+
+   dc-uint16-tmpl  =  ( %x30-39 *4DIGIT ) / named-variable
+                   ; 0-65535 literal, or a sole %-variable
+
+   dc-uint16-value =  %x30-39 *4DIGIT
+                   ; resolved non-negative integer, max 5 digits,
+                   ; semantic range 0-65535
+
+   ; -- SRV-specific string fields --
+
+   dc-srv-protocol =  "_tcp" / "_udp" / "_sctp" / "_dccp"
+                   ; underscore-prefixed transport per RFC 2782
+
+   dc-srv-service  =  dc-underscore-label
+                   ; underscore-prefixed service name per RFC 6335
 
    Internationalized domain names (IDN) are handled in accordance with
    [RFC5891].  Where a parameter description specifies "domain-name",
@@ -2457,9 +2533,15 @@ Table of Contents
    |             |        |                   |communication and       |
    |             |        |                   |transparency between    |
    |             |        |                   |providers.              |
-   |             |        |                   |When present, the value |
-   |             |        |                   |MUST be a non-negative  |
-   |             |        |                   |integer.                |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-version syntax|
+   |             |        |                   |(see Section 3).        |
+   |             |        |                   |This is a strict subset |
+   |             |        |                   |of the "JSON number": a |
+   |             |        |                   |positive integer with no|
+   |             |        |                   |leading zeros, no       |
+   |             |        |                   |fractional part, and no |
+   |             |        |                   |exponent part.          |
    +-------------+--------+-------------------+------------------------+
    |*Logo*       |String  |logoUrl            |(OPTIONAL) A graphical  |
    |             |        |                   |logo representing the   |
@@ -2729,6 +2811,10 @@ Table of Contents
    |           |      |                         |* SPFM: host, spfRules|
    |           |      |                         |* other record types: |
    |           |      |                         |host, data, TTL       |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-record-type |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*Group Id* |String|groupId                  |(OPTIONAL) This       |
    |           |      |                         |parameter identifies  |
@@ -2762,6 +2848,13 @@ Table of Contents
    |           |      |                         |later removed without |
    |           |      |                         |dropping the whole    |
    |           |      |                         |template              |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-essential   |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |If omitted, the value |
+   |           |      |                         |MUST be assumed to be |
+   |           |      |                         |"Always".             |
    +-----------+------+-------------------------+----------------------+
    |*Host*     |String|host                     |(REQUIRED) The host   |
    |           |      |                         |for A, AAAA, CNAME,   |
@@ -2783,6 +2876,18 @@ Table of Contents
    |           |      |                         |unless absolutely     |
    |           |      |                         |necessary.  This is   |
    |           |      |                         |discussed below.      |
+   |           |      |                         |When used in a        |
+   |           |      |                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-host-tmpl   |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the domain-|
+   |           |      |                         |name syntax (see      |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*Name*     |String|name                     |The name for the SRV  |
    |           |      |                         |record.               |
@@ -2798,6 +2903,18 @@ Table of Contents
    |           |      |                         |unless absolutely     |
    |           |      |                         |necessary.  This is   |
    |           |      |                         |discussed below.      |
+   |           |      |                         |When used in a        |
+   |           |      |                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-host-tmpl   |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the domain-|
+   |           |      |                         |name syntax (see      |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*Points To*|String|pointsTo                 |The pointsTo location |
    |           |      |                         |for A, AAAA, CNAME, NS|
@@ -2807,35 +2924,41 @@ Table of Contents
    |           |      |                         |domain name being     |
    |           |      |                         |applied or            |
    |           |      |                         |[host.]example.com    |
+   |           |      |                         |When used in a        |
+   |           |      |                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-pointsto-   |
+   |           |      |                         |tmpl syntax (see      |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the domain-|
+   |           |      |                         |name syntax (see      |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*TTL*      |Int or|ttl                      |The time-to-live for  |
    |           |string|                         |the record in DNS.    |
    |           |repr. |                         |Valid for A, AAAA,    |
    |           |of Int|                         |CNAME, NS, TXT, MX,   |
-   |           |      |                         |and SRV records.  In  |
-   |           |      |                         |order to avoid        |
-   |           |      |                         |operational           |
-   |           |      |                         |unpredactibility of   |
-   |           |      |                         |the template and the  |
-   |           |      |                         |challenges outlined   |
-   |           |      |                         |below this SHOULD NOT |
-   |           |      |                         |contain variables     |
-   |           |      |                         |unless absolutely     |
-   |           |      |                         |necessary.  If it     |
-   |           |      |                         |does, the variable    |
-   |           |      |                         |MUST be included as   |
-   |           |      |                         |string in the template|
-   |           |      |                         |definition to build a |
-   |           |      |                         |valid JSON and the    |
-   |           |      |                         |variable MUST be the  |
-   |           |      |                         |only value content.   |
-   |           |      |                         |Prefixes, suffixes or |
-   |           |      |                         |multiple variables    |
-   |           |      |                         |MUST NOT be used.     |
-   |           |      |                         |This value, no matter |
-   |           |      |                         |if variable or        |
-   |           |      |                         |constant, is          |
-   |           |      |                         |understood as "best   |
+   |           |      |                         |and SRV records.  This|
+   |           |      |                         |SHOULD NOT contain    |
+   |           |      |                         |variables unless      |
+   |           |      |                         |absolutely necessary. |
+   |           |      |                         |When used in a        |
+   |           |      |                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-ttl-tmpl    |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the dc-ttl-|
+   |           |      |                         |value syntax.  This   |
+   |           |      |                         |value, no matter if   |
+   |           |      |                         |variable or constant, |
+   |           |      |                         |is understood as "best|
    |           |      |                         |effort" by DNS        |
    |           |      |                         |Provider and MAY be   |
    |           |      |                         |limited or adjusted by|
@@ -2891,79 +3014,80 @@ Table of Contents
    |Matching   |      |                         |record are detected.  |
    |Mode*      |      |                         |Possible values are   |
    |           |      |                         |None, All, or Prefix. |
-   |           |      |                         |The default value is  |
-   |           |      |                         |None.  See below      |
+   |           |      |                         |See below             |
    |           |      |                         |(Section 9.3).        |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-txt-        |
+   |           |      |                         |conflict-mode syntax  |
+   |           |      |                         |(see Section 3).      |
+   |           |      |                         |If omitted, the value |
+   |           |      |                         |MUST be assumed to be |
+   |           |      |                         |"None".               |
    +-----------+------+-------------------------+----------------------+
    |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
    |Conflict   |      |                         |conflicts when        |
    |Matching   |      |                         |txtConflict-          |
    |Prefix*    |      |                         |MatchingMode is       |
-   |           |      |                         |"Prefix".  The value  |
-   |           |      |                         |MUST be a non-empty   |
-   |           |      |                         |string consisting of  |
-   |           |      |                         |printable ASCII       |
-   |           |      |                         |characters only.  It  |
-   |           |      |                         |MUST NOT contain      |
-   |           |      |                         |variable expressions. |
-   |           |      |                         |See below             |
+   |           |      |                         |"Prefix".  See below  |
    |           |      |                         |(Section 9.3).        |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-conflict-   |
+   |           |      |                         |prefix syntax (see    |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*Priority* |Int or|priority                 |The priority for an MX|
-   |           |string|                         |or SRV record.  This  |
-   |           |repr. |                         |MAY contain variable  |
-   |           |of Int|                         |but if it does the    |
-   |           |      |                         |variable MUST be      |
-   |           |      |                         |included as string in |
-   |           |      |                         |the template          |
-   |           |      |                         |definition to build a |
-   |           |      |                         |valid JSON and the    |
-   |           |      |                         |variable MUST be the  |
-   |           |      |                         |only content of the   |
-   |           |      |                         |value field.          |
-   |           |      |                         |Prefixes, suffixes or |
-   |           |      |                         |multiple variables    |
-   |           |      |                         |MUST NOT be used.     |
+   |           |string|                         |or SRV record.        |
+   |           |repr. |                         |When used in a        |
+   |           |of Int|                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-uint16-tmpl |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the dc-    |
+   |           |      |                         |uint16-value syntax.  |
    |           |      |                         |Support of variables  |
    |           |      |                         |in this field is      |
    |           |      |                         |OPTIONAL for DNS      |
    |           |      |                         |Provider.             |
    +-----------+------+-------------------------+----------------------+
    |*Weight*   |Int or|weight                   |The weight for the SRV|
-   |           |string|                         |record.  This MAY     |
-   |           |repr. |                         |contain variable but  |
-   |           |of Int|                         |if it does the        |
-   |           |      |                         |variable MUST be      |
-   |           |      |                         |included as string in |
-   |           |      |                         |the template          |
-   |           |      |                         |definition to build a |
-   |           |      |                         |valid JSON and the    |
-   |           |      |                         |variable MUST be the  |
-   |           |      |                         |only content of the   |
-   |           |      |                         |value field.          |
-   |           |      |                         |Prefixes, suffixes or |
-   |           |      |                         |multiple variables    |
-   |           |      |                         |MUST NOT be used.     |
+   |           |string|                         |record.               |
+   |           |repr. |                         |When used in a        |
+   |           |of Int|                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-uint16-tmpl |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the dc-    |
+   |           |      |                         |uint16-value syntax.  |
    |           |      |                         |Support of variables  |
    |           |      |                         |in this field is      |
    |           |      |                         |OPTIONAL for DNS      |
    |           |      |                         |Provider.             |
    +-----------+------+-------------------------+----------------------+
    |*Port*     |Int or|port                     |The port for the SRV  |
-   |           |string|                         |record.  This MAY     |
-   |           |repr. |                         |contain variable but  |
-   |           |of Int|                         |if it does the        |
-   |           |      |                         |variable MUST be      |
-   |           |      |                         |included as string in |
-   |           |      |                         |the template          |
-   |           |      |                         |definition to build a |
-   |           |      |                         |valid JSON and the    |
-   |           |      |                         |variable MUST be the  |
-   |           |      |                         |only content of the   |
-   |           |      |                         |value field.          |
-   |           |      |                         |Prefixes, suffixes or |
-   |           |      |                         |multiple variables    |
-   |           |      |                         |MUST NOT be used.     |
+   |           |string|                         |record.               |
+   |           |repr. |                         |When used in a        |
+   |           |of Int|                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-uint16-tmpl |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the dc-    |
+   |           |      |                         |uint16-value syntax.  |
+   |           |      |                         |The resolved value is |
+   |           |      |                         |further constrained to|
+   |           |      |                         |the range 0-65535 as  |
+   |           |      |                         |defined by [RFC6335]. |
    |           |      |                         |Support of variables  |
    |           |      |                         |in this field is      |
    |           |      |                         |OPTIONAL for DNS      |
@@ -2971,12 +3095,39 @@ Table of Contents
    +-----------+------+-------------------------+----------------------+
    |*Protocol* |String|protocol                 |The protocol for the  |
    |           |      |                         |SRV record.           |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-srv-protocol|
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
-   |*Service*  |String|service                  |The symbolic name for |
-   |           |      |                         |the SRV record.       |
-   +-----------+------+-------------------------+----------------------+
-   |*Target*   |String|target                   |The target for the SRV|
+   |*Service*  |String|service                  |The symbolic service  |
+   |           |      |                         |name for the SRV      |
    |           |      |                         |record.               |
+   |           |      |                         |The value MUST conform|
+   |           |      |                         |to the dc-srv-service |
+   |           |      |                         |syntax (see           |
+   |           |      |                         |Section 3).           |
+   +-----------+------+-------------------------+----------------------+
+   |*Target*   |String|target                   |The target hostname   |
+   |           |      |                         |for the SRV record as |
+   |           |      |                         |defined in Section 3.1|
+   |           |      |                         |of [RFC2782].         |
+   |           |      |                         |When used in a        |
+   |           |      |                         |template definition,  |
+   |           |      |                         |the value MUST conform|
+   |           |      |                         |to the dc-pointsto-   |
+   |           |      |                         |tmpl syntax (see      |
+   |           |      |                         |Section 3), or be the |
+   |           |      |                         |single label "." to   |
+   |           |      |                         |indicate that the     |
+   |           |      |                         |service is not        |
+   |           |      |                         |available.            |
+   |           |      |                         |After variable        |
+   |           |      |                         |substitution, the     |
+   |           |      |                         |resolved value MUST   |
+   |           |      |                         |conform to the domain-|
+   |           |      |                         |name syntax (see      |
+   |           |      |                         |Section 3), or be ".".|
    +-----------+------+-------------------------+----------------------+
    |*SPF Rules*|String|spfRules                 |These are desired     |
    |           |      |                         |rules for the SPF TXT |
@@ -3590,8 +3741,11 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
    *  Added normative constraint on txtConflictMatchingPrefix: printable
       ASCII only, no variable expressions.
 
-   *  Added normative constraint on version: MUST be a non-negative
-      integer when present.
+   *  Added normative constraint on version: replaced prose "non-
+      negative integer" constraint with the dc-version ABNF rule
+      (positive integer, no leading zeros, no fractional or exponent
+      part; strict subset of JSON "number" per RFC 8259 Section 6);
+      added RFC 8259 as a normative reference.
 
    *  Added normative references: RFC 4648 (Base64), RFC 5891 (IDNA
       2008).
@@ -3697,6 +3851,39 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       dc-id with clarified removal semantics (single instance vs. all
       instances).
 
+   *  Added dc-version ABNF rule for the version field of the template
+      definition (positive integer, no leading zeros, no fractional or
+      exponent part), as a strict subset of the JSON "number" type per
+      RFC 8259 Section 6; added normative import of the "number" rule
+      from RFC 8259; added RFC 8259 as a normative reference.
+
+   *  Added normative ABNF rules for all Template Record fields: dc-
+      record-type (type enum covering named, IANA-registered, and RFC
+      3597 unknown types), dc-essential (conflict-detection treatment
+      enum with normative default "Always"), dc-txt-conflict-mode (TXT
+      conflict mode enum with normative default "None"), dc-conflict-
+      prefix (printable ASCII, U+0021-U+007E), dc-name-char (Unicode
+      Assignable code point, RFC 9839 "§" (SECTION SIGN, U+00A7)4.3,
+      excluding "%" and "@"), dc-host-tmpl (template form for host/name:
+      "@" apex shorthand or mix of literal dc-name-char and %var%
+      expressions), dc-pointsto-tmpl (template form for pointsTo/data/
+      target: same structure), resolved forms reference domain-name (RFC
+      5890) directly; dc-ttl-tmpl / dc-ttl-value (template and resolved
+      forms for TTL), dc-uint16-tmpl / dc-uint16-value (template and
+      resolved forms for priority, weight, port), dc-srv-protocol
+      (underscore-prefixed transport), dc-srv-service (underscore-
+      prefixed service name per RFC 6335); added normative references
+      RFC 2782 and RFC 6335; added normative imports of "srv-rdata" (RFC
+      2782) and "service-name" (RFC 6335); fixed missing "number" import
+      (RFC 8259) in Terminology.
+
+   *  Replaced dc-label-chars, dc-host-literal, dc-host-value, and dc-
+      pointsto-value ABNF rules with dc-name-char (Unicode Assignable
+      code points excluding "%" and "@") as the literal-character unit
+      in dc-host-tmpl and dc-pointsto-tmpl; resolved values for host,
+      name, pointsTo, and target now reference domain-name (RFC 5890)
+      directly in the table prose.
+
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
@@ -3772,6 +3959,11 @@ Normative References
               RFC 1035, November 1987,
               <https://www.rfc-editor.org/info/rfc1035>.
 
+   [RFC2782]  Gulbrandsen, A., Vixie, P., and L. Esibov, "A DNS RR for
+              specifying the location of services (DNS SRV)", IETF,
+              DOI 10.17487/RFC2782, RFC 2782, February 2000,
+              <https://www.rfc-editor.org/info/rfc2782>.
+
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
               RFC 2119, March 1997,
@@ -3795,6 +3987,11 @@ Normative References
               (RR) Types", IETF, DOI 10.17487/RFC3597, RFC 3597,
               September 2003, <https://www.rfc-editor.org/info/rfc3597>.
 
+   [RFC8259]  Bray, T., "The JavaScript Object Notation (JSON) Data
+              Interchange Format", IETF, STD 90, DOI 10.17487/RFC8259,
+              BCP 90, RFC 8259, December 2017,
+              <https://www.rfc-editor.org/info/rfc8259>.
+
    [RFC8552]  Crocker, D., "Scoped Interpretation of DNS Resource
               Records through "Underscored" Naming of Attribute Leaves",
               IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
@@ -3808,6 +4005,13 @@ Normative References
    [RFC7518]  Jones, M., "JSON Web Algorithms (JWA)", IETF,
               DOI 10.17487/RFC7518, RFC 7518, May 2015,
               <https://www.rfc-editor.org/info/rfc7518>.
+
+   [RFC6335]  Cotton, M., Eggert, L., Touch, J., Westerlund, M., and S.
+              Cheshire, "Internet Assigned Numbers Authority (IANA)
+              Procedures for the Management of the Service Name and
+              Transport Protocol Port Number Registry", IETF,
+              DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
+              <https://www.rfc-editor.org/info/rfc6335>.
 
    [RFC6570]  Gregorio, J., Fielding, R., Hadley, M., Nottingham, M.,
               and D. Orchard, "URI Template", IETF,

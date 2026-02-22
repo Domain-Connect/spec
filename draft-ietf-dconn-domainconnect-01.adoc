@@ -1418,39 +1418,42 @@ The body is application/json encoded.
 
 |*URL API*
 |urlAPI
-|(REQUIRED) Value of urlAPI from the settings endpoint.
+|(REQUIRED) The base URL of the DNS Provider API, taken from the `"urlAPI"` field of the settings endpoint response (see <<dns-provider-discovery>>). +
+
+The value MUST be an absolute URI conforming to <<RFC3986>>.
 
 |*Service Provider Id*
 |providerId
-|(REQUIRED) identifier of the Service Provider of the template to be applied
+|(REQUIRED) Identifier of the Service Provider of the template to be applied. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Service Id*
 |serviceId
-|(REQUIRED) The name or identifier of the template to be applied.
+|(REQUIRED) Identifier of the template to be applied. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Domain*
 |domain
 |(REQUIRED) The Zone Apex domain name being configured. It MUST match the domain that was authorized
 in the token. +
 
-The value MUST conform to the `domain-name` syntax (see <<terminology>>). +
-
-When comparing against the authorized domain, both sides MUST first be normalised to A-label form per <<RFC5891>>.
+The value MUST conform to the `domain-name` syntax (see <<terminology>>).
 
 |*Host*
 |host
 |(OPTIONAL) The host name of the Sub Domain that was authorized in the token.
 If omitted or left blank, the template is being applied to the Zone Apex. +
 
-When present, the value MUST be a single name conforming to `domain-name` (see <<terminology>>) or an empty string.
+When present, the value MUST be a single name conforming to `domain-name` (see <<terminology>>) or an empty string. +
 
 |*Name/Value Pairs*
 |*
-|(REQUIRED) Any variable fields consumed by
-this template. The name portion of this API call corresponds to the
-variable(s) specified in the record and the value corresponds to the
-value that MUST be used when applying the template as per the
-implementation notes.
+|(REQUIRED) Variable values to be substituted into the template.
+Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>). +
+// TODO: the syntax for parameter values is not yet defined
+The DNS Provider MUST ignore any parameter not referenced in the template.
 
 |*Group ID*
 |groupId
@@ -1471,18 +1474,18 @@ The default when omitted is `"0"`.
 
 The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 
-
 |*Service Name*
 |serviceName
-|(OPTIONAL) This parameter allows for the caller to provide additional context for the `"serviceName"` that applied the template. It MAY be used by DNS Providers that want to display state regarding which templates have been applied. It is only allowed when the `"sharedProviderName"` attribute is set in the template being applied. +
+|(OPTIONAL) This parameter allows for the caller to provide additional context for the `"serviceName"` that applied the template. It MAY be used by DNS Providers that want to display state regarding which templates have been applied. It is only allowed when the `"sharedServiceName"` attribute is set in the template being applied. +
 
 The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 
-
-|*InstanceId*
+|*Instance Id*
 |instanceId
 |(OPTIONAL) Only applicable to templates supporting multiple instances
-(see <<template-definition, multiInstance>> template property). Allows for later removal of one template instance by DNS Providers storing this information.
+(see <<template-definition, multiInstance>> template property). Allows for later removal of one template instance by DNS Providers storing this information. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |=======================================================================
 
@@ -1535,6 +1538,7 @@ or other access issues.
 
 |=======================================================================
 
+//TODO: 409 conflict needs much better normative specification 
 When a 409 is returned, the body of the response SHOULD contain details of the conflicting records. If present this MUST be JSON containing the error code, a message suitable for developers, and an array of tuples containing the conflicting records type, host, and data element.
 
 As an example:
@@ -2381,6 +2385,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Added normative `"redirect_uri"` import from RFC 6749 Appendix A, Section A.6 to Terminology (used across sync flow, async flow, and token endpoint).
 - Split combined `"code"`/`"refresh_token"` request row into two separate rows with mutual-exclusion constraint; added normative RFC 6749 syntax references to all parameters of the OAuth token endpoint request table (`"code"` A.11, `"refresh_token"` A.17, `"redirect_uri"` A.6, `"grant_type"` A.10, `"client_id"` §2.2, `"client_secret"` A.2).
 - Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (`"access_token"` A.12, `"token_type"` A.13 with mandatory `"bearer"` value, `"expires_in"` A.14, `"refresh_token"` A.17).
+- Added normative constraints to the asynchronous OAuth apply endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `host` A-label normalisation rule reinstated for token comparison; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as correct actor; `instanceId` required to conform to `dc-id`; corrected `"serviceName"` guard attribute from `"sharedProviderName"` to `"sharedServiceName"`.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

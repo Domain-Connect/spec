@@ -2307,54 +2307,55 @@ Table of Contents
 
    Allowed parameters:
 
-    +==============+============+=====================================+
-    | Property     | Key        | Description                         |
-    +==============+============+=====================================+
-    | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from the |
-    |              |            | settings endpoint.                  |
-    +--------------+------------+-------------------------------------+
-    | *Service     | providerId | (REQUIRED) identifier of the        |
-    | Provider Id* |            | Service Provider of the template to |
-    |              |            | be applied                          |
-    +--------------+------------+-------------------------------------+
-    | *Service Id* | serviceId  | (REQUIRED) The name or identifier   |
-    |              |            | of the template to be applied.      |
-    +--------------+------------+-------------------------------------+
-    | *Domain*     | domain     | (REQUIRED) The Zone Apex domain     |
-    |              |            | name being configured.  It MUST     |
-    |              |            | match the domain that was           |
-    |              |            | authorized in the token.            |
-    |              |            | The value MUST conform to the       |
-    |              |            | domain-name syntax (see Section 3). |
-    |              |            | When comparing against the          |
-    |              |            | authorized domain, both sides MUST  |
-    |              |            | first be normalised to A-label form |
-    |              |            | per [RFC5891].                      |
-    +--------------+------------+-------------------------------------+
-    | *Host*       | host       | (OPTIONAL) The host name of the Sub |
-    |              |            | Domain that was authorized in the   |
-    |              |            | token.  If omitted or left blank,   |
-    |              |            | the template is being applied to    |
-    |              |            | the Zone Apex.                      |
-    |              |            | When present, the value MUST be a   |
-    |              |            | single name conforming to domain-   |
-    |              |            | name (see Section 3) or an empty    |
-    |              |            | string.                             |
-    +--------------+------------+-------------------------------------+
-    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to       |
-    |              |            | templates supporting multiple       |
-    |              |            | instances (see multiInstance        |
-    |              |            | (Section 8.1) template property).   |
-    |              |            | For DNS Provider storing            |
-    |              |            | information about applied templates |
-    |              |            | allows removal of single instance   |
-    |              |            | of template.  If missing all        |
-    |              |            | instances of template MUST be       |
-    |              |            | removed.                            |
-    +--------------+------------+-------------------------------------+
+   +===========+============+=========================================+
+   | Property  | Key        | Description                             |
+   +===========+============+=========================================+
+   | *URL API* | urlAPI     | (REQUIRED) The base URL of the DNS      |
+   |           |            | Provider API, taken from the "urlAPI"   |
+   |           |            | field of the settings endpoint response |
+   |           |            | (see Section 6).  The value MUST be an  |
+   |           |            | absolute URI conforming to [RFC3986].   |
+   +-----------+------------+-----------------------------------------+
+   | *Service  | providerId | (REQUIRED) Identifier of the Service    |
+   | Provider  |            | Provider of the template to be          |
+   | Id*       |            | reverted.                               |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
+   | *Service  | serviceId  | (REQUIRED) Identifier of the template   |
+   | Id*       |            | to be reverted.                         |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
+   | *Domain*  | domain     | (REQUIRED) The Zone Apex domain name    |
+   |           |            | being configured.  It MUST match the    |
+   |           |            | domain that was authorized in the       |
+   |           |            | token.                                  |
+   |           |            | The value MUST conform to the domain-   |
+   |           |            | name syntax (see Section 3).            |
+   +-----------+------------+-----------------------------------------+
+   | *Host*    | host       | (OPTIONAL) The host name of the Sub     |
+   |           |            | Domain that was authorized in the       |
+   |           |            | token.  If omitted or left blank, the   |
+   |           |            | template is being applied to the Zone   |
+   |           |            | Apex.                                   |
+   |           |            | When present, the value MUST be a       |
+   |           |            | single name conforming to domain-name   |
+   |           |            | (see Section 3) or an empty string.     |
+   +-----------+------------+-----------------------------------------+
+   | *Instance | instanceId | (OPTIONAL) Only applicable to templates |
+   | Id*       |            | supporting multiple instances (see      |
+   |           |            | multiInstance (Section 8.1) template    |
+   |           |            | property).  When present, only the      |
+   |           |            | identified instance MUST be removed; if |
+   |           |            | absent, all instances of the template   |
+   |           |            | MUST be removed.                        |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
 
-        Table 15: URI template parameters of the revert end-point in
-                               the async flow
+     Table 15: URI template parameters of the revert end-point in the
+                                async flow
 
    The DNS Provider MUST be able to accept these on the query string or
    in the body of the POST with application/json encoding.
@@ -2380,11 +2381,11 @@ Table of Contents
    automatically upon page/window activation in the browser when the
    browser window for the DNS Provider is closed.
 
-   When the redirect_uri is used and an error is not present in the URI,
-   the Service Provider can not assume the changes were applied to DNS.
-   While true in most circumstances, users can tamper with or alter the
-   return url in the browser.  As such it is recommend that enablement
-   of a service be based on verification of changes to DNS.
+   When the "redirect_uri" is used and an error is not present in the
+   URI, the Service Provider can not assume the changes were applied to
+   DNS.  While true in most circumstances, users can tamper with or
+   alter the return url in the browser.  As such it is recommend that
+   enablement of a service be based on verification of changes to DNS.
 
 8.  Domain Connect Objects and Templates
 
@@ -3687,6 +3688,14 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       syntax with DNS Provider as correct actor; instanceId required to
       conform to dc-id; corrected "serviceName" guard attribute from
       "sharedProviderName" to "sharedServiceName".
+
+   *  Added normative constraints to the asynchronous OAuth revert
+      endpoint parameter table: urlAPI cross-referenced to settings
+      endpoint; providerId and serviceId required to conform to dc-id
+      and updated to use "reverted" wording; host A-label normalisation
+      rule added for token comparison; instanceId required to conform to
+      dc-id with clarified removal semantics (single instance vs. all
+      instances).
 
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00

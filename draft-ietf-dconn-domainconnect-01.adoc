@@ -1608,15 +1608,21 @@ Allowed parameters:
 
 |*URL API*
 |urlAPI
-|(REQUIRED) Value of urlAPI from the settings endpoint.
+|(REQUIRED) The base URL of the DNS Provider API, taken from the `"urlAPI"` field of the settings endpoint response (see <<dns-provider-discovery>>).
+
+The value MUST be an absolute URI conforming to <<RFC3986>>.
 
 |*Service Provider Id*
 |providerId
-|(REQUIRED) identifier of the Service Provider of the template to be applied
+|(REQUIRED) Identifier of the Service Provider of the template to be reverted. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Service Id*
 |serviceId
-|(REQUIRED) The name or identifier of the template to be applied.
+|(REQUIRED) Identifier of the template to be reverted. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Domain*
 |domain
@@ -1624,50 +1630,37 @@ Allowed parameters:
 
 The value MUST conform to the `domain-name` syntax (see <<terminology>>). +
 
-When comparing against the authorized domain, both sides MUST first be normalised to A-label form per <<RFC5891>>.
-
 |*Host*
 |host
 |(OPTIONAL) The host name of the Sub Domain that was authorized in the token.
 If omitted or left blank, the template is being applied to the Zone Apex. +
 
-When present, the value MUST be a single name conforming to `domain-name` (see <<terminology>>) or an empty string.
+When present, the value MUST be a single name conforming to `domain-name` (see <<terminology>>) or an empty string. +
 
-|*InstanceId*
+|*Instance Id*
 |instanceId
 |(OPTIONAL) Only applicable to templates supporting multiple instances
-(see <<template-definition, multiInstance>> template property). For DNS Provider storing information about applied templates allows removal of single instance of template. If missing all instances of template MUST be removed.
+(see <<template-definition, multiInstance>> template property). When present, only the identified instance MUST be removed; if absent, all instances of the template MUST be removed. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 |=======================================================================
 
 
 The DNS Provider MUST be able to accept these on the query string or in the body of the POST with `application/json` encoding.
 
-Response codes Success, Authorization, and Errors are identical to
-above with the addition of the 501 code.
+Response codes Success, Authorization, and Errors are identical to above with the addition of the 501 code.
 
 ==== OAuth Flow: Revoking access
-Like all OAuth flows, the user may revoke the access at any time using
-UX at the DNS Provider site. As such the Service Provider needs to be
-aware that their access to the API may be denied.
+Like all OAuth flows, the user may revoke the access at any time using UX at the DNS Provider site. As such the Service Provider needs to be aware that their access to the API may be denied.
 
 [[verification-of-changes]]
 === Verification of Changes
 
-There are circumstances where the Service Provider may wish to verify
-that the template was successfully applied. Without Domain Donnect, this
-typically involved the Service Provider querying DNS to see if the
-changes to DNS had been made.
+There are circumstances where the Service Provider may wish to verify that the template was successfully applied. Without Domain Donnect, this typically involved the Service Provider querying DNS to see if the changes to DNS had been made.
 
-This same technique works with Domain Connect, and if necessary can be
-triggered either manually on the Service Provider site or automatically
-upon page/window activation in the browser when the browser window for
-the DNS Provider is closed.
+This same technique works with Domain Connect, and if necessary can be triggered either manually on the Service Provider site or automatically upon page/window activation in the browser when the browser window for the DNS Provider is closed.
 
-When the redirect_uri is used and an error is not present in the URI,
-the Service Provider can not assume the changes were applied to DNS. While true in most
-circumstances, users can tamper with or alter the return
-url in the browser. As such it is recommend that enablement of a service
-be based on verification of changes to DNS.
+When the `"redirect_uri"` is used and an error is not present in the URI, the Service Provider can not assume the changes were applied to DNS. While true in most circumstances, users can tamper with or alter the return url in the browser. As such it is recommend that enablement of a service be based on verification of changes to DNS.
 
 == Domain Connect Objects and Templates
 
@@ -2386,6 +2379,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Split combined `"code"`/`"refresh_token"` request row into two separate rows with mutual-exclusion constraint; added normative RFC 6749 syntax references to all parameters of the OAuth token endpoint request table (`"code"` A.11, `"refresh_token"` A.17, `"redirect_uri"` A.6, `"grant_type"` A.10, `"client_id"` §2.2, `"client_secret"` A.2).
 - Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (`"access_token"` A.12, `"token_type"` A.13 with mandatory `"bearer"` value, `"expires_in"` A.14, `"refresh_token"` A.17).
 - Added normative constraints to the asynchronous OAuth apply endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `host` A-label normalisation rule reinstated for token comparison; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as correct actor; `instanceId` required to conform to `dc-id`; corrected `"serviceName"` guard attribute from `"sharedProviderName"` to `"sharedServiceName"`.
+- Added normative constraints to the asynchronous OAuth revert endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id` and updated to use "reverted" wording; `host` A-label normalisation rule added for token comparison; `instanceId` required to conform to `dc-id` with clarified removal semantics (single instance vs. all instances).
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

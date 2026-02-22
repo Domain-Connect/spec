@@ -2762,38 +2762,38 @@ Internet-Draft               Domain Connect                December 2025
 
    Allowed parameters:
 
-    +==============+============+=====================================+
-    | Property     | Key        | Description                         |
-    +==============+============+=====================================+
-    | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from the |
-    |              |            | settings endpoint.                  |
-    +--------------+------------+-------------------------------------+
-    | *Service     | providerId | (REQUIRED) identifier of the        |
-    | Provider Id* |            | Service Provider of the template to |
-    |              |            | be applied                          |
-    +--------------+------------+-------------------------------------+
-    | *Service Id* | serviceId  | (REQUIRED) The name or identifier   |
-    |              |            | of the template to be applied.      |
-    +--------------+------------+-------------------------------------+
-    | *Domain*     | domain     | (REQUIRED) The Zone Apex domain     |
-    |              |            | name being configured.  It MUST     |
-    |              |            | match the domain that was           |
-    |              |            | authorized in the token.            |
-    |              |            | The value MUST conform to the       |
-    |              |            | domain-name syntax (see Section 3). |
-    |              |            | When comparing against the          |
-    |              |            | authorized domain, both sides MUST  |
-    |              |            | first be normalised to A-label form |
-    |              |            | per [RFC5891].                      |
-    +--------------+------------+-------------------------------------+
-    | *Host*       | host       | (OPTIONAL) The host name of the Sub |
-    |              |            | Domain that was authorized in the   |
-    |              |            | token.  If omitted or left blank,   |
-    |              |            | the template is being applied to    |
-    |              |            | the Zone Apex.                      |
-    |              |            | When present, the value MUST be a   |
-    |              |            | single name conforming to domain-   |
-    |              |            | name (see Section 3) or an empty    |
+   +===========+============+=========================================+
+   | Property  | Key        | Description                             |
+   +===========+============+=========================================+
+   | *URL API* | urlAPI     | (REQUIRED) The base URL of the DNS      |
+   |           |            | Provider API, taken from the "urlAPI"   |
+   |           |            | field of the settings endpoint response |
+   |           |            | (see Section 6).  The value MUST be an  |
+   |           |            | absolute URI conforming to [RFC3986].   |
+   +-----------+------------+-----------------------------------------+
+   | *Service  | providerId | (REQUIRED) Identifier of the Service    |
+   | Provider  |            | Provider of the template to be          |
+   | Id*       |            | reverted.                               |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
+   | *Service  | serviceId  | (REQUIRED) Identifier of the template   |
+   | Id*       |            | to be reverted.                         |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
+   | *Domain*  | domain     | (REQUIRED) The Zone Apex domain name    |
+   |           |            | being configured.  It MUST match the    |
+   |           |            | domain that was authorized in the       |
+   |           |            | token.                                  |
+   |           |            | The value MUST conform to the domain-   |
+   |           |            | name syntax (see Section 3).            |
+   +-----------+------------+-----------------------------------------+
+   | *Host*    | host       | (OPTIONAL) The host name of the Sub     |
+   |           |            | Domain that was authorized in the       |
+   |           |            | token.  If omitted or left blank, the   |
+   |           |            | template is being applied to the Zone   |
+   |           |            | Apex.                                   |
 
 
 
@@ -2802,22 +2802,23 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 50]
 Internet-Draft               Domain Connect                December 2025
 
 
-    |              |            | string.                             |
-    +--------------+------------+-------------------------------------+
-    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to       |
-    |              |            | templates supporting multiple       |
-    |              |            | instances (see multiInstance        |
-    |              |            | (Section 8.1) template property).   |
-    |              |            | For DNS Provider storing            |
-    |              |            | information about applied templates |
-    |              |            | allows removal of single instance   |
-    |              |            | of template.  If missing all        |
-    |              |            | instances of template MUST be       |
-    |              |            | removed.                            |
-    +--------------+------------+-------------------------------------+
+   |           |            | When present, the value MUST be a       |
+   |           |            | single name conforming to domain-name   |
+   |           |            | (see Section 3) or an empty string.     |
+   +-----------+------------+-----------------------------------------+
+   | *Instance | instanceId | (OPTIONAL) Only applicable to templates |
+   | Id*       |            | supporting multiple instances (see      |
+   |           |            | multiInstance (Section 8.1) template    |
+   |           |            | property).  When present, only the      |
+   |           |            | identified instance MUST be removed; if |
+   |           |            | absent, all instances of the template   |
+   |           |            | MUST be removed.                        |
+   |           |            | The value MUST conform to the dc-id     |
+   |           |            | syntax (see Section 3).                 |
+   +-----------+------------+-----------------------------------------+
 
-        Table 15: URI template parameters of the revert end-point in
-                               the async flow
+     Table 15: URI template parameters of the revert end-point in the
+                                async flow
 
    The DNS Provider MUST be able to accept these on the query string or
    in the body of the POST with application/json encoding.
@@ -2843,12 +2844,11 @@ Internet-Draft               Domain Connect                December 2025
    automatically upon page/window activation in the browser when the
    browser window for the DNS Provider is closed.
 
-   When the redirect_uri is used and an error is not present in the URI,
-   the Service Provider can not assume the changes were applied to DNS.
-   While true in most circumstances, users can tamper with or alter the
-   return url in the browser.  As such it is recommend that enablement
-   of a service be based on verification of changes to DNS.
-
+   When the "redirect_uri" is used and an error is not present in the
+   URI, the Service Provider can not assume the changes were applied to
+   DNS.  While true in most circumstances, users can tamper with or
+   alter the return url in the browser.  As such it is recommend that
+   enablement of a service be based on verification of changes to DNS.
 
 
 
@@ -4385,6 +4385,14 @@ Internet-Draft               Domain Connect                December 2025
       conform to dc-id; corrected "serviceName" guard attribute from
       "sharedProviderName" to "sharedServiceName".
 
+   *  Added normative constraints to the asynchronous OAuth revert
+      endpoint parameter table: urlAPI cross-referenced to settings
+      endpoint; providerId and serviceId required to conform to dc-id
+      and updated to use "reverted" wording; host A-label normalisation
+      rule added for token comparison; instanceId required to conform to
+      dc-id with clarified removal semantics (single instance vs. all
+      instances).
+
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
@@ -4410,14 +4418,6 @@ Change from -00 to -01
 
    *  Reviewed use of normative language
 
-   *  Cleaned up usage of terminology
-
-   *  Variable substitution description updated
-
-   *  All URLs are now normatively defined with URI templates
-
-
-
 
 
 
@@ -4425,6 +4425,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 79]
 
 Internet-Draft               Domain Connect                December 2025
 
+
+   *  Cleaned up usage of terminology
+
+   *  Variable substitution description updated
+
+   *  All URLs are now normatively defined with URI templates
 
 Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-
 domainconnect-00
@@ -4465,6 +4471,17 @@ Change from draft-carney-regext-domainconnect-00 to -01
 
 Normative References
 
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 80]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    [RFC1035]  Mockapetris, P., "Domain names - implementation and
               specification", STD 13, DOI 10.17487/RFC1035, BCP 13,
               RFC 1035, November 1987,
@@ -4474,13 +4491,6 @@ Normative References
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
               RFC 2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 80]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", IETF, DOI 10.17487/RFC8174, BCP 14,
@@ -4519,16 +4529,6 @@ Internet-Draft               Domain Connect                December 2025
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
               <https://www.rfc-editor.org/info/rfc6570>.
 
-   [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
-              Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
-              BCP 68, RFC 5234, January 2008,
-              <https://www.rfc-editor.org/info/rfc5234>.
-
-   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
-              Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October
-              2006, <https://www.rfc-editor.org/info/rfc4648>.
-
-
 
 
 
@@ -4537,6 +4537,15 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 81]
 
 Internet-Draft               Domain Connect                December 2025
 
+
+   [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
+              Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
+              BCP 68, RFC 5234, January 2008,
+              <https://www.rfc-editor.org/info/rfc5234>.
+
+   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
+              Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October
+              2006, <https://www.rfc-editor.org/info/rfc4648>.
 
    [RFC5891]  Klensin, J., "Internationalized Domain Names in
               Applications (IDNA): Protocol", IETF,
@@ -4570,15 +4579,6 @@ Informative References
 Appendix A.  Examples
 
 A.1.  Example Template
-
-
-
-
-
-
-
-
-
 
 
 

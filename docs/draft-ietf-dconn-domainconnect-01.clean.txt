@@ -248,6 +248,74 @@ Table of Contents
         ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
         DIGIT          =  %x30-39             ; 0-9
 
+   The following definitions and rules are imported normatively from
+   other documents.
+
+   "a-label":  "A-label" as defined in Section 2.3.2.1 of [RFC5890].
+
+   "u-label":  "U-label" as defined in Section 2.3.2.1 of [RFC5890].
+
+   "ldh-label":  "NR-LDH Label" as defined in Section 2.3.2.2. of
+      [RFC5890].
+
+   "domain-name":  "Internationalized Domain Name" as defined in
+      Section 2.3.2.3. of [RFC5890].
+
+   "state":  "state" as defined in Appendix A.  Section A5 of [RFC6749].
+
+   "unicode-assignable":  "Unicode Assignables" as defined in
+      Section 4.3 of [RFC9839].
+
+   The following additional ABNF rules are defined in this document and
+   used normatively throughout.
+
+   ; ---- Identifier rules ----
+
+   dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
+                   ; non-empty token, max 63 octets;
+                   ; used for providerId, serviceId, groupId,
+                   ; instanceId
+
+   dc-host-list   =  domain-name *( *SP "," *SP domain-name )
+                   ; comma-separated list of domain names
+
+   ; ---- Other parameter rules ----
+
+   dc-sig         =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
+                   ; standard base64 alphabet per RFC 4648 Section 4
+
+   dc-underscore-label =  "_" 1*( ALPHA / DIGIT / "-" )
+                       ; RFC 8552 underscore-prefixed DNS label,
+                       ; max 63 octets total
+
+   dc-key-label   =  a-label / dc-underscore-label
+                   ; plain ACE label or RFC 8552 underscore label;
+                   ; used for the key parameter
+
+   dc-pubkey-domain    =  *( dc-underscore-label "." ) domain-name
+                       ; zero or more underscore labels prepended
+                       ; to an IDNA domain name, per RFC 8552
+                       ; user for syncPubKeyDomain
+
+   dc-display-name =  1*255unicode-assignable
+                   ; non-empty string of at most 255 Unicode
+                   ; Assignable code points per RFC 9839 Section 4.3;
+                   ; used for providerName and serviceName
+
+   dc-description-text =  0*2048unicode-assignable
+                   ; a string of at most 2048 Unicode
+                   ; Assignable code points per RFC 9839 Section 4.3;
+                   ; used for description and variableDescription
+
+   dc-force       =  "0" / "1"
+                   ; used for force parameter
+                   ; 0 = respect conflicts, 1 = override conflicts
+
+   Internationalized domain names (IDN) are handled in accordance with
+   [RFC5891].  Where a parameter description specifies "domain-name",
+   both the ACE ("A-label") and the Unicode ("U-label") forms are
+   accepted.
+
    Service Provider:  An entity that offers products and services that
       are configured or accessed using domain names.  These services
       typically rely on DNS for setup, discovery and/or operation.
@@ -697,8 +765,12 @@ Table of Contents
    +==============+=====================+========+=====================+
    | *Provider    | providerId          | String | (REQUIRED) Unique   |
    | Id*          |                     |        | identifier for the  |
-   |              |                     |        | DNS Provider.  To   |
-   |              |                     |        | ensure non-         |
+   |              |                     |        | DNS Provider.       |
+   |              |                     |        | The value MUST      |
+   |              |                     |        | conform to the dc-  |
+   |              |                     |        | id syntax (see      |
+   |              |                     |        | Section 4).         |
+   |              |                     |        | To allow for non-   |
    |              |                     |        | coordinated         |
    |              |                     |        | uniqueness, this    |
    |              |                     |        | SHOULD be the       |
@@ -709,6 +781,11 @@ Table of Contents
    | *Provider    | providerName        | String | (REQUIRED) The      |
    | Name*        |                     |        | name of the DNS     |
    |              |                     |        | Provider.           |
+   |              |                     |        | The value MUST      |
+   |              |                     |        | conform to the dc-  |
+   |              |                     |        | display-name        |
+   |              |                     |        | syntax (see         |
+   |              |                     |        | Section 4).         |
    +--------------+---------------------+--------+---------------------+
    | *Provider    | providerDisplayName | String | (OPTIONAL) The      |
    | Display      |                     |        | name of the DNS     |
@@ -721,6 +798,11 @@ Table of Contents
    |              |                     |        | some DNS Providers  |
    |              |                     |        | that power          |
    |              |                     |        | multiple brands.    |
+   |              |                     |        | When present, the   |
+   |              |                     |        | value MUST conform  |
+   |              |                     |        | to the dc-display-  |
+   |              |                     |        | name syntax (see    |
+   |              |                     |        | Section 4).         |
    +--------------+---------------------+--------+---------------------+
    | *UX URL      | urlSyncUX           | String | (OPTIONAL) The URL  |
    | Prefix for   |                     |        | Prefix for linking  |
@@ -734,11 +816,19 @@ Table of Contents
    |              |                     |        | supporting the      |
    |              |                     |        | synchronous flow    |
    |              |                     |        | on this domain.     |
-   |              |                     |        | This URL MUST be    |
-   |              |                     |        | of "https" schema   |
-   |              |                     |        | and MUST NOT        |
-   |              |                     |        | contain query or    |
-   |              |                     |        | fragment part.      |
+   |              |                     |        | This MUST be a      |
+   |              |                     |        | valid URI           |
+   |              |                     |        | [RFC3986] with      |
+   |              |                     |        | scheme "https",     |
+   |              |                     |        | MUST include an     |
+   |              |                     |        | authority           |
+   |              |                     |        | component, and      |
+   |              |                     |        | MUST NOT contain a  |
+   |              |                     |        | query component or  |
+   |              |                     |        | fragment            |
+   |              |                     |        | component.  The     |
+   |              |                     |        | URI MAY include a   |
+   |              |                     |        | path component.     |
    +--------------+---------------------+--------+---------------------+
    | *UX URL      | urlAsyncUX          | String | (OPTIONAL) The URL  |
    | Prefix for   |                     |        | Prefix for linking  |
@@ -753,19 +843,35 @@ Table of Contents
    |              |                     |        | supporting the      |
    |              |                     |        | asynchronous flow   |
    |              |                     |        | on this domain.     |
-   |              |                     |        | This URL MUST be    |
-   |              |                     |        | of "https" schema   |
-   |              |                     |        | and MUST NOT        |
-   |              |                     |        | contain query or    |
-   |              |                     |        | fragment part.      |
+   |              |                     |        | This MUST be a      |
+   |              |                     |        | valid URI           |
+   |              |                     |        | [RFC3986] with      |
+   |              |                     |        | scheme "https",     |
+   |              |                     |        | MUST include an     |
+   |              |                     |        | authority           |
+   |              |                     |        | component, and      |
+   |              |                     |        | MUST NOT contain a  |
+   |              |                     |        | query component or  |
+   |              |                     |        | fragment            |
+   |              |                     |        | component.  The     |
+   |              |                     |        | URI MAY include a   |
+   |              |                     |        | path component.     |
    +--------------+---------------------+--------+---------------------+
    | *API URL     | urlAPI              | String | (REQUIRED) The URL  |
    | Prefix*      |                     |        | Prefix for the      |
-   |              |                     |        | REST API This URL   |
-   |              |                     |        | MUST be of "https"  |
-   |              |                     |        | schema and MUST     |
-   |              |                     |        | NOT contain query   |
-   |              |                     |        | or fragment part.   |
+   |              |                     |        | REST API.  This     |
+   |              |                     |        | MUST be a valid     |
+   |              |                     |        | URI [RFC3986] with  |
+   |              |                     |        | scheme "https",     |
+   |              |                     |        | MUST include an     |
+   |              |                     |        | authority           |
+   |              |                     |        | component, and      |
+   |              |                     |        | MUST NOT contain a  |
+   |              |                     |        | query component or  |
+   |              |                     |        | fragment            |
+   |              |                     |        | component.  The     |
+   |              |                     |        | URI MAY include a   |
+   |              |                     |        | path component.     |
    +--------------+---------------------+--------+---------------------+
    | *Width of    | width               | Number | (OPTIONAL) This is  |
    | Window*      |                     |        | the desired width   |
@@ -820,33 +926,68 @@ Table of Contents
    |              |                     |        | deep links to the   |
    |              |                     |        | specific domain,    |
    |              |                     |        | this string MAY     |
-   |              |                     |        | contain "%domain%"  |
-   |              |                     |        | which MUST be       |
-   |              |                     |        | replaced with the   |
-   |              |                     |        | domain name when    |
+   |              |                     |        | contain the         |
+   |              |                     |        | literal token       |
+   |              |                     |        | "%domain%" which    |
+   |              |                     |        | MUST be replaced    |
+   |              |                     |        | with the percent-   |
+   |              |                     |        | encoded ACE-form    |
+   |              |                     |        | domain name per     |
+   |              |                     |        | [RFC3986] when      |
    |              |                     |        | building the deep   |
    |              |                     |        | link to the         |
    |              |                     |        | control panel of a  |
    |              |                     |        | given domain.       |
-   |              |                     |        | This URL MUST be    |
-   |              |                     |        | of "https" schema   |
-   |              |                     |        | and MAY contain     |
-   |              |                     |        | query or fragment   |
-   |              |                     |        | part.               |
+   |              |                     |        | "%domain%" MUST be  |
+   |              |                     |        | the only            |
+   |              |                     |        | substitution token  |
+   |              |                     |        | permitted in this   |
+   |              |                     |        | field.  After       |
+   |              |                     |        | potentially         |
+   |              |                     |        | substituting the    |
+   |              |                     |        | "%domain%" token    |
+   |              |                     |        | this MUST be a      |
+   |              |                     |        | valid URI           |
+   |              |                     |        | [RFC3986] with      |
+   |              |                     |        | scheme "https".     |
    +--------------+---------------------+--------+---------------------+
-   | *Name        | nameServers         | String | (OPTIONAL) This is  |
-   | Servers*     |                     | List   | the list of         |
-   |              |                     |        | nameservers         |
-   |              |                     |        | desired by the DNS  |
-   |              |                     |        | Provider for the    |
-   |              |                     |        | zone to be          |
-   |              |                     |        | authoritative.      |
-   |              |                     |        | This does not       |
-   |              |                     |        | indicate the        |
-   |              |                     |        | authoritative       |
-   |              |                     |        | nameservers; for    |
-   |              |                     |        | this the registry   |
-   |              |                     |        | would be queried.   |
+   | *Name        | nameServers         | List   | (OPTIONAL) This is  |
+   | Servers*     |                     | of     | the list of         |
+   |              |                     | String | nameserver          |
+   |              |                     |        | hostnames held by   |
+   |              |                     |        | the DNS Provider    |
+   |              |                     |        | in the zone         |
+   |              |                     |        | (typically based    |
+   |              |                     |        | on NS entries).     |
+   |              |                     |        | Service Provider    |
+   |              |                     |        | MAY use this list   |
+   |              |                     |        | to compare with     |
+   |              |                     |        | authoritative list  |
+   |              |                     |        | of nameservers      |
+   |              |                     |        | obtained from the   |
+   |              |                     |        | registry or         |
+   |              |                     |        | authoritative NS    |
+   |              |                     |        | query, so ensure    |
+   |              |                     |        | that the actual     |
+   |              |                     |        | delegated server    |
+   |              |                     |        | has been reached.   |
+   |              |                     |        | A mismatch may be   |
+   |              |                     |        | a result of         |
+   |              |                     |        | stalled or error    |
+   |              |                     |        | "_domainconnect"    |
+   |              |                     |        | record or a         |
+   |              |                     |        | deliberate action   |
+   |              |                     |        | of DNS              |
+   |              |                     |        | adminstrator, for   |
+   |              |                     |        | example in order    |
+   |              |                     |        | to pre-provision    |
+   |              |                     |        | the service with a  |
+   |              |                     |        | new DNS provider.   |
+   |              |                     |        | Each entry MUST     |
+   |              |                     |        | conform to the      |
+   |              |                     |        | "domain-name"       |
+   |              |                     |        | syntax (see         |
+   |              |                     |        | Section 4).         |
    +--------------+---------------------+--------+---------------------+
 
              Table 1: properties of the settings data structure
@@ -933,18 +1074,24 @@ Table of Contents
 
    The following table describes the parameters of the URI template:
 
-     +==============+============+===================================+
-     | Property     | Key        | Description                       |
-     +==============+============+===================================+
-     | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from   |
-     |              |            | the settings endpoint.            |
-     +--------------+------------+-----------------------------------+
-     | *Service     | providerId | (REQUIRED) identifier of the      |
-     | Provider Id* |            | Service Provider of the template. |
-     +--------------+------------+-----------------------------------+
-     | *Service Id* | serviceId  | (REQUIRED) The name or identifier |
-     |              |            | of the template.                  |
-     +--------------+------------+-----------------------------------+
+     +==========+============+=======================================+
+     | Property | Key        | Description                           |
+     +==========+============+=======================================+
+     | *URL     | urlAPI     | (REQUIRED) The base URL of the DNS    |
+     | API*     |            | Provider API, taken from the "urlAPI" |
+     |          |            | field of the settings endpoint        |
+     |          |            | response (see Section 7).             |
+     +----------+------------+---------------------------------------+
+     | *Service | providerId | (REQUIRED) Identifier of the Service  |
+     | Provider |            | Provider of the template.  The value  |
+     | Id*      |            | MUST conform to the dc-id syntax (see |
+     |          |            | Section 4).                           |
+     +----------+------------+---------------------------------------+
+     | *Service | serviceId  | (REQUIRED) Identifier of the template |
+     | Id*      |            | within the Service Provider's         |
+     |          |            | namespace.  The value MUST conform to |
+     |          |            | the dc-id syntax (see Section 4).     |
+     +----------+------------+---------------------------------------+
 
           Table 3: URI template parameters for the query supported
                              template end-point
@@ -997,21 +1144,29 @@ Table of Contents
    | Property    | Request      | Description                          |
    |             | Parameter    |                                      |
    +=============+==============+======================================+
-   | *URL Sync   | urlSyncUX    | (REQUIRED) Value of urlSyncUX        |
-   | UX*         |              | property from the settings           |
-   |             |              | endpoint.                            |
+   | *URL Sync   | urlSyncUX    | (REQUIRED) The base URL of the DNS   |
+   | UX*         |              | Provider synchronous UX endpoint,    |
+   |             |              | taken from the "urlSyncUX" field of  |
+   |             |              | the settings endpoint response (see  |
+   |             |              | Section 7).                          |
    +-------------+--------------+--------------------------------------+
-   | *Service    | providerId   | (REQUIRED) identifier of the         |
+   | *Service    | providerId   | (REQUIRED) Identifier of the         |
    | Provider    |              | Service Provider of the template to  |
-   | Id*         |              | be applied                           |
+   | Id*         |              | be applied.  The value MUST conform  |
+   |             |              | to the dc-id syntax (see             |
+   |             |              | Section 4).                          |
    +-------------+--------------+--------------------------------------+
-   | *Service    | serviceId    | (REQUIRED) identifier of the         |
-   | Id*         |              | template to be applied               |
+   | *Service    | serviceId    | (REQUIRED) Identifier of the         |
+   | Id*         |              | template to be applied.  The value   |
+   |             |              | MUST conform to the dc-id syntax     |
+   |             |              | (see Section 4).                     |
    +-------------+--------------+--------------------------------------+
    | *Domain*    | domain       | (REQUIRED) The domain name being     |
    |             |              | configured.  This is the Zone Apex   |
    |             |              | (the registered domain or delegated  |
-   |             |              | zone).                               |
+   |             |              | zone).  The value MUST conform to    |
+   |             |              | the domain-name syntax (see          |
+   |             |              | Section 4).                          |
    +-------------+--------------+--------------------------------------+
    | *Host*      | host         | (OPTIONAL) This is the host name of  |
    |             |              | the Sub Domain.  If left blank, the  |
@@ -1019,35 +1174,45 @@ Table of Contents
    |             |              | Zone Apex.  Otherwise the template   |
    |             |              | is applied to the sub domain of the  |
    |             |              | domain in the same zone.             |
+   |             |              | When present, the value MUST be a    |
+   |             |              | single name conforming to domain-    |
+   |             |              | name (see Section 4) or an empty     |
+   |             |              | string.                              |
    +-------------+--------------+--------------------------------------+
    | *Redirect   | redirect_uri | (OPTIONAL) The location to direct    |
    | URI*        |              | the client browser to upon           |
    |             |              | successful authorization, or upon    |
-   |             |              | error.  If omitted the DNS Provider  |
-   |             |              | SHOULD close the browser window      |
-   |             |              | upon completion.  It MUST be scoped  |
-   |             |              | to the "syncRedirectDomain"          |
-   |             |              | authority from the template, or the  |
-   |             |              | request MUST be signed.              |
+   |             |              | error.                               |
+   |             |              | The value MUST be an absolute URI    |
+   |             |              | conforming to [RFC3986].             |
+   |             |              | If omitted the DNS Provider SHOULD   |
+   |             |              | close the browser window upon        |
+   |             |              | completion.  It MUST be scoped to    |
+   |             |              | the "syncRedirectDomain" authority   |
+   |             |              | from the template, or the request    |
+   |             |              | MUST be signed.                      |
    +-------------+--------------+--------------------------------------+
    | *State*     | state        | (OPTIONAL) A random and unique       |
    |             |              | string passed along to prevent       |
-   |             |              | CSRF, or to pass back state.  It     |
-   |             |              | MUST be returned as a query          |
+   |             |              | CSRF, or to pass back state.         |
+   |             |              | The value MUST conform to the        |
+   |             |              | "state" syntax (see Section 4).      |
+   |             |              | It MUST be returned as a query       |
    |             |              | parameter when redirecting to the    |
    |             |              | redirect_uri described above.        |
    +-------------+--------------+--------------------------------------+
-   | *Name/Value | properties   | (REQUIRED) Any key that will be      |
-   | Pairs*      |              | used as a replacement for the "%     |
-   |             |              | surrounded" variables in the         |
-   |             |              | template.  The name portion of this  |
-   |             |              | API call corresponds to the          |
-   |             |              | variable(s) specified in the         |
-   |             |              | template and the value corresponds   |
-   |             |              | to the value that will be used when  |
+   | *Name/Value | properties   | (REQUIRED) Variable values to be     |
+   | Pairs*      |              | substituted into the template.       |
+   |             |              | Each parameter name MUST correspond  |
+   |             |              | to a variable name defined in the    |
+   |             |              | template and MUST conform to the     |
+   |             |              | variable-name syntax (see            |
+   |             |              | Section 4).                          |
+   |             |              | The parameter value corresponds to   |
+   |             |              | the value that will be used when     |
    |             |              | applying the template.               |
-   |             |              | The client MUST ignore any unknown   |
-   |             |              | parameters, not referenced in the    |
+   |             |              | The DNS Provider MUST ignore any     |
+   |             |              | parameter not referenced in the      |
    |             |              | template.                            |
    +-------------+--------------+--------------------------------------+
    | *Provider   | providerName | (OPTIONAL) This parameter allows     |
@@ -1063,6 +1228,9 @@ Table of Contents
    |             |              | used to be controlled by the         |
    |             |              | "shared" attribute in the template,  |
    |             |              | which has been deprecated.           |
+   |             |              | The value MUST conform to the dc-    |
+   |             |              | display-name syntax (see             |
+   |             |              | Section 4).                          |
    +-------------+--------------+--------------------------------------+
    | *Service    | serviceName  | (OPTIONAL) This parameter allows     |
    | Name*       |              | for the caller to provide            |
@@ -1074,25 +1242,44 @@ Table of Contents
    |             |              | parameter is only allowed when the   |
    |             |              | "sharedServiceName" attribute is     |
    |             |              | set in the template.                 |
+   |             |              | The value MUST conform to the dc-    |
+   |             |              | display-name syntax (see             |
+   |             |              | Section 4).                          |
    +-------------+--------------+--------------------------------------+
    | *Group Id*  | groupId      | (OPTIONAL) This parameter specifies  |
    |             |              | the groups from the template to      |
    |             |              | apply.  If no group is specified,    |
-   |             |              | all groups are applied.  Multiple    |
-   |             |              | groups MAY be specified in a comma   |
-   |             |              | delimited format.                    |
+   |             |              | all groups are applied.              |
+   |             |              | Each group identifier MUST conform   |
+   |             |              | to the dc-id syntax (see             |
+   |             |              | Section 4).  Multiple groups MAY be  |
+   |             |              | specified as a comma-separated list  |
+   |             |              | of dc-id values.  TODO: define an    |
+   |             |              | own term for a comma-separated list  |
+   |             |              | of groupIds                          |
    +-------------+--------------+--------------------------------------+
-   | *Signature* | sig          | (OPTIONAL) A signature of the query  |
-   |             |              | string.  See Security                |
-   |             |              | Considerations section below.        |
+   | *Signature* | sig          | (OPTIONAL) A digital signature of    |
+   |             |              | the canonical query string.  The     |
+   |             |              | value MUST conform to the dc-sig     |
+   |             |              | syntax (see Section 4):              |
+   |             |              | a standard base64-encoded [RFC4648]  |
+   |             |              | signature, URL-encoded when carried  |
+   |             |              | in the query string.                 |
+   |             |              | See the Security Considerations      |
+   |             |              | section below for the signing        |
+   |             |              | procedure.                           |
    +-------------+--------------+--------------------------------------+
-   | *Key*       | key          | (OPTIONAL) A value containing the    |
-   |             |              | host in DNS where the public key     |
-   |             |              | for the signature can be obtained.   |
-   |             |              | The domain for this host is in the   |
-   |             |              | template in syncPubKeyDomain.  See   |
-   |             |              | Security Considerations section      |
-   |             |              | below.                               |
+   | *Key*       | key          | (OPTIONAL) The DNS host label        |
+   |             |              | within the syncPubKeyDomain at       |
+   |             |              | which the public key TXT record is   |
+   |             |              | published.                           |
+   |             |              | The value MUST conform to the dc-    |
+   |             |              | key-label syntax (see Section 4): a  |
+   |             |              | single DNS label, either a plain     |
+   |             |              | ACE-form label or an RFC 8552        |
+   |             |              | underscore-prefixed label.           |
+   |             |              | See the Security Considerations      |
+   |             |              | section below.                       |
    +-------------+--------------+--------------------------------------+
 
     Table 5: URI template parameters of the apply call in the sync flow
@@ -1502,84 +1689,98 @@ Table of Contents
    request for the OAuth consent flow that must be included unless
    otherwise indicated
 
-    +===========+===============+====================================+
-    | Property  | Key           | Description                        |
-    +===========+===============+====================================+
-    | *URL Sync | urlAsyncUX    | (REQUIRED) Value of urlAsyncUX     |
-    | UX*       |               | property from the settings         |
-    |           |               | endpoint.                          |
-    +-----------+---------------+------------------------------------+
-    | *Service  | providerId    | (REQUIRED) identifier of the       |
-    | Provider  |               | Service Provider of the template   |
-    | Id*       |               | to be applied                      |
-    +-----------+---------------+------------------------------------+
-    | *Domain*  | domain        | (REQUIRED) The domain name being   |
-    |           |               | configured.  This is the Zone      |
-    |           |               | Apex.                              |
-    +-----------+---------------+------------------------------------+
-    | *Host*    | host          | (OPTIONAL) An list of comma        |
-    |           |               | separated host names upon which    |
-    |           |               | the template may be applied.  An   |
-    |           |               | empty string implies the root.     |
-    +-----------+---------------+------------------------------------+
-    | *Client   | client_id     | (REQUIRED) The client id that was  |
-    | Id*       |               | provided by the DNS Provider to    |
-    |           |               | the Service Provider during        |
-    |           |               | registration.                      |
-    +-----------+---------------+------------------------------------+
-    | *Redirect | redirect_uri  | (REQUIRED) The location to direct  |
-    | URI*      |               | the client's browser upon          |
-    |           |               | successful authorization or upon   |
-    |           |               | error.  Validation of the          |
-    |           |               | redirect_uri MUST be done by the   |
-    |           |               | DNS Provider to match the values   |
-    |           |               | provided during onboarding.        |
-    +-----------+---------------+------------------------------------+
-    | *Response | response_type | (OPTIONAL) If included it MUST be  |
-    | type*     |               | the string 'code' to indicate an   |
-    |           |               | authorization code is being        |
-    |           |               | requested.                         |
-    +-----------+---------------+------------------------------------+
-    | *Scope*   | scope         | (REQUIRED) The OAuth scope         |
-    |           |               | corresponds to the requested       |
-    |           |               | templates.  This is list of space  |
-    |           |               | separated serviceIds.              |
-    +-----------+---------------+------------------------------------+
-    | *Provider | providerName  | (OPTIONAL) This parameter allows   |
-    | Name*     |               | for the caller to provide          |
-    |           |               | additional text for display with   |
-    |           |               | the template providerName.  This   |
-    |           |               | text SHOULD be used to augment the |
-    |           |               | providerName value from the        |
-    |           |               | template, not replace it.          |
-    +-----------+---------------+------------------------------------+
-    | *Service  | serviceName   | (OPTIONAL) This parameter allows   |
-    | Name*     |               | for the caller to provide          |
-    |           |               | additional text for display with   |
-    |           |               | the template serviceName(s).  It   |
-    |           |               | SHOULD be used to augment the      |
-    |           |               | serviceName value(s) from the      |
-    |           |               | template, not replace.             |
-    +-----------+---------------+------------------------------------+
-    | *State*   | state         | (OPTIONAL) This is a random,       |
-    |           |               | unique string passed along to      |
-    |           |               | prevent CSRF or to pass state      |
-    |           |               | value back to the caller.  If      |
-    |           |               | present it MUST be returned as a   |
-    |           |               | parameter appended to the          |
-    |           |               | redirect_url described above.      |
-    +-----------+---------------+------------------------------------+
-    | *Name/    | properties    | (OPTIONAL) Any key that will be    |
-    | Value     |               | used as a replacement for the "%   |
-    | Pairs*    |               | surrounded" value(s) in a template |
-    |           |               | required for conflict detection.   |
-    |           |               | This includes variables used in    |
-    |           |               | hosts and data in certain TXT      |
-    |           |               | records.                           |
-    +-----------+---------------+------------------------------------+
+   +===========+===============+=======================================+
+   | Property  | Key           | Description                           |
+   +===========+===============+=======================================+
+   | *URL Sync | urlAsyncUX    | (REQUIRED) Value of urlAsyncUX        |
+   | UX*       |               | property from the settings            |
+   |           |               | endpoint.                             |
+   +-----------+---------------+---------------------------------------+
+   | *Service  | providerId    | (REQUIRED) identifier of the          |
+   | Provider  |               | Service Provider of the template to   |
+   | Id*       |               | be applied                            |
+   +-----------+---------------+---------------------------------------+
+   | *Domain*  | domain        | (REQUIRED) The domain name being      |
+   |           |               | configured.  This is the Zone Apex.   |
+   |           |               | The value MUST conform to the         |
+   |           |               | domain-name syntax (see Section 4).   |
+   +-----------+---------------+---------------------------------------+
+   | *Host*    | host          | (OPTIONAL) A comma-separated list     |
+   |           |               | of host names upon which the          |
+   |           |               | template may be applied.  The value   |
+   |           |               | MUST conform to the dc-host-list      |
+   |           |               | syntax (see Section 4).  Each entry   |
+   |           |               | MUST be either an empty string        |
+   |           |               | (representing the Zone Apex) or a     |
+   |           |               | name conforming to domain-name.  An   |
+   |           |               | empty entry in the list (e.g., a      |
+   |           |               | leading or trailing comma)            |
+   |           |               | represents the Zone Apex.             |
+   +-----------+---------------+---------------------------------------+
+   | *Client   | client_id     | (REQUIRED) The client id that was     |
+   | Id*       |               | provided by the DNS Provider to the   |
+   |           |               | Service Provider during               |
+   |           |               | registration.                         |
+   +-----------+---------------+---------------------------------------+
+   | *Redirect | redirect_uri  | (REQUIRED) The location to direct     |
+   | URI*      |               | the client's browser upon             |
+   |           |               | successful authorization or upon      |
+   |           |               | error.  Validation of the             |
+   |           |               | redirect_uri MUST be done by the      |
+   |           |               | DNS Provider to match the values      |
+   |           |               | provided during onboarding.           |
+   +-----------+---------------+---------------------------------------+
+   | *Response | response_type | (OPTIONAL) If included it MUST be     |
+   | type*     |               | the string 'code' to indicate an      |
+   |           |               | authorization code is being           |
+   |           |               | requested.                            |
+   +-----------+---------------+---------------------------------------+
+   | *Scope*   | scope         | (REQUIRED) The OAuth scope            |
+   |           |               | corresponds to the requested          |
+   |           |               | templates.  This is list of space     |
+   |           |               | separated serviceIds.                 |
+   +-----------+---------------+---------------------------------------+
+   | *Provider | providerName  | (OPTIONAL) This parameter allows      |
+   | Name*     |               | for the caller to provide             |
+   |           |               | additional text for display with      |
+   |           |               | the template providerName.  This      |
+   |           |               | text SHOULD be used to augment the    |
+   |           |               | providerName value from the           |
+   |           |               | template, not replace it.  The        |
+   |           |               | value MUST conform to the dc-         |
+   |           |               | display-name syntax (see              |
+   |           |               | Section 4).                           |
+   +-----------+---------------+---------------------------------------+
+   | *Service  | serviceName   | (OPTIONAL) This parameter allows      |
+   | Name*     |               | for the caller to provide             |
+   |           |               | additional text for display with      |
+   |           |               | the template serviceName(s).  It      |
+   |           |               | SHOULD be used to augment the         |
+   |           |               | serviceName value(s) from the         |
+   |           |               | template, not replace.  The value     |
+   |           |               | MUST conform to the dc-display-name   |
+   |           |               | syntax (see Section 4).               |
+   +-----------+---------------+---------------------------------------+
+   | *State*   | state         | (OPTIONAL) This is a random, unique   |
+   |           |               | string passed along to prevent CSRF   |
+   |           |               | or to pass state value back to the    |
+   |           |               | caller.  The value MUST conform to    |
+   |           |               | the "state" syntax (see Section 4).   |
+   |           |               | If present it MUST be returned as a   |
+   |           |               | parameter appended to the             |
+   |           |               | redirect_url described above.         |
+   +-----------+---------------+---------------------------------------+
+   | *Name/    | properties    | (OPTIONAL) Any key that will be       |
+   | Value     |               | used as a replacement for the "%      |
+   | Pairs*    |               | surrounded" value(s) in a template    |
+   |           |               | required for conflict detection.      |
+   |           |               | This includes variables used in       |
+   |           |               | hosts and data in certain TXT         |
+   |           |               | records.                              |
+   +-----------+---------------+---------------------------------------+
 
-        Table 8: URI template parameters of the authorization end-
-                           point in async flow
+      Table 8: URI template parameters of the authorization end-point
+                               in async flow
 
 8.4.4.  OAuth Flow: Requesting an Access Token
 
@@ -1787,12 +1988,23 @@ Table of Contents
    |              |              | name being configured.  It MUST    |
    |              |              | match the domain that was          |
    |              |              | authorized in the token.           |
+   |              |              | The value MUST conform to the      |
+   |              |              | domain-name syntax (see            |
+   |              |              | Section 4).                        |
+   |              |              | When comparing against the         |
+   |              |              | authorized domain, both sides MUST |
+   |              |              | first be normalised to A-label     |
+   |              |              | form per [RFC5891].                |
    +--------------+--------------+------------------------------------+
    | *Host*       | host         | (OPTIONAL) The host name of the    |
    |              |              | Sub Domain that was authorized in  |
    |              |              | the token.  If omitted or left     |
    |              |              | blank, the template is being       |
    |              |              | applied to the Zone Apex.          |
+   |              |              | When present, the value MUST be a  |
+   |              |              | single name conforming to domain-  |
+   |              |              | name (see Section 4) or an empty   |
+   |              |              | string.                            |
    +--------------+--------------+------------------------------------+
    | *Name/Value  | *            | (REQUIRED) Any variable fields     |
    | Pairs*       |              | consumed by this template.  The    |
@@ -1807,14 +2019,19 @@ Table of Contents
    | *Group ID*   | groupId      | (OPTIONAL) Specifies the group of  |
    |              |              | changes in the template to apply.  |
    |              |              | If omitted, all changes are        |
-   |              |              | applied.  This can also be a comma |
-   |              |              | separated list of groupIds.        |
+   |              |              | applied.  Each group identifier    |
+   |              |              | MUST conform to the dc-id syntax   |
+   |              |              | (see Section 4).  Multiple groups  |
+   |              |              | MAY be specified as a comma-       |
+   |              |              | separated list of dc-id values.    |
    +--------------+--------------+------------------------------------+
    | *Force*      | force        | (OPTIONAL) Specifies that the      |
    |              |              | template SHOULD be applied         |
    |              |              | independently of any conflicts     |
    |              |              | that may exist on the domain.      |
-   |              |              | This can be a value of 0 or 1.     |
+   |              |              | The value MUST conform to the dc-  |
+   |              |              | force syntax (see Section 4).      |
+   |              |              | The default when omitted is "0".   |
    +--------------+--------------+------------------------------------+
    | *Provider    | providerName | (OPTIONAL) This parameter allows   |
    | Name*        |              | for the caller to provide          |
@@ -1827,6 +2044,9 @@ Table of Contents
    |              |              | allowed when the                   |
    |              |              | "sharedProviderName" attribute is  |
    |              |              | set in the template being applied. |
+   |              |              | The value MUST conform to the dc-  |
+   |              |              | display-name syntax (see           |
+   |              |              | Section 4).                        |
    +--------------+--------------+------------------------------------+
    | *Service     | serviceName  | (OPTIONAL) This parameter allows   |
    | Name*        |              | for the caller to provide          |
@@ -1839,6 +2059,9 @@ Table of Contents
    |              |              | allowed when the                   |
    |              |              | "sharedProviderName" attribute is  |
    |              |              | set in the template being applied. |
+   |              |              | The value MUST conform to the dc-  |
+   |              |              | display-name syntax (see           |
+   |              |              | Section 4).                        |
    +--------------+--------------+------------------------------------+
    | *InstanceId* | instanceId   | (OPTIONAL) Only applicable to      |
    |              |              | templates supporting multiple      |
@@ -1971,43 +2194,54 @@ Table of Contents
 
    Allowed parameters:
 
-   +==============+============+======================================+
-   | Property     | Key        | Description                          |
-   +==============+============+======================================+
-   | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from the  |
-   |              |            | settings endpoint.                   |
-   +--------------+------------+--------------------------------------+
-   | *Service     | providerId | (REQUIRED) identifier of the Service |
-   | Provider Id* |            | Provider of the template to be       |
-   |              |            | applied                              |
-   +--------------+------------+--------------------------------------+
-   | *Service Id* | serviceId  | (REQUIRED) The name or identifier of |
-   |              |            | the template to be applied.          |
-   +--------------+------------+--------------------------------------+
-   | *Domain*     | domain     | (REQUIRED) The Zone Apex domain name |
-   |              |            | being configured.  It MUST match the |
-   |              |            | domain that was authorized in the    |
-   |              |            | token.                               |
-   +--------------+------------+--------------------------------------+
-   | *Host*       | host       | (OPTIONAL) The host name of the Sub  |
-   |              |            | Domain that was authorized in the    |
-   |              |            | token.  If omitted or left blank,    |
-   |              |            | the template is being applied to the |
-   |              |            | Zone Apex.                           |
-   +--------------+------------+--------------------------------------+
-   | *InstanceId* | instanceId | (OPTIONAL) Only applicable to        |
-   |              |            | templates supporting multiple        |
-   |              |            | instances (see multiInstance         |
-   |              |            | (Section 9.1) template property).    |
-   |              |            | For DNS Provider storing information |
-   |              |            | about applied templates allows       |
-   |              |            | removal of single instance of        |
-   |              |            | template.  If missing all instances  |
-   |              |            | of template MUST be removed.         |
-   +--------------+------------+--------------------------------------+
+    +==============+============+=====================================+
+    | Property     | Key        | Description                         |
+    +==============+============+=====================================+
+    | *URL API*    | urlAPI     | (REQUIRED) Value of urlAPI from the |
+    |              |            | settings endpoint.                  |
+    +--------------+------------+-------------------------------------+
+    | *Service     | providerId | (REQUIRED) identifier of the        |
+    | Provider Id* |            | Service Provider of the template to |
+    |              |            | be applied                          |
+    +--------------+------------+-------------------------------------+
+    | *Service Id* | serviceId  | (REQUIRED) The name or identifier   |
+    |              |            | of the template to be applied.      |
+    +--------------+------------+-------------------------------------+
+    | *Domain*     | domain     | (REQUIRED) The Zone Apex domain     |
+    |              |            | name being configured.  It MUST     |
+    |              |            | match the domain that was           |
+    |              |            | authorized in the token.            |
+    |              |            | The value MUST conform to the       |
+    |              |            | domain-name syntax (see Section 4). |
+    |              |            | When comparing against the          |
+    |              |            | authorized domain, both sides MUST  |
+    |              |            | first be normalised to A-label form |
+    |              |            | per [RFC5891].                      |
+    +--------------+------------+-------------------------------------+
+    | *Host*       | host       | (OPTIONAL) The host name of the Sub |
+    |              |            | Domain that was authorized in the   |
+    |              |            | token.  If omitted or left blank,   |
+    |              |            | the template is being applied to    |
+    |              |            | the Zone Apex.                      |
+    |              |            | When present, the value MUST be a   |
+    |              |            | single name conforming to domain-   |
+    |              |            | name (see Section 4) or an empty    |
+    |              |            | string.                             |
+    +--------------+------------+-------------------------------------+
+    | *InstanceId* | instanceId | (OPTIONAL) Only applicable to       |
+    |              |            | templates supporting multiple       |
+    |              |            | instances (see multiInstance        |
+    |              |            | (Section 9.1) template property).   |
+    |              |            | For DNS Provider storing            |
+    |              |            | information about applied templates |
+    |              |            | allows removal of single instance   |
+    |              |            | of template.  If missing all        |
+    |              |            | instances of template MUST be       |
+    |              |            | removed.                            |
+    +--------------+------------+-------------------------------------+
 
-     Table 15: URI template parameters of the revert end-point in the
-                                async flow
+        Table 15: URI template parameters of the revert end-point in
+                               the async flow
 
    The DNS Provider MUST be able to accept these on the query string or
    in the body of the POST with application/json encoding.
@@ -2056,12 +2290,15 @@ Table of Contents
    |             |        |                   |created this template.  |
    |             |        |                   |This is used in the URLs|
    |             |        |                   |to identify the Service |
-   |             |        |                   |Provider.  To ensure    |
-   |             |        |                   |non-coordinated         |
-   |             |        |                   |uniqueness, this SHOULD |
-   |             |        |                   |be the domain name of   |
-   |             |        |                   |the Service Provider    |
-   |             |        |                   |(e.g.                   |
+   |             |        |                   |Provider.               |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-id syntax (see|
+   |             |        |                   |Section 4).             |
+   |             |        |                   |To ensure non-          |
+   |             |        |                   |coordinated uniqueness, |
+   |             |        |                   |this SHOULD be the      |
+   |             |        |                   |domain name of the      |
+   |             |        |                   |Service Provider (e.g.  |
    |             |        |                   |exampleservice.example).|
    +-------------+--------+-------------------+------------------------+
    |*Service     |String  |providerName       |(REQUIRED) The name of  |
@@ -2070,17 +2307,20 @@ Table of Contents
    |             |        |                   |This SHOULD be displayed|
    |             |        |                   |to the user on the DNS  |
    |             |        |                   |Provider consent UX.    |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-display-name  |
+   |             |        |                   |syntax (see Section 4). |
    +-------------+--------+-------------------+------------------------+
    |*Service Id* |String  |serviceId          |(REQUIRED) The name or  |
    |             |        |                   |identifier of the       |
    |             |        |                   |template.  This is used |
    |             |        |                   |in URLs to identify the |
-   |             |        |                   |template.  It is also   |
-   |             |        |                   |used in the scope       |
-   |             |        |                   |parameter for OAuth.  It|
-   |             |        |                   |MUST NOT contain space  |
-   |             |        |                   |characters, and SHOULD  |
-   |             |        |                   |be URL friendly.        |
+   |             |        |                   |template and in the     |
+   |             |        |                   |scope parameter for     |
+   |             |        |                   |OAuth.                  |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-id syntax (see|
+   |             |        |                   |Section 4).             |
    +-------------+--------+-------------------+------------------------+
    |*Service     |String  |serviceName        |(REQUIRED) The name of  |
    |Name*        |        |                   |the service suitable for|
@@ -2088,6 +2328,9 @@ Table of Contents
    |             |        |                   |This SHOULD be displayed|
    |             |        |                   |to the user on the DNS  |
    |             |        |                   |Provider consent UX.    |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-display-name  |
+   |             |        |                   |syntax (see Section 4). |
    +-------------+--------+-------------------+------------------------+
    |*Version*    |Integer |version            |(OPTIONAL) If present   |
    |             |        |                   |this represents a       |
@@ -2100,6 +2343,9 @@ Table of Contents
    |             |        |                   |communication and       |
    |             |        |                   |transparency between    |
    |             |        |                   |providers.              |
+   |             |        |                   |When present, the value |
+   |             |        |                   |MUST be a non-negative  |
+   |             |        |                   |integer.                |
    +-------------+--------+-------------------+------------------------+
    |*Logo*       |String  |logoUrl            |(OPTIONAL) A graphical  |
    |             |        |                   |logo representing the   |
@@ -2110,29 +2356,42 @@ Table of Contents
    |             |        |                   |displayed to the user on|
    |             |        |                   |the DNS Provider consent|
    |             |        |                   |UX.                     |
+   |             |        |                   |When present, the value |
+   |             |        |                   |MUST be a valid URI     |
+   |             |        |                   |[RFC3986] with scheme   |
+   |             |        |                   |"https".                |
    +-------------+--------+-------------------+------------------------+
-   |*Description*|Text    |description        |(OPTIONAL) A textual    |
+   |*Description*|String  |description        |(OPTIONAL) A textual    |
    |             |        |                   |description of what this|
    |             |        |                   |template attempts to do.|
    |             |        |                   |This is meant to assist |
    |             |        |                   |developers and MUST NOT |
    |             |        |                   |be displayed to the     |
    |             |        |                   |user.                   |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-description-  |
+   |             |        |                   |text syntax (see        |
+   |             |        |                   |Section 4).             |
    +-------------+--------+-------------------+------------------------+
-   |*Variable    |Text    |variableDescription|(OPTIONAL) A textual    |
+   |*Variable    |String  |variableDescription|(OPTIONAL) A textual    |
    |Description* |        |                   |description of what the |
    |             |        |                   |variables are.  This is |
    |             |        |                   |meant to assist         |
    |             |        |                   |developers and MUST NOT |
    |             |        |                   |be displayed to the     |
    |             |        |                   |user.                   |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-description-  |
+   |             |        |                   |text syntax (see        |
+   |             |        |                   |Section 4).             |
    +-------------+--------+-------------------+------------------------+
    |*Synchronous |Boolean |syncBlock          |(OPTIONAL) Indicates    |
    |Block*       |        |                   |that the synchronous    |
    |             |        |                   |protocol MUST be        |
    |             |        |                   |disabled for this       |
-   |             |        |                   |template.  The default  |
-   |             |        |                   |for this is false.      |
+   |             |        |                   |template.               |
+   |             |        |                   |The default for this is |
+   |             |        |                   |false.                  |
    +-------------+--------+-------------------+------------------------+
    |*Shared*     |Boolean |shared             |(OPTIONAL) This flag has|
    |             |        |                   |been deprecated.  It    |
@@ -2154,9 +2413,10 @@ Table of Contents
    |             |        |                   |This information SHOULD |
    |             |        |                   |augment the display of  |
    |             |        |                   |the "providerName" from |
-   |             |        |                   |the template.  The      |
-   |             |        |                   |default for this is     |
-   |             |        |                   |false.  For backward    |
+   |             |        |                   |the template.           |
+   |             |        |                   |The default for this is |
+   |             |        |                   |false.                  |
+   |             |        |                   |For backward            |
    |             |        |                   |compatability with DNS  |
    |             |        |                   |Providers not at V2.2 of|
    |             |        |                   |the spec it is          |
@@ -2172,8 +2432,8 @@ Table of Contents
    |             |        |                   |This information SHOULD |
    |             |        |                   |augment the display of  |
    |             |        |                   |the "serviceName" from  |
-   |             |        |                   |the template.  The      |
-   |             |        |                   |default for this is     |
+   |             |        |                   |the template.           |
+   |             |        |                   |The default for this is |
    |             |        |                   |false.                  |
    +-------------+--------+-------------------+------------------------+
    |*Synchronous |String  |syncPubKeyDomain   |(OPTIONAL) When present,|
@@ -2186,28 +2446,35 @@ Table of Contents
    |             |        |                   |the TXT record from DNS |
    |             |        |                   |that contains the public|
    |             |        |                   |key used for signing.   |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the dc-pubkey-domain |
+   |             |        |                   |syntax (see Section 4). |
    +-------------+--------+-------------------+------------------------+
    |*Synchronous |String  |syncRedirectDomain |(OPTIONAL) When present,|
-   |Redirect     |        |                   |this is a comma         |
+   |Redirect     |        |                   |this is a comma-        |
    |Domains*     |        |                   |separated list of domain|
    |             |        |                   |names for which         |
-   |             |        |                   |redirects are allowed be|
-   |             |        |                   |sent to after applying a|
+   |             |        |                   |redirects are allowed to|
+   |             |        |                   |be sent after applying a|
    |             |        |                   |template for the        |
    |             |        |                   |synchronous flow.  DNS  |
    |             |        |                   |Provider MUST NOT send  |
    |             |        |                   |redirects to any other  |
    |             |        |                   |domain name not included|
    |             |        |                   |on this list.           |
+   |             |        |                   |The value MUST conform  |
+   |             |        |                   |to the "dc-host-list"   |
+   |             |        |                   |syntax (see Section 4). |
    +-------------+--------+-------------------+------------------------+
-   |*Multiple    |Boolean |multiInstance      |(OPTIONAL) Defaults to  |
-   |Instance*    |        |                   |False.  When set to     |
-   |             |        |                   |True, it indicates that |
+   |*Multiple    |Boolean |multiInstance      |(OPTIONAL) When set to  |
+   |Instance*    |        |                   |true, it indicates that |
    |             |        |                   |the template MAY be     |
    |             |        |                   |applied multiple times. |
    |             |        |                   |This only impacts DNS   |
    |             |        |                   |Providers that maintain |
    |             |        |                   |template state in DNS.  |
+   |             |        |                   |The default for this is |
+   |             |        |                   |false.                  |
    +-------------+--------+-------------------+------------------------+
    |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When present,|
    |Phishing*    |        |                   |this tells the DNS      |
@@ -2222,8 +2489,9 @@ Table of Contents
    |             |        |                   |display warnings to the |
    |             |        |                   |user and be more verbose|
    |             |        |                   |about the changes       |
-   |             |        |                   |applied.  The default   |
-   |             |        |                   |value for this is false.|
+   |             |        |                   |applied.                |
+   |             |        |                   |The default value for   |
+   |             |        |                   |this is false.          |
    +-------------+--------+-------------------+------------------------+
    |*Host        |Boolean |hostRequired       |(OPTIONAL) Defaults to  |
    |Required*    |        |                   |false.  When present    |
@@ -2352,9 +2620,12 @@ Table of Contents
    |           |      |                         |parameter identifies  |
    |           |      |                         |the group the record  |
    |           |      |                         |belongs to when       |
-   |           |      |                         |applying changes.     |
-   |           |      |                         |This MUST NOT contain |
-   |           |      |                         |variables.            |
+   |           |      |                         |applying changes.  The|
+   |           |      |                         |value MUST conform to |
+   |           |      |                         |the dc-id syntax (see |
+   |           |      |                         |Section 4) and MUST   |
+   |           |      |                         |NOT contain variable  |
+   |           |      |                         |expressions.          |
    +-----------+------+-------------------------+----------------------+
    |*Essential*|enum  |essential                |(OPTIONAL) This       |
    |           |      |                         |parameter indicates   |
@@ -2514,8 +2785,13 @@ Table of Contents
    |Conflict   |      |                         |conflicts when        |
    |Matching   |      |                         |txtConflict-          |
    |Prefix*    |      |                         |MatchingMode is       |
-   |           |      |                         |"Prefix".  This MUST  |
-   |           |      |                         |NOT contain variables.|
+   |           |      |                         |"Prefix".  The value  |
+   |           |      |                         |MUST be a non-empty   |
+   |           |      |                         |string consisting of  |
+   |           |      |                         |printable ASCII       |
+   |           |      |                         |characters only.  It  |
+   |           |      |                         |MUST NOT contain      |
+   |           |      |                         |variable expressions. |
    |           |      |                         |See below             |
    |           |      |                         |(Section 10.3).       |
    +-----------+------+-------------------------+----------------------+
@@ -2595,7 +2871,19 @@ Table of Contents
    |           |      |                         |other SPFM records    |
    |           |      |                         |into final SPF TXT    |
    |           |      |                         |record.  See          |
-   |           |      |                         |Section 9.3.5.        |
+   |           |      |                         |Section 9.3.5.  The   |
+   |           |      |                         |value MUST contain    |
+   |           |      |                         |only mechanism and    |
+   |           |      |                         |modifier terms as     |
+   |           |      |                         |defined in [RFC7208]  |
+   |           |      |                         |Section 5, excluding  |
+   |           |      |                         |the version prefix    |
+   |           |      |                         |("v=spf1") and the    |
+   |           |      |                         |terminating "all"     |
+   |           |      |                         |qualifier.  The DNS   |
+   |           |      |                         |Provider MUST validate|
+   |           |      |                         |the syntax before     |
+   |           |      |                         |merging.              |
    +-----------+------+-------------------------+----------------------+
 
            Table 17: properties of the template record definition
@@ -2926,6 +3214,11 @@ Table of Contents
            the state of any template instances that were resolved for
            removal.
 
+   7.  *Redirect browser* - If a redirect_uri parameter was provided in
+       the request, the DNS Provider MUST redirect the user agent to
+       that URI upon successful template application (see
+       Section 8.3.1.3).
+
 10.3.  Conflict Detection
 
    Conflict detection is performed by the DNS Provider prior to template
@@ -3126,6 +3419,91 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       steps and branching for DNS Providers tracking template state vs.
       those that do not.
 
+   *  Added normative ABNF syntax rules to the Terminology section.
+
+   *  Added Identifier Syntax subsection defining normative constraints
+      on providerId, serviceId, groupId, and instanceId via the dc-id
+      rule.
+
+   *  Added IDN support for domain and host parameters across all
+      endpoints: both Unicode (U-label/UTF-8) and ACE (A-label/punycode)
+      forms are now accepted; receivers MUST normalise U-labels to
+      A-labels per RFC 5891.
+
+   *  Restricted nameServers, syncPubKeyDomain, and syncRedirectDomain
+      to ACE-form domain names only (dc-ascii-name).
+
+   *  Strengthened normative constraints on URL fields (urlSyncUX,
+      urlAsyncUX, urlAPI, urlControlPanel, logoUrl) with explicit RFC
+      3986 conformance requirements.
+
+   *  Specified dc-sig (base64 per RFC 4648) for the sig parameter and
+      dc-key-label (single plain ACE or RFC 8552 underscore-prefixed
+      label) for the key parameter in the synchronous signing flow.
+
+   *  Specified dc-force for the force parameter (string "0" or "1"),
+      "state" for the state parameter.
+
+   *  Added normative display-name constraints (UTF-8, at most 255 code
+      points, printable, no control characters) for providerName,
+      providerDisplayName, and serviceName.
+
+   *  Clarified groupId (in endpoint parameters and template records)
+      must conform to dc-id and MUST NOT contain variable expressions.
+
+   *  Added normative reference to spfRules field: must contain only SPF
+      mechanism/modifier terms per RFC 7208 Section 5, excluding version
+      prefix and all qualifier.
+
+   *  Added normative constraint on txtConflictMatchingPrefix: printable
+      ASCII only, no variable expressions.
+
+   *  Added normative constraint on version: MUST be a non-negative
+      integer when present.
+
+   *  Added normative references: RFC 4648 (Base64), RFC 5891 (IDNA
+      2008).
+
+   *  Added dc-underscore-label ABNF rule for RFC 8552 underscore-
+      prefixed DNS labels; added dc-key-label rule (plain ACE or
+      underscore label) replacing the former dc-key-host single-label
+      rule for the key parameter; added dc-pubkey-domain rule allowing
+      zero or more underscore-label prefixes on syncPubKeyDomain;
+      updated normative constraints on syncPubKeyDomain and key
+      parameter accordingly.
+
+   *  Added dc-display-name ABNF rule referencing unicode-assignable
+      (RFC 9839 Section 4.3) for display-name fields; replaced informal
+      UTF-8/printable-characters prose constraints on providerName (DNS
+      Provider discovery and template) and serviceName (template) with a
+      normative reference to dc-display-name; added RFC 9839 as a
+      normative reference.
+
+   *  Added dc-description-text ABNF rule (at most 2048 unicode-
+      assignable code points per RFC 9839 Section 4.3); added normative
+      dc-description-text constraints to the description and
+      variableDescription template fields.
+
+   *  Added normative constraints to the Query Supported Template
+      endpoint parameter table: urlAPI cross-referenced to the settings
+      endpoint; providerId and serviceId required to conform to dc-id
+      syntax.
+
+   *  Removed redundant "Both ACE ... forms are accepted; the receiver
+      MUST convert ..." sentences from domain and host parameter
+      descriptions across all endpoints; the domain-name terminology
+      reference is sufficient.  Retained normative A-label normalisation
+      requirements for token comparison in the OAuth apply and revert
+      flows.
+
+   *  Added normative constraints to the synchronous Apply Template
+      parameter table: urlSyncUX cross-referenced to the settings
+      endpoint; providerId and serviceId required to conform to dc-id;
+      redirect_uri required to be an absolute URI per RFC 3986;
+      properties parameter names required to conform to variable-name
+      syntax with DNS Provider as the correct receiver of the ignore-
+      unknown-parameters rule.
+
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
@@ -3247,6 +3625,24 @@ Normative References
               Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
               BCP 68, RFC 5234, January 2008,
               <https://www.rfc-editor.org/info/rfc5234>.
+
+   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
+              Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October
+              2006, <https://www.rfc-editor.org/info/rfc4648>.
+
+   [RFC5891]  Klensin, J., "Internationalized Domain Names in
+              Applications (IDNA): Protocol", IETF,
+              DOI 10.17487/RFC5891, RFC 5891, August 2010,
+              <https://www.rfc-editor.org/info/rfc5891>.
+
+   [RFC5890]  Klensin, J., "Internationalized Domain Names for
+              Applications (IDNA): Definitions and Document Framework",
+              IETF, DOI 10.17487/RFC5890, RFC 5890, August 2010,
+              <https://www.rfc-editor.org/info/rfc5890>.
+
+   [RFC9839]  Bray, T. and P. Hoffman, "Unicode Character Repertoire
+              Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, August
+              2025, <https://www.rfc-editor.org/info/rfc9839>.
 
 Informative References
 

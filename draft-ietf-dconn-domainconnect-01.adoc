@@ -11,6 +11,7 @@
 :ipr: trust200902
 :area: Applications and Real-Time
 :keyword: dns
+:rfcedstyle:
 :givenname: Pawel
 :surname: Kowalik
 :email: pawel.kowalik@denic.de
@@ -110,6 +111,9 @@ The following definitions and rules are imported normatively from other document
 `"ldh-label"`:: "NR-LDH Label" as defined in Section 2.3.2.2. of <<RFC5890>>.
 `"domain-name"`:: "Internationalized Domain Name" as defined in Section 2.3.2.3. of <<RFC5890>>.
 `"state"`:: "state" as defined in Appendix A. Section A5 of <<RFC6749>>.
+`"client_id"`:: "client_id" as defined in Section 2.2 of <<RFC6749>>.
+`"response_type"`:: "response_type" as defined in Section 3.1.1 of <<RFC6749>>.
+`"redirect_uri"`:: "redirect_uri" as defined in Appendix A, Section A.6 of <<RFC6749>>.
 `"unicode-assignable"`:: "Unicode Assignables" as defined in Section 4.3 of <<RFC9839>>.
 
 The following additional ABNF rules are defined in this document and used normatively throughout.
@@ -119,9 +123,19 @@ The following additional ABNF rules are defined in this document and used normat
 ; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
-                ; non-empty token, max 63 octets; 
-                ; used for providerId, serviceId, groupId, 
+                ; non-empty token, max 63 octets;
+                ; used for providerId, serviceId, groupId,
                 ; instanceId
+
+dc-id-list     =  dc-id *( "," dc-id )
+                ; comma-separated list of dc-id values;
+                ; used for groupId parameter
+
+dc-scope       =  dc-id *( SP dc-id )
+                ; space-separated list of dc-id values;
+                ; strict subset of OAuth 2.0 scope (RFC 6749 
+                ; Appendix A.4);
+                ; used for the scope parameter
 
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
@@ -790,9 +804,7 @@ The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 |(OPTIONAL) This parameter specifies the groups from the template to apply.
 If no group is specified, all groups are applied. +
 
-Each group identifier MUST conform to the `dc-id` syntax (see <<terminology>>).
-Multiple groups MAY be specified as a comma-separated list of `dc-id` values.
-TODO: define an own term for a comma-separated list of groupIds
+The value MUST conform to the `dc-id-list` syntax (see <<terminology>>).
 
 |*Signature*
 |sig
@@ -847,66 +859,42 @@ Several parameters must be appended to the end of this redirect_uri.
 
 * State
 +
-If a state parameter is passed in on the query string, this must be
-passed back as state= on the redirect_uri.
+If a state parameter is passed in on the query string, this must be passed back as state= on the redirect_uri.
 
 * Error
 +
-If authorization could not be obtained or an error has occurred, the
-parameter error= must be appended. For consistency with the asynchronous
-OAuth flows the valid values for the error parameter will be as
-specified in OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - "error"
-parameter). Valid values are: invalid_request, unauthorized_client,
-access_denied, unsupported_response_type, invalid_scope, server_error,
-and temporarily_unavailable.
+If authorization could not be obtained or an error has occurred, the parameter `"error="` must be appended. For consistency with the asynchronous OAuth flows the valid values for the error parameter will be as specified in OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - `"error"` parameter). Valid values are: `"invalid_request"`, `"unauthorized_client"`, `"access_denied"`, `"unsupported_response_type"`, `'invalid_scope'`, `"server_error"`, and `"temporarily_unavailable"`.
 
 * Error Description
 +
-When an error occurs, an OPTIONAL error description containing a
-developer focused error description may be returned.
+When an error occurs, an OPTIONAL error description containing a developer focused error description may be returned.
 +
-Under normal
-operation the access_denied error can be returned for a number of
-reasons. For example, the user may not have access to the account that
-owns the domain. Even if they do and successfully sign-in, the account
-or the domain may be suspended.
+Under normal operation the access_denied error can be returned for a number of reasons. For example, the user may not have access to the account that owns the domain. Even if they do and successfully sign-in, the account or the domain may be suspended.
 +
-It is unlikely that the DNS Provider would want to leak this information
-to the Service Provider, and as such the description may be vague.
+It is unlikely that the DNS Provider would want to leak this information to the Service Provider, and as such the description may be vague.
 +
-There is one piece of information that may be interesting to communicate
-to the Service Provider. This is when the end user decided to cancel the
-operation. If the DNS Provider wishes to communicate this to the
-Service Provider, when the error=access_denied the error_description may
-contain the prefix "user_cancel". Again, this is left to the discretion
+There is one piece of information that may be interesting to communicate to the Service Provider. This is when the end user decided to cancel the operation. If the DNS Provider wishes to communicate this to the Service Provider, when the `"error=access_denied"` the error_description may contain the prefix `"user_cancel"`. Again, this is left to the discretion
 of the DNS Provider.
 
-To prevent an open redirect, unless the request is digitally signed the redirect_uri
-must be within the domains specified in the template in syncRedirectDomain.
+To prevent an open redirect, unless the request is digitally signed the `"redirect_uri"` must be within the domains specified in the template in `"syncRedirectDomain"`.
 
 Please note that even though in this case Service Provider is informed whether the process finished without error, by receiving request to redirect_uri without error parameter, the Service Provider still SHOULD verify via DNS to be sure that the changes have been applied (See: <<verification-of-changes>>).
 
 ==== Security Considerations
 ===== Risk of phishing with open template parameters
-By applying a template with parameters there is a security
-consideration that must be taken into account.
+By applying a template with parameters there is a security consideration that must be taken into account.
 
-Consider the template above where the IP address of the A record is
-passed in through a variable. A bad actor could generate a URL with a
-malicious IP and phish users by sending out emails asking them to "re-configure" their
-service. If an end user is convinced to click on
-this link, they would land on the DNS Provider site to confirm the
-change. To the user, this would appear to be a valid request to
-configure the domain. Yet the IP would be hijacking the service.
+Consider the template above where the IP address of the A record is passed in through a variable. A bad actor could generate a URL with a malicious IP and phish users by sending out emails asking them to "re-configure" their service. If an end user is convinced to click on this link, they would land on the DNS Provider site to confirm the change. To the user, this would appear to be a valid request to configure the domain. Yet the IP would be hijacking the service.
 
 Not all templates have this problem. But when they do, there are several options.
 
 ===== Disable Synchronous
 
-One option is to disable the synchronous flow and use
-asynchronous OAuth. This can be controlled with the `"syncBlock"` value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.
+One option is to disable the synchronous flow and use asynchronous OAuth. This can be controlled with the `"syncBlock"` value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.
 
 ===== Digitally Sign Requests
+
+//TODO: move it to own section describing mechanism
 
 Another option is to digitally sign the query string. A
 signature is appended as an additional query string parameter,
@@ -980,10 +968,10 @@ The value MUST conform to the `dc-frag-data` rule above: standard base64 encodin
 |a
 |(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
 
-The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the
-IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
+The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
 
-If omitted, MUST be assumed to be `"RS256"`.
+If omitted, MUST be assumed to be `"RS256"`. +
+
 Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
 
 |*Public Key Format*
@@ -1122,50 +1110,29 @@ state,properties*}
 }
 ----
 
-To initiate the OAuth flow the Service Provider first links to the DNS
-Provider to gain consent.
+To initiate the OAuth flow the Service Provider first links to the DNS Provider to gain consent.
 
-This endpoint is similar to the synchronous flow described above. The DNS Provider
-MUST authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for
-permission. Instead of permission to make a change to DNS, the permission
-is now to allow the Service Provider to
-make the changes on their behalf. Similarly the
-DNS Provider MAY warn the user that (the eventual)
-application of a template might change existing records and/or disrupt
-existing services attached to the domain.
+This endpoint is similar to the synchronous flow described above. The DNS Provider MUST authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for permission. Instead of permission to make a change to DNS, the permission is now to allow the Service Provider to make the changes on their behalf. Similarly the DNS Provider MAY warn the user that (the eventual) application of a template might change existing records and/or disrupt existing services attached to the domain.
 
-While the variables for the applied template would be provided later,
-the values of some variables may be necessary to determine conflicts. As
-such, any variables impacting conflicting records SHOULD be provided
-in the consent flow. This primarly includes variables in hosts, and
-variables in the data portion for certain TXT records.
+While the variables for the applied template would be provided later, the values of some variables may be necessary to determine conflicts. As such, any variables impacting conflicting records SHOULD be provided in the consent flow. This primarly includes variables in hosts, and variables in the data portion for certain TXT records.
 
-The protocol allows for the Service Provider to gain consent to apply
-multiple templates. These templates are specified in the `"scope"` parameter. It
-also allows for the Service Provider to gain consent to apply these templates to the domain
-or to the domain with multiple sub-domains. These are specified in the `"domain"` and `"host"`
-parameter. If conflict detection is implemented
-by the DNS Provider, they SHOULD account for all permutations, in order to inform
-the end user of all possible consequences of the authorised change.
+The protocol allows for the Service Provider to gain consent to apply multiple templates. These templates are specified in the `"scope"` parameter. It also allows for the Service Provider to gain consent to apply these templates to the domain or to the domain with multiple sub-domains. These are specified in the `"domain"` and `"host"` parameter. If conflict detection is implemented by the DNS Provider, they SHOULD account for all permutations, in order to inform the end user of all possible consequences of the authorised change.
 
-The scope parameter is a space separated list (as per the OAuth protocol)
-of the template serviceIds. The host parameter is an OPTIONAL comma separated
-list of hosts. A blank entry for the host implies the template can be
-applied to the Zone Apex For example:
+The scope parameter is a space separated list (as per the OAuth protocol) of the template serviceIds. The host parameter is an OPTIONAL comma separated list of hosts. A blank entry for the host implies the template can be applied to the Zone Apex For example:
 
 [cols=",",options="header",title="examples of scope and host parameter values in the async flow"]
 |=======================================================================
 |*Query String*
 |*Description*
 
-|`scope=t1%20t2&domain=example.com`
-|Templates "t1" and "t2" can be applied to example.com
+|`"scope=t1%20t2&domain=example.com"`
+|Templates `"t1"` and `"t2"` can be applied to `"example.com"`
 
-|`scope=t1%20t2&domain=example.com&host=sub1,sub2`
-|Templates "t1" and "t2" can be applied to sub1.example.com or sub2.example.com
+|`"scope=t1%20t2&domain=example.com&host=s1,s2"`
+|Templates `"t1"` and `"t2"` can be applied to `"s1.example.com"` or `"s2.example.com"`
 
-|`scope=t1%20t2&domain=example.com&host=sub1,`
-|Templates "t1" and "t2" can be applied to example.com or sub1.example.com
+|`"scope=t1%20t2&domain=example.com&host=s1,"`
+|Templates `"t1"` and `"t2"` can be applied to `"example.com"` or `"s1.example.com"`
 |=======================================================================
 
 Upon successful authorization/verification/consent from the user, the DNS Provider MUST direct the end user’s browser to the redirect URI. The authorization code MUST be appended to this URI as a query parameter of `"code="` as per the OAuth specification.
@@ -1173,11 +1140,9 @@ Upon successful authorization/verification/consent from the user, the DNS Provid
 Similar to the synchronous flow, upon error the DNS Provider MAY append an error code as query parameter `"error"`. These errors are also from the OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - "error" parameter). Valid values include: `invalid_request`, `unauthorized_client`, `access_denied`, `unsupported_response_type`, `invalid_scope`, `server_error`, and `temporarilly_unavailable`. An OPTIONAL `error_description` suitable for developers may also be returned at the discretion of the DNS Provider.
 The same considerations as in the synchronous flow apply here.
 
-The state value passed into the call MUST be passed back on the query
-string as `"state="`.
+The state value passed into the call MUST be passed back on the query string as `"state="`.
 
-The following table describes the values of the URI template for the request for the OAuth consent flow that must be included unless otherwise
-indicated
+The following table describes the values of the URI template for the request for the OAuth consent flow that must be included unless otherwise indicated
 
 [cols=",,",options="header",title="URI template parameters of the authorization end-point in async flow"]
 |=======================================================================
@@ -1185,73 +1150,81 @@ indicated
 |Key
 |Description
 
-|*URL Sync UX*
+|*URL Async UX*
 |urlAsyncUX
-|(REQUIRED) Value of urlAsyncUX property from the settings endpoint.
+|(REQUIRED) The base URL of the DNS Provider asynchronous UX endpoint, taken from the `”urlAsyncUX”` field of the settings endpoint response (see <<dns-provider-discovery>>).
 
 |*Service Provider Id*
 |providerId
-|(REQUIRED) identifier of the Service Provider of the template to be applied
+|(REQUIRED) Identifier of the Service Provider of the template to be applied.
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Domain*
 |domain
-|(REQUIRED) The domain name being configured. This is the Zone Apex.
+|(REQUIRED) The domain name being configured. This is the Zone Apex. +
 
 The value MUST conform to the `domain-name` syntax (see <<terminology>>).
 
-
 |*Host*
 |host
-|(OPTIONAL) A comma-separated list of host names upon which the template may be applied.
+|(OPTIONAL) A comma-separated list of host names upon which the template may be applied. +
 
-The value MUST conform to the `dc-host-list` syntax (see <<terminology>>).
+The value MUST conform to the `dc-host-list` syntax (see <<terminology>>). +
 
 Each entry MUST be either an empty string (representing the Zone Apex) or a name conforming to `domain-name`.
 An empty entry in the list (e.g., a leading or trailing comma) represents the Zone Apex.
 
 |*Client Id*
 |client_id
-|(REQUIRED) The client id that was provided by the DNS Provider to the Service Provider during registration.
+|(REQUIRED) The client identifier issued by the DNS Provider to the Service Provider during registration. +
+
+The value MUST conform to the `”client_id”` syntax as defined in Section 2.2 of <<RFC6749>>.
 
 |*Redirect URI*
 |redirect_uri
-|(REQUIRED) The location to direct the client’s browser upon successful authorization or upon error.
-Validation of the redirect_uri MUST be done by the DNS Provider to match the values provided during onboarding.
+|(REQUIRED) The location to direct the client’s browser upon successful authorization or upon error. +
 
-|*Response type*
+The value MUST be an absolute URI conforming to <<RFC3986>>. +
+
+The DNS Provider MUST validate the value against the redirect URIs registered during onboarding.
+
+|*Response Type*
 |response_type
-|(OPTIONAL) If included it MUST be the string ‘code’ to indicate an authorization code is being requested.
+|(OPTIONAL) If present, the value MUST be the string `”code”` to indicate that an authorization code is being requested, as defined in Section 3.1.1 of <<RFC6749>>.
 
 |*Scope*
 |scope
-|(REQUIRED) The OAuth scope corresponds to the requested templates. This is list of space separated serviceIds.
+|(REQUIRED) The OAuth scope identifying the requested templates, as defined in Section 3.3 of <<RFC6749>>. +
+
+The value MUST conform to the `dc-scope` syntax (see <<terminology>>): a space-separated list of `”serviceId”` values, each conforming to `dc-id`.
 
 |*Provider Name*
 |providerName
-|(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template providerName. This text SHOULD be used to augment the providerName value from the template, not replace it.
+|(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template `”providerName”`. This text SHOULD be used to augment the `”providerName”` value from the template, not replace it. +
 
 The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
-
 
 |*Service Name*
 |serviceName
-|(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template serviceName(s). It SHOULD be used to augment the serviceName value(s) from the template, not replace.
+|(OPTIONAL) This parameter allows for the caller to provide additional text for display with the template `”serviceName”` values. It SHOULD be used to augment the `”serviceName”` value(s) from the template, not replace them. +
 
 The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 
-
 |*State*
 |state
-|(OPTIONAL) This is a random, unique string passed along to prevent CSRF or to pass state value back to the caller.
+|(OPTIONAL) A random, unique string passed along to prevent CSRF or to pass state back to the caller. +
 
-The value MUST conform to the `"state"` syntax (see <<terminology>>).
+The value MUST conform to the `”state”` syntax as defined in Appendix A of <<RFC6749>> (see <<terminology>>). +
 
-If present it MUST be returned as a parameter appended to the `redirect_url` described above.
+If present, it MUST be returned as a parameter appended to the `”redirect_uri”` described above.
 
 |*Name/Value Pairs*
 |properties
-|(OPTIONAL) Any key that will be used as a replacement for the “% surrounded” value(s) in a template required for conflict detection. +
+|(OPTIONAL) Variable values required for conflict detection prior to template application.
+Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>).
+// TODO: the syntax for parameter values is not yet defined
 This includes variables used in hosts and data in certain TXT records.
+The DNS Provider MUST ignore any parameter not referenced in the template.
 |=======================================================================
 
 ==== OAuth Flow: Requesting an Access Token
@@ -1272,34 +1245,27 @@ POST
 
 |*URL API*
 |urlAPI
-|(REQUIRED) Value of urlAPI property from the settings endpoint.
+|(REQUIRED) Value of urlAPI property from the settings endpoint. +
+
+The value MUST be an absolute URI conforming to <<RFC3986>>.
+
 |=======================================================================
 
 
 Once authorization has been granted, the Service Provider MUST use the Authorization Code provided to request an Access Token. The OAuth specification recommends that the Authorization Code be a short lived token, and a reasonable recommended setting is ten minutes, however the specific setup would depend on specifics of DNS Provider's implementation. As such this exchange needs to be completed before that time has expired or the process will need to be repeated.
 
-This token exchange is typically done via a server to server API call from the
-Service Provider to the DNS Provider using a POST. When called in this manner a
-secret is provided
-along with the Authorization Code.
+This token exchange is typically done via a server to server API call from the Service Provider to the DNS Provider using a POST. When called in this manner a secret is provided along with the Authorization Code.
 
-OAuth does allow for retrieving the access token without a secret. This is typically
-done when the OAuth client is a client application.
+OAuth does allow for retrieving the access token without a secret. This is typically done when the OAuth client is a client application.
 When onboarding with the DNS Provider this would need to be enabled.
 
-When the secret is provided (which is the normal case), care must be taken. A malicious
-user could create a domain that returns a false _`"domainconnect"` TXT record, and
-subsequently a JSON call to their own server for the API end point. By doing so, they
-could then run Domain Connect on their domain and retrieve the secret.
+When the secret is provided (which is the normal case), care must be taken. A malicious user could create a domain that returns a false _`"domainconnect"` TXT record, and subsequently a JSON call to their own server for the API end point. By doing so, they could then run Domain Connect on their domain and retrieve the secret.
 
 As such the urlAPI used for OAuth by the Service Provider SHOULD be maintained per DNS Provider and not the value retrieved during discovery or other measures have to be implemented to prevent token leakage.
 
 The following table describes the POST parameters that MUST be included in the
 request for the access token unless otherwise indicated.
-The parameters SHALL be accepted via the
-query string or the body of the post. This is again particularly
-important for the `client_secret`, as passing secrets via a query string
-is generally frowned upon given that various systems often log URLs.
+The parameters SHALL be accepted via the query string or the body of the post. This is again particularly important for the `client_secret`, as passing secrets via a query string is generally frowned upon given that various systems often log URLs.
 
 The body of the post is application/json encoded.
 
@@ -1309,52 +1275,79 @@ The body of the post is application/json encoded.
 |Key
 |Description
 
-|*Authorization Code/Refresh Code*
-|code/refresh_token
-|(REQUIRED) The authorization code that was
-provided in the previous step when the user accepted the
-authorization request, or the refresh_token for a subsequent access
-token.
+|*Authorization Code*
+|code
+|(OPTIONAL) The authorization code returned in the authorization response when the user accepted the authorization request.
+REQUIRED for initial `"access_token"` request. This value MUST NOT be set for `"access_token"` refresh request. +
+
+The value MUST conform to the `"code"` syntax as defined in Appendix A, Section A.11 of <<RFC6749>>.
+
+|*Refresh Token*
+|refresh_token
+|(OPTIONAL) The refresh token used to obtain a new access token when the current one has expired.
+REQUIRED for `"access_token"` refresh request. This value MUST NOT be set for initial `"access_token"` request.+
+
+The value MUST conform to the `"refresh_token"` syntax as defined in Appendix A, Section A.17 of <<RFC6749>>.
 
 |*Redirect URI*
 |redirect_uri
-|(OPTIONAL) This is REQUIRED if a redirect_uri was
-passed to request the authorization code. When included, it needs to be
-the same redirect_uri provided in this step.
+|(CONDITIONAL) REQUIRED if a `"redirect_uri"` was included in the authorization request.
+When present, it MUST be identical to the `"redirect_uri"` used in that request. +
 
-|*Grant type*
+The value MUST conform to the `"redirect_uri"` syntax (see <<terminology>>).
+
+|*Grant Type*
 |grant_type
-|(REQUIRED) The type of code in the request. Usually the string ‘authorization_code’ or ‘refresh_token’
+|(REQUIRED) The grant type of the token request. +
+
+The value MUST be either `"authorization_code"` or `"refresh_token"`, as defined in Appendix A, Section A.10 of <<RFC6749>>.
 
 |*Client ID*
 |client_id
-|(REQUIRED) This is the client id that was provided by the DNS Provider to the Service Provider during
-registration
+|(REQUIRED) The client identifier issued by the DNS Provider to the Service Provider during registration. +
+
+The value MUST conform to the `"client_id"` syntax (see <<terminology>>).
 
 |*Client Secret*
 |client_secret
-|(REQUIRED) The secret provided to the Service Provider during registration. Typically required
-unless the rare circumstance with secret-less OAuth.
+|(REQUIRED) The client secret issued to the Service Provider during registration. MAY be omitted in deployments using secret-less OAuth. +
+
+The value MUST conform to the `"client_secret"` syntax as defined in Appendix A, Section A.2 of <<RFC6749>>.
 |=======================================================================
 
 Upon successful token exchange, the DNS Provider MUST return a response with 4 properties in the body of the response.
 
-[cols=",",options="header",title="properties of the token end-point response"]
+[cols=",,",options="header",title="properties of the token end-point response"]
 |=======================================================================
 |Property
+|Key
 |Description
 
-|*access_token*
-|The access token to be used when making API requests
+|*Access Token*
+|access_token
+|(REQUIRED) The access token to be used when making API requests. +
 
-|*token_type*
-|Always the string "bearer"
+The value MUST conform to the `"access_token"` syntax as defined in Appendix A, Section A.12 of <<RFC6749>>.
 
-|*expires_in*
-|The number of seconds until the access_token expires
+|*Token Type*
+|token_type
+|(REQUIRED) The type of the access token. +
 
-|*refresh_token*
-|The token that can be used to request new access tokens when this one has expired.
+The value MUST conform to the `"token_type"` syntax as defined in Appendix A, Section A.13 of <<RFC6749>>. +
+
+The value MUST be `"bearer"`.
+
+|*Expires In*
+|expires_in
+|(REQUIRED) The lifetime of the access token in seconds. +
+
+The value MUST conform to the `"expires_in"` syntax as defined in Appendix A, Section A.14 of <<RFC6749>>.
+
+|*Refresh Token*
+|refresh_token
+|(OPTIONAL) The token used to request new access tokens when the current one expires. +
+
+The value MUST conform to the `"refresh_token"` syntax as defined in Appendix A, Section A.17 of <<RFC6749>>.
 |=======================================================================
 
 [cols=",,",options="header",title="http status codes of the token end-point response"]
@@ -1375,14 +1368,9 @@ call was successful. The response is the JSON described above.
 
 ==== OAuth Flow: Making Requests with Access Tokens
 
-Once the Service Provider has the access token, they can call the DNS
-Provider’s API to make changes to DNS on the domain by applying and (OPTIONALLY)
-removing authorized templates. These templates can be applied to the
-Zone Apex or to any Sub Domain that has been authorized.
+Once the Service Provider has the access token, they can call the DNS Provider’s API to make changes to DNS on the domain by applying and (OPTIONALLY) removing authorized templates. These templates can be applied to the Zone Apex or to any Sub Domain that has been authorized.
 
-All calls to this API pass the access token in the Authorization Header
-of the request to the call to the API. More details can be found in the
-OAuth specifications, but as an example:
+All calls to this API pass the access token in the Authorization Header of the request to the call to the API. More details can be found in the OAuth specifications, but as an example:
 
 [source]
 ----
@@ -1393,9 +1381,7 @@ Host: example.com
 Authorization: Bearer mF_9.B5f-4.1JqM
 ----
 
-While the calls below do not have the same security consideration of
-passing the secret, it is recommend that the urlAPI be from a stored
-value vs. the value returned during discovery here as well.
+While the calls below do not have the same security consideration of passing the secret, it is recommend that the urlAPI be from a stored value vs. the value returned during discovery here as well.
 
 ==== OAuth Flow: Apply Template to Domain.
 
@@ -1409,29 +1395,18 @@ POST
 serviceName,instanceId,properties*}
 ----
 
-The primary function of the API is to apply a template to a user
-domain.
+The primary function of the API is to apply a template to a user domain.
 
-While the `"providerId"` is implied in the authorization, this is on the
-path for consistency with the synchronous flows and other APIs. If not
-matching what was authorized, an error MUST be returned.
+While the `"providerId"` is implied in the authorization, this is on the path for consistency with the synchronous flows and other APIs. If not matching what was authorized, an error MUST be returned.
 
-When applying a template to a domain, it is possible that a conflict may
-exist with previous settings. While it is recommended that conflicts be
-detected when the user grants consent, because OAuth is asynchronous it
-is possible that a new conflict was introduced by the user.
+When applying a template to a domain, it is possible that a conflict may exist with previous settings. While it is recommended that conflicts be detected when the user grants consent, because OAuth is asynchronous it is possible that a new conflict was introduced by the user.
 
-While it is up to the DNS Provider to determine what constitutes a
-conflict (see section on Conflicts below), when one is detected calling
-this API MUST return an error. This error SHOULD enumerate the
-conflicting records in a format described below.
+While it is up to the DNS Provider to determine what constitutes a conflict (see section on Conflicts below), when one is detected calling this API MUST return an error. This error SHOULD enumerate the conflicting records in a format described below.
 
 Because the user often isn't present at the time of this error, it is up the Service Provider to determine how to handle this condition. Some providers may decide to notify the user. Others may decide to apply their template anyway using the `"force"` parameter. This parameter will bypass error checks for conflicts, and after the call the service will be in its desired state.
 
-Calls to apply a template via OAuth require the following parameters
-posted to the above URL unless otherwise indicated.
-The DNS Provider MUST accept parameters in query string or body of this
-post.
+Calls to apply a template via OAuth require the following parameters posted to the above URL unless otherwise indicated.
+The DNS Provider MUST accept parameters in query string or body of this post.
 
 The body is application/json encoded.
 
@@ -1480,8 +1455,7 @@ implementation notes.
 |*Group ID*
 |groupId
 |(OPTIONAL) Specifies the group of changes in the template to apply. If omitted, all changes are applied.
-Each group identifier MUST conform to the `dc-id` syntax (see <<terminology>>).
-Multiple groups MAY be specified as a comma-separated list of `dc-id` values.
+The value MUST conform to the `dc-id-list` syntax (see <<terminology>>).
 
 |*Force*
 |force
@@ -2059,8 +2033,8 @@ For the host/name field it is a shortcut for the value `"%fqdn%."`. The trailing
 
 For the pointsTo/data field it is a shortcut for for the `"%fqdn%"`. The pointsTo and data files are always absolute for these fields.
 
-TODO: solve ambiguity in `"@"` for host and pointsTo/data.
-TODO: review RR definitions (and template repo) why/if we have to refer to both host/name and pointsTo/data.
+//TODO: solve ambiguity in `"@"` for host and pointsTo/data.
+//TODO: review RR definitions (and template repo) why/if we have to refer to both host/name and pointsTo/data.
 
 ==== Variable substitution
 
@@ -2356,11 +2330,13 @@ Per <<RFC8552>>, please add the following entry to the "Underscored and Globally
 
 [toc=exclude,numbered=false]
 ==== Priopriatery implementations
-• 300 templates from over 120 providers, incl. O365, Google Workspace, Apple Cloud+, Weebly, Squarespace...
-https://github.com/Domain-Connect/Templates
+• 492 templates from over 250 providers, incl. O365, Google Workspace, Apple Cloud+, Weebly, Squarespace.
++
+Source: https://stats.domainconnect.org/
 
-[toc=include,numbered=false]
-== Acknowledgments
+[#ack]
+[numbered="false",heading="_Acknowledgements"]
+== Acknowledgements
 
 The authors wish to thank the following persons for their feedback and suggestions as well as for the previous work on the standard:
 
@@ -2399,6 +2375,12 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Removed redundant "Both ACE … forms are accepted; the receiver MUST convert …" sentences from `domain` and `host` parameter descriptions across all endpoints; the `domain-name` terminology reference is sufficient. Retained normative A-label normalisation requirements for token comparison in the OAuth apply and revert flows.
 - Added normative constraints to the synchronous Apply Template parameter table: `urlSyncUX` cross-referenced to the settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `redirect_uri` required to be an absolute URI per RFC 3986; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as the correct receiver of the ignore-unknown-parameters rule.
 - Replaced informal prose description of the public key TXT record format in the Digitally Sign Requests section with a formal ABNF grammar (`dc-pubkey-record`, `dc-pubkey-kv`, `dc-frag-index`, `dc-frag-data`, `dc-alg-id`, `dc-key-type`); added normative constraints to all four TXT record fields (`"p"`, `"d"`, `"a"`, `"t"`) including syntax rules, mandatory reassembly order, default values, and IANA registry reference for algorithm identifiers.
+- Added `dc-id-list` ABNF rule (comma-separated list of `dc-id` values) to Terminology; replaced ad-hoc prose in `groupId` parameter descriptions (synchronous apply and asynchronous apply) with normative `dc-id-list` reference; resolved pre-existing TODO.
+- Added `dc-scope` ABNF rule (space-separated list of `dc-id` values; strict subset of OAuth 2.0 scope per RFC 6749 Appendix A.4) to Terminology; added normative imports of `"client_id"` and `"response_type"` from RFC 6749.
+- Added normative constraints to the asynchronous OAuth authorization endpoint parameter table: `urlAsyncUX` cross-referenced to settings endpoint; `providerId` required to conform to `dc-id`; `client_id` referenced to RFC 6749 Section 2.2; `redirect_uri` required to be an absolute URI per RFC 3986; `response_type` value constrained to `"code"` per RFC 6749 Section 3.1.1; `scope` required to conform to `dc-scope`; `properties` parameter names required to conform to `variable-name` syntax.
+- Added normative `"redirect_uri"` import from RFC 6749 Appendix A, Section A.6 to Terminology (used across sync flow, async flow, and token endpoint).
+- Split combined `"code"`/`"refresh_token"` request row into two separate rows with mutual-exclusion constraint; added normative RFC 6749 syntax references to all parameters of the OAuth token endpoint request table (`"code"` A.11, `"refresh_token"` A.17, `"redirect_uri"` A.6, `"grant_type"` A.10, `"client_id"` §2.2, `"client_secret"` A.2).
+- Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (`"access_token"` A.12, `"token_type"` A.13 with mandatory `"bearer"` value, `"expires_in"` A.14, `"refresh_token"` A.17).
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00
@@ -2446,8 +2428,6 @@ The authors wish to thank the following persons for their feedback and suggestio
 === Change from draft-carney-regext-domainconnect-00 to -01
 
 - Minor edits and clarifications found during implementation.
-
-
 
 [bibliography,normative=true]
 == Normative References

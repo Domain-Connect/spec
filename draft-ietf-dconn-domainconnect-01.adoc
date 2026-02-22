@@ -487,22 +487,28 @@ When present, the value MUST conform to the `dc-display-name` syntax (see <<term
 |*UX URL Prefix for Synchronous Flows*
 |urlSyncUX
 |String
-|(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.
-This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component.
+|(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain. +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
+
 The URI MAY include a path component.
 
 |*UX URL Prefix for Asynchronous Flows*
 |urlAsyncUX
 |String
-|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain.
-This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component.
+|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain. +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
+
 The URI MAY include a path component.
 
 |*API URL Prefix*
 |urlAPI
 |String
-|(REQUIRED) The URL Prefix for the REST API.
-This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component.
+|(REQUIRED) The URL Prefix for the REST API. +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
+
 The URI MAY include a path component.
 
 |*Width of Window*
@@ -531,7 +537,8 @@ After potentially substituting the `"%domain%"` token this MUST be a valid URI <
 |*Name Servers*
 |nameServers
 |List of String
-|(OPTIONAL) This is the list of nameserver hostnames held by the DNS Provider in the zone (typically based on NS entries). Service Provider MAY use this list to compare with authoritative list of nameservers obtained from the registry or authoritative NS query, so ensure that the actual delegated server has been reached. A mismatch may be a result of stalled or error `"_domainconnect"` record or a deliberate action of DNS adminstrator, for example in order to pre-provision the service with a new DNS provider.
+|(OPTIONAL) This is the list of nameserver hostnames held by the DNS Provider in the zone (typically based on NS entries). Service Provider MAY use this list to compare with authoritative list of nameservers obtained from the registry or authoritative NS query, so ensure that the actual delegated server has been reached. A mismatch may be a result of stalled or error `"_domainconnect"` record, or a deliberate action of DNS adminstrator, for example in order to pre-provision the service with a new DNS provider. +
+
 Each entry MUST conform to the `"domain-name"` syntax (see <<terminology>>).
 |=======================================================================
 
@@ -637,28 +644,27 @@ The following table describes the parameters of the URI template:
 
 |*URL API*
 |urlAPI
-|(REQUIRED) The base URL of the DNS Provider API, taken from the `"urlAPI"` field
-of the settings endpoint response (see <<dns-provider-discovery>>).
+|(REQUIRED) The base URL of the DNS Provider API, taken from the `"urlAPI"` field of the settings endpoint response (see <<dns-provider-discovery>>). +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`
 
 |*Service Provider Id*
 |providerId
-|(REQUIRED) Identifier of the Service Provider of the template.
+|(REQUIRED) Identifier of the Service Provider of the template. +
 
 The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 
 |*Service Id*
 |serviceId
-|(REQUIRED) Identifier of the template within the Service Provider's namespace.
+|(REQUIRED) Identifier of the template within the Service Provider's namespace. +
 
 The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |=======================================================================
 
 Returning a status of 200 without a body indicates the template is supported.
-The DNS Provider MAY disclose the version of the template
-in a JSON object with field `"version"` (see: <<template-definition, version field>>
-or the full JSON object of deployed template.
+The DNS Provider MAY disclose the version of the template in a JSON object with field `"version"` (see: <<template-definition, version field>> or the full JSON object of deployed template.
 
 Returning a status of 404 indicates the template is not supported.
 
@@ -705,7 +711,9 @@ This is the URL, where the user agent (typically web browser) is sent to apply a
 
 |*URL Sync UX*
 |urlSyncUX
-|(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the `"urlSyncUX"` field of the settings endpoint response (see <<dns-provider-discovery>>).
+|(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the `"urlSyncUX"` field of the settings endpoint response (see <<dns-provider-discovery>>). +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`
 
 |*Service Provider Id*
 |providerId
@@ -917,9 +925,36 @@ SHgJq9%2FXoMTTw%3D%3D
 The Service Provider generates this signature using a private key. As indicated,
 this signature is generated from the query string properly URL encoded.
 
-The Service Provider MUST publish their public key and place it in a DNS TXT record in a domain specified in the template in `"syncPubKeyDomain"` at a host of their choice.
-The TXT record MUST be published as a comma-separated list of key-value 
-properties.
+The Service Provider MUST publish their public key in one or more DNS TXT records
+under the host specified by the `"key"` parameter within the domain given by
+`"syncPubKeyDomain"` in the template.
+Each TXT record MUST conform to the following grammar:
+
+[source,abnf]
+----
+dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
+dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
+                   / ( "d" "=" dc-frag-data )
+                   / ( "a" "=" dc-alg-id )
+                   / ( "t" "=" dc-key-type )
+
+dc-frag-index     =  1*DIGIT
+                   ; positive decimal integer; 
+                   ; used for p=
+dc-frag-data      =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
+                   ; standard base64 per RFC 4648; 
+                   ; used for d=
+dc-alg-id         =  1*( ALPHA / DIGIT / "-" )
+                   ; JWS algorithm identifier per RFC 7518;
+                   ; used for a=
+dc-key-type       =  1*( ALPHA / DIGIT / "-" )
+                   ; public key format identifier; 
+                   ; used for t=
+----
+
+Multiple TXT records at the same host are used to split a large key across DNS
+record size limits; they MUST be reassembled in ascending order of the `"p"`
+(fragment index) field.
 
 [cols=",,",options="header",title="Properties of the public key TXT record"]
 |=======================================================================
@@ -929,22 +964,35 @@ properties.
 
 |*Fragment Index*
 |p
-|(REQUIRED) The index value of the public key fragment
+|(REQUIRED) The sequence number of this key fragment. +
+
+The value MUST conform to the `dc-frag-index` rule above: a positive decimal integer. +
+
+Fragments MUST be reassembled in ascending numeric order of `"p"`.
 
 |*Fragment Payload*
 |d
-|(REQUIRED) The payload of public key fragment
+|(REQUIRED) The base64-encoded key material for this fragment. +
+
+The value MUST conform to the `dc-frag-data` rule above: standard base64 encoding per <<RFC4648>>.
 
 |*Signing Algorithm*
 |a
-|(OPTIONAL) The parameter identifies the algorithm intended for use with the key. The values used SHALL be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>.
-If omitted it MUST be assumed to be RS256.
-The support of RS256 is MANDATORY for both DNS Providers and Service Providers.
+|(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
+
+The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the
+IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
+
+If omitted, MUST be assumed to be `"RS256"`.
+Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
 
 |*Public Key Format*
 |t
-|(OPTIONAL) The format of the public key.
-If omitted MUST be assumed to be x509.
+|(OPTIONAL) The format of the public key. +
+
+The value MUST conform to the `dc-key-type` rule above. +
+
+If omitted, MUST be assumed to be `"x509"`.
 |=======================================================================
 
 
@@ -2350,6 +2398,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Added normative constraints to the Query Supported Template endpoint parameter table: `urlAPI` cross-referenced to the settings endpoint; `providerId` and `serviceId` required to conform to `dc-id` syntax.
 - Removed redundant "Both ACE … forms are accepted; the receiver MUST convert …" sentences from `domain` and `host` parameter descriptions across all endpoints; the `domain-name` terminology reference is sufficient. Retained normative A-label normalisation requirements for token comparison in the OAuth apply and revert flows.
 - Added normative constraints to the synchronous Apply Template parameter table: `urlSyncUX` cross-referenced to the settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `redirect_uri` required to be an absolute URI per RFC 3986; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as the correct receiver of the ignore-unknown-parameters rule.
+- Replaced informal prose description of the public key TXT record format in the Digitally Sign Requests section with a formal ABNF grammar (`dc-pubkey-record`, `dc-pubkey-kv`, `dc-frag-index`, `dc-frag-data`, `dc-alg-id`, `dc-key-type`); added normative constraints to all four TXT record fields (`"p"`, `"d"`, `"a"`, `"t"`) including syntax rules, mandatory reassembly order, default values, and IANA registry reference for algorithm identifiers.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

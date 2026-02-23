@@ -95,23 +95,29 @@ Table of Contents
        8.3.1.  Template Scope
        8.3.2.  Sub Domains
        8.3.3.  Variable Scope Minimisation
-     8.4.  Resource Record and Variable Processing
-       8.4.1.  Variable Syntax
-       8.4.2.  Special and Built-In Variables
-       8.4.3.  Variable substitution
-       8.4.4.  SPF Record Merging
-   9.  Template Application
-     9.1.  Template State in DNS Providers system
-     9.2.  Steps to Apply a Template
-     9.3.  Conflict Detection
-       9.3.1.  Conflict Detection Special Handling
-     9.4.  Calculating Conflict Resolution
-     9.5.  User Authorization of Changes
-     9.6.  Template Application
-   10. Security Considerations
-     10.1.  OAuth Client Secret Leakage
-     10.2.  Template Variable Phishing
-   11. IANA Considerations
+   9.  Resource Record and Variable Processing
+     9.1.  Variable Syntax
+     9.2.  Special and Built-In Variables
+     9.3.  Variable substitution
+       9.3.1.  Input Values
+       9.3.2.  Processing
+     9.4.  Host Name Rendering
+       9.4.1.  Input Values
+       9.4.2.  Processing
+       9.4.3.  Examples of host processing
+     9.5.  SPF Record Merging
+   10. Template Application
+     10.1.  Template State in DNS Providers system
+     10.2.  Steps to Apply a Template
+     10.3.  Conflict Detection
+       10.3.1.  Conflict Detection Special Handling
+     10.4.  Calculating Conflict Resolution
+     10.5.  User Authorization of Changes
+     10.6.  Template Application
+   11. Security Considerations
+     11.1.  OAuth Client Secret Leakage
+     11.2.  Template Variable Phishing
+   12. IANA Considerations
    Implementation Status
    Acknowledgements
    Change History
@@ -2603,9 +2609,8 @@ Table of Contents
    other values depending on the type.
 
    Many of these values can contain variables, which are expressed as
-   strings surrounded with "%" or special variable "@" (See:
-   Section 8.4).  Variables are replaced with values when the template
-   is applied.
+   strings surrounded with "%" or special variable "@" (See: Section 9).
+   Variables are replaced with values when the template is applied.
 
    Each record MUST contain the following elements unless otherwise
    specified.
@@ -2841,7 +2846,7 @@ Table of Contents
    |Mode*      |      |                         |Possible values are   |
    |           |      |                         |None, All, or Prefix. |
    |           |      |                         |See below             |
-   |           |      |                         |(Section 9.3).        |
+   |           |      |                         |(Section 10.3).       |
    |           |      |                         |The value MUST conform|
    |           |      |                         |to the dc-txt-        |
    |           |      |                         |conflict-mode syntax  |
@@ -2855,7 +2860,7 @@ Table of Contents
    |Matching   |      |                         |txtConflict-          |
    |Prefix*    |      |                         |MatchingMode is       |
    |           |      |                         |"Prefix".  See below  |
-   |           |      |                         |(Section 9.3).        |
+   |           |      |                         |(Section 10.3).       |
    |           |      |                         |The value MUST conform|
    |           |      |                         |to the dc-conflict-   |
    |           |      |                         |prefix syntax (see    |
@@ -2962,7 +2967,7 @@ Table of Contents
    |           |      |                         |other SPFM records    |
    |           |      |                         |into final SPF TXT    |
    |           |      |                         |record.  See          |
-   |           |      |                         |Section 8.4.4.  The   |
+   |           |      |                         |Section 9.5.  The     |
    |           |      |                         |value MUST contain    |
    |           |      |                         |only mechanism and    |
    |           |      |                         |modifier terms as     |
@@ -3021,7 +3026,7 @@ Table of Contents
    specified when applying the template.
 
    The template's "host" or "name" field values are interpreted relative
-   to this scope, as described in Section 8.4.3.3.
+   to this scope, as described in Section 9.4.
 
 8.3.2.  Sub Domains
 
@@ -3063,9 +3068,9 @@ Table of Contents
    better review of intent by the DNS Provider when onboarding the
    template.
 
-8.4.  Resource Record and Variable Processing
+9.  Resource Record and Variable Processing
 
-8.4.1.  Variable Syntax
+9.1.  Variable Syntax
 
    Variable expressions are the parameterized parts of a Domain Connect
    Template.  Each expression contains one variable specifier (which can
@@ -3075,7 +3080,7 @@ Table of Contents
    Variable expressions MUST conform to "variable-expression" syntax
    (see Section 3).
 
-8.4.2.  Special and Built-In Variables
+9.2.  Special and Built-In Variables
 
    There are three Built-In variables:
 
@@ -3103,9 +3108,9 @@ Table of Contents
    For the pointsTo/data field it is a shortcut for for the "%fqdn%".
    The pointsTo and data files are always absolute for these fields.
 
-8.4.3.  Variable substitution
+9.3.  Variable substitution
 
-8.4.3.1.  Input Values
+9.3.1.  Input Values
 
    Input values for variable substitution MUST be treated as strings.
    While the underlying data source (e.g., query string, JSON string)
@@ -3119,7 +3124,7 @@ Table of Contents
    resulting substituted value MUST reflect the exact original input
    value string.
 
-8.4.3.2.  Processing
+9.3.2.  Processing
 
    When a template is applied, the variables in the template are
    replaced with the values passed as input.
@@ -3153,13 +3158,13 @@ Table of Contents
    The DNS Provider MUST ignore any request parameter not referenced in
    the template.
 
-8.4.3.3.  Host Name Rendering
+9.4.  Host Name Rendering
 
    After variable substitution, each template record's "host" or "name"
    field value is combined with the "domain" and "host" apply parameters
    to produce the final DNS owner name for the resource record.
 
-8.4.3.3.1.  Input Values
+9.4.1.  Input Values
 
    *  "domain" - the Zone Apex, as supplied in the apply request.
 
@@ -3170,7 +3175,7 @@ Table of Contents
    *  The rendered "host" or "name" field value of the template record
       after variable substitution.
 
-8.4.3.3.2.  Processing
+9.4.2.  Processing
 
    If the rendered template field value is "@" or empty, it resolves to
    the root of the applied scope - equivalent to the fully qualified
@@ -3184,7 +3189,7 @@ Table of Contents
    a label to the fully qualified "[host.]domain" formed by the apply
    parameters.
 
-8.4.3.3.3.  Examples of host processing
+9.4.3.  Examples of host processing
 
    EXAMPLE: Template records example
 
@@ -3223,7 +3228,7 @@ Table of Contents
    www.bar.example.com.    1800 IN CNAME bar.example.com.
    bar.example.com.        1800 IN A 192.0.2.1
 
-8.4.4.  SPF Record Merging
+9.5.  SPF Record Merging
 
    The challenge with SPF RFC 7208 [RFC7208] records and Domain Connect
    is that an individual service might recommend an SPF record.  If only
@@ -3294,9 +3299,9 @@ Table of Contents
 
    See Appendix A.6.
 
-9.  Template Application
+10.  Template Application
 
-9.1.  Template State in DNS Providers system
+10.1.  Template State in DNS Providers system
 
    DNS Providers MAY choose to maintain state inside records in DNS
    indicating the templates writing the records.
@@ -3319,7 +3324,7 @@ Table of Contents
    conflict detection against applied templates in order to maintain
    integrity.
 
-9.2.  Steps to Apply a Template
+10.2.  Steps to Apply a Template
 
    The following steps give an overview of the template application
    process.  Each step is described in detail in the sections below.
@@ -3343,7 +3348,7 @@ Table of Contents
 
    4.  *Perform conflict detection* - The DNS Provider checks the
        resolved RR set against the existing zone content according to
-       the conflict detection rules (see Section 9.3).
+       the conflict detection rules (see Section 10.3).
 
        a.  Identify individual zone records that conflict with the
            resolved RR set.
@@ -3352,12 +3357,12 @@ Table of Contents
            resolved RR against essential records of previously applied
            templates.  Identify which previously applied templates own
            conflicting records and would be removed in their entirety
-           (see Section 9.3.1.2).
+           (see Section 10.3.1.2).
 
        c.  (only DNS Providers tracking template state): Mark instances
            of the same template applied on the same "host" for removal
            unless "multiInstance" is set for the template (see
-           Section 9.3.1.1).
+           Section 10.3.1.1).
 
    5.  *Pre-calculate conflict resolution* - Determine the full set of
        records and, where applicable, template instances that would be
@@ -3366,7 +3371,7 @@ Table of Contents
    6.  *Obtain user authorization* - The DNS Provider MUST present the
        intended changes and the pre-calculated conflict consequences to
        the user and obtain explicit authorization before proceeding (see
-       Section 9.5).
+       Section 10.5).
 
        a.  abort if authorization not granted
 
@@ -3386,7 +3391,7 @@ Table of Contents
        that URI upon successful template application (see
        Section 7.3.1.3).
 
-9.3.  Conflict Detection
+10.3.  Conflict Detection
 
    Conflict detection is performed by the DNS Provider prior to template
    application.  The rules below ensure predictable conflict resolution
@@ -3427,9 +3432,9 @@ Table of Contents
    very common for DNS provider not to allow CNAME records to be at the
    zone apex.
 
-9.3.1.  Conflict Detection Special Handling
+10.3.1.  Conflict Detection Special Handling
 
-9.3.1.1.  Multi-Instance
+10.3.1.1.  Multi-Instance
 
    This processing only REQUIRED for DNS Providers that maintain applied
    template state.
@@ -3449,7 +3454,7 @@ Table of Contents
    such a template MUST be designed so that it does not conflict with
    itself.
 
-9.3.1.2.  Essential Records
+10.3.1.2.  Essential Records
 
    This processing only REQUIRED for DNS Providers that maintain applied
    template state.
@@ -3470,7 +3475,7 @@ Table of Contents
    user or through the application of another template - without
    triggering conflict detection or removal of the owning template.
 
-9.4.  Calculating Conflict Resolution
+10.4.  Calculating Conflict Resolution
 
    A DNS Provider not maintainig applied template state, applying a
    template whose records conflict with any existing record in the zone
@@ -3485,7 +3490,7 @@ Table of Contents
    records B and C, record B conflicts, and T1 is removed together with
    all its records before T2 is applied.
 
-9.5.  User Authorization of Changes
+10.5.  User Authorization of Changes
 
    It is ultimately left to the DNS Provider to determine the amount of
    disclosure and/or conflict detection.
@@ -3519,7 +3524,7 @@ Table of Contents
    source of the request before proceeding, and SHOULD provide a more
    verbose description of the changes about to be applied.
 
-9.6.  Template Application
+10.6.  Template Application
 
    After authorization is granted, the DNS Provider applies the template
    to the DNS zone.
@@ -3529,9 +3534,9 @@ Table of Contents
 
    The DNS Provider MUST apply all records of the template in totality.
 
-10.  Security Considerations
+11.  Security Considerations
 
-10.1.  OAuth Client Secret Leakage
+11.1.  OAuth Client Secret Leakage
 
    When the "client_secret" is used in the OAuth token exchange, care
    must be taken to prevent secret leakage.  A malicious actor could
@@ -3545,7 +3550,7 @@ Table of Contents
    Provider, rather than using the value returned during DNS Provider
    discovery.
 
-10.2.  Template Variable Phishing
+11.2.  Template Variable Phishing
 
    Templates that accept variable parameters introduce a phishing risk.
    The more static the values in a template record, the more secure the
@@ -3565,7 +3570,7 @@ Table of Contents
    flag to prompt the DNS Provider to display additional warnings to the
    user (see Warnings).
 
-11.  IANA Considerations
+12.  IANA Considerations
 
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:

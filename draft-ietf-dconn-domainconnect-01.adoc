@@ -612,33 +612,39 @@ The URI MAY include a path component.
 |*Width of Window*
 |width
 |Number
-|(OPTIONAL) This is the desired width of the window for granting consent when navigated in a popup. Default value if not returned is 750px.
-The Service Providers SHOULD obey to this setting if opening a pop-up window to assure optimal display of the user interface of the DNS Proviver.
+|(OPTIONAL) The desired width in pixels of the pop-up window used for granting consent. +
+
+If not present, the default MUST be assumed to be 750.
 
 |*Height of Window*
 |height
 |Number
-|(OPTIONAL) This is the desired height of the window for granting consent when navigated in a popup. Default value if not returned is 750px.
-The Service Providers SHOULD obey to this setting if opening a pop-up window to assure optimal display of the user interface of the DNS Proviver.
+|(OPTIONAL) The desired height in pixels of the pop-up window used for granting consent. +
+
+If not present, the default MUST be assumed to be 750.
 
 |*UX URL Control Panel*
 |urlControlPanel
 |String
-|(OPTIONAL) This is a URL to the control panel for editing DNS at the DNS Provider.
-This field allows a Service Provider whose template isn't supported at the DNS Provider to provide a direct link to perform manual edits.
+|(OPTIONAL) A URL to the DNS Provider's control panel for manual DNS editing.
+This field allows a Service Provider whose template is not supported at the DNS Provider to provide a direct link to perform manual edits. +
 
-To allow deep links to the specific domain, this string MAY contain the literal token `"%domain%"` which MUST be replaced with the percent-encoded ACE-form domain name per <<RFC3986>> when building the deep link to the control panel of a given domain.
-`"%domain%"` MUST be the only substitution token permitted in this field.
+The value MAY contain the literal token `"%domain%"` as a placeholder for the domain name, to allow deep-linking to a specific domain. +
 
-After potentially substituting the `"%domain%"` token this MUST be a valid URI <<RFC3986>> with scheme `"https"`.
+The value, after any substitution of the `"%domain%"` token, MUST be a valid URI per <<RFC3986>> with scheme `"https"`.
 
 |*Name Servers*
 |nameServers
 |List of String
-|(OPTIONAL) This is the list of nameserver hostnames held by the DNS Provider in the zone (typically based on NS entries). Service Provider MAY use this list to compare with authoritative list of nameservers obtained from the registry or authoritative NS query, so ensure that the actual delegated server has been reached. A mismatch may be a result of stalled or error `"_domainconnect"` record, or a deliberate action of DNS adminstrator, for example in order to pre-provision the service with a new DNS provider. +
+|(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records). +
+
 
 Each entry MUST conform to the `"domain-name"` syntax (see <<terminology>>).
 |=======================================================================
+
+hen constructing a deep link using `"urlControlPanel"`, the Service Provider MUST replace any occurrence of the literal token `"%domain%"` with the percent-encoded ACE-form domain name per <<RFC3986>>. The `"%domain%"` token MUST be the only substitution token used.
+
+The Service Provider MAY compare the `"nameServers"` list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect `"_domainconnect"` TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.
 
 [source,json]
 ----
@@ -800,7 +806,6 @@ serviceName,instanceId,redirect_uri,properties*}{&sig,key}
 
 This is the URL, where the user agent (typically web browser) is sent to apply a template to a dns zone the user controls. It is redirected to or linked from the Service Provider to start the synchronous Domain Connect Protocol.
 
-If the template's `"syncBlock"` field is `"true"`, the DNS Provider MUST NOT process the request and MUST return an error.
 
 ===== Parameters/properties
 
@@ -925,8 +930,13 @@ template, "IP" and "RANDOMTEXT". These variables are passed as name/value pairs.
 
 The synchronous template apply URL can be called in one of two ways.
 
+
 ====== New Browser Window
-The first is through a new browser tab or in a popup browser window. The DNS Provider authenticates the user if necessary, verifies domain ownership, and asks for confirmation before application of the template. After application of the template, the DNS Provider should automatically close the browser tab or window.
+The first is through a new browser tab or in a popup browser window. 
+
+When opening the DNS Provider UX in a pop-up window, the Service Provider SHOULD use the `"width"` and `"height"` values from the settings response to size the window, in order to assure optimal display of the DNS Provider's user interface.
+
+The DNS Provider authenticates the user if necessary, verifies domain ownership, and asks for confirmation before application of the template. After application of the template, the DNS Provider should automatically close the browser tab or window.
 
 Please note that in this case the only way Service Provider would know if the user has completed the setup or cancelled the operation is if the user closes the browser window. The Service Provider needs to verify via DNS what actually happened (See: <<verification-of-changes>>).
 
@@ -1289,9 +1299,7 @@ The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 |state
 |(OPTIONAL) A random, unique string passed along to prevent CSRF or to pass state back to the caller. +
 
-The value MUST conform to the `”state”` syntax as defined in Appendix A of <<RFC6749>> (see <<terminology>>). +
-
-If present, it MUST be returned as a parameter appended to the `”redirect_uri”` described above.
+The value MUST conform to the `”state”` syntax as defined in Appendix A of <<RFC6749>> (see <<terminology>>).
 
 |*Name/Value Pairs*
 |properties
@@ -1299,7 +1307,6 @@ If present, it MUST be returned as a parameter appended to the `”redirect_uri�
 Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>).
 // TODO: the syntax for parameter values is not yet defined
 This includes variables used in hosts and data in certain TXT records.
-The DNS Provider MUST ignore any parameter not referenced in the template.
 |=======================================================================
 
 [[oauth-token-request]]
@@ -1335,9 +1342,6 @@ This token exchange is typically done via a server to server API call from the S
 OAuth does allow for retrieving the access token without a secret. This is typically done when the OAuth client is a client application.
 When onboarding with the DNS Provider this would need to be enabled.
 
-When the secret is provided (which is the normal case), care must be taken. A malicious user could create a domain that returns a false _`"domainconnect"` TXT record, and subsequently a JSON call to their own server for the API end point. By doing so, they could then run Domain Connect on their domain and retrieve the secret.
-
-As such the urlAPI used for OAuth by the Service Provider SHOULD be maintained per DNS Provider and not the value retrieved during discovery or other measures have to be implemented to prevent token leakage.
 
 The following table describes the POST parameters that MUST be included in the
 request for the access token unless otherwise indicated.
@@ -1514,14 +1518,13 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 |*Domain*
 |domain
-|(REQUIRED) The Zone Apex domain name being configured. It MUST match the domain that was authorized
-in the token. +
+|(REQUIRED) The Zone Apex domain name being configured. +
 
 The value MUST conform to the `domain-name` syntax (see <<terminology>>).
 
 |*Host*
 |host
-|(OPTIONAL) The host name of the Sub Domain within the zone identified by `"domain"`, as authorized in the token. +
+|(OPTIONAL) The host name of the Sub Domain within the zone identified by `"domain"`. +
 
 When present, the value MUST be a single name conforming to `domain-name` (see <<terminology>>) or an empty string. +
 
@@ -1717,9 +1720,9 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 The DNS Provider MUST be able to accept these on the query string or in the body of the POST with `application/json` encoding.
 
-The API MUST validate the access token, and that the domain belongs to the user and is represented by the token being presented. The `"domain"` and `"host"` values MUST match those that were authorized in the access token. Further it MUST be validated that the template identified by `"providerId"`/"`serviceId`" and optionally `"instanceId"` exists and has been applied to the `"domain"`/`"host"` by the Service Provider, or an error response with code 410 SHOULD be returned that the call would have no effect.
+The DNS Provider MUST validate the access token and verify that the domain belongs to the user represented by the token. The `"domain"` and `"host"` values MUST match those that were authorized in the access token. The DNS Provider MUST further verify that the template identified by `"providerId"`/`"serviceId"` and optionally `"instanceId"` has been applied to the `"domain"`/`"host"`; if it has not, an error response with code 410 SHOULD be returned.
 
-The Service Provider MUST remove all still active DNS Resource Records belonging to this template instance. 
+The DNS Provider MUST remove all still active DNS Resource Records belonging to the identified template.
 
 Response codes Success, Authorization, and Errors are identical to above with the addition of the 501 code.
 
@@ -1878,8 +1881,9 @@ The default is `"false"`.
 |*Host Required*
 |Boolean
 |hostRequired
-|(OPTIONAL)
-Defaults to false. When present this indicates that the template has been authored to work only when both domain and host are provided. An example where this would be true would be a template where CNAME is set on the fully qualified domain name. This is largely informational, as most DNS Providers already enforce such rules on the DNS level anyway.
+|(OPTIONAL) When `"true"`, indicates that the template is designed to work only when both `"domain"` and `"host"` apply parameters are provided, for example when the template contains a CNAME record targeted at the fully qualified domain name. +
+
+The default is `"false"`.
 
 |*Template Records*
 |Array of Template Records
@@ -1915,17 +1919,6 @@ The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, S
 The DNS Provider SHOULD support SPFM record for high interoperability with existing templates +
  +
 All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL. +
-
-For each type, additional fields would be REQUIRED. +
-* A: host, pointsTo, TTL +
-* AAAA: host, pointsTo, TTL +
-* CNAME: host, pointsTo, TTL (host MUST NOT be null or @ unless `"hostRequired"` is defined `"true"` for the template) +
-* NS: host, pointsTo, TTL (host MUST NOT be null or @ unless `"hostRequired"` is defined `"true"` for the template) +
-* TXT: host, data, TTL, txtConflict-MatchingMode, txtConflict-MatchingPrefix +
-* MX: host, pointsTo, TTL, priority +
-* SRV: name, target, TTL, priority, protocol, service, weight, port +
-* SPFM: host, spfRules +
-* other record types: host, data, TTL +
 
 The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
 
@@ -2014,9 +2007,9 @@ Support of variables in this field is OPTIONAL for DNS Provider.
 |data
 |
 The data for a TXT record in DNS.
-A value of empty or @ indicates the host and domain name being applied or [host.]example.com
+A value of empty or `"@"` indicates the host and domain name being applied (i.e., `"[host.]example.com"`). +
 
-For any unspecified record type this field contains the canonical presentation format of the given record. The representation SHALL follow <<RFC3597>> as generic or type-specific encoding. This MUST NOT be used for any record type explicitly listed in the Type field with specific data fields.
+For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. It MUST NOT be present in a template record for any record type that has type-specific data fields defined in this specification.
 
 |*TXT Conflict Matching Mode*
 |String
@@ -2100,6 +2093,32 @@ After variable substitution, the resolved value MUST conform to the `domain-name
 The value MUST contain only mechanism and modifier terms as defined in <<RFC7208>> Section 5,
 excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
 The DNS Provider MUST validate the syntax before merging.
+
+|=======================================================================
+
+The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
+
+[cols=",",options="header",title="Fields per record type"]
+|=======================================================================
+|Type|Required fields
+
+|`"A"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"AAAA"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"CNAME"`|`"host"`, `"pointsTo"`, `"ttl"` (`"host"` MUST NOT be `"@"` or empty unless `"hostRequired"` is `"true"` in the template)
+
+|`"NS"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"TXT"`|`"host"`, `"data"`, `"ttl"`, `"txtConflictMatchingMode"`, `"txtConflictMatchingPrefix"`
+
+|`"MX"`|`"host"`, `"pointsTo"`, `"ttl"`, `"priority"`
+
+|`"SRV"`|`"name"`, `"target"`, `"ttl"`, `"priority"`, `"protocol"`, `"service"`, `"weight"`, `"port"`
+
+|`"SPFM"`|`"host"`, `"spfRules"`
+
+|other types|`"host"`, `"data"`, `"ttl"`
 
 |=======================================================================
 
@@ -2311,6 +2330,7 @@ A template instance is identified by the pair `"domain"` and `"host"` where the 
 The following steps give an overview of the template application process.
 Each step is described in detail in the sections below.
 
+. *Verify template applicability* — For synchronous flow requests, the DNS Provider MUST verify that the template's `"syncBlock"` field is not `"true"`. If it is, the DNS Provider MUST NOT process the request and MUST return an error.
 . *Verify zone ownership* — The DNS Provider MUST verify that the target zone identified by `"domain"` is present in the user's account and that the user is authorized to make changes to it.
 . *Resolve variables* — All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied.
   .. abort if rendered RRs are not possible to be applied to the target zone
@@ -2402,6 +2422,20 @@ The DNS Provider MUST remove all conflicting templates and records from the targ
 
 The DNS Provider MUST apply all records of the template in totality.
 
+== Security Considerations
+
+=== OAuth Client Secret Leakage
+
+When the `"client_secret"` is used in the OAuth token exchange, care must
+be taken to prevent secret leakage. A malicious actor could create a domain
+with a false `"_domainconnect"` TXT record pointing to a server under their
+control, causing a Service Provider that uses the discovered `"urlAPI"` value
+to inadvertently expose the secret to that server.
+
+The Service Provider SHOULD therefore maintain the `"urlAPI"` endpoint for
+OAuth token requests as a stored, pre-registered value per DNS Provider,
+rather than using the value returned during DNS Provider discovery.
+
 [#iana]
 == IANA Considerations
 
@@ -2475,9 +2509,8 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Restructured Template Application: replaced ad-hoc conflict sections with focused Conflict Detection, User Authorization of Changes, and Template Application sections; added Essential Records definition and Steps to Apply a Template.
 - Removed non-normative content: Public Template Repository, General Considerations, and Extensions/Exclusions sections.
 - Moved display-related and UX behavioural requirements out of field definitions into <<user_authorization_of_changes,format=title>>; reworded developer-only fields to express intent rather than normative prohibition.
-- Moved runtime processing rules out of parameter and template field definitions into their appropriate processing sections: redirect and state handling into <<browser-handling,format=title>>, ignored-parameter rule into <<variable-substitution,format=title>>, and synchronous-block enforcement into <<apply-template,format=title>>; field definitions for `"syncPubKeyDomain"`, `"syncRedirectDomain"`, and `"multiInstance"` reworded to describe the field's meaning only.
-- Removed conditional processing semantics from parameter table cells: `"host"` and `"domain"` cells across sync and OAuth flows reworded to describe field meaning only; token-matching rule moved to <<oauth-apply-template,format=title>>; `"groupId"` default-all behaviour moved to <<steps-to-apply,format=title>>; `"code"`, `"refresh_token"`, and `"redirect_uri"` token request cells rewritten with field-level mutual-exclusivity constraints only; cross-field request validation rules consolidated into a normative paragraph in <<oauth-token-request,format=title>>.
-- Added <<host-name-rendering,format=title>> subsection to <<variable-substitution,format=title>> specifying how template `"host"` field values are resolved against the `"domain"` and `"host"` apply parameters; added <<template-scope,format=title>> and Subdomains subsections to a new Template Considerations section, replacing the former Variables and Host/Name in Template section; removed general recommendation against variables in `"host"` fields.
+- Moved runtime processing rules out of parameter and template field definitions into their appropriate processing sections.
+- Created Security Considerations sections and moved relevant part in there.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

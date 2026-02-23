@@ -76,7 +76,7 @@ Table of Contents
      7.2.  Query Supported Template
      7.3.  Synchronous Flow
        7.3.1.  Apply Template
-       7.3.2.  Security Considerations
+       7.3.2.  Security Facilities
        7.3.3.  Shared Templates
      7.4.  Asynchronous Flow: OAuth
        7.4.1.  General information
@@ -100,18 +100,17 @@ Table of Contents
        8.4.2.  Special and Built-In Variables
        8.4.3.  Variable substitution
        8.4.4.  SPF Record Merging
-       8.4.5.  Variables and Security
-       8.4.6.  Variable Examples
    9.  Template Application
      9.1.  Template State in DNS Providers system
      9.2.  Steps to Apply a Template
      9.3.  Conflict Detection
        9.3.1.  Conflict Detection Special Handling
-     9.4.  Conflict Resolution
+     9.4.  Calculating Conflict Resolution
      9.5.  User Authorization of Changes
      9.6.  Template Application
    10. Security Considerations
      10.1.  OAuth Client Secret Leakage
+     10.2.  Template Variable Phishing
    11. IANA Considerations
    Implementation Status
    Acknowledgements
@@ -815,7 +814,7 @@ Table of Contents
    The record content represents an authority and path part of the
    settings REST API URL.
 
-   An example of the contents of this record:
+   EXAMPLE 1: An example of the contents of this record:
 
    domainconnect.virtucondomains.example
 
@@ -843,7 +842,7 @@ Table of Contents
    Connect on this domain at the DNS Provider.  This is done by calling
    a REST API.
 
-   Normative URI template of the settings end-point per [RFC6570]:
+   Normative URI template of the Settings End-Point per [RFC6570]:
 
    GET
 
@@ -1042,17 +1041,7 @@ Table of Contents
 
              Table 1: properties of the settings data structure
 
-   hen constructing a deep link using "urlControlPanel", the Service
-   Provider MUST replace any occurrence of the literal token "%domain%"
-   with the percent-encoded ACE-form domain name per [RFC3986].  The
-   "%domain%" token MUST be the only substitution token used.
-
-   The Service Provider MAY compare the "nameServers" list against the
-   authoritative nameservers obtained from the DNS registry or an
-   authoritative NS query, to verify that the correct DNS Provider has
-   been reached.  A mismatch may indicate a stale or incorrect
-   "_domainconnect" TXT record, or a deliberate administrative change
-   such as pre-provisioning with a new DNS provider.
+   EXAMPLE 2: Example Settings End-Point response
 
    {
        "providerId": "virtucondomains.example",
@@ -1068,6 +1057,18 @@ Table of Contents
        "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucon
        domainsdns.example"]
    }
+
+   When constructing a deep link using "urlControlPanel", the Service
+   Provider MUST replace any occurrence of the literal token "%domain%"
+   with the percent-encoded ACE-form domain name per [RFC3986].  The
+   "%domain%" token MUST be the only substitution token used.
+
+   The Service Provider MAY compare the "nameServers" list against the
+   authoritative nameservers obtained from the DNS registry or an
+   authoritative NS query, to verify that the correct DNS Provider has
+   been reached.  A mismatch may indicate a stale or incorrect
+   "_domainconnect" TXT record, or a deliberate administrative change
+   such as pre-provisioning with a new DNS provider.
 
    Discovery MUST work on the Zone Apex only.  Bear in mind that zones
    can be delegated to other users, making this information valuable to
@@ -1419,25 +1420,9 @@ Table of Contents
    still SHOULD verify via DNS to be sure that the changes have been
    applied (See: Section 7.5).
 
-7.3.2.  Security Considerations
+7.3.2.  Security Facilities
 
-7.3.2.1.  Risk of phishing with open template parameters
-
-   By applying a template with parameters there is a security
-   consideration that must be taken into account.
-
-   Consider the template above where the IP address of the A record is
-   passed in through a variable.  A bad actor could generate a URL with
-   a malicious IP and phish users by sending out emails asking them to
-   "re-configure" their service.  If an end user is convinced to click
-   on this link, they would land on the DNS Provider site to confirm the
-   change.  To the user, this would appear to be a valid request to
-   configure the domain.  Yet the IP would be hijacking the service.
-
-   Not all templates have this problem.  But when they do, there are
-   several options.
-
-7.3.2.2.  Disable Synchronous
+7.3.2.1.  Blocking Synchronous Flow
 
    One option is to disable the synchronous flow and use asynchronous
    OAuth.  This can be controlled with the "syncBlock" value from the
@@ -1445,7 +1430,7 @@ Table of Contents
    implementation burden and requires onboarding between each Service
    and DNS Provider.
 
-7.3.2.3.  Digitally Sign Requests
+7.3.2.2.  Digital Signing of Requests
 
    Another option is to digitally sign the query string.  A signature is
    appended as an additional query string parameter, properly URL
@@ -1584,7 +1569,7 @@ Table of Contents
    The values of each query string value key/value pair MUST be properly
    URL Encoded before the signature is generated.
 
-7.3.2.4.  Warnings
+7.3.2.3.  Warnings
 
    Some applications aren't able to use OAuth and/or sign requests.
 
@@ -1678,7 +1663,7 @@ Table of Contents
 
 7.4.3.  OAuth Flow: Getting an Authorization Code
 
-   Normative URI template of the authorization code end-point per
+   Normative URI template of the Authorization Code End-Point per
    [RFC6570]:
 
    GET
@@ -2261,7 +2246,7 @@ Table of Contents
    array of tuples containing the conflicting records type, host, and
    data element.
 
-   As an example:
+   EXAMPLE: Example conflict response
 
    {
        "code": "409",
@@ -3199,6 +3184,45 @@ Table of Contents
    a label to the fully qualified "[host.]domain" formed by the apply
    parameters.
 
+8.4.3.3.3.  Examples of host processing
+
+   EXAMPLE: Template records example
+
+   [{
+       "type": "CNAME",
+       "host": "www",
+       "pointsTo": "@",
+       "ttl": 1800
+   },
+   {
+       "type": "A",
+       "host": "@",
+       "pointsTo": "192.0.2.1",
+       "ttl": 1800
+   }]
+
+   DNS zone after the template applied with "domain=example.com" and
+   "host" parameter missing or empty:
+
+   www 1800 IN CNAME example.com.
+   @   1800 IN A 192.0.2.1
+
+   _alternatively_
+
+   www.example.com.    1800 IN CNAME example.com.
+   example.com.        1800 IN A 192.0.2.1
+
+   DNS zone after the template applied with "domain=example.com" and
+   "host=bar":
+
+   www.bar 1800 IN CNAME bar.example.com.
+   bar     1800 IN A 192.0.2.1
+
+   alternatively
+
+   www.bar.example.com.    1800 IN CNAME bar.example.com.
+   bar.example.com.        1800 IN A 192.0.2.1
+
 8.4.4.  SPF Record Merging
 
    The challenge with SPF RFC 7208 [RFC7208] records and Domain Connect
@@ -3270,55 +3294,6 @@ Table of Contents
 
    See Appendix A.6.
 
-8.4.5.  Variables and Security
-
-   As discussed, with variables consideration is necessary to prevent
-   certain styles of phishing attacks.
-
-   The more static the value in the template record, the more secure the
-   template.  When static values are not possible, a carefully crafted
-   link could hijack DNS settings.
-
-   Mitigations to this are discussed above.
-
-8.4.6.  Variable Examples
-
-   Example template:
-
-   [{
-       "type": "CNAME",
-       "host": "www",
-       "pointsTo": "@",
-       "ttl": 1800
-   },
-   {
-       "type": "A",
-       "host": "@",
-       "pointsTo": "192.0.2.1",
-       "ttl": 1800
-   }]
-
-   Template applied with "domain=example.com" and "host" parameter
-   missing or empty:
-
-   www 1800 IN CNAME example.com.
-   @   1800 IN A 192.0.2.1
-
-   _alternatively_
-
-   www.example.com.    1800 IN CNAME example.com.
-   example.com.        1800 IN A 192.0.2.1
-
-   Template applied with "domain=example.com" and "host=bar":
-
-   www.bar 1800 IN CNAME bar.example.com.
-   bar     1800 IN A 192.0.2.1
-
-   alternatively
-
-   www.bar.example.com.    1800 IN CNAME bar.example.com.
-   bar.example.com.        1800 IN A 192.0.2.1
-
 9.  Template Application
 
 9.1.  Template State in DNS Providers system
@@ -3328,7 +3303,8 @@ Table of Contents
 
    A DNS Provider that maintains this state may be able to provide an
    improved experience for users, telling them the services enabled.
-   They also may be able to have more advanced handling of conflicts.
+   They also may be able to have more advanced handling of conflicts and
+   assure integrity of applied template instances.
 
    A template instance is identified by the pair "domain" and "host"
    where the template has been applied.  Therefore, the same template
@@ -3338,6 +3314,10 @@ Table of Contents
    handled as an update by DNS provider, or just trigger a regular
    conflict detection and resolution routine by DNS Provider - removal
    of the previous instance and apply of the new instance.
+
+   Manual changes made by the user at the DNS Provider MAY also trigger
+   conflict detection against applied templates in order to maintain
+   integrity.
 
 9.2.  Steps to Apply a Template
 
@@ -3490,7 +3470,7 @@ Table of Contents
    user or through the application of another template - without
    triggering conflict detection or removal of the owning template.
 
-9.4.  Conflict Resolution
+9.4.  Calculating Conflict Resolution
 
    A DNS Provider not maintainig applied template state, applying a
    template whose records conflict with any existing record in the zone
@@ -3505,9 +3485,6 @@ Table of Contents
    records B and C, record B conflicts, and T1 is removed together with
    all its records before T2 is applied.
 
-   Manual changes made by the user at the DNS Provider MAY also trigger
-   conflict detection against applied templates.
-
 9.5.  User Authorization of Changes
 
    It is ultimately left to the DNS Provider to determine the amount of
@@ -3521,9 +3498,9 @@ Table of Contents
 
    If conflicts are detected - at either the template or record level -
    the DNS Provider SHOULD present these to the user before
-   authorization is granted.  For templates this means identifying
-   services that would be disabled; for records this means identifying
-   records that would be deleted or overwritten.
+   authorization is granted.  For template instances this means
+   identifying services that would be disabled; for records this means
+   identifying records that would be deleted or overwritten.
 
    The DNS Provider MUST allow the user to override a detected conflict
    and proceed with the template application, or to abort the process.
@@ -3534,7 +3511,8 @@ Table of Contents
    "serviceName" request parameters (permitted only when the template's
    "sharedProviderName" or "sharedServiceName" flags are set,
    respectively), the DNS Provider SHOULD use those values to augment
-   the displayed name, not replace it.
+   the displayed name.  It is RECOMMENDED however to also display the
+   original "providerName" and "serviceName" defined in the template.
 
    When the template's "warnPhishing" field is "true", the DNS Provider
    SHOULD display additional warnings prompting the user to verify the
@@ -3566,6 +3544,26 @@ Table of Contents
    for OAuth token requests as a stored, pre-registered value per DNS
    Provider, rather than using the value returned during DNS Provider
    discovery.
+
+10.2.  Template Variable Phishing
+
+   Templates that accept variable parameters introduce a phishing risk.
+   The more static the values in a template record, the more secure the
+   template.  When variable values cannot be avoided, a bad actor could
+   craft an apply URL substituting a malicious value - for example, a
+   hijacked IP address - and send it to users as a seemingly legitimate
+   reconfiguration request.  The user would be presented with a DNS
+   Provider consent screen that appears valid, but would result in DNS
+   being pointed at infrastructure under the attacker's control.
+
+   Not all templates are susceptible; the risk is proportional to how
+   much of a record's content is controlled by variables.  Three
+   mitigations are available to template authors and Service Providers:
+   disabling the synchronous flow via "syncBlock" (see Blocking
+   Synchronous Flow), digitally signing apply requests (see the
+   Section Digital Signing of Requests), and setting the "warnPhishing"
+   flag to prompt the DNS Provider to display additional warnings to the
+   user (see Warnings).
 
 11.  IANA Considerations
 
@@ -3671,8 +3669,10 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
    *  Moved runtime processing rules out of parameter and template field
       definitions into their appropriate processing sections.
 
-   *  Created Security Considerations sections and moved relevant part
-      in there.
+   *  Security Considerations section restructured: phishing threat
+      description moved from Apply Template into new Template Variable
+      Phishing subsection; editorial cleanup including section
+      reordering, heading renames, and example block formatting.
 
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
@@ -3850,6 +3850,8 @@ Appendix A.  Examples
 
 A.1.  Example Template
 
+   EXAMPLE: Full template example
+
    {
        "providerId": "example.com",
        "providerName": "Example Web Hosting",
@@ -3896,6 +3898,8 @@ A.2.  Example Records: Single static host record
    section of the template would have a single record of type "A" and
    could have a value of:
 
+   EXAMPLE: Single static host record example
+
    [{
        "type": "A",
        "host": "www",
@@ -3912,6 +3916,8 @@ A.3.  Example Records: Single variable host record for A
    In the case of a template for setting a single host record from a
    variable, the template would have a single record of type "A" and
    could have a value of:
+
+   EXAMPLE: Single variable host record for A example
 
    [{
        "type": "A",
@@ -3932,6 +3938,8 @@ A.4.  Example Records: Unspecified record type CAA
 
    This example shows how to include a set of unspecified record types
    on an example of CAA records:
+
+   EXAMPLE: Unspecified record type CAA example
 
    [
        {

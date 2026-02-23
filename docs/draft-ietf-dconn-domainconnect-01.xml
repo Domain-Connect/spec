@@ -501,43 +501,36 @@ dc-srv-service  =  dc-underscore-label
 </section>
     <section anchor="dns-provider-discovery"><name>DNS Provider Discovery</name>
 
-<t anchor="_3794ee1c-5f04-c5c1-fd71-bdb3180efec5">To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for  <tt>"_domainconnect"</tt> in the zone.</t>
+<t anchor="_78e6e3ca-00e7-a335-75d9-bed65ee93313">To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for <tt>"_domainconnect"</tt> in the zone.</t>
 
 <t anchor="_b65e587e-717d-9e86-7d97-daf54a74c23c">The record content represents an authority and path part of the settings REST API URL.</t>
 
-<t anchor="_6b441875-64c9-4a1c-1958-429006047068">An example of the contents of this record:</t>
+<t anchor="_f0636e07-363f-3d30-f3cc-c918c288731f" keepWithNext="true">EXAMPLE 1: An example of the contents of this record:</t><sourcecode anchor="_42eca255-a8d5-398a-e39c-c18867bf2be1"><![CDATA[domainconnect.virtucondomains.example]]></sourcecode>
 
-<sourcecode anchor="_d7f66d6c-7674-2919-4912-91a2e7454e22"><![CDATA[domainconnect.virtucondomains.example]]></sourcecode>
+<t anchor="_5f8a8631-d4a8-0b50-e98e-2a32d4edb994"><tt>"_domainconnect"</tt> TXT record content, when prepended with <tt>https://</tt> schema and appended with <tt>/v2</tt> path segment, MUST form a valid URL <xref target="RFC3986" section="" relative=""></xref>. <tt>"_domainconnect"</tt> TXT record MUST contain the authority part of the URL and MAY contain a path part. <tt>"_domainconnect"</tt> MUST not contain schema, query or fragment part of an URL.</t>
 
+<t anchor="_74ea9af5-2381-765b-1206-2acc043c773f">As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the <tt>"_domainconnect"</tt> TXT record with the appropriate data.</t>
 
-<t anchor="_07e26047-4927-b7fd-bd34-2c2ca81ddd8f"><tt>"_domainconnect"</tt> TXT record content, when prepended with <tt>https://</tt> schema and appended with <tt>/v2</tt> path segment, MUST form a valid URL <xref target="RFC3986" section="" relative=""></xref>. <tt>"_domainconnect"</tt> TXT record MUST contain the authority part of the URL and MAY contain a path part. <tt>"_domainconnect"</tt> MUST not contain schema, query or fragment part of an URL.</t>
+<t anchor="_ad4874bb-8749-11ac-31f5-57d8f7b7eeae">How this is implemented is up to the DNS Provider.</t>
 
-<t anchor="_59668046-b981-3192-182a-ff3b3db92a46">As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the <tt>"_domainconnect"</tt> TXT record with the appropriate data.</t>
+<t anchor="_89cd8230-ad5e-cd28-d668-1547af5fb867">For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having  the data in each zone.</t>
 
-<t anchor="_76fcb4f0-c970-374f-9aaf-46e58da405e5">How this is implemented is up to the DNS Provider.</t>
+<t anchor="_dcbf2a9f-2eae-6526-db67-b41644e69488">The URL prefix returned MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
 
-<t anchor="_52690cc3-bb92-4ea2-090e-1c3deedbe5c4">For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having the data in each zone.</t>
+<t anchor="_11a6e709-f2bc-a88e-c705-91b34f597fb9">Normative URI template of the Settings End-Point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-<t anchor="_4a857dbb-0fea-3711-e814-7599e1a4d2aa">The URL prefix returned MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
-
-<t anchor="_0b383708-468f-84f6-fc93-2508e423d150">Normative URI template of the settings end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
-
-<sourcecode anchor="_536064f2-bdc1-8b1e-22ae-0cd4cf3f35ac"><![CDATA[GET
+<sourcecode anchor="_4f9d34d9-b5b7-56bc-17cb-4b893f70099e"><![CDATA[GET
 
 https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 
-<t anchor="_cb5dcc96-f5e0-4778-750c-62093643b1d6"><tt>"_domainconnect"</tt> parameter is the URL prefix returned in the <tt>"_domainconnect"</tt> TXT record.</t>
+<t anchor="_8393acbf-a1a6-5d45-7c41-58787dc5a147"><tt>"_domainconnect"</tt> parameter is the URL prefix returned in the <tt>"_domainconnect"</tt> TXT record.</t>
 
-<t anchor="_08cac2b8-ea1d-6241-27f1-e3f8d98b14cd">This MUST return a JSON structure containing the settings to use for Domain Connect on the domain name (passed in on the path) at the DNS Provider. This JSON structure MUST contain the following fields unless otherwise specified.</t>
+<t anchor="_3b740012-62ce-22dc-429c-452ae0dd54cb">This MUST return a JSON structure containing the settings to use for Domain Connect on the domain name (passed in on the path) at the DNS Provider. This JSON structure MUST contain the following fields unless otherwise specified.</t>
 
 <table anchor="_7209502e-e046-b5e3-4710-1d3b350388be"><name>properties of the settings data structure</name><thead><tr><th align="left"><strong>Field</strong></th><th align="left"><strong>Key</strong></th><th align="left"><strong>Type</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><strong>Provider Id</strong></td><td align="left">providerId</td><td align="left">String</td><td align="left">(REQUIRED) Unique identifier for the DNS Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To allow for non-coordinated uniqueness, this SHOULD be the domain name of the DNS Provider (e.g. virtucom.example).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">String</td><td align="left">(REQUIRED) The name of the DNS Provider.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Display Name</strong></td><td align="left">providerDisplayName</td><td align="left">String</td><td align="left">(OPTIONAL) The name of the DNS Provider that SHOULD be displayed by the Service Provider.<br />  This MAY change per domain for some DNS Providers that power multiple brands.<br />  When present, the value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>UX URL Prefix for Synchronous Flows</strong></td><td align="left">urlSyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>UX URL Prefix for Asynchronous Flows</strong></td><td align="left">urlAsyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>API URL Prefix</strong></td><td align="left">urlAPI</td><td align="left">String</td><td align="left">(REQUIRED) The URL Prefix for the REST API.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>Width of Window</strong></td><td align="left">width</td><td align="left">Number</td><td align="left">(OPTIONAL) The desired width in pixels of the pop-up window used for granting consent.<br />  If not present, the default MUST be assumed to be 750.</td></tr><tr><td align="left"><strong>Height of Window</strong></td><td align="left">height</td><td align="left">Number</td><td align="left">(OPTIONAL) The desired height in pixels of the pop-up window used for granting consent.<br />  If not present, the default MUST be assumed to be 750.</td></tr><tr><td align="left"><strong>UX URL Control Panel</strong></td><td align="left">urlControlPanel</td><td align="left">String</td><td align="left">(OPTIONAL) A URL to the DNS Provider's control panel for manual DNS editing. This field allows a Service Provider whose template is not supported at the DNS Provider to provide a direct link to perform manual edits.<br />  The value MAY contain the literal token  <tt>"%domain%"</tt> as a placeholder for the domain name, to allow deep-linking to a specific domain.<br />  The value, after any substitution of the  <tt>"%domain%"</tt> token, MUST be a valid URI per <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>.</td></tr><tr><td align="left"><strong>Name Servers</strong></td><td align="left">nameServers</td><td align="left">List of String</td><td align="left">(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records).<br />   Each entry MUST conform to the  <tt>"domain-name"</tt> syntax (see <xref target="terminology"></xref>).</td></tr></tbody></table>
 
-<t anchor="_7e519e11-97da-a23f-483c-b9b1727d10d3">hen constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
-
-<t anchor="_6f96b79f-163a-2709-345e-0a4583ece0a5">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
-
-<sourcecode anchor="_3e76d46e-aead-d0a7-def3-340bc5e2fe63" type="json"><![CDATA[{
+<t anchor="_a2a6ec87-8eb5-b9bc-7ddc-e97384ab5656" keepWithNext="true">EXAMPLE 2: Example Settings End-Point response</t><sourcecode anchor="_82aaca6d-8f75-a0ac-3b82-e550afcd6eed" type="json"><![CDATA[{
     "providerId": "virtucondomains.example",
     "providerName": "Virtucon Domains",
     "providerDisplayName": "Virtucon Domains",
@@ -552,16 +545,19 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
     domainsdns.example"]
 }]]></sourcecode>
 
+<t anchor="_cecf750a-6f67-d4c2-e228-000307621772">When constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
 
-<t anchor="_af3cf36f-c649-5bb6-e972-00f3c7fe7b35">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
+<t anchor="_92b650fe-505b-f37d-e81c-57d92a7d50b3">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
 
-<t anchor="_971e1ad1-da15-4c97-3931-9430bc56c067">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record suceeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
+<t anchor="_ddd7c0da-7493-33c3-9b7b-43a5a118d02a">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
 
-<t anchor="_f38cb253-419d-0ff0-13ad-f3e4d87a1497">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
+<t anchor="_0668eff5-aa28-a17b-1bd3-f5c469f95dc8">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record suceeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
+
+<t anchor="_e396c454-1ea4-3527-addc-3933a63e9683">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
 
 <table anchor="_14049357-6f3a-1de7-18dd-9ca5589dcdad"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
 </section>
-    <section anchor="_2eb89784-917a-056d-fdf0-e1157526ecd0"><name>Applying Domain Connect</name>
+    <section anchor="_7d1b03b5-2f0c-500c-cc9a-71899a555e5e"><name>Applying Domain Connect</name>
 
 <section anchor="_87be5e71-83dd-a3db-c804-4e182760c60e"><name>Endpoints</name>
 
@@ -607,7 +603,7 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 <table anchor="_f22b9b52-6de2-1a70-d3a8-f9ab67f6b60a"><name>https status codes for the Query Supported Template end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response OPTIONALLY contains the version or template.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the template is not supported</td></tr></tbody></table>
 </section>
 
-<section anchor="_9c1a9ab3-e81a-373c-5f0d-81b662d4f92e"><name>Synchronous Flow</name>
+<section anchor="_b62003aa-0170-22bf-ee7b-ec38e707d8e6"><name>Synchronous Flow</name>
 
 <section anchor="apply-template"><name>Apply Template</name>
 
@@ -686,27 +682,18 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 </section>
 </section>
 
-<section anchor="_961d7f6b-10d1-b790-a3e7-872fb913bbc9"><name>Security Considerations</name>
+<section anchor="_b88ce2fa-2493-3203-13dd-de048bada3f6"><name>Security Facilities</name>
 
-<section anchor="_6e285598-8db9-4a65-2375-10045254475d"><name>Risk of phishing with open template parameters</name>
+<section anchor="sec-sync-blocking"><name>Blocking Synchronous Flow</name>
 
-<t anchor="_117fd3d5-30bb-c386-4e04-fee327227b72">By applying a template with parameters there is a security consideration that must be taken into account.</t>
-
-<t anchor="_f6925fca-0214-c862-3603-45d8f3abc8ff">Consider the template above where the IP address of the A record is passed in through a variable. A bad actor could generate a URL with a malicious IP and phish users by sending out emails asking them to "re-configure" their service. If an end user is convinced to click on this link, they would land on the DNS Provider site to confirm the change. To the user, this would appear to be a valid request to configure the domain. Yet the IP would be hijacking the service.</t>
-
-<t anchor="_c0185d1d-5e2f-927d-0c75-c04e7c748c1b">Not all templates have this problem. But when they do, there are several options.</t>
+<t anchor="_48f678de-98a0-75da-2b94-0ae5f2509ec8">One option is to disable the synchronous flow and use asynchronous OAuth. This can be controlled with the <tt>"syncBlock"</tt> value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.</t>
 </section>
 
-<section anchor="_4610b76e-b344-9836-51a5-d9c7f1372d95"><name>Disable Synchronous</name>
+<section anchor="sec-signing"><name>Digital Signing of Requests</name>
 
-<t anchor="_fe9f50de-b454-f508-b4c4-ac7d7c64eaab">One option is to disable the synchronous flow and use asynchronous OAuth. This can be controlled with the <tt>"syncBlock"</tt> value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.</t>
-</section>
+<t anchor="_1f1b8224-cd29-56c2-4888-89da5e19573e">Another option is to digitally sign the query string. A signature is appended as an additional query string parameter, properly URL encoded and of the form:</t>
 
-<section anchor="_93e286d6-f1c5-eb63-912e-9f8376e9f49a"><name>Digitally Sign Requests</name>
-
-<t anchor="_74b69b65-b237-538f-e546-449814aae5a0">Another option is to digitally sign the query string. A signature is appended as an additional query string parameter, properly URL encoded and of the form:</t>
-
-<sourcecode anchor="_0e2aff8b-e201-bbc7-c19d-cac070102abd"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+<sourcecode anchor="_0c09d603-54c3-37bb-18cf-e32d9e5e9c12"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
@@ -714,11 +701,11 @@ HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
 SHgJq9%2FXoMTTw%3D%3D]]></sourcecode>
 
 
-<t anchor="_3918b14e-607f-d9d8-763c-8ee933f8d0cc">The Service Provider generates this signature using a private key. As indicated, this signature is generated from the query string properly URL encoded.</t>
+<t anchor="_2ab2b331-905d-ecd3-03d6-e70d37404a9f">The Service Provider generates this signature using a private key. As indicated, this signature is generated from the query string properly URL encoded.</t>
 
-<t anchor="_f592e194-20a6-0518-dcd6-433cd2afa3df">The Service Provider MUST publish their public key in one or more DNS TXT records under the host specified by the  <tt>"key"</tt> parameter within the domain given by <tt>"syncPubKeyDomain"</tt> in the template. Each TXT record MUST conform to the following grammar:</t>
+<t anchor="_db5a0d8c-67ab-f752-ef0b-d85562d1ddf2">The Service Provider MUST publish their public key in one or more DNS TXT records under the host specified by the  <tt>"key"</tt> parameter within the domain given by <tt>"syncPubKeyDomain"</tt> in the template. Each TXT record MUST conform to the following grammar:</t>
 
-<sourcecode anchor="_4f4e29b3-1fb4-ffae-4fbf-976d4872946b" type="abnf"><![CDATA[dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
+<sourcecode anchor="_2b500442-22ba-d41c-e68c-cf927df109bc" type="abnf"><![CDATA[dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
 dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
                    / ( "d" "=" dc-frag-data )
                    / ( "a" "=" dc-alg-id )
@@ -738,20 +725,20 @@ dc-key-type       =  1*( ALPHA / DIGIT / "-" )
                    ; used for t=]]></sourcecode>
 
 
-<t anchor="_16964210-e41f-116a-1f57-11e60b615500">Multiple TXT records at the same host are used to split a large key across DNS record size limits; they MUST be reassembled in ascending order of the  <tt>"p"</tt> (fragment index) field.</t>
+<t anchor="_81e56df5-2999-534c-b442-e46a4c115d99">Multiple TXT records at the same host are used to split a large key across DNS record size limits; they MUST be reassembled in ascending order of the  <tt>"p"</tt> (fragment index) field.</t>
 
-<table anchor="_78e81b8e-1f9b-a8fd-3e9a-a6d40d7fa779"><name>Properties of the public key TXT record</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Fragment Index</strong></td><td align="left">p</td><td align="left">(REQUIRED) The sequence number of this key fragment.<br />  The value MUST conform to the  <tt>dc-frag-index</tt> rule above: a positive decimal integer.<br />  Fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt>.</td></tr><tr><td align="left"><strong>Fragment Payload</strong></td><td align="left">d</td><td align="left">(REQUIRED) The base64-encoded key material for this fragment.<br />  The value MUST conform to the  <tt>dc-frag-data</tt> rule above: standard base64 encoding per <xref target="RFC4648" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>Signing Algorithm</strong></td><td align="left">a</td><td align="left">(OPTIONAL) The JWS algorithm identifier for the signing algorithm.<br />  The value MUST conform to the  <tt>dc-alg-id</tt> rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <xref target="RFC7518" section="" relative=""></xref>.<br />  If omitted, MUST be assumed to be  <tt>"RS256"</tt>.<br />  Support for  <tt>"RS256"</tt> is MANDATORY for both DNS Providers and Service Providers.</td></tr><tr><td align="left"><strong>Public Key Format</strong></td><td align="left">t</td><td align="left">(OPTIONAL) The format of the public key.<br />  The value MUST conform to the  <tt>dc-key-type</tt> rule above.<br />  If omitted, MUST be assumed to be  <tt>"x509"</tt>.</td></tr></tbody></table>
+<table anchor="_e35d26d8-017d-1665-65a4-19085d55495b"><name>Properties of the public key TXT record</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Fragment Index</strong></td><td align="left">p</td><td align="left">(REQUIRED) The sequence number of this key fragment.<br />  The value MUST conform to the  <tt>dc-frag-index</tt> rule above: a positive decimal integer.<br />  Fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt>.</td></tr><tr><td align="left"><strong>Fragment Payload</strong></td><td align="left">d</td><td align="left">(REQUIRED) The base64-encoded key material for this fragment.<br />  The value MUST conform to the  <tt>dc-frag-data</tt> rule above: standard base64 encoding per <xref target="RFC4648" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>Signing Algorithm</strong></td><td align="left">a</td><td align="left">(OPTIONAL) The JWS algorithm identifier for the signing algorithm.<br />  The value MUST conform to the  <tt>dc-alg-id</tt> rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <xref target="RFC7518" section="" relative=""></xref>.<br />  If omitted, MUST be assumed to be  <tt>"RS256"</tt>.<br />  Support for  <tt>"RS256"</tt> is MANDATORY for both DNS Providers and Service Providers.</td></tr><tr><td align="left"><strong>Public Key Format</strong></td><td align="left">t</td><td align="left">(OPTIONAL) The format of the public key.<br />  The value MUST conform to the  <tt>dc-key-type</tt> rule above.<br />  If omitted, MUST be assumed to be  <tt>"x509"</tt>.</td></tr></tbody></table>
 
-<t anchor="_c300618d-09c7-940f-2e9a-9d2ff8f6309c">To allow for key rotation or usage of multiple keys, the host name of the TXT record MUST be appended as another query parameter on the query string of the form:</t>
+<t anchor="_7ebf45b0-16fa-9128-db98-0fecd6f3f0ed">To allow for key rotation or usage of multiple keys, the host name of the TXT record MUST be appended as another query parameter on the query string of the form:</t>
 
-<sourcecode anchor="_a31824e9-6e0d-7cb9-7237-624e98a8d742"><![CDATA[key=_dcpubkeyv1]]></sourcecode>
+<sourcecode anchor="_e86f903b-0f27-5691-0db8-d0a6328cbab5"><![CDATA[key=_dcpubkeyv1]]></sourcecode>
 
 
-<t anchor="_79ff33e3-3e64-9849-67a0-d1f9d3449a66">This example indicates that the public key can be found by doing a DNS query for a TXT record called _dcpubkeyv1 in the domain specified in the <tt>"syncPubKeyDomain"</tt> from the template.</t>
+<t anchor="_44e2fa0b-c945-daa9-74b4-68efbf4e76cc">This example indicates that the public key can be found by doing a DNS query for a TXT record called _dcpubkeyv1 in the domain specified in the <tt>"syncPubKeyDomain"</tt> from the template.</t>
 
-<t anchor="_eb9ba5a5-59c6-93d2-3944-d313b1d522fc">To account for DNS Servers with limits to the size of a TXT record, the public key MAY be split into multiple TXT records at the specified host. For example, a public key of:</t>
+<t anchor="_e7228f2e-bca9-89de-3ea2-2a5ee389b7b8">To account for DNS Servers with limits to the size of a TXT record, the public key MAY be split into multiple TXT records at the specified host. For example, a public key of:</t>
 
-<sourcecode anchor="_5688cebf-2ba2-f7df-4429-d7494dd07e72"><![CDATA[MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+<sourcecode anchor="_71b55dd7-2947-718a-f345-8d0933801e88"><![CDATA[MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
 4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
 +HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
 NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
@@ -759,9 +746,9 @@ tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
 2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB]]></sourcecode>
 
 
-<t anchor="_51a6e6af-04ba-e5bf-6f40-75085425f4bd">may contain several TXT records. The records would be of the form:</t>
+<t anchor="_158928ab-180a-04ec-4639-835481942cce">may contain several TXT records. The records would be of the form:</t>
 
-<sourcecode anchor="_439b3da2-3db5-5486-eb70-f7f7ecb225f1"><![CDATA[p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+<sourcecode anchor="_a73dbc84-190d-a981-61aa-b0e29d8653ff"><![CDATA[p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
 4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
 IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
 
@@ -772,29 +759,29 @@ qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
 p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 
 
-<t anchor="_53fcf2a1-99b5-d807-f04a-ff211823e74d">Here the public key is broken into three records in DNS, and the data also indicates that the signing algorithm is an RSA Signature with SHA-256. The representation as x509 certificate is the default in this case.</t>
+<t anchor="_83c84da0-f962-8d73-ab10-8bb1f4d32024">Here the public key is broken into three records in DNS, and the data also indicates that the signing algorithm is an RSA Signature with SHA-256. The representation as x509 certificate is the default in this case.</t>
 
-<t anchor="_4306a3ee-5fab-0b88-9cc9-c5c5e89ca620">The above data was generated for a query string:</t>
+<t anchor="_38237258-dfb2-deaf-8ab2-24859e0d4999">The above data was generated for a query string:</t>
 
-<sourcecode anchor="_bd470409-682d-09bc-8851-f0a3634598a9"><![CDATA[a=1&b=2&ip=10.10.10.10&domain=example.net]]></sourcecode>
+<sourcecode anchor="_0b0127ec-56fc-bfd1-8ad9-3a5ff453f88b"><![CDATA[a=1&b=2&ip=10.10.10.10&domain=example.net]]></sourcecode>
 
 
-<t anchor="_58c34519-096f-1828-1179-0ae6233c1082">Signing the query string by the Service Provider is OPTIONAL. Not all Services Provider templates require or are able to provide this level of security. Presence of the  <tt>"syncPubKeyDomain"</tt> in the template indicates that the template requires signature verification.</t>
+<t anchor="_08caef9e-aa43-c45b-6111-df19e4c6346a">Signing the query string by the Service Provider is OPTIONAL. Not all Services Provider templates require or are able to provide this level of security. Presence of the  <tt>"syncPubKeyDomain"</tt> in the template indicates that the template requires signature verification.</t>
 
-<t anchor="_c49fc9de-f729-c8aa-ca4f-e0c02204fc9e">DNS Providers MUST reject any request to apply a template with <tt>"syncPubKeyDomain"</tt> present and no signing of a query string in place.</t>
+<t anchor="_b11ea6fc-6bd0-809c-b545-2525579e8892">DNS Providers MUST reject any request to apply a template with <tt>"syncPubKeyDomain"</tt> present and no signing of a query string in place.</t>
 
-<t anchor="_468886bb-333f-ccec-2f7b-5e54ad7d90fd">The digital signature MUST be generated on the full query string only, excluding the sig and key parameters. This is everything after the ?, except the sig and key values which MUST be appended to the signed query string.</t>
+<t anchor="_d7959d5f-0f44-e300-4f2f-ec853a2de17d">The digital signature MUST be generated on the full query string only, excluding the sig and key parameters. This is everything after the ?, except the sig and key values which MUST be appended to the signed query string.</t>
 
-<t anchor="_e465c84a-6515-6e3c-aa8f-524fd7d57f9f">The values of each query string value key/value pair MUST be properly URL Encoded before the signature is generated.</t>
+<t anchor="_128d59b9-f540-d92e-1a01-1788c1899fae">The values of each query string value key/value pair MUST be properly URL Encoded before the signature is generated.</t>
 </section>
 
-<section anchor="_9257e190-b71f-a5da-7236-35b47660060a"><name>Warnings</name>
+<section anchor="sec-warnings"><name>Warnings</name>
 
-<t anchor="_a3c7832c-3dc0-a54d-191d-b0675694ceeb">Some applications aren't able to use OAuth and/or sign requests.</t>
+<t anchor="_fcaec533-2377-0eba-c47c-c8291975afe9">Some applications aren't able to use OAuth and/or sign requests.</t>
 
-<t anchor="_fcf3aebb-7fb1-f1fb-47a2-903d551af93a">If the template require variables, and OAuth and signing isn't available, the flag <tt>"warnPhishing"</tt> SHOULD be set to true in the template in order to offer transparency to the DNS Provider about security properties of the template.</t>
+<t anchor="_b7aed77a-8711-7ef9-b959-15e5e3706a09">If the template require variables, and OAuth and signing isn't available, the flag <tt>"warnPhishing"</tt> SHOULD be set to true in the template in order to offer transparency to the DNS Provider about security properties of the template.</t>
 
-<t anchor="_9ff2848e-f295-7121-e261-1626d25333b5">When set this indicates to the DNS Provider that they SHOULD display additional warnings to the user to have them verify the link was/is from a reputable source before applying the template.</t>
+<t anchor="_dcb71d44-d80c-1762-6af0-19990682ff49">When set this indicates to the DNS Provider that they SHOULD display additional warnings to the user to have them verify the link was/is from a reputable source before applying the template.</t>
 </section>
 </section>
 
@@ -818,7 +805,7 @@ p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 </section>
 </section>
 
-<section anchor="_3b3cb1d3-fb32-db63-d98a-5c64dc90800a"><name>Asynchronous Flow: OAuth</name>
+<section anchor="_9e9f1609-314d-d6b6-b877-144ce3aa943d"><name>Asynchronous Flow: OAuth</name>
 
 <section anchor="_f3b12f12-64c5-42b4-109f-9cff05c77c80"><name>General information</name>
 
@@ -840,9 +827,9 @@ p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 <t anchor="_52632d66-45de-79c8-fb84-5d79826afaa8">The DNS Provider SHOULD give the Service Provider a client id and a secret which will be used when requesting tokens. For simplicity the client id MAY be the same as the providerId, however it is up to the agreement between the parties involved. Any other form of client authentication within OAuth framework MAY be agreed between the parties.</t>
 </section>
 
-<section anchor="_8dfc0289-e67e-ed02-3f34-242bd3ab4a23"><name>OAuth Flow: Getting an Authorization Code</name>
+<section anchor="_43a138b0-7474-7e82-a97c-658e9806afa3"><name>OAuth Flow: Getting an Authorization Code</name>
 
-<t anchor="_bfe8dd6d-71bb-a4b5-7b27-334e21e89d44">Normative URI template of the authorization code end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
+<t anchor="_a7b249dc-d0fd-abd7-1f3b-b5e0ef4be4b8">Normative URI template of the Authorization Code End-Point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
 <sourcecode anchor="_179cfb94-0755-61c7-f1bb-8190e711cc50" type="http"><![CDATA[GET
 
@@ -967,9 +954,7 @@ RANDOMTEXT=shm%3A1542108821%3AHello&force=1]]></sourcecode>
 
 <t anchor="_fc99673d-3f9c-8b74-2ba0-cf05ac4ec87f">When a 409 is returned, the body of the response SHOULD contain details of the conflicting records. If present this MUST be JSON containing the error code, a message suitable for developers, and an array of tuples containing the conflicting records type, host, and data element.</t>
 
-<t anchor="_411c900d-6e6f-91e3-8104-ef24e7b4ac78">As an example:</t>
-
-<sourcecode anchor="_7ee51db3-3675-1991-a67e-3fcda36f1333" type="json"><![CDATA[{
+<t anchor="_9dd2973a-53e6-6ee4-4470-a7e309c524ae" keepWithNext="true">EXAMPLE: Example conflict response</t><sourcecode anchor="_28ce7dad-51e5-bed9-7cdd-e5a35c13f576" type="json"><![CDATA[{
     "code": "409",
     "message": "Conflicting records",
     "records": [
@@ -986,8 +971,7 @@ RANDOMTEXT=shm%3A1542108821%3AHello&force=1]]></sourcecode>
     ]
 }]]></sourcecode>
 
-
-<t anchor="_2a65cc74-04c4-34b7-6b2f-902bb826f76c">In this example, the Service Provider tried to apply a new hosting template. The domain had an existing service applied for hosting.</t>
+<t anchor="_0aec882e-af0e-0f4f-c3bf-b38792dde5bf">In this example, the Service Provider tried to apply a new hosting template. The domain had an existing service applied for hosting.</t>
 </section>
 
 <section anchor="_e94a016b-b1a5-f7f4-d17b-8adcb6aa4da4"><name>OAuth Flow: Revert Template</name>
@@ -1042,7 +1026,7 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 <t anchor="_454e4c22-e29f-3be3-6fc9-d1e2c21e7cef">When the <tt>"redirect_uri"</tt> is used and an error is not present in the URI, the Service Provider can not assume the changes were applied to DNS. While true in most circumstances, users can tamper with or alter the return url in the browser. As such it is recommend that enablement of a service be based on verification of changes to DNS.</t>
 </section>
 </section>
-    <section anchor="_c6893233-1ca9-a749-f36f-b5866eb694ee"><name>Domain Connect Objects and Templates</name>
+    <section anchor="_df924cfe-e06a-ba6c-884d-a3ba75c5dfa9"><name>Domain Connect Objects and Templates</name>
 
 <section anchor="template-definition"><name>Template Definition</name>
 
@@ -1167,6 +1151,46 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 
 <t anchor="_af1dcf78-3c97-3ee0-9bfd-28ba714f22de">Otherwise, the rendered value is treated as relative and prepended as a label to the fully qualified <tt>"[host.]domain"</tt> formed by the apply parameters.</t>
 </section>
+
+<section anchor="_fa4c793d-581e-a35f-6302-6cff2e7f9dbf"><name>Examples of host processing</name>
+
+<t anchor="_36282d59-454d-1de6-d9b3-6c17e320b89f" keepWithNext="true">EXAMPLE: Template records example</t><sourcecode anchor="_1832202d-0edd-84fb-2912-71eff62e9ecb" type="json"><![CDATA[[{
+    "type": "CNAME",
+    "host": "www",
+    "pointsTo": "@",
+    "ttl": 1800
+},
+{
+    "type": "A",
+    "host": "@",
+    "pointsTo": "192.0.2.1",
+    "ttl": 1800
+}]]]></sourcecode>
+
+<t anchor="_38119070-3a6a-955f-dd62-2f3f6e09dad9">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host"</tt> parameter missing or empty:</t>
+
+<sourcecode anchor="_be538e78-4538-069b-b526-232b53e36487"><![CDATA[www 1800 IN CNAME example.com.
+@   1800 IN A 192.0.2.1]]></sourcecode>
+
+
+<t anchor="_c4904328-c4c7-7150-77ba-21b369f06021"><em>alternatively</em></t>
+
+<sourcecode anchor="_4bebc6c6-049e-6494-76ef-e853a871f9f2"><![CDATA[www.example.com.    1800 IN CNAME example.com.
+example.com.        1800 IN A 192.0.2.1]]></sourcecode>
+
+
+<t anchor="_78767801-8d15-65b6-863d-d45ced2805bb">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host=bar"</tt>:</t>
+
+<sourcecode anchor="_c1b672e1-c87e-dbfc-bc44-cf8dec16c221"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
+bar     1800 IN A 192.0.2.1]]></sourcecode>
+
+
+<t anchor="_0d846018-89d6-52c3-feae-db61d1862a8b">alternatively</t>
+
+<sourcecode anchor="_93dd9edf-b1b6-2f13-2bf6-3d0cece4eccd"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
+bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
+
+</section>
 </section>
 </section>
 
@@ -1206,69 +1230,19 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_6c4f69a2-e77d-6ded-28e2-4fe7af69a675">See <xref target="example-spf-merge"></xref>.</t>
 </section>
-
-<section anchor="_d3724ab1-913c-839c-8ed2-16341f2b3ea2"><name>Variables and Security</name>
-
-<t anchor="_f5624289-b5d7-dd36-d470-44a0fe104a4c">As discussed, with variables consideration is necessary to prevent certain styles of phishing attacks.</t>
-
-<t anchor="_406cd067-0b1d-3db1-7122-0949a4ad217e">The more static the value in the template record, the more secure the template. When static values are not possible, a carefully crafted link could hijack DNS settings.</t>
-
-<t anchor="_ac96df3f-d3ed-dd3f-edf4-b0a5d2896f50">Mitigations to this are discussed above.</t>
-</section>
-
-<section anchor="_19ffba77-674b-60cb-d8da-3aa61cdfe1f7"><name>Variable Examples</name>
-
-<t anchor="_fc25e9ea-a7c7-93b9-cc78-6db34574b945">Example template:</t>
-
-<sourcecode anchor="_506c0b29-d70a-ad8d-7bda-4b8adba52240" type="json"><![CDATA[[{
-    "type": "CNAME",
-    "host": "www",
-    "pointsTo": "@",
-    "ttl": 1800
-},
-{
-    "type": "A",
-    "host": "@",
-    "pointsTo": "192.0.2.1",
-    "ttl": 1800
-}]]]></sourcecode>
-
-
-<t anchor="_6cc37733-40ba-aca7-89ed-2d37e0a7ddfd">Template applied with <tt>"domain=example.com"</tt> and <tt>"host"</tt> parameter missing or empty:</t>
-
-<sourcecode anchor="_9d3c80b7-7d25-c48e-9d7f-a63496af7090"><![CDATA[www 1800 IN CNAME example.com.
-@   1800 IN A 192.0.2.1]]></sourcecode>
-
-
-<t anchor="_c870ba3b-f61c-b879-a954-6fd3ae62f82c"><em>alternatively</em></t>
-
-<sourcecode anchor="_2f1f4816-523e-0524-aba1-c55a1ca478fd"><![CDATA[www.example.com.    1800 IN CNAME example.com.
-example.com.        1800 IN A 192.0.2.1]]></sourcecode>
-
-
-<t anchor="_beefec57-eb85-d7e1-fa09-97674e5f3a8b">Template applied with <tt>"domain=example.com"</tt> and <tt>"host=bar"</tt>:</t>
-
-<sourcecode anchor="_0fe2f33a-465c-2792-10b2-691146746ba3"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
-bar     1800 IN A 192.0.2.1]]></sourcecode>
-
-
-<t anchor="_938f4eac-8352-0575-9a4d-5965170e7807">alternatively</t>
-
-<sourcecode anchor="_3f71fee0-1aac-99d9-30df-b904b467c2fd"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
-bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
-
 </section>
 </section>
-</section>
-    <section anchor="_73a0cbfc-c7bc-ba10-4472-0d36845dd6fd"><name>Template Application</name>
+    <section anchor="_3f522aa9-79bf-ffbb-adee-c07530285112"><name>Template Application</name>
 
-<section anchor="_08bdff17-f47c-19e8-6841-43dd866affa0"><name>Template State in DNS Providers system</name>
+<section anchor="_6a95ce71-bb1d-4a5a-f72d-8a0d18fd9e46"><name>Template State in DNS Providers system</name>
 
 <t anchor="_5956a9f7-27c5-2114-65b2-951e80d63e9f">DNS Providers MAY choose to maintain state inside records in DNS indicating the templates writing the records.</t>
 
-<t anchor="_59078bac-73c5-fc16-8957-2855a7d5c0d7">A DNS Provider that maintains this state may be able to provide an improved experience for users, telling them the services enabled. They also may be able to have more advanced handling of conflicts.</t>
+<t anchor="_8543f7ba-9de8-47cf-97ad-4748091a4132">A DNS Provider that maintains this state may be able to provide an improved experience for users, telling them the services enabled. They also may be able to have more advanced handling of conflicts and assure integrity of applied template instances.</t>
 
 <t anchor="_59c6553e-fc5a-35f0-fe97-e8fd1f18b1ea">A template instance is identified by the pair <tt>"domain"</tt> and <tt>"host"</tt> where the template has been applied. Therefore, the same template MUST be able to be applied more than once to the same DNS zone identified by <tt>"domain"</tt>, as long as the value of <tt>"host"</tt> parameter differs. Application of the same template with same <tt>"host"</tt> MAY be handled as an update by DNS provider, or just trigger a regular conflict detection and resolution routine by DNS Provider - removal of the previous instance and apply of the new instance.</t>
+
+<t anchor="_06fa1ec4-f25f-6bd6-59c5-d05cf30d291c">Manual changes made by the user at the DNS Provider MAY also trigger conflict detection against applied templates in order to maintain integrity.</t>
 </section>
 
 <section anchor="steps-to-apply"><name>Steps to Apply a Template</name>
@@ -1344,13 +1318,11 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 </section>
 </section>
 
-<section anchor="_989aa65b-f760-095e-426a-130a411ffef2"><name>Conflict Resolution</name>
+<section anchor="_9ae77a75-531a-63bf-6ce1-bcd01ec5a9dc"><name>Calculating Conflict Resolution</name>
 
 <t anchor="_ca62014f-bc46-1adf-1d38-77a48bf4015f">A DNS Provider not maintainig applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.</t>
 
 <t anchor="_bccabd34-9da1-2bfa-1648-d26fb6721bcb">When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied.</t>
-
-<t anchor="_e6b3f7f7-888b-5b80-b116-836985843cf5">Manual changes made by the user at the DNS Provider MAY also trigger conflict detection against applied templates.</t>
 </section>
 
 <section anchor="user_authorization_of_changes"><name>User Authorization of Changes</name>
@@ -1359,11 +1331,11 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 <t anchor="_7d3a21f6-9e67-013f-b096-35791a8c32b7">The DNS Provider MUST inform the user of the service that is about to be enabled when requesting authorization.  If the user wishes to review the specifics, the DNS Provider SHOULD make the individual DNS records being set available, in order to allow informed decision before changes are applied.</t>
 
-<t anchor="_12e2f4b3-7183-478a-9a10-1291110fa9ab">If conflicts are detected - at either the template or record level - the DNS Provider SHOULD present these to the user before authorization is granted. For templates this means identifying services that would be disabled; for records this means identifying records that would be deleted or overwritten.</t>
+<t anchor="_823a886a-ed6f-643c-4335-2a35db16ef07">If conflicts are detected - at either the template or record level - the DNS Provider SHOULD present these to the user before authorization is granted. For template instances this means identifying services that would be disabled; for records this means identifying records that would be deleted or overwritten.</t>
 
 <t anchor="_164f75be-19f1-9f31-4351-9b4c4dba29ef">The DNS Provider MUST allow the user to override a detected conflict and proceed with the template application, or to abort the process.</t>
 
-<t anchor="_ccc411bb-56c0-30c9-d8d1-3468f7897c4a">When presenting the authorization request to the user, the DNS Provider SHOULD display the template's <tt>"providerName"</tt> and <tt>"serviceName"</tt> fields. When a caller supplies <tt>"providerName"</tt> or <tt>"serviceName"</tt> request parameters (permitted only when the template's <tt>"sharedProviderName"</tt> or <tt>"sharedServiceName"</tt> flags are set, respectively), the DNS Provider SHOULD use those values to augment the displayed name, not replace it.</t>
+<t anchor="_4e458d5e-22ae-04f8-9b2f-9787a4a25253">When presenting the authorization request to the user, the DNS Provider SHOULD display the template's <tt>"providerName"</tt> and <tt>"serviceName"</tt> fields. When a caller supplies <tt>"providerName"</tt> or <tt>"serviceName"</tt> request parameters (permitted only when the template's <tt>"sharedProviderName"</tt> or <tt>"sharedServiceName"</tt> flags are set, respectively), the DNS Provider SHOULD use those values to augment the displayed name. It is RECOMMENDED however to also display the original <tt>"providerName"</tt> and <tt>"serviceName"</tt> defined in the template.</t>
 
 <t anchor="_15adf65e-671f-2d26-146c-743961bdead8">When the template's <tt>"warnPhishing"</tt> field is <tt>"true"</tt>, the DNS Provider SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied.</t>
 </section>
@@ -1377,13 +1349,20 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 <t anchor="_648381b5-15fd-7a61-ade3-54dcb6ccef44">The DNS Provider MUST apply all records of the template in totality.</t>
 </section>
 </section>
-    <section anchor="_c19b87ad-ed28-d354-fd73-6e168ffda3fd"><name>Security Considerations</name>
+    <section anchor="security-considerations"><name>Security Considerations</name>
 
-<section anchor="_71eceba6-8fd4-d2ef-668c-05f4e85b6782"><name>OAuth Client Secret Leakage</name>
+<section anchor="_8ec8f3b7-2641-ed29-65c0-066ddf7370f6"><name>OAuth Client Secret Leakage</name>
 
-<t anchor="_66430afa-843d-5200-399c-993958db6c4a">When the <tt>"client_secret"</tt> is used in the OAuth token exchange, care must be taken to prevent secret leakage. A malicious actor could create a domain with a false  <tt>"_domainconnect"</tt> TXT record pointing to a server under their control, causing a Service Provider that uses the discovered  <tt>"urlAPI"</tt> value to inadvertently expose the secret to that server.</t>
+<t anchor="_78975d5b-5a4b-93f8-0600-a376bcafceef">When the <tt>"client_secret"</tt> is used in the OAuth token exchange, care must be taken to prevent secret leakage. A malicious actor could create a domain with a false  <tt>"_domainconnect"</tt> TXT record pointing to a server under their control, causing a Service Provider that uses the discovered  <tt>"urlAPI"</tt> value to inadvertently expose the secret to that server.</t>
 
-<t anchor="_c3bafe88-b261-715c-4deb-95c53fd947ca">The Service Provider SHOULD therefore maintain the <tt>"urlAPI"</tt> endpoint for OAuth token requests as a stored, pre-registered value per DNS Provider, rather than using the value returned during DNS Provider discovery.</t>
+<t anchor="_193a0e52-17cb-947a-3441-9e978414c3fb">The Service Provider SHOULD therefore maintain the <tt>"urlAPI"</tt> endpoint for OAuth token requests as a stored, pre-registered value per DNS Provider, rather than using the value returned during DNS Provider discovery.</t>
+</section>
+
+<section anchor="sec-variable-phishing"><name>Template Variable Phishing</name>
+
+<t anchor="_cfa6a21f-f036-f19f-3887-4a3b0528e6b9">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.</t>
+
+<t anchor="_9a47bb32-4102-27ba-579f-701bd33d9aed">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: disabling the synchronous flow via <tt>"syncBlock"</tt> (see <xref target="sec-sync-blocking" format="title"></xref>), digitally signing apply requests (see the Section <xref target="sec-signing" format="title"></xref>), and setting the <tt>"warnPhishing"</tt> flag to prompt the DNS Provider to display additional warnings to the user (see <xref target="sec-warnings" format="title"></xref>).</t>
 </section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
@@ -1440,11 +1419,11 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_f5237861-8509-4e93-52e4-b05d0074e574" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_cb02778d-8e34-1b42-74b7-a47ad4afa4a4" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_42255ac2-c760-fd99-5791-e4282de278f8" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_a4d326d2-80c3-7d32-2d4e-2b4f1e817ffa" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
 
-<ul anchor="_cb175864-6297-cadd-0572-384dbbc062e8"><li>Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.</li>
+<ul anchor="_82248fc7-1faf-66d7-8857-6a0d67a680a8"><li>Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.</li>
 <li>Clarify explicit IDN support for domain name parameters (undefined before).</li>
 <li>Replaced informal prose constraints across all endpoint parameter tables and template field definitions with normative ABNF references</li>
 <li>Public-key TXT record format replaced with a formal ABNF grammar and detailed specification.</li>
@@ -1452,7 +1431,7 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 <li>Removed non-normative content: Public Template Repository, General Considerations, and Extensions/Exclusions sections.</li>
 <li>Moved display-related and UX behavioural requirements out of field definitions into <xref target="user_authorization_of_changes" format="title"></xref>; reworded developer-only fields to express intent rather than normative prohibition.</li>
 <li>Moved runtime processing rules out of parameter and template field definitions into their appropriate processing sections.</li>
-<li>Created Security Considerations sections and moved relevant part in there.</li>
+<li><xref target="security-considerations" format="title"></xref> section restructured: phishing threat description moved from <xref target="apply-template" format="title"></xref> into new <xref target="sec-variable-phishing" format="title"></xref> subsection; editorial cleanup including section reordering, heading renames, and example block formatting.</li>
 </ul>
 </section>
 
@@ -1545,11 +1524,11 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
       <reference target="https://www.rfc-editor.org/info/rfc8499" anchor="RFC8499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="A. Sullivan" asciiFullname="A. Sullivan"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="January" year="2019"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_1f5d3ff8-eb51-5b33-aa17-a4d14c99fe43">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has sometimes changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_955272cc-ccf5-7988-87c6-66a9c1b50330">This document obsoletes RFC 7719 and updates RFC 2308.</t></abstract> </front> <seriesInfo value="10.17487/RFC8499" name="DOI"></seriesInfo> <seriesInfo value="8499" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7591" anchor="RFC7591"><stream>IETF</stream> <front> <title>OAuth 2.0 Dynamic Client Registration Protocol</title> <author fullname="M. Jones" asciiFullname="M. Jones"></author> <author fullname="J. Bradley" asciiFullname="J. Bradley"></author> <author fullname="M. Machulak" asciiFullname="M. Machulak"></author> <author fullname="P. Hunt" asciiFullname="P. Hunt"></author> <author fullname="J. Richer" asciiFullname="J. Richer"></author> <date month="July" year="2015"></date> <keyword>OpenID Connect Dynamic Client Registration</keyword><keyword>OpenID Connect</keyword><keyword>oidc</keyword><keyword>openid</keyword><keyword>user managed access</keyword><keyword>uma</keyword><keyword>Dynamic Registration</keyword><keyword>Dynamic Client Registration</keyword> <abstract>  <t anchor="_8860866d-13c4-68f0-b90a-dae250048305">This specification defines mechanisms for dynamically registering OAuth 2.0 clients with authorization servers. Registration requests send a set of desired client metadata values to the authorization server. The resulting registration responses return a client identifier to use at the authorization server and the client metadata values registered for the client. The client can then use this registration information to communicate with the authorization server using the OAuth 2.0 protocol. This specification also defines a set of common client metadata fields and values for clients to use during registration.</t></abstract> </front> <seriesInfo value="10.17487/RFC7591" name="DOI"></seriesInfo> <seriesInfo value="7591" name="RFC"></seriesInfo></reference>
     </references>
-    <section anchor="_66f71993-fd8b-f9f9-2da5-cfa834e6cc84"><name>Examples</name>
+    <section anchor="_55e5bb2a-c1a9-b20d-67ef-5f330485f476"><name>Examples</name>
 
-<section anchor="_1e0ac6d1-639b-fed3-f5f4-bea82b81f3ef"><name>Example Template</name>
+<section anchor="_9b99b5ca-98e0-0036-4d41-6185b137100f"><name>Example Template</name>
 
-<sourcecode anchor="_69699bee-2535-9f96-c1b1-c414e3b03cca" type="json"><![CDATA[{
+<t anchor="_56685b16-8e87-afcc-18f9-5ee531820c7f" keepWithNext="true">EXAMPLE: Full template example</t><sourcecode anchor="_e3e82e73-6145-d4d5-2f46-90faf27199ee" type="json"><![CDATA[{
     "providerId": "example.com",
     "providerName": "Example Web Hosting",
     "serviceId": "hosting",
@@ -1588,49 +1567,46 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
         }
     ]
 }]]></sourcecode>
-
 </section>
 
-<section anchor="_7aef545b-ba44-3cf9-34fa-6a1f67b99775"><name>Example Records: Single static host record</name>
+<section anchor="_1a4d504c-657d-3f6d-df94-83c947f560c7"><name>Example Records: Single static host record</name>
 
 <t anchor="_8a1cd115-8ed5-69aa-4cd1-395b528b20d7">Consider a template for setting a single host record. The records section of the template would have a single record of type "A" and could have a value of:</t>
 
-<sourcecode anchor="_6320ad16-946e-0563-e003-17438fb13a24" type="json"><![CDATA[[{
+<t anchor="_b8379708-662c-8471-d31d-171282d12f64" keepWithNext="true">EXAMPLE: Single static host record example</t><sourcecode anchor="_094723d4-f263-05f7-c394-bc114c9a346b" type="json"><![CDATA[[{
     "type": "A",
     "host": "www",
     "pointsTo": "192.0.2.1",
     "ttl": 600
 }]]]></sourcecode>
 
-
 <t anchor="_fb82714c-f097-6841-ea23-0e36e5fbc65d">This would have no variable substitution and the application of this template to a domain would simply set the host name "www" to the IP address "192.0.2.1"</t>
 </section>
 
-<section anchor="_e60cc03e-eef3-36d7-5c8c-8079eea93a0a"><name>Example Records: Single variable host record for A</name>
+<section anchor="_15249411-71ad-3aad-95d4-3d4175c31d85"><name>Example Records: Single variable host record for A</name>
 
 <t anchor="_129d4971-39c4-eb7d-d316-3aa4fa8b4ac2">In the case of a template for setting a single host record from a variable, the template would have a single record of type "A" and could have a value of:</t>
 
-<sourcecode anchor="_60f2004a-fc9b-632b-c199-199fdef053da" type="json"><![CDATA[[{
+<t anchor="_cd81a2e9-bcaf-3257-b78d-ff90f4072125" keepWithNext="true">EXAMPLE: Single variable host record for A example</t><sourcecode anchor="_298731f5-9f9c-4f96-3e2f-50c6f3cf0855" type="json"><![CDATA[[{
     "type": "A",
     "host": "@",
     "pointsTo": "198.51.100.%srv%",
     "ttl": 600
 }]]]></sourcecode>
 
-
 <t anchor="_a6e777f6-47cb-b34d-aaa0-f149bc8e9ba3">A query string with a key/value pair of</t>
 
-<sourcecode anchor="_041bac04-0760-9a2d-de0b-1093e44a86db"><![CDATA[srv=2]]></sourcecode>
+<sourcecode anchor="_15c1650e-f5da-9b94-3131-e331d5deffa5"><![CDATA[srv=2]]></sourcecode>
 
 
 <t anchor="_aa9c3f63-3a57-4d08-0cdf-37d12f07b06c">would cause the application of this template to a domain to set the host name for the apex A record to the IP address "198.51.100.2" with a TTL of 600</t>
 </section>
 
-<section anchor="_60f2d70c-cc6c-e05f-7e94-2560ad31c8ef"><name>Example Records: Unspecified record type CAA</name>
+<section anchor="_2058f3d5-562e-7847-a0c4-8d6cad2d43f8"><name>Example Records: Unspecified record type CAA</name>
 
 <t anchor="_c9782a55-c8ef-a117-6f64-1fbb3c9104ab">This example shows how to include a set of unspecified record types on an example of CAA records:</t>
 
-<sourcecode anchor="_1446da49-7cfd-b40e-a2d8-e15da327870b" type="json"><![CDATA[[
+<t anchor="_d4310efd-f480-3035-e32e-b52a0ddf5889" keepWithNext="true">EXAMPLE: Unspecified record type CAA example</t><sourcecode anchor="_ebe67f4d-bd73-a4f6-9ee6-38e79930dd4b" type="json"><![CDATA[[
     {
         "type": "CAA",
         "host": "@",
@@ -1644,7 +1620,6 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
         "ttl": 1800
     }
 ]]]></sourcecode>
-
 
 <t anchor="_4a7bb606-9a11-7985-ceaf-688bf3e4236c">This would have no variable substitution and the application of this template to a domain would add 2 CAA records.</t>
 </section>

@@ -185,6 +185,21 @@ dc-version     =  %x31-39 *DIGIT
                 ; a strict subset of JSON number (RFC 8259
                 ; Section 6); used for template version
 
+; ---- Variable expression rules ----
+
+variable-expression =  named-variable / template-apex-var
+                ; parameterized expression in a template field
+
+named-variable  =  "%" variable-name "%"
+                ; %-delimited named variable
+
+template-apex-var =  "@"
+                ; zone-apex / fqdn shorthand; MUST appear alone
+                ; in host/name or pointsTo/data fields
+
+variable-name   =  1*( ALPHA / DIGIT / "-" / "_" )
+                ; identifier of a template variable
+
 ; ---- Template record field rules ----
 
 dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
@@ -2120,15 +2135,9 @@ The DNS Provider MUST validate the syntax before merging.
 [[variables]]
 === Resource Record and Variable Processing
 ==== Variable Syntax
-Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable "@") that is replaced with a value during template application.
+Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable `"@"`) that is replaced with a value during template application.
 
-[source,abnf]
-----
-     variable-expression    =  named-variable / template-apex-var
-     named-variable         = "%" variable-name "%"
-     template-apex-var      = "@"
-     variable-name          =  1*(ALPHA / DIGIT / "-" / "_" )
-----
+Variable expressions MUST conform to `"variable-expression"` syntax (see <<terminology>>).
 
 ==== Special and Built-In Variables
 
@@ -2161,11 +2170,13 @@ If the data source requires encoding of certain characters (e.g., special charac
 
 When a template is applied, the variables in the template are replaced with the values passed as input.
 
+Variables are identified by their name ('"variable-name"' part of the syntax or `"@"`) and the whole variable expression is replaced with a value of either Built-In Variable or Name/Value pairs provided to the Apply operation.
+
 Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.
 
 Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.
 
-The result of the processing MAY still contain variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is.
+The result of the processing MAY still contain strings containing variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is without any further processing.
 
 [[variables-and-hosts]]
 ==== Variables and Host/Name in Template
@@ -2465,40 +2476,21 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-00 to -01
-- Added Essential Records subsection under Template Considerations, reformulated from non-essential records concept to a definition-style description of essential records.
-- Replaced Disclosure of Changes and Conflicts and Record Types and Conflicts sections with three focused sections: Conflict Detection, User Authorization of Changes, and Template Application.
-- Added Steps to Apply a Template overview section with ordered steps and branching for DNS Providers tracking template state vs. those that do not.
-- Added normative ABNF syntax rules to the Terminology section.
-- Added Identifier Syntax subsection defining normative constraints on `providerId`, `serviceId`, `groupId`, and `instanceId` via the `dc-id` rule.
-- Added IDN support for `domain` and `host` parameters across all endpoints: both Unicode (U-label/UTF-8) and ACE (A-label/punycode) forms are now accepted; receivers MUST normalise U-labels to A-labels per RFC 5891.
-- Restricted `nameServers`, `syncPubKeyDomain`, and `syncRedirectDomain` to ACE-form domain names only (`dc-ascii-name`).
-- Strengthened normative constraints on URL fields (`urlSyncUX`, `urlAsyncUX`, `urlAPI`, `urlControlPanel`, `logoUrl`) with explicit RFC 3986 conformance requirements.
-- Specified `dc-sig` (base64 per RFC 4648) for the `sig` parameter and `dc-key-label` (single plain ACE or RFC 8552 underscore-prefixed label) for the `key` parameter in the synchronous signing flow.
-- Specified `dc-force` for the `force` parameter (string `"0"` or `"1"`), `"state"` for the `state` parameter.
-- Added normative display-name constraints (UTF-8, at most 255 code points, printable, no control characters) for `providerName`, `providerDisplayName`, and `serviceName`.
-- Clarified `groupId` (in endpoint parameters and template records) must conform to `dc-id` and MUST NOT contain variable expressions.
-- Added normative reference to `spfRules` field: must contain only SPF mechanism/modifier terms per RFC 7208 Section 5, excluding version prefix and `all` qualifier.
-- Added normative constraint on `txtConflictMatchingPrefix`: printable ASCII only, no variable expressions.
-- Added normative constraint on `version`: replaced prose "non-negative integer" constraint with the `dc-version` ABNF rule (positive integer, no leading zeros, no fractional or exponent part; strict subset of JSON `"number"` per RFC 8259 Section 6); added RFC 8259 as a normative reference.
-- Added normative references: RFC 4648 (Base64), RFC 5891 (IDNA 2008).
-- Added `dc-underscore-label` ABNF rule for RFC 8552 underscore-prefixed DNS labels; added `dc-key-label` rule (plain ACE or underscore label) replacing the former `dc-key-host` single-label rule for the `key` parameter; added `dc-pubkey-domain` rule allowing zero or more underscore-label prefixes on `syncPubKeyDomain`; updated normative constraints on `syncPubKeyDomain` and `key` parameter accordingly.
-- Added `dc-display-name` ABNF rule referencing `unicode-assignable` (RFC 9839 Section 4.3) for display-name fields; replaced informal UTF-8/printable-characters prose constraints on `providerName` (DNS Provider discovery and template) and `serviceName` (template) with a normative reference to `dc-display-name`; added RFC 9839 as a normative reference.
-- Added `dc-description-text` ABNF rule (at most 2048 `unicode-assignable` code points per RFC 9839 Section 4.3); added normative `dc-description-text` constraints to the `description` and `variableDescription` template fields.
-- Added normative constraints to the Query Supported Template endpoint parameter table: `urlAPI` cross-referenced to the settings endpoint; `providerId` and `serviceId` required to conform to `dc-id` syntax.
-- Removed redundant "Both ACE … forms are accepted; the receiver MUST convert …" sentences from `domain` and `host` parameter descriptions across all endpoints; the `domain-name` terminology reference is sufficient. Retained normative A-label normalisation requirements for token comparison in the OAuth apply and revert flows.
-- Added normative constraints to the synchronous Apply Template parameter table: `urlSyncUX` cross-referenced to the settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `redirect_uri` required to be an absolute URI per RFC 3986; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as the correct receiver of the ignore-unknown-parameters rule.
-- Replaced informal prose description of the public key TXT record format in the Digitally Sign Requests section with a formal ABNF grammar (`dc-pubkey-record`, `dc-pubkey-kv`, `dc-frag-index`, `dc-frag-data`, `dc-alg-id`, `dc-key-type`); added normative constraints to all four TXT record fields (`"p"`, `"d"`, `"a"`, `"t"`) including syntax rules, mandatory reassembly order, default values, and IANA registry reference for algorithm identifiers.
-- Added `dc-id-list` ABNF rule (comma-separated list of `dc-id` values) to Terminology; replaced ad-hoc prose in `groupId` parameter descriptions (synchronous apply and asynchronous apply) with normative `dc-id-list` reference; resolved pre-existing TODO.
-- Added `dc-scope` ABNF rule (space-separated list of `dc-id` values; strict subset of OAuth 2.0 scope per RFC 6749 Appendix A.4) to Terminology; added normative imports of `"client_id"` and `"response_type"` from RFC 6749.
-- Added normative constraints to the asynchronous OAuth authorization endpoint parameter table: `urlAsyncUX` cross-referenced to settings endpoint; `providerId` required to conform to `dc-id`; `client_id` referenced to RFC 6749 Section 2.2; `redirect_uri` required to be an absolute URI per RFC 3986; `response_type` value constrained to `"code"` per RFC 6749 Section 3.1.1; `scope` required to conform to `dc-scope`; `properties` parameter names required to conform to `variable-name` syntax.
-- Added normative `"redirect_uri"` import from RFC 6749 Appendix A, Section A.6 to Terminology (used across sync flow, async flow, and token endpoint).
-- Split combined `"code"`/`"refresh_token"` request row into two separate rows with mutual-exclusion constraint; added normative RFC 6749 syntax references to all parameters of the OAuth token endpoint request table (`"code"` A.11, `"refresh_token"` A.17, `"redirect_uri"` A.6, `"grant_type"` A.10, `"client_id"` §2.2, `"client_secret"` A.2).
-- Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (`"access_token"` A.12, `"token_type"` A.13 with mandatory `"bearer"` value, `"expires_in"` A.14, `"refresh_token"` A.17).
-- Added normative constraints to the asynchronous OAuth apply endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id`; `host` A-label normalisation rule reinstated for token comparison; `properties` parameter names required to conform to `variable-name` syntax with DNS Provider as correct actor; `instanceId` required to conform to `dc-id`; corrected `"serviceName"` guard attribute from `"sharedProviderName"` to `"sharedServiceName"`.
-- Added normative constraints to the asynchronous OAuth revert endpoint parameter table: `urlAPI` cross-referenced to settings endpoint; `providerId` and `serviceId` required to conform to `dc-id` and updated to use "reverted" wording; `host` A-label normalisation rule added for token comparison; `instanceId` required to conform to `dc-id` with clarified removal semantics (single instance vs. all instances).
-- Added `dc-version` ABNF rule for the `version` field of the template definition (positive integer, no leading zeros, no fractional or exponent part), as a strict subset of the JSON `"number"` type per RFC 8259 Section 6; added normative import of the `"number"` rule from RFC 8259; added RFC 8259 as a normative reference.
-- Added normative ABNF rules for all Template Record fields: `dc-record-type` (type enum covering named, IANA-registered, and RFC 3597 unknown types), `dc-essential` (conflict-detection treatment enum with normative default `"Always"`), `dc-txt-conflict-mode` (TXT conflict mode enum with normative default `"None"`), `dc-conflict-prefix` (printable ASCII, U+0021–U+007E), `dc-name-char` (Unicode Assignable code point, RFC 9839 §4.3, excluding `"%"` and `"@"`), `dc-host-tmpl` (template form for host/name: `"@"` apex shorthand or mix of literal `dc-name-char` and `%var%` expressions), `dc-pointsto-tmpl` (template form for pointsTo/data/target: same structure), resolved forms reference `domain-name` (RFC 5890) directly; `dc-ttl-tmpl` / `dc-ttl-value` (template and resolved forms for TTL), `dc-uint16-tmpl` / `dc-uint16-value` (template and resolved forms for priority, weight, port), `dc-srv-protocol` (underscore-prefixed transport), `dc-srv-service` (underscore-prefixed service name per RFC 6335); added normative references RFC 2782 and RFC 6335; added normative imports of `"srv-rdata"` (RFC 2782) and `"service-name"` (RFC 6335); fixed missing `"number"` import (RFC 8259) in Terminology.
-- Replaced `dc-label-chars`, `dc-host-literal`, `dc-host-value`, and `dc-pointsto-value` ABNF rules with `dc-name-char` (Unicode Assignable code points excluding `"%"` and `"@"`) as the literal-character unit in `dc-host-tmpl` and `dc-pointsto-tmpl`; resolved values for host, name, pointsTo, and target now reference `domain-name` (RFC 5890) directly in the table prose.
+- Added comprehensive ABNF grammar to the Terminology section, providing normative
+  syntax definitions for all protocol identifiers, domain name forms, template fields,
+  OAuth parameters, and signing artifacts.
+- Added IDN support for domain name parameters; infrastructure fields restricted to
+  ACE-form only.
+- Replaced informal prose constraints across all endpoint parameter tables and template
+  field definitions with normative ABNF references; public-key TXT record format
+  replaced with a formal ABNF grammar.
+- Restructured Template Application: replaced ad-hoc conflict sections with focused
+  Conflict Detection, User Authorization of Changes, and Template Application sections;
+  added Essential Records definition and Steps to Apply a Template.
+- Added Identifier Syntax subsection defining normative constraints on identifier fields
+  across all endpoints and template records.
+- Removed non-normative content: Public Template Repository, General Considerations,
+  and Extensions/Exclusions sections.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

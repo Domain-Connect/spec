@@ -1769,7 +1769,7 @@ li > p:last-of-type:only-child {
 <div id="_0b56576e-a987-a78d-9d33-6c1e875899b9">
 <p id="section-3-9">The following additional ABNF rules are defined in this document and used normatively throughout.<a href="#section-3-9" class="pilcrow">¶</a></p>
 </div>
-<div id="_ddb71992-07c2-9665-35ef-b9337d37b3e8">
+<div id="_43ebd337-278f-0313-8e3c-9bdfcf58d7bb">
 <div class="breakable lang-abnf sourcecode" id="section-3-10">
 <pre>; ---- Identifier rules ----
 
@@ -1828,6 +1828,21 @@ dc-version     =  %x31-39 *DIGIT
                 ; no fraction, no exponent;
                 ; a strict subset of JSON number (RFC 8259
                 ; Section 6); used for template version
+
+; ---- Variable expression rules ----
+
+variable-expression =  named-variable / template-apex-var
+                ; parameterized expression in a template field
+
+named-variable  =  "%" variable-name "%"
+                ; %-delimited named variable
+
+template-apex-var =  "@"
+                ; zone-apex / fqdn shorthand; MUST appear alone
+                ; in host/name or pointsTo/data fields
+
+variable-name   =  1*( ALPHA / DIGIT / "-" / "_" )
+                ; identifier of a template variable
 
 ; ---- Template record field rules ----
 
@@ -3971,7 +3986,7 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 </div>
 </section>
 </div>
-<div id="_b39896f1-5b5a-d336-d409-af16c313d710">
+<div id="_a1d565e2-2023-82a8-2ba8-5ec81003b6a3">
 <section id="section-8">
       <h2 id="name-domain-connect-objects-and-">
 <a href="#section-8" class="section-number selfRef">8. </a><a href="#name-domain-connect-objects-and-" class="section-name selfRef">Domain Connect Objects and Templates</a>
@@ -4332,21 +4347,16 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
         <h3 id="name-resource-record-and-variabl">
 <a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-resource-record-and-variabl" class="section-name selfRef">Resource Record and Variable Processing</a>
         </h3>
-<div id="_a767d926-ea30-0689-4532-d824f366659e">
+<div id="_f3711ce5-441f-e346-9353-1658b8671513">
 <section id="section-8.3.1">
           <h4 id="name-variable-syntax">
 <a href="#section-8.3.1" class="section-number selfRef">8.3.1. </a><a href="#name-variable-syntax" class="section-name selfRef">Variable Syntax</a>
           </h4>
-<div id="_6c069617-8891-bfdc-efa7-e54ff58d22dc">
-<p id="section-8.3.1-1">Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable "@") that is replaced with a value during template application.<a href="#section-8.3.1-1" class="pilcrow">¶</a></p>
+<div id="_3630ee0d-d4e6-5fdd-0ac3-78dc983bd78a">
+<p id="section-8.3.1-1">Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable <code>"@"</code>) that is replaced with a value during template application.<a href="#section-8.3.1-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_ef65daa2-3cfc-9caa-88ac-8597fd1aa0b4">
-<div class="lang-abnf sourcecode" id="section-8.3.1-2">
-<pre>     variable-expression    =  named-variable / template-apex-var
-     named-variable         = "%" variable-name "%"
-     template-apex-var      = "@"
-     variable-name          =  1*(ALPHA / DIGIT / "-" / "_" )</pre><a href="#section-8.3.1-2" class="pilcrow">¶</a>
-</div>
+<div id="_4702bb35-472c-0562-4e03-adab531028e1">
+<p id="section-8.3.1-2">Variable expressions MUST conform to <code>"variable-expression"</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<a href="#section-8.3.1-2" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -4383,7 +4393,7 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 </div>
 </section>
 </div>
-<div id="_cba463dd-6fa9-e4be-3bbb-739c7855fd1f">
+<div id="_c31ae4bd-d6c3-a214-f3a7-851bc09d88ff">
 <section id="section-8.3.3">
           <h4 id="name-variable-substitution">
 <a href="#section-8.3.3" class="section-number selfRef">8.3.3. </a><a href="#name-variable-substitution" class="section-name selfRef">Variable substitution</a>
@@ -4401,7 +4411,7 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 </div>
 </section>
 </div>
-<div id="_f444a063-c2d4-5589-07b3-c77c6b5ee74a">
+<div id="_121a7660-4878-1e5b-7555-d8c28c38eb24">
 <section id="section-8.3.3.2">
             <h5 id="name-processing">
 <a href="#section-8.3.3.2" class="section-number selfRef">8.3.3.2. </a><a href="#name-processing" class="section-name selfRef">Processing</a>
@@ -4409,14 +4419,17 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 <div id="_621d0998-b0da-d538-2f11-e98ad3bd14f4">
 <p id="section-8.3.3.2-1">When a template is applied, the variables in the template are replaced with the values passed as input.<a href="#section-8.3.3.2-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_bd09d5ff-422a-8edb-c3a4-42e2afdeac5a">
-<p id="section-8.3.3.2-2">Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.<a href="#section-8.3.3.2-2" class="pilcrow">¶</a></p>
+<div id="_26e932f5-76b8-c58d-4cda-50dd25497dd3">
+<p id="section-8.3.3.2-2">Variables are identified by their name ('"variable-name"' part of the syntax or <code>"@"</code>) and the whole variable expression is replaced with a value of either Built-In Variable or Name/Value pairs provided to the Apply operation.<a href="#section-8.3.3.2-2" class="pilcrow">¶</a></p>
 </div>
-<div id="_e10729a9-0b0f-9d5f-4df3-91f781697d48">
-<p id="section-8.3.3.2-3">Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.<a href="#section-8.3.3.2-3" class="pilcrow">¶</a></p>
+<div id="_0016152c-294c-aaee-fb81-e7e6bd54965e">
+<p id="section-8.3.3.2-3">Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.<a href="#section-8.3.3.2-3" class="pilcrow">¶</a></p>
 </div>
-<div id="_f067b826-a262-06ba-e239-b25bce376ea4">
-<p id="section-8.3.3.2-4">The result of the processing MAY still contain variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is.<a href="#section-8.3.3.2-4" class="pilcrow">¶</a></p>
+<div id="_5e9dd9b1-be73-083f-77fe-a4ab0507d696">
+<p id="section-8.3.3.2-4">Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.<a href="#section-8.3.3.2-4" class="pilcrow">¶</a></p>
+</div>
+<div id="_d4a18feb-c70c-3f9a-e76a-7f04ebda6f89">
+<p id="section-8.3.3.2-5">The result of the processing MAY still contain strings containing variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is without any further processing.<a href="#section-8.3.3.2-5" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -4977,85 +4990,29 @@ bar.example.com.        1800 IN A 192.0.2.1</pre><a href="#section-8.3.7-10" cla
       </ul>
 </section>
 </div>
-<div id="_9415ffc2-43aa-bb9e-384a-fc31321d41a3">
+<div id="_a0c7d925-5be4-82c4-4958-887518fefef6">
 <section id="section-13">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-13-1">This section is to be removed before publishing as an RFC.<a href="#section-13-1" class="pilcrow">¶</a></p>
-<div id="_08731d33-0095-97a1-ccda-4d9f9c011b06">
+<div id="_b8a084d8-13e2-bc29-225f-fd1f2cf84b1c">
 <section id="section-13.1">
         <h3 id="name-change-from-draft-ietf-dcon">
 <a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-13.1-1.1">Added Essential Records subsection under Template Considerations, reformulated from non-essential records concept to a definition-style description of essential records.<a href="#section-13.1-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-13.1-1.1">Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.<a href="#section-13.1-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-13.1-1.2">Replaced Disclosure of Changes and Conflicts and Record Types and Conflicts sections with three focused sections: Conflict Detection, User Authorization of Changes, and Template Application.<a href="#section-13.1-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-13.1-1.2">Added IDN support for domain name parameters; infrastructure fields restricted to ACE-form only.<a href="#section-13.1-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-13.1-1.3">Added Steps to Apply a Template overview section with ordered steps and branching for DNS Providers tracking template state vs. those that do not.<a href="#section-13.1-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-13.1-1.3">Replaced informal prose constraints across all endpoint parameter tables and template field definitions with normative ABNF references; public-key TXT record format replaced with a formal ABNF grammar.<a href="#section-13.1-1.3" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-13.1-1.4">Added normative ABNF syntax rules to the Terminology section.<a href="#section-13.1-1.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-13.1-1.4">Restructured Template Application: replaced ad-hoc conflict sections with focused Conflict Detection, User Authorization of Changes, and Template Application sections; added Essential Records definition and Steps to Apply a Template.<a href="#section-13.1-1.4" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-13.1-1.5">Added Identifier Syntax subsection defining normative constraints on <code>providerId</code>, <code>serviceId</code>, <code>groupId</code>, and <code>instanceId</code> via the <code>dc-id</code> rule.<a href="#section-13.1-1.5" class="pilcrow">¶</a>
+          <li class="normal" id="section-13.1-1.5">Added Identifier Syntax subsection defining normative constraints on identifier fields across all endpoints and template records.<a href="#section-13.1-1.5" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-13.1-1.6">Added IDN support for <code>domain</code> and <code>host</code> parameters across all endpoints: both Unicode (U-label/UTF-8) and ACE (A-label/punycode) forms are now accepted; receivers MUST normalise U-labels to A-labels per RFC 5891.<a href="#section-13.1-1.6" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.7">Restricted <code>nameServers</code>, <code>syncPubKeyDomain</code>, and <code>syncRedirectDomain</code> to ACE-form domain names only (<code>dc-ascii-name</code>).<a href="#section-13.1-1.7" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.8">Strengthened normative constraints on URL fields (<code>urlSyncUX</code>, <code>urlAsyncUX</code>, <code>urlAPI</code>, <code>urlControlPanel</code>, <code>logoUrl</code>) with explicit RFC 3986 conformance requirements.<a href="#section-13.1-1.8" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.9">Specified <code>dc-sig</code> (base64 per RFC 4648) for the <code>sig</code> parameter and <code>dc-key-label</code> (single plain ACE or RFC 8552 underscore-prefixed label) for the <code>key</code> parameter in the synchronous signing flow.<a href="#section-13.1-1.9" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.10">Specified <code>dc-force</code> for the <code>force</code> parameter (string <code>"0"</code> or <code>"1"</code>), <code>"state"</code> for the <code>state</code> parameter.<a href="#section-13.1-1.10" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.11">Added normative display-name constraints (UTF-8, at most 255 code points, printable, no control characters) for <code>providerName</code>, <code>providerDisplayName</code>, and <code>serviceName</code>.<a href="#section-13.1-1.11" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.12">Clarified <code>groupId</code> (in endpoint parameters and template records) must conform to <code>dc-id</code> and MUST NOT contain variable expressions.<a href="#section-13.1-1.12" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.13">Added normative reference to <code>spfRules</code> field: must contain only SPF mechanism/modifier terms per RFC 7208 Section 5, excluding version prefix and <code>all</code> qualifier.<a href="#section-13.1-1.13" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.14">Added normative constraint on <code>txtConflictMatchingPrefix</code>: printable ASCII only, no variable expressions.<a href="#section-13.1-1.14" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.15">Added normative constraint on <code>version</code>: replaced prose "non-negative integer" constraint with the <code>dc-version</code> ABNF rule (positive integer, no leading zeros, no fractional or exponent part; strict subset of JSON <code>"number"</code> per RFC 8259 Section 6); added RFC 8259 as a normative reference.<a href="#section-13.1-1.15" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.16">Added normative references: RFC 4648 (Base64), RFC 5891 (IDNA 2008).<a href="#section-13.1-1.16" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.17">Added <code>dc-underscore-label</code> ABNF rule for RFC 8552 underscore-prefixed DNS labels; added <code>dc-key-label</code> rule (plain ACE or underscore label) replacing the former <code>dc-key-host</code> single-label rule for the <code>key</code> parameter; added <code>dc-pubkey-domain</code> rule allowing zero or more underscore-label prefixes on <code>syncPubKeyDomain</code>; updated normative constraints on <code>syncPubKeyDomain</code> and <code>key</code> parameter accordingly.<a href="#section-13.1-1.17" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.18">Added <code>dc-display-name</code> ABNF rule referencing <code>unicode-assignable</code> (RFC 9839 Section 4.3) for display-name fields; replaced informal UTF-8/printable-characters prose constraints on <code>providerName</code> (DNS Provider discovery and template) and <code>serviceName</code> (template) with a normative reference to <code>dc-display-name</code>; added RFC 9839 as a normative reference.<a href="#section-13.1-1.18" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.19">Added <code>dc-description-text</code> ABNF rule (at most 2048 <code>unicode-assignable</code> code points per RFC 9839 Section 4.3); added normative <code>dc-description-text</code> constraints to the <code>description</code> and <code>variableDescription</code> template fields.<a href="#section-13.1-1.19" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.20">Added normative constraints to the Query Supported Template endpoint parameter table: <code>urlAPI</code> cross-referenced to the settings endpoint; <code>providerId</code> and <code>serviceId</code> required to conform to <code>dc-id</code> syntax.<a href="#section-13.1-1.20" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.21">Removed redundant "Both ACE ... forms are accepted; the receiver MUST convert ..." sentences from <code>domain</code> and <code>host</code> parameter descriptions across all endpoints; the <code>domain-name</code> terminology reference is sufficient. Retained normative A-label normalisation requirements for token comparison in the OAuth apply and revert flows.<a href="#section-13.1-1.21" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.22">Added normative constraints to the synchronous Apply Template parameter table: <code>urlSyncUX</code> cross-referenced to the settings endpoint; <code>providerId</code> and <code>serviceId</code> required to conform to <code>dc-id</code>; <code>redirect_uri</code> required to be an absolute URI per RFC 3986; <code>properties</code> parameter names required to conform to <code>variable-name</code> syntax with DNS Provider as the correct receiver of the ignore-unknown-parameters rule.<a href="#section-13.1-1.22" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.23">Replaced informal prose description of the public key TXT record format in the Digitally Sign Requests section with a formal ABNF grammar (<code>dc-pubkey-record</code>, <code>dc-pubkey-kv</code>, <code>dc-frag-index</code>, <code>dc-frag-data</code>, <code>dc-alg-id</code>, <code>dc-key-type</code>); added normative constraints to all four TXT record fields (<code>"p"</code>, <code>"d"</code>, <code>"a"</code>, <code>"t"</code>) including syntax rules, mandatory reassembly order, default values, and IANA registry reference for algorithm identifiers.<a href="#section-13.1-1.23" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.24">Added <code>dc-id-list</code> ABNF rule (comma-separated list of <code>dc-id</code> values) to Terminology; replaced ad-hoc prose in <code>groupId</code> parameter descriptions (synchronous apply and asynchronous apply) with normative <code>dc-id-list</code> reference; resolved pre-existing TODO.<a href="#section-13.1-1.24" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.25">Added <code>dc-scope</code> ABNF rule (space-separated list of <code>dc-id</code> values; strict subset of OAuth 2.0 scope per RFC 6749 Appendix A.4) to Terminology; added normative imports of <code>"client_id"</code> and <code>"response_type"</code> from RFC 6749.<a href="#section-13.1-1.25" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.26">Added normative constraints to the asynchronous OAuth authorization endpoint parameter table: <code>urlAsyncUX</code> cross-referenced to settings endpoint; <code>providerId</code> required to conform to <code>dc-id</code>; <code>client_id</code> referenced to RFC 6749 Section 2.2; <code>redirect_uri</code> required to be an absolute URI per RFC 3986; <code>response_type</code> value constrained to <code>"code"</code> per RFC 6749 Section 3.1.1; <code>scope</code> required to conform to <code>dc-scope</code>; <code>properties</code> parameter names required to conform to <code>variable-name</code> syntax.<a href="#section-13.1-1.26" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.27">Added normative <code>"redirect_uri"</code> import from RFC 6749 Appendix A, Section A.6 to Terminology (used across sync flow, async flow, and token endpoint).<a href="#section-13.1-1.27" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.28">Split combined <code>"code"</code>/<code>"refresh_token"</code> request row into two separate rows with mutual-exclusion constraint; added normative RFC 6749 syntax references to all parameters of the OAuth token endpoint request table (<code>"code"</code> A.11, <code>"refresh_token"</code> A.17, <code>"redirect_uri"</code> A.6, <code>"grant_type"</code> A.10, <code>"client_id"</code> <span class="unicode">"§" (SECTION SIGN, U+00A7)</span>2.2, <code>"client_secret"</code> A.2).<a href="#section-13.1-1.28" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.29">Converted token endpoint response table from two-column to three-column (Property/Key/Description) format; added normative RFC 6749 syntax references to all response properties (<code>"access_token"</code> A.12, <code>"token_type"</code> A.13 with mandatory <code>"bearer"</code> value, <code>"expires_in"</code> A.14, <code>"refresh_token"</code> A.17).<a href="#section-13.1-1.29" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.30">Added normative constraints to the asynchronous OAuth apply endpoint parameter table: <code>urlAPI</code> cross-referenced to settings endpoint; <code>providerId</code> and <code>serviceId</code> required to conform to <code>dc-id</code>; <code>host</code> A-label normalisation rule reinstated for token comparison; <code>properties</code> parameter names required to conform to <code>variable-name</code> syntax with DNS Provider as correct actor; <code>instanceId</code> required to conform to <code>dc-id</code>; corrected <code>"serviceName"</code> guard attribute from <code>"sharedProviderName"</code> to <code>"sharedServiceName"</code>.<a href="#section-13.1-1.30" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.31">Added normative constraints to the asynchronous OAuth revert endpoint parameter table: <code>urlAPI</code> cross-referenced to settings endpoint; <code>providerId</code> and <code>serviceId</code> required to conform to <code>dc-id</code> and updated to use "reverted" wording; <code>host</code> A-label normalisation rule added for token comparison; <code>instanceId</code> required to conform to <code>dc-id</code> with clarified removal semantics (single instance vs. all instances).<a href="#section-13.1-1.31" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.32">Added <code>dc-version</code> ABNF rule for the <code>version</code> field of the template definition (positive integer, no leading zeros, no fractional or exponent part), as a strict subset of the JSON <code>"number"</code> type per RFC 8259 Section 6; added normative import of the <code>"number"</code> rule from RFC 8259; added RFC 8259 as a normative reference.<a href="#section-13.1-1.32" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.33">Added normative ABNF rules for all Template Record fields: <code>dc-record-type</code> (type enum covering named, IANA-registered, and RFC 3597 unknown types), <code>dc-essential</code> (conflict-detection treatment enum with normative default <code>"Always"</code>), <code>dc-txt-conflict-mode</code> (TXT conflict mode enum with normative default <code>"None"</code>), <code>dc-conflict-prefix</code> (printable ASCII, U+0021-U+007E), <code>dc-name-char</code> (Unicode Assignable code point, RFC 9839 <span class="unicode">"§" (SECTION SIGN, U+00A7)</span>4.3, excluding <code>"%"</code> and <code>"@"</code>), <code>dc-host-tmpl</code> (template form for host/name: <code>"@"</code> apex shorthand or mix of literal <code>dc-name-char</code> and <code>%var%</code> expressions), <code>dc-pointsto-tmpl</code> (template form for pointsTo/data/target: same structure), resolved forms reference <code>domain-name</code> (RFC 5890) directly; <code>dc-ttl-tmpl</code> / <code>dc-ttl-value</code> (template and resolved forms for TTL), <code>dc-uint16-tmpl</code> / <code>dc-uint16-value</code> (template and resolved forms for priority, weight, port), <code>dc-srv-protocol</code> (underscore-prefixed transport), <code>dc-srv-service</code> (underscore-prefixed service name per RFC 6335); added normative references RFC 2782 and RFC 6335; added normative imports of <code>"srv-rdata"</code> (RFC 2782) and <code>"service-name"</code> (RFC 6335); fixed missing <code>"number"</code> import (RFC 8259) in Terminology.<a href="#section-13.1-1.33" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-13.1-1.34">Replaced <code>dc-label-chars</code>, <code>dc-host-literal</code>, <code>dc-host-value</code>, and <code>dc-pointsto-value</code> ABNF rules with <code>dc-name-char</code> (Unicode Assignable code points excluding <code>"%"</code> and <code>"@"</code>) as the literal-character unit in <code>dc-host-tmpl</code> and <code>dc-pointsto-tmpl</code>; resolved values for host, name, pointsTo, and target now reference <code>domain-name</code> (RFC 5890) directly in the table prose.<a href="#section-13.1-1.34" class="pilcrow">¶</a>
+          <li class="normal" id="section-13.1-1.6">Removed non-normative content: Public Template Repository, General Considerations, and Extensions/Exclusions sections.<a href="#section-13.1-1.6" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

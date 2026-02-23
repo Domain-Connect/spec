@@ -1078,85 +1078,88 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 </section>
 </section>
 </section>
-    <section anchor="variables"><name>Resource Record and Variable Processing</name>
+    <section anchor="template-processing"><name>Resolving Template Variables</name>
 
-<section anchor="_35129dbc-c5ed-1a79-c278-91eeb2d5a0d2"><name>Variable Syntax</name>
+<section anchor="variables"><name>Variables</name>
 
-<t anchor="_467877c8-facf-bda9-c180-a56d21e6f437">Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable <tt>"@"</tt>) that is replaced with a value during template application.</t>
+<section anchor="_f3df2941-15a5-0c6e-05c4-c6b011063881"><name>Variable Syntax</name>
 
-<t anchor="_a8e688f4-7304-e73a-f7de-5b47529234c2">Variable expressions MUST conform to <tt>"variable-expression"</tt> syntax (see <xref target="terminology"></xref>).</t>
+<t anchor="_8ccafff0-aec1-c61c-9497-71d9ecb757cc">Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable <tt>"@"</tt>) that is replaced with a value during template application.</t>
+
+<t anchor="_31e66812-4913-5a42-832c-922d1179a517">Variable expressions MUST conform to <tt>"variable-expression"</tt> syntax (see <xref target="terminology"></xref>).</t>
 </section>
 
 <section anchor="special-variables"><name>Special and Built-In Variables</name>
 
-<t anchor="_2465e2b3-6010-0ccf-f9eb-adfcc7c24655">There are three Built-In variables:</t>
+<t anchor="_118e3506-6784-8d92-17f8-4604aa8fa865">There are three Built-In variables:</t>
 
-<ul anchor="_3e177141-22e6-cf04-22ef-f92e3fa50f8c"><li><tt>"%host%"`</tt>: This is the host passed from the query string</li>
+<ul anchor="_7dd6f332-8f76-5c24-5af2-01019791c8b3"><li><tt>"%host%"`</tt>: This is the host passed from the query string</li>
 <li><tt>"%domain%"`</tt>: This is the domain passed from the query string</li>
 <li><tt>"%fqdn%"</tt>: This is the fully qualified domain name or template application e.g. [host.]domain</li>
 </ul>
 
-<t anchor="_5f6e2af4-8cff-9e08-9638-f347132f20a5">For example, with the query string "domain=example.com&#x26;host=", <tt>"%fqdn%"</tt> in a template would be "example.com", and with "domain=example.com&#x26;host=sub1", <tt>"%fqdn%"</tt> in a template would be "sub1.example.com".</t>
+<t anchor="_61223692-8f1f-4bac-01d2-9fc7615d7332">For example, with the query string "domain=example.com&#x26;host=", <tt>"%fqdn%"</tt> in a template would be "example.com", and with "domain=example.com&#x26;host=sub1", <tt>"%fqdn%"</tt> in a template would be "sub1.example.com".</t>
 
-<t anchor="_b5372205-e95b-accc-f743-304ade61786c">The <tt>"@"</tt> variable has special meaning, and can be used in the host/name field or in the pointsTo/data field in isolation.</t>
+<t anchor="_71f0c1b9-af19-9ac6-b46b-7d6c2a9117ef">The <tt>"@"</tt> variable has special meaning, and can be used in the host/name field or in the pointsTo/data field in isolation.</t>
 
-<t anchor="_c44953fe-ab2f-3ade-bd9a-c9ac2550b804">For the host/name field it is a shortcut for the value <tt>"%fqdn%."</tt>. The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com value.</t>
+<t anchor="_09b1452a-4929-8c89-fdd4-e7f4a08e9573">For the host/name field it is a shortcut for the value <tt>"%fqdn%."</tt>. The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com value.</t>
 
-<t anchor="_4062b9a7-6dd1-bc08-cba7-72c333326c7c">For the pointsTo/data field it is a shortcut for for the <tt>"%fqdn%"</tt>. The pointsTo and data files are always absolute for these fields.</t>
+<t anchor="_a37d98dc-0f0a-6782-7ec2-b114d48e6bbc">For the pointsTo/data field it is a shortcut for for the <tt>"%fqdn%"</tt>. The pointsTo and data files are always absolute for these fields.</t>
+</section>
 </section>
 
 <section anchor="variable-substitution"><name>Variable substitution</name>
 
-<section anchor="_00589025-102e-0479-2551-286e711f2ca6"><name>Input Values</name>
+<section anchor="_2780bb96-b534-4384-ceeb-287961136deb"><name>Input Values</name>
 
-<ul anchor="_e71eb5c7-45df-3b94-c30e-e675741719a9"><li>Template fields - the string-valued fields of each template record where variables are allowed. Fields MUST be decoded from JSON string encoding before variable substitution is performed.</li>
+<ul anchor="_4069b6cf-2ce8-5eb8-3409-dcf4dc935571"><li>Template fields - the string-valued fields of each template record where variables are allowed. Fields MUST be decoded from JSON string encoding before variable substitution is performed.</li>
 <li>Named variable values - the name/value pairs supplied by the caller in the apply request (query string parameters or JSON body). Values MUST be treated as strings regardless of how the underlying data source represents them; any transport encoding (e.g., URL percent-encoding) MUST be decoded before substitution. The resulting substituted value MUST reflect the exact original input value string.</li>
 <li>Built-in variable values - the values of <tt>"%domain%"</tt>, <tt>"%host%"</tt>, and <tt>"%fqdn%"</tt> derived from the <tt>"domain"</tt> and <tt>"host"</tt> apply parameters (see <xref target="special-variables"></xref>).</li>
 </ul>
 </section>
 
-<section anchor="_8edb6581-1a21-17ea-d52b-1707a76d3b3f"><name>Processing</name>
+<section anchor="_12daec48-4f3e-c44c-a6dd-e4d00b2836cb"><name>Processing</name>
 
-<t anchor="_c3042c70-bd32-bdcc-4e90-e25ef9acdb8a">When a template is applied, the variables in the template are replaced with the values passed as input.</t>
+<t anchor="_1a33efd1-2c37-7b9f-067e-00a461ad57e9">When a template is applied, the variables in the template are replaced with the values passed as input.</t>
 
-<t anchor="_2e5f5c1f-66b7-11a5-59bf-41e7c01811d8">Variables are identified by their name ('"variable-name"' part of the syntax or <tt>"@"</tt>) and the whole variable expression is replaced with a value of either Built-In Variable or Name/Value pairs provided to the Apply operation.</t>
+<t anchor="_2a92d906-6692-78d9-8be9-d1b247db1588">Variables are identified by their name ('"variable-name"' part of the syntax or <tt>"@"</tt>) and the whole variable expression is replaced with a value of either Built-In Variable or Name/Value pairs provided to the Apply operation.</t>
 
-<t anchor="_d75830e9-51ba-f3e5-a1a7-75b3d1355d7b">Template fields of Resource Records in active groups MUST be processed - meaning where <tt>"groupId"</tt> matches any of group identifiers specified in the template application, or all groups if no group indentifiers were specified. Template fields of Resource Records in inactive groups MUST NOT be processed.</t>
+<t anchor="_5ff7ebfc-2a66-8d86-6993-b5e387c1b5f6">Template fields of Resource Records in active groups MUST be processed - meaning where <tt>"groupId"</tt> matches any of group identifiers specified in the template application, or all groups if no group indentifiers were specified. Template fields of Resource Records in inactive groups MUST NOT be processed.</t>
 
-<t anchor="_43f1124e-ec29-fc95-f5ef-0f23d9ac953f">Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.</t>
+<t anchor="_1e47f62d-93f4-4afd-fbbe-37644986043d">Variables are only allowed in template fields of type string, therefore the input field values from the template MUST be decoded from JSON string encoding before variable substitution.</t>
 
-<t anchor="_175860fd-a827-af61-cd73-18f9c6ca9cab">Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.</t>
+<t anchor="_d3c9cee2-d9dc-738b-bf42-530d259b279d">Variables are replaced in the template fields in the order they are found. If a variable is not found in the input, the processing MUST fail. After a variable is replaced, only the remaining string is used for further variable substitution.</t>
 
-<t anchor="_c3c1229e-23b8-6d3f-ffdd-06a467a0f788">The result of the processing MAY still contain strings containing variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is without any further processing.</t>
+<t anchor="_41fe982e-6423-4279-1bdd-b78decb9bd95">The result of the processing MAY still contain strings containing variable expressions coming from Input Values of variable substitution. The processing MUST NOT fail in this case, and the variable expressions MUST be left as is without any further processing.</t>
 
-<t anchor="_f639e5b7-d2b1-cbed-3327-a04fc3039e8a">The DNS Provider MUST ignore any request parameter not referenced in the template.</t>
+<t anchor="_40febbbf-f480-fe1c-f475-ab2e99ebdf63">The DNS Provider MUST ignore any request parameter not referenced in the template.</t>
 </section>
 </section>
 
 <section anchor="host-name-rendering"><name>Host Name Rendering</name>
 
-<t anchor="_6d9a7f8c-46fe-5566-3646-70b1b8f7de8f">After variable substitution, each template record's <tt>"host"</tt> or <tt>"name"</tt> field value is combined with the <tt>"domain"</tt> and <tt>"host"</tt> apply parameters to produce the final DNS owner name for the resource record.</t>
+<t anchor="_9ccae6f8-5c27-76f5-aaf6-5489ff558403">After variable substitution, each template record's <tt>"host"</tt> or <tt>"name"</tt> field value is combined with the <tt>"domain"</tt> and <tt>"host"</tt> apply parameters to produce the final DNS owner name for the resource record.</t>
 
-<section anchor="_b4c8e30f-b63d-01c7-7630-9d29099e6666"><name>Input Values</name>
+<section anchor="_45e83eb8-7351-50b5-c0c2-54e7230d3dd4"><name>Input Values</name>
 
-<ul anchor="_d108f358-2ea2-9a0f-b226-2827a67b2c77"><li><tt>"domain"</tt> - the Zone Apex, as supplied in the apply request.</li>
+<ul anchor="_f2d2d8cd-4cd5-3dea-8ccb-546ca1e8f09a"><li><tt>"domain"</tt> - the Zone Apex, as supplied in the apply request.</li>
 <li><tt>"host"</tt> - the Sub Domain label(s), as supplied in the apply request. An empty value or absence of this parameter indicates the Zone Apex.</li>
 <li>The rendered <tt>"host"</tt> or <tt>"name"</tt> field value of the template record after variable substitution.</li>
 </ul>
 </section>
 
-<section anchor="_5735df21-927f-e728-b611-08078270538e"><name>Processing</name>
+<section anchor="_f17cfd17-1071-6439-9ef9-23145b5770fc"><name>Processing</name>
 
-<t anchor="_648752bb-8223-be8a-779d-abac479b6023">If the rendered template field value is <tt>"@"</tt> or empty, it resolves to the root of the applied scope - equivalent to the fully qualified <tt>"[host.]domain."</tt>.</t>
+<t anchor="_0e55fbb2-1fbf-aa09-61d5-ae4475237d3b">If the rendered template field value is <tt>"@"</tt> or empty, it resolves to the root of the applied scope - equivalent to the fully qualified <tt>"[host.]domain."</tt>.</t>
 
-<t anchor="_1c35c3f8-c82a-e947-6f0b-bba526da4b99">If the rendered template field value ends with a <tt>"."</tt> (trailing dot), it is treated as an absolute DNS name and used as-is, without further qualification.</t>
+<t anchor="_25342d93-2d69-677b-324b-c85cbbe18c75">If the rendered template field value ends with a <tt>"."</tt> (trailing dot), it is treated as an absolute DNS name and used as-is, without further qualification.</t>
 
-<t anchor="_ab46b24c-4c07-2c8a-0c54-e5377bfd4a28">Otherwise, the rendered value is treated as relative and prepended as a label to the fully qualified <tt>"[host.]domain"</tt> formed by the apply parameters.</t>
+<t anchor="_566bf342-2680-adfd-f133-ff3b63643cc8">Otherwise, the rendered value is treated as relative and prepended as a label to the fully qualified <tt>"[host.]domain"</tt> formed by the apply parameters.</t>
 </section>
 
-<section anchor="_f72bbd23-3506-b154-243f-75a4444a4cac"><name>Examples of host processing</name>
+<section anchor="_7f4e147b-c3b9-3fed-6635-d54e371083bf"><name>Examples of host processing</name>
 
-<t anchor="_f888c298-6ea9-6bc9-879e-d9b1a86897ca" keepWithNext="true">EXAMPLE: Template records example</t><sourcecode anchor="_ea972e52-f10f-aea5-b25d-10e248fc156e" type="json"><![CDATA[[{
+<t anchor="_923c50e6-de96-c3a0-611b-bb8dd724545f" keepWithNext="true">EXAMPLE: Template records example</t><sourcecode anchor="_87fe3c0a-9ac0-8c2a-b61e-c338af2148b0" type="json"><![CDATA[[{
     "type": "CNAME",
     "host": "www",
     "pointsTo": "@",
@@ -1169,27 +1172,27 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
     "ttl": 1800
 }]]]></sourcecode>
 
-<t anchor="_c09cf097-78c4-3433-fc00-e18b0329539f">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host"</tt> parameter missing or empty:</t>
+<t anchor="_f73af708-84d1-a9e5-aee9-76ef6ea98bc2">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host"</tt> parameter missing or empty:</t>
 
-<sourcecode anchor="_2bdb0b3a-55d2-02f5-2f33-cbad77c38328"><![CDATA[www 1800 IN CNAME example.com.
+<sourcecode anchor="_58196991-efe6-f7af-a1c6-a5b4d8f03e8a"><![CDATA[www 1800 IN CNAME example.com.
 @   1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_8edaf5fc-da82-2a80-6f2f-8f6140634063"><em>alternatively</em></t>
+<t anchor="_8f1da917-70b3-9d10-b872-bdcf8fe3ca81"><em>alternatively</em></t>
 
-<sourcecode anchor="_5c6036fd-fc08-1306-e1e7-76a32528c6a1"><![CDATA[www.example.com.    1800 IN CNAME example.com.
+<sourcecode anchor="_d363a5c6-cf98-5245-4db5-950abaa0a61e"><![CDATA[www.example.com.    1800 IN CNAME example.com.
 example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_99137f84-79ff-f1b2-cffe-91aa57c93d69">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host=bar"</tt>:</t>
+<t anchor="_36150ebd-37c3-fd66-5b79-b2f64f61ac3c">DNS zone after the template applied with <tt>"domain=example.com"</tt> and <tt>"host=bar"</tt>:</t>
 
-<sourcecode anchor="_4a5deb18-f571-e2ea-9b6a-aa2f67a6d286"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
+<sourcecode anchor="_5f5a2313-ea26-706e-9e67-b1f0d66e7dd9"><![CDATA[www.bar 1800 IN CNAME bar.example.com.
 bar     1800 IN A 192.0.2.1]]></sourcecode>
 
 
-<t anchor="_c25a8840-037a-e947-e7e8-c0f4df44f592">alternatively</t>
+<t anchor="_3ecea365-2d2a-15c6-0b0d-efaf06de9293">alternatively</t>
 
-<sourcecode anchor="_88d72235-ee55-2ff3-6165-739e37ee4179"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
+<sourcecode anchor="_690d22c8-892d-5b5e-30ca-dc616cad4012"><![CDATA[www.bar.example.com.    1800 IN CNAME bar.example.com.
 bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 </section>
@@ -1197,42 +1200,42 @@ bar.example.com.        1800 IN A 192.0.2.1]]></sourcecode>
 
 <section anchor="spf-record-merging"><name>SPF Record Merging</name>
 
-<t anchor="_850a8af1-f511-b7d4-65e6-7d4fdc164b16">The challenge with SPF <xref target="RFC7208" section="" relative="">RFC 7208</xref> records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate. But with several services together only the DNS Provider is able to determine the valid shape of a SPF TXT record.</t>
+<t anchor="_694d3149-dcc9-7ca7-4b42-27eaaba5d10b">The challenge with SPF <xref target="RFC7208" section="" relative="">RFC 7208</xref> records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate. But with several services together only the DNS Provider is able to determine the valid shape of a SPF TXT record.</t>
 
-<t anchor="_648359c3-8135-f928-807b-f57febfbe209">One solution to this problem is to merge all related records. At the highest level, this means taking everything between the "v=spf1" and the "all" from each of the records and merging them together, terminating with hard-coded modifier on <tt>"all"</tt> at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, it is RECOMMENDED to use a fixed modifier <tt>"~"</tt> advising lower rating of the messages from other sources not specified in SPF, however DNS Provider MAY set this modifier at their own discretion and according to the current best practice.</t>
+<t anchor="_4a430444-12a5-4124-ea37-8fe1eb40840a">One solution to this problem is to merge all related records. At the highest level, this means taking everything between the "v=spf1" and the "all" from each of the records and merging them together, terminating with hard-coded modifier on <tt>"all"</tt> at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, it is RECOMMENDED to use a fixed modifier <tt>"~"</tt> advising lower rating of the messages from other sources not specified in SPF, however DNS Provider MAY set this modifier at their own discretion and according to the current best practice.</t>
 
-<sourcecode anchor="_bf9ae679-a67b-e2e5-b4f6-def3d6e7d9f5"><![CDATA[@ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
+<sourcecode anchor="_b4953ede-430f-df76-eed2-2711b7ff5c88"><![CDATA[@ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
 ple ~all]]></sourcecode>
 
 
-<t anchor="_c9ea623d-7ca4-547e-353a-6cf27edc0911">The other would be to write intermediate records, and reference these locally.</t>
+<t anchor="_09cd864b-54a0-8939-2812-c44fa1517852">The other would be to write intermediate records, and reference these locally.</t>
 
-<sourcecode anchor="_f6d90b2e-e833-e6ae-6cb2-3b9377b3e55b"><![CDATA[r1.example.com. TXT v=spf1 include:spf.mailer1.example ~all
+<sourcecode anchor="_88a0e812-50c3-0c32-7dbf-1cb2e58c25fa"><![CDATA[r1.example.com. TXT v=spf1 include:spf.mailer1.example ~all
 r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 @ TXT v=spf1 include:r1.example.com include:r2.example.com ~all]]></sourcecode>
 
 
-<t anchor="_0c660f33-75b3-3681-1dbc-0b9b8308f931">There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.</t>
+<t anchor="_8a23b49f-08bc-3084-5f2a-ec73f10d542e">There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.</t>
 
-<t anchor="_85745d67-2cff-45f1-8d23-bed425553295">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called <tt>"SPFM"</tt>. This has the following attribute:</t>
+<t anchor="_d45f751b-0288-e46b-8ebc-8a8a10d39f8c">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called <tt>"SPFM"</tt>. This has the following attribute:</t>
 
-<dl anchor="_6dceb973-9df5-066c-c3f4-e459fc3f985a"><dt><tt>"spfRules"</tt>:</dt><dd anchor="_b26cb147-cb1e-170e-6755-b0b9aa398d41"><t anchor="_d9b3d8ea-7031-f771-06e4-af298a2d8b8e">Determines the desired rules, basically everything but leading "v=spf1" and trailing <tt>"all"</tt> rule -  see: <xref target="template-record">SPF Rules</xref></t>
+<dl anchor="_35eeb2bc-8dcd-77b1-ef60-8f013d34c082"><dt><tt>"spfRules"</tt>:</dt><dd anchor="_aeeaa7f0-727e-1cc7-09a9-162de78e237b"><t anchor="_2f402de4-b975-1c88-2e28-9aff2ca89698">Determines the desired rules, basically everything but leading "v=spf1" and trailing <tt>"all"</tt> rule -  see: <xref target="template-record">SPF Rules</xref></t>
 </dd></dl>
 
-<t anchor="_de713408-d34d-75c5-c504-84ea7b3e6809">When a template is added or removed with an <tt>"SPFM"</tt> record in the template, some code would need to take the aggregate value of all <tt>"SPFM"</tt> records in all templates applied as well as existing SPF TXT record on the host and recalculate the resulting SPF TXT record. In case several sources specify the same rule with a different policy DNS Provider SHOULD apply the least restrictive one as a result. <tt>soft failure</tt> SHOULD be preferred over <tt>hard failure</tt>, <tt>"neutral"</tt> SHOULD be preferred over <tt>soft failure</tt>.</t>
+<t anchor="_efc76ad5-cc7b-61a0-0ecf-6b1b69909e89">When a template is added or removed with an <tt>"SPFM"</tt> record in the template, some code would need to take the aggregate value of all <tt>"SPFM"</tt> records in all templates applied as well as existing SPF TXT record on the host and recalculate the resulting SPF TXT record. In case several sources specify the same rule with a different policy DNS Provider SHOULD apply the least restrictive one as a result. <tt>soft failure</tt> SHOULD be preferred over <tt>hard failure</tt>, <tt>"neutral"</tt> SHOULD be preferred over <tt>soft failure</tt>.</t>
 
-<t anchor="_93c5c75f-5d99-107e-61f1-149103d6bde1">DNS Provider SHOULD also allow the end user to modify the SPF record after merging.</t>
+<t anchor="_986f66dc-0279-82b2-aefb-353bf844798f">DNS Provider SHOULD also allow the end user to modify the SPF record after merging.</t>
 
-<t anchor="_e2b186bd-5eb9-721e-af72-ea7d59dd1182">Due to merging step in between, the resulting SPF TXT records are considered non-essential. That means the user may decide to override the final calculated value or remove the whole SPF record. This action MUST NOT lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS Provider.</t>
+<t anchor="_a58b4653-2f16-ba84-cb66-c60a35e3bdf1">Due to merging step in between, the resulting SPF TXT records are considered non-essential. That means the user may decide to override the final calculated value or remove the whole SPF record. This action MUST NOT lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS Provider.</t>
 
-<t anchor="_4922e523-d8e1-908a-4b7f-9612d0c96b20">If the existing TXT record makes the merging operation not possible, the DNS Provider MUST handle this situation the same way as a conflict and either let the end-user resolve it in the UX.</t>
+<t anchor="_fa3df32f-272a-5607-3e17-24db4e73bd80">If the existing TXT record makes the merging operation not possible, the DNS Provider MUST handle this situation the same way as a conflict and either let the end-user resolve it in the UX.</t>
 
-<t anchor="_37c74b0e-a604-8d55-1d8f-e974e7e6162a">Service Providers MUST NOT check content of TXT SPF record for an exact match, as it might be strongly influenced by the DNS Provider merging strategy and user actions.</t>
+<t anchor="_33e077e0-5104-3277-6f8f-bc7e0b2c294b">Service Providers MUST NOT check content of TXT SPF record for an exact match, as it might be strongly influenced by the DNS Provider merging strategy and user actions.</t>
 
-<t anchor="_a2532919-592e-6ee5-7aaf-13964001cbd4">See <xref target="example-spf-merge"></xref>.</t>
+<t anchor="_f88053a7-039d-b9ce-b76f-853115b28d13">See <xref target="example-spf-merge"></xref>.</t>
 </section>
 </section>
-    <section anchor="_f1ba298b-d591-5157-16b0-3352fd08e44e"><name>Template Application</name>
+    <section anchor="_6396876a-57db-82e1-b593-d667003a3620"><name>Template Application</name>
 
 <section anchor="_2540acf4-541d-a67a-dab9-17db344abe43"><name>Template State in DNS Providers system</name>
 
@@ -1348,6 +1351,11 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_1650631c-36d8-06cc-5549-86dfc987aa50">The DNS Provider MUST remove all conflicting templates and records from the target zone.</t>
 
 <t anchor="_0339bb0d-eb4e-39cb-f0ae-0f71a29f7d45">The DNS Provider MUST apply all records of the template in totality as one atomic operation.</t>
+</section>
+
+<section anchor="_38dccd96-bd40-e72c-ee02-c8fe6629ce3c"><name>Examples</name>
+
+<t anchor="_1ab09e56-2978-7ec1-eca1-c44061d6ad3a">Examples of template processing are in <xref target="examples"></xref>.</t>
 </section>
 </section>
     <section anchor="security-considerations"><name>Security Considerations</name>
@@ -1525,7 +1533,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <reference target="https://www.rfc-editor.org/info/rfc8499" anchor="RFC8499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="A. Sullivan" asciiFullname="A. Sullivan"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="January" year="2019"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_1f5d3ff8-eb51-5b33-aa17-a4d14c99fe43">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has sometimes changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_955272cc-ccf5-7988-87c6-66a9c1b50330">This document obsoletes RFC 7719 and updates RFC 2308.</t></abstract> </front> <seriesInfo value="10.17487/RFC8499" name="DOI"></seriesInfo> <seriesInfo value="8499" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7591" anchor="RFC7591"><stream>IETF</stream> <front> <title>OAuth 2.0 Dynamic Client Registration Protocol</title> <author fullname="M. Jones" asciiFullname="M. Jones"></author> <author fullname="J. Bradley" asciiFullname="J. Bradley"></author> <author fullname="M. Machulak" asciiFullname="M. Machulak"></author> <author fullname="P. Hunt" asciiFullname="P. Hunt"></author> <author fullname="J. Richer" asciiFullname="J. Richer"></author> <date month="July" year="2015"></date> <keyword>OpenID Connect Dynamic Client Registration</keyword><keyword>OpenID Connect</keyword><keyword>oidc</keyword><keyword>openid</keyword><keyword>user managed access</keyword><keyword>uma</keyword><keyword>Dynamic Registration</keyword><keyword>Dynamic Client Registration</keyword> <abstract>  <t anchor="_8860866d-13c4-68f0-b90a-dae250048305">This specification defines mechanisms for dynamically registering OAuth 2.0 clients with authorization servers. Registration requests send a set of desired client metadata values to the authorization server. The resulting registration responses return a client identifier to use at the authorization server and the client metadata values registered for the client. The client can then use this registration information to communicate with the authorization server using the OAuth 2.0 protocol. This specification also defines a set of common client metadata fields and values for clients to use during registration.</t></abstract> </front> <seriesInfo value="10.17487/RFC7591" name="DOI"></seriesInfo> <seriesInfo value="7591" name="RFC"></seriesInfo></reference>
     </references>
-    <section anchor="_55e5bb2a-c1a9-b20d-67ef-5f330485f476"><name>Examples</name>
+    <section anchor="examples"><name>Examples</name>
 
 <section anchor="_9b99b5ca-98e0-0036-4d41-6185b137100f"><name>Example Template</name>
 
@@ -1625,7 +1633,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_4a7bb606-9a11-7985-ceaf-688bf3e4236c">This would have no variable substitution and the application of this template to a domain would add 2 CAA records.</t>
 </section>
 
-<section anchor="_478eaa15-ab9b-8d09-af4f-0324e2f3d1ae"><name>Example: DNS Zone merging</name>
+<section anchor="_bd5ff377-6bd9-cc98-b9b3-013aed202a1b"><name>Example: Template application to DNS Zone and Conflict Resolution</name>
 
 <t anchor="_4559b1e8-3fdb-177e-febc-050f2fc06d35">Consider a DNS Zone before a template application:</t>
 
@@ -1668,9 +1676,19 @@ www 3600 IN CNAME other.host.example.]]></sourcecode>
 ]]]></sourcecode>
 
 
-<t anchor="_c099ef2c-c8f4-e321-8174-574899ab3f76">The following DNS Zone would be generated after the template is applied:</t>
+<t anchor="_e62c7f88-17e7-2154-dcab-2f70f14fd5d9">The following DNS Zone would be generated after the template is applied.</t>
 
-<sourcecode anchor="_46ab3005-f346-5843-e226-27c0acc170b1"><![CDATA[$ORIGIN example.com.
+<t anchor="_4cb48b71-0947-c5b9-5dbc-7a63b54bc181">A following list of conflicts would be detected in this case:</t>
+
+<sourcecode anchor="_c8bf750c-5e56-4ae3-f6e3-5a52f1e867ba"><![CDATA[@ 3600 IN A 192.0.2.1
+@ 3600 IN A 192.0.2.2
+@ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
+@ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001]]></sourcecode>
+
+
+<t anchor="_1ab3a476-41b1-c633-c895-57f49d9f731d">After changes applied the zone would be updated to the following state. Note existing A and AAAA records removed due to the conflicts as well as SPF TXT record content merged with the existing entry.</t>
+
+<sourcecode anchor="_ac78bac7-93c2-8f4a-6ef8-dd5866ed68fa"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200
 1800 1209600 3600
@@ -1746,7 +1764,7 @@ www 1800 IN A 203.0.113.2]]></sourcecode>
 ]]]></sourcecode>
 
 
-<t anchor="_5ea5797d-bdcf-ef2b-b976-2ddddf692d04">Expected result in the DNS Zone</t>
+<t anchor="_b9aebc03-bcc4-bfe8-ade7-1c642f8b805e">Expected result in the DNS Zone. Note merged SPF entry.</t>
 
 <sourcecode anchor="_8c24e7c4-01c0-889e-b6b7-fc7227cab625"><![CDATA[$ORIGIN example.com.
 

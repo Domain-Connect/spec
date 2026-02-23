@@ -95,17 +95,18 @@ Table of Contents
        8.3.1.  Template Scope
        8.3.2.  Sub Domains
        8.3.3.  Variable Scope Minimisation
-   9.  Resource Record and Variable Processing
-     9.1.  Variable Syntax
-     9.2.  Special and Built-In Variables
-     9.3.  Variable substitution
+   9.  Resolving Template Variables
+     9.1.  Variables
+       9.1.1.  Variable Syntax
+       9.1.2.  Special and Built-In Variables
+     9.2.  Variable substitution
+       9.2.1.  Input Values
+       9.2.2.  Processing
+     9.3.  Host Name Rendering
        9.3.1.  Input Values
        9.3.2.  Processing
-     9.4.  Host Name Rendering
-       9.4.1.  Input Values
-       9.4.2.  Processing
-       9.4.3.  Examples of host processing
-     9.5.  SPF Record Merging
+       9.3.3.  Examples of host processing
+     9.4.  SPF Record Merging
    10. Template Application
      10.1.  Template State in DNS Providers system
      10.2.  Steps to Apply a Template
@@ -114,6 +115,7 @@ Table of Contents
      10.4.  Calculating Conflict Resolution
      10.5.  User Authorization of Changes
      10.6.  Template Application
+     10.7.  Examples
    11. Security Considerations
      11.1.  OAuth Client Secret Leakage
      11.2.  Template Variable Phishing
@@ -128,7 +130,8 @@ Table of Contents
      A.2.  Example Records: Single static host record
      A.3.  Example Records: Single variable host record for A
      A.4.  Example Records: Unspecified record type CAA
-     A.5.  Example: DNS Zone merging
+     A.5.  Example: Template application to DNS Zone and Conflict
+           Resolution
      A.6.  Example: SPF Record Merging
    Authors' Addresses
 
@@ -2609,8 +2612,9 @@ Table of Contents
    other values depending on the type.
 
    Many of these values can contain variables, which are expressed as
-   strings surrounded with "%" or special variable "@" (See: Section 9).
-   Variables are replaced with values when the template is applied.
+   strings surrounded with "%" or special variable "@" (See:
+   Section 9.1).  Variables are replaced with values when the template
+   is applied.
 
    Each record MUST contain the following elements unless otherwise
    specified.
@@ -2967,7 +2971,7 @@ Table of Contents
    |           |      |                         |other SPFM records    |
    |           |      |                         |into final SPF TXT    |
    |           |      |                         |record.  See          |
-   |           |      |                         |Section 9.5.  The     |
+   |           |      |                         |Section 9.4.  The     |
    |           |      |                         |value MUST contain    |
    |           |      |                         |only mechanism and    |
    |           |      |                         |modifier terms as     |
@@ -3026,7 +3030,7 @@ Table of Contents
    specified when applying the template.
 
    The template's "host" or "name" field values are interpreted relative
-   to this scope, as described in Section 9.4.
+   to this scope, as described in Section 9.3.
 
 8.3.2.  Sub Domains
 
@@ -3068,9 +3072,11 @@ Table of Contents
    better review of intent by the DNS Provider when onboarding the
    template.
 
-9.  Resource Record and Variable Processing
+9.  Resolving Template Variables
 
-9.1.  Variable Syntax
+9.1.  Variables
+
+9.1.1.  Variable Syntax
 
    Variable expressions are the parameterized parts of a Domain Connect
    Template.  Each expression contains one variable specifier (which can
@@ -3080,7 +3086,7 @@ Table of Contents
    Variable expressions MUST conform to "variable-expression" syntax
    (see Section 3).
 
-9.2.  Special and Built-In Variables
+9.1.2.  Special and Built-In Variables
 
    There are three Built-In variables:
 
@@ -3108,9 +3114,9 @@ Table of Contents
    For the pointsTo/data field it is a shortcut for for the "%fqdn%".
    The pointsTo and data files are always absolute for these fields.
 
-9.3.  Variable substitution
+9.2.  Variable substitution
 
-9.3.1.  Input Values
+9.2.1.  Input Values
 
    *  Template fields - the string-valued fields of each template record
       where variables are allowed.  Fields MUST be decoded from JSON
@@ -3126,9 +3132,9 @@ Table of Contents
 
    *  Built-in variable values - the values of "%domain%", "%host%", and
       "%fqdn%" derived from the "domain" and "host" apply parameters
-      (see Section 9.2).
+      (see Section 9.1.2).
 
-9.3.2.  Processing
+9.2.2.  Processing
 
    When a template is applied, the variables in the template are
    replaced with the values passed as input.
@@ -3162,13 +3168,13 @@ Table of Contents
    The DNS Provider MUST ignore any request parameter not referenced in
    the template.
 
-9.4.  Host Name Rendering
+9.3.  Host Name Rendering
 
    After variable substitution, each template record's "host" or "name"
    field value is combined with the "domain" and "host" apply parameters
    to produce the final DNS owner name for the resource record.
 
-9.4.1.  Input Values
+9.3.1.  Input Values
 
    *  "domain" - the Zone Apex, as supplied in the apply request.
 
@@ -3179,7 +3185,7 @@ Table of Contents
    *  The rendered "host" or "name" field value of the template record
       after variable substitution.
 
-9.4.2.  Processing
+9.3.2.  Processing
 
    If the rendered template field value is "@" or empty, it resolves to
    the root of the applied scope - equivalent to the fully qualified
@@ -3193,7 +3199,7 @@ Table of Contents
    a label to the fully qualified "[host.]domain" formed by the apply
    parameters.
 
-9.4.3.  Examples of host processing
+9.3.3.  Examples of host processing
 
    EXAMPLE: Template records example
 
@@ -3232,7 +3238,7 @@ Table of Contents
    www.bar.example.com.    1800 IN CNAME bar.example.com.
    bar.example.com.        1800 IN A 192.0.2.1
 
-9.5.  SPF Record Merging
+9.4.  SPF Record Merging
 
    The challenge with SPF RFC 7208 [RFC7208] records and Domain Connect
    is that an individual service might recommend an SPF record.  If only
@@ -3538,6 +3544,10 @@ Table of Contents
 
    The DNS Provider MUST apply all records of the template in totality
    as one atomic operation.
+
+10.7.  Examples
+
+   Examples of template processing are in Appendix A.
 
 11.  Security Considerations
 
@@ -3969,7 +3979,7 @@ A.4.  Example Records: Unspecified record type CAA
    This would have no variable substitution and the application of this
    template to a domain would add 2 CAA records.
 
-A.5.  Example: DNS Zone merging
+A.5.  Example: Template application to DNS Zone and Conflict Resolution
 
    Consider a DNS Zone before a template application:
 
@@ -4011,7 +4021,18 @@ A.5.  Example: DNS Zone merging
    ]
 
    The following DNS Zone would be generated after the template is
-   applied:
+   applied.
+
+   A following list of conflicts would be detected in this case:
+
+   @ 3600 IN A 192.0.2.1
+   @ 3600 IN A 192.0.2.2
+   @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
+   @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
+
+   After changes applied the zone would be updated to the following
+   state.  Note existing A and AAAA records removed due to the conflicts
+   as well as SPF TXT record content merged with the existing entry.
 
    $ORIGIN example.com.
 
@@ -4084,7 +4105,7 @@ A.6.  Example: SPF Record Merging
        }
    ]
 
-   Expected result in the DNS Zone
+   Expected result in the DNS Zone.  Note merged SPF entry.
 
    $ORIGIN example.com.
 

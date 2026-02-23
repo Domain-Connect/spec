@@ -2137,15 +2137,17 @@ For example, say a Service Provider requires a CNAME of one of three values for 
 
 The value in the template could simply contain `"%servercluster%"`, and the fully qualified string passed in. Alternatively, the value in the template could contain `"%var%.example.com"` and a value of `"01"`, `"02"`, or `"03"` passed in. By placing more fixed data into the template, the template is less prone to error or misuse and allows better review of intent by the DNS Provider when onboarding the template.
 
+[[template-processing]]
+== Resolving Template Variables
 [[variables]]
-== Resource Record and Variable Processing
-=== Variable Syntax
+=== Variables
+==== Variable Syntax
 Variable expressions are the parameterized parts of a Domain Connect Template. Each expression contains one variable specifier (which can be either a named variable or a special variable `"@"`) that is replaced with a value during template application.
 
 Variable expressions MUST conform to `"variable-expression"` syntax (see <<terminology>>).
 
 [[special-variables]]
-=== Special and Built-In Variables
+==== Special and Built-In Variables
 
 There are three Built-In variables:
 
@@ -2408,6 +2410,11 @@ The DNS Provider MUST remove all conflicting templates and records from the targ
 
 The DNS Provider MUST apply all records of the template in totality as one atomic operation.
 
+=== Examples
+
+Examples of template processing are in <<examples>>.
+
+
 [[security-considerations]]
 == Security Considerations
 
@@ -2582,6 +2589,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 * [[[RFC7591, RFC 7591]]] Jones, M., Bradley, J., Machulak, M., Hunt, P., and J.Richer, "OAuth 2.0 Dynamic Client Registration Protocol",IETF, DOI 10.17487/RFC7591, RFC 7591, July 2015, <https://www.rfc-editor.org/info/rfc7591>.
 
 [appendix]
+[[examples]]
 == Examples
 
 === Example Template
@@ -2711,7 +2719,7 @@ This example shows how to include a set of unspecified record types on an exampl
 This would have no variable substitution and the application of this
 template to a domain would add 2 CAA records.
 
-=== Example: DNS Zone merging
+=== Example: Template application to DNS Zone and Conflict Resolution
 
 Consider a DNS Zone before a template application:
 
@@ -2758,7 +2766,19 @@ Now application of the following template:
 ]
 ----
 
-The following DNS Zone would be generated after the template is applied:
+The following DNS Zone would be generated after the template is applied.
+
+A following list of conflicts would be detected in this case:
+[source]
+----
+@ 3600 IN A 192.0.2.1
+@ 3600 IN A 192.0.2.2
+@ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
+@ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
+----
+
+After changes applied the zone would be updated to the following state.
+Note existing A and AAAA records removed due to the conflicts as well as SPF TXT record content merged with the existing entry.
 
 [source]
 ----
@@ -2847,7 +2867,8 @@ service:
 ]
 ----
 
-Expected result in the DNS Zone
+Expected result in the DNS Zone.
+Note merged SPF entry.
 
 [source]
 ----

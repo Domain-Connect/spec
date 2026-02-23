@@ -110,12 +110,14 @@ Table of Contents
    10. Template Application
      10.1.  Template State in DNS Providers system
      10.2.  Steps to Apply a Template
-     10.3.  Conflict Detection
-       10.3.1.  Conflict Detection Special Handling
-     10.4.  Calculating Conflict Resolution
-     10.5.  User Authorization of Changes
-     10.6.  Template Application
-     10.7.  Examples
+     10.3.  Group Filtering
+       10.3.1.  Group Filtering and Template State
+     10.4.  Conflict Detection
+       10.4.1.  Conflict Detection Special Handling
+     10.5.  Calculating Conflict Resolution
+     10.6.  User Authorization of Changes
+     10.7.  Template Application
+     10.8.  Examples
    11. Security Considerations
      11.1.  OAuth Client Secret Leakage
      11.2.  Template Variable Phishing
@@ -455,7 +457,7 @@ Table of Contents
    the form of a set of records.
 
    The individual records in a template MAY be assigned to a group
-   identified by a groupId.  This allows for the application of
+   identified by a "groupId".  This allows for the application of
    templates in different stages.  For example, an email provider might
    first set a TXT record to verify the domain, and later set an MX
    record to configure email delivery.  While done separately, both
@@ -1300,7 +1302,7 @@ Table of Contents
    |             |              | display-name syntax (see             |
    |             |              | Section 3).                          |
    +-------------+--------------+--------------------------------------+
-   | *Group Id*  | groupId      | (OPTIONAL) Specifies the subset of   |
+   | *Group ID*  | groupId      | (OPTIONAL) Specifies the subset of   |
    |             |              | groups from the template to apply.   |
    |             |              | The value MUST conform to the dc-    |
    |             |              | id-list syntax (see Section 3).      |
@@ -2661,7 +2663,7 @@ Table of Contents
    |           |      |                         |syntax (see           |
    |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
-   |*Group Id* |String|groupId                  |(OPTIONAL) This       |
+   |*Group ID* |String|groupId                  |(OPTIONAL) This       |
    |           |      |                         |parameter identifies  |
    |           |      |                         |the group the record  |
    |           |      |                         |belongs to when       |
@@ -2850,7 +2852,7 @@ Table of Contents
    |Mode*      |      |                         |Possible values are   |
    |           |      |                         |None, All, or Prefix. |
    |           |      |                         |See below             |
-   |           |      |                         |(Section 10.3).       |
+   |           |      |                         |(Section 10.4).       |
    |           |      |                         |The value MUST conform|
    |           |      |                         |to the dc-txt-        |
    |           |      |                         |conflict-mode syntax  |
@@ -2864,7 +2866,7 @@ Table of Contents
    |Matching   |      |                         |txtConflict-          |
    |Prefix*    |      |                         |MatchingMode is       |
    |           |      |                         |"Prefix".  See below  |
-   |           |      |                         |(Section 10.3).       |
+   |           |      |                         |(Section 10.4).       |
    |           |      |                         |The value MUST conform|
    |           |      |                         |to the dc-conflict-   |
    |           |      |                         |prefix syntax (see    |
@@ -3144,11 +3146,9 @@ Table of Contents
    value of either Built-In Variable or Name/Value pairs provided to the
    Apply operation.
 
-   Template fields of Resource Records in active groups MUST be
-   processed - meaning where "groupId" matches any of group identifiers
-   specified in the template application, or all groups if no group
-   indentifiers were specified.  Template fields of Resource Records in
-   inactive groups MUST NOT be processed.
+   Only active records (as determined by group filtering, see
+   Section 10.3) MUST be processed.  Template fields of inactive records
+   MUST NOT be processed.
 
    Variables are only allowed in template fields of type string,
    therefore the input field values from the template MUST be decoded
@@ -3348,7 +3348,11 @@ Table of Contents
        target zone identified by "domain" is present in the user's
        account and that the user is authorized to make changes to it.
 
-   3.  *Resolve variables* - All variable expressions in active template
+   3.  *Filter records to apply* - select records applicable for further
+       processing based on "groupId" property of the template and
+       "groupId" apply parameter
+
+   4.  *Resolve variables* - All variable expressions in active template
        records are substituted with the values provided by the caller,
        producing a concrete set of DNS resource records (RRs) to be
        applied.
@@ -3356,9 +3360,9 @@ Table of Contents
        a.  abort if rendered RRs are not possible to be applied to the
            target zone
 
-   4.  *Perform conflict detection* - The DNS Provider checks the
+   5.  *Perform conflict detection* - The DNS Provider checks the
        resolved RR set against the existing zone content according to
-       the conflict detection rules (see Section 10.3).
+       the conflict detection rules (see Section 10.4).
 
        a.  Identify individual zone records that conflict with the
            resolved RR set.
@@ -3367,25 +3371,25 @@ Table of Contents
            resolved RR against essential records of previously applied
            templates.  Identify which previously applied templates own
            conflicting records and would be removed in their entirety
-           (see Section 10.3.1.2).
+           (see Section 10.4.1.2).
 
        c.  (only DNS Providers tracking template state): Mark instances
            of the same template applied on the same "host" for removal
            unless "multiInstance" is set for the template (see
-           Section 10.3.1.1).
+           Section 10.4.1.1).
 
-   5.  *Pre-calculate conflict resolution* - Determine the full set of
+   6.  *Pre-calculate conflict resolution* - Determine the full set of
        records and, where applicable, template instances that would be
        removed upon application.
 
-   6.  *Obtain user authorization* - The DNS Provider MUST present the
+   7.  *Obtain user authorization* - The DNS Provider MUST present the
        intended changes and the pre-calculated conflict consequences to
        the user and obtain explicit authorization before proceeding (see
-       Section 10.5).
+       Section 10.6).
 
        a.  abort if authorization not granted
 
-   7.  *Apply changes* - After authorization is granted, or at later
+   8.  *Apply changes* - After authorization is granted, or at later
        point in Asynchronous flow:
 
        a.  Remove all records pre-calculated for removal from the zone.
@@ -3397,7 +3401,52 @@ Table of Contents
            the state of any template instances that were resolved for
            removal.
 
-10.3.  Conflict Detection
+10.3.  Group Filtering
+
+   Before variable substitution and any further processing, the DNS
+   Provider MUST determine the *active record set* - the subset of
+   template records that are subject to processing - by applying the
+   following rules to each record in the template:
+
+   1.  A record with no "groupId" field is always active, regardless of
+       whether a "groupId" parameter was supplied in the apply request.
+
+   2.  A record with a "groupId" field is active if and only if its
+       "groupId" value appears in the list supplied as the "groupId"
+       apply parameter.  Matching is case-sensitive and exact.
+
+   3.  If no "groupId" parameter is supplied in the apply request, all
+       records are active irrespective of whether they carry a
+       "groupId".
+
+   Only active records MUST be subject to variable substitution,
+   conflict detection, and zone write operations.  Inactive records MUST
+   be excluded from all template processing steps and MUST NOT be
+   written to the zone.
+
+   If the "groupId" parameter is supplied but no record in the template
+   carries a "groupId" that matches any of the specified identifiers
+   (i.e., the active record set consists solely of ungrouped records or
+   is empty), the DNS Provider MUST return an error and MUST NOT make
+   any changes to the zone.
+
+10.3.1.  Group Filtering and Template State
+
+   When a "groupId" parameter is supplied, the apply operation is
+   additive: only the records belonging to the specified groups are
+   written, while records of other groups that were written by a prior
+   application of the same template instance MUST NOT be disturbed.
+
+   Consequently, for DNS Providers that maintain applied template state,
+   an existing instance of the same template on the same "domain" and
+   "host" MUST NOT be removed before the new records are written,
+   regardless of conflict-detection outcome for the active record set,
+   however such provider MUST remove the records previously written for
+   the same group(s) before writing the new active record set, in order
+   to avoid accumulation of stale records from superseded group
+   applications.
+
+10.4.  Conflict Detection
 
    Conflict detection is performed by the DNS Provider prior to template
    application.  The rules below ensure predictable conflict resolution
@@ -3438,9 +3487,9 @@ Table of Contents
    very common for DNS provider not to allow CNAME records to be at the
    zone apex.
 
-10.3.1.  Conflict Detection Special Handling
+10.4.1.  Conflict Detection Special Handling
 
-10.3.1.1.  Multi-Instance
+10.4.1.1.  Multi-Instance
 
    This processing only REQUIRED for DNS Providers that maintain applied
    template state.
@@ -3460,7 +3509,7 @@ Table of Contents
    such a template MUST be designed so that it does not conflict with
    itself.
 
-10.3.1.2.  Essential Records
+10.4.1.2.  Essential Records
 
    This processing only REQUIRED for DNS Providers that maintain applied
    template state.
@@ -3481,7 +3530,7 @@ Table of Contents
    user or through the application of another template - without
    triggering conflict detection or removal of the owning template.
 
-10.4.  Calculating Conflict Resolution
+10.5.  Calculating Conflict Resolution
 
    A DNS Provider not maintainig applied template state, applying a
    template whose records conflict with any existing record in the zone
@@ -3496,7 +3545,7 @@ Table of Contents
    records B and C, record B conflicts, and T1 is removed together with
    all its records before T2 is applied.
 
-10.5.  User Authorization of Changes
+10.6.  User Authorization of Changes
 
    It is ultimately left to the DNS Provider to determine the amount of
    disclosure and/or conflict detection.
@@ -3530,7 +3579,7 @@ Table of Contents
    source of the request before proceeding, and SHOULD provide a more
    verbose description of the changes about to be applied.
 
-10.6.  Template Application
+10.7.  Template Application
 
    In the Synchronous Flow, after authorization is granted, the DNS
    Provider applies the template to the DNS zone.
@@ -3545,7 +3594,7 @@ Table of Contents
    The DNS Provider MUST apply all records of the template in totality
    as one atomic operation.
 
-10.7.  Examples
+10.8.  Examples
 
    Examples of template processing are in Appendix A.
 
@@ -3693,6 +3742,8 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       description moved from Apply Template into new Template Variable
       Phishing subsection; editorial cleanup including section
       reordering, heading renames, and example block formatting.
+
+   *  Added Group Filtering subsection to Template Application.
 
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00

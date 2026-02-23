@@ -1087,7 +1087,7 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 <t anchor="_a8e688f4-7304-e73a-f7de-5b47529234c2">Variable expressions MUST conform to <tt>"variable-expression"</tt> syntax (see <xref target="terminology"></xref>).</t>
 </section>
 
-<section anchor="_38e6af7f-2b69-5aca-a0a4-0568a38ec6e9"><name>Special and Built-In Variables</name>
+<section anchor="special-variables"><name>Special and Built-In Variables</name>
 
 <t anchor="_2465e2b3-6010-0ccf-f9eb-adfcc7c24655">There are three Built-In variables:</t>
 
@@ -1107,11 +1107,12 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 
 <section anchor="variable-substitution"><name>Variable substitution</name>
 
-<section anchor="_2c183016-5982-c628-7196-86c6d29344c2"><name>Input Values</name>
+<section anchor="_00589025-102e-0479-2551-286e711f2ca6"><name>Input Values</name>
 
-<t anchor="_d2b07891-b011-b215-d4da-b12198f9f09a">Input values for variable substitution MUST be treated as strings.  While the underlying data source (e.g., query string, JSON string) might represent values in different data types, the Domain Connect protocol mandates that these values are interpreted and substituted as strings within the templates.</t>
-
-<t anchor="_bb000e6a-cf20-a673-a3e8-8b71993344f3">If the data source requires encoding of certain characters (e.g., special characters, spaces), the DNS Provider implementation MUST handle decoding of the value before variable substitution. The resulting substituted value MUST reflect the exact original input value string.</t>
+<ul anchor="_e71eb5c7-45df-3b94-c30e-e675741719a9"><li>Template fields - the string-valued fields of each template record where variables are allowed. Fields MUST be decoded from JSON string encoding before variable substitution is performed.</li>
+<li>Named variable values - the name/value pairs supplied by the caller in the apply request (query string parameters or JSON body). Values MUST be treated as strings regardless of how the underlying data source represents them; any transport encoding (e.g., URL percent-encoding) MUST be decoded before substitution. The resulting substituted value MUST reflect the exact original input value string.</li>
+<li>Built-in variable values - the values of <tt>"%domain%"</tt>, <tt>"%host%"</tt>, and <tt>"%fqdn%"</tt> derived from the <tt>"domain"</tt> and <tt>"host"</tt> apply parameters (see <xref target="special-variables"></xref>).</li>
+</ul>
 </section>
 
 <section anchor="_8edb6581-1a21-17ea-d52b-1707a76d3b3f"><name>Processing</name>
@@ -1231,7 +1232,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_a2532919-592e-6ee5-7aaf-13964001cbd4">See <xref target="example-spf-merge"></xref>.</t>
 </section>
 </section>
-    <section anchor="_62d5bb34-1f02-f9af-7ea1-0c3247d85c67"><name>Template Application</name>
+    <section anchor="_f1ba298b-d591-5157-16b0-3352fd08e44e"><name>Template Application</name>
 
 <section anchor="_2540acf4-541d-a67a-dab9-17db344abe43"><name>Template State in DNS Providers system</name>
 
@@ -1248,7 +1249,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_fbd89c36-9d6d-f82c-83a0-15efae699ec4">The following steps give an overview of the template application process. Each step is described in detail in the sections below.</t>
 
-<ol anchor="_5f2e7476-bf0d-e477-bfcb-5879008d6543" type="1"><li><strong>Verify template applicability</strong> - For synchronous flow requests, the DNS Provider MUST verify that the template's <tt>"syncBlock"</tt> field is not <tt>"true"</tt>. If it is, the DNS Provider MUST NOT process the request and MUST return an error.</li>
+<ol anchor="_6fd5eb55-3078-7f66-d08b-d8fda44354bd" type="1"><li><strong>Verify template applicability</strong> - For synchronous flow requests, the DNS Provider MUST verify that the template's <tt>"syncBlock"</tt> field is not <tt>"true"</tt>. If it is, the DNS Provider MUST NOT process the request and MUST return an error.</li>
 <li><strong>Verify zone ownership</strong> - The DNS Provider MUST verify that the target zone identified by <tt>"domain"</tt> is present in the user's account and that the user is authorized to make changes to it.</li>
 <li><t anchor="_b3809a90-a588-2838-5426-bb697ae5e943"><strong>Resolve variables</strong> - All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied.</t>
 <ol anchor="_7192597e-c18c-57c5-7ccf-d32c895a1f2c" type="a"><li>abort if rendered RRs are not possible to be applied to the target zone</li>
@@ -1265,13 +1266,12 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <ol anchor="_336f6e99-46d5-c514-0167-9c0b7986d12b" type="a"><li>abort if authorization not granted</li>
 </ol>
 </li>
-<li><t anchor="_2a861c83-82f6-8610-1497-a33100c9a4ce"><strong>Apply changes</strong> - After authorization is granted:</t>
+<li><t anchor="_43a75194-f093-371b-3714-ed4280b2cc84"><strong>Apply changes</strong> - After authorization is granted, or at later point in Asynchronous flow:</t>
 <ol anchor="_51c7a864-1747-75a1-b6d2-32d6c63a6145" type="a"><li>Remove all records pre-calculated for removal from the zone.</li>
 <li>Write the resolved RR set to the zone in totality.</li>
 <li>(olny DNS Providers tracking template state): Record the new template instance for the  <tt>"domain"</tt> and <tt>"host"</tt> pair and remove the state of any template instances that were resolved for removal.</li>
 </ol>
 </li>
-<li><strong>Redirect browser</strong> - If a <tt>redirect_uri</tt> parameter was provided in the request, the DNS Provider MUST redirect the user agent to that URI upon successful template application (see <xref target="browser-handling"></xref>).</li>
 </ol>
 </section>
 
@@ -1339,13 +1339,15 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_85f35440-2167-a076-af97-07f09c4ce899">When the template's <tt>"warnPhishing"</tt> field is <tt>"true"</tt>, the DNS Provider SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied.</t>
 </section>
 
-<section anchor="_e5155dd3-7701-73aa-1dd1-1fda761e31b7"><name>Template Application</name>
+<section anchor="_118fc55b-55af-4c0d-d910-8a637d6c8fa7"><name>Template Application</name>
 
-<t anchor="_450ed097-4eda-0833-1c4d-653e30617e74">After authorization is granted, the DNS Provider applies the template to the DNS zone.</t>
+<t anchor="_4d01541e-592d-759b-87a8-b8d5d6a751f4">In the Synchronous Flow, after authorization is granted, the DNS Provider applies the template to the DNS zone.</t>
 
-<t anchor="_d90d7a9e-6328-afa8-4ed1-b40cb8236222">The DNS Provider MUST remove all conflicting templates and records from the target zone.</t>
+<t anchor="_148be0db-7f01-ca1b-1ce6-00c9ddd28337">In the Asynchronous Flow this happens in later point in time. In this case conflict resolution MUST be calculated again for the actual state of the zone and parameters provided with the apply request.</t>
 
-<t anchor="_a541cf7f-505e-2e24-ec72-e19f3b0bbeba">The DNS Provider MUST apply all records of the template in totality.</t>
+<t anchor="_1650631c-36d8-06cc-5549-86dfc987aa50">The DNS Provider MUST remove all conflicting templates and records from the target zone.</t>
+
+<t anchor="_0339bb0d-eb4e-39cb-f0ae-0f71a29f7d45">The DNS Provider MUST apply all records of the template in totality as one atomic operation.</t>
 </section>
 </section>
     <section anchor="security-considerations"><name>Security Considerations</name>

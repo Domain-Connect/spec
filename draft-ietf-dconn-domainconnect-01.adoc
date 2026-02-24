@@ -889,7 +889,7 @@ The value MUST conform to the `dc-sig` syntax (see <<terminology>>): +
 
 a standard base64-encoded <<RFC4648>> signature, URL-encoded when carried in the query string. +
 
-See the Security Considerations section below for the signing procedure.
+See the <<signing-procedure>> below for the signing procedure.
 
 |*Key*
 |key
@@ -897,7 +897,7 @@ See the Security Considerations section below for the signing procedure.
 
 The value MUST conform to the `dc-key-label` syntax (see <<terminology>>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label. +
 
-See the Security Considerations section below.
+See the <<signing-procedure>> below.
 |=======================================================================
 
 An example query string:
@@ -916,6 +916,57 @@ domain example.com to the service using the template identified by the
 composite key of the provider (exampleservice.example) and the service template
 owned by them (template1). In this example, there are two variables in this
 template, "IP" and "RANDOMTEXT". These variables are passed as name/value pairs.
+
+[[signing-procedure]]
+====== Signing Procedure
+
+Signing the query string is OPTIONAL for templates that do not specify `"syncPubKeyDomain"`. When `"syncPubKeyDomain"` is present in the template, the Service Provider MUST sign the request and the DNS Provider MUST reject any unsigned apply request (see <<sig-verification>>).
+
+The Service Provider MUST generate the digital signature as follows:
+
+. Construct the canonical input string:
+  .. Start with the full query string (everything after `"?"`).
+  .. Remove the `"sig"` and `"key"` key/value pairs.
+  .. Ensure all remaining parameter values are URL-encoded per <<RFC3986>>.
+. Sign the canonical input string using the private key corresponding to
+  the public key published at the host identified by the `"key"` parameter
+  within `"syncPubKeyDomain"` (see <<pubkey-publication>>), using the
+  algorithm identified by the `"a"` field of the key record (default:
+  `"RS256"`).
+. Base64-encode the resulting signature per <<RFC4648>>.
+. Append the URL-encoded `"sig"` value and the `"key"` identifier to the
+  query string.
+
+.Example: signed query string parameters
+====
+The following parameters were appended to a request whose canonical input was:
+[source]
+----
+a=1&b=2&ip=10.10.10.10&domain=example.net
+----
+
+[source]
+----
+sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
+F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
+5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
+HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
+SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1
+----
+====
+
+[[sig-verification]]
+==== Signature Verification
+
+Upon receiving an apply request for a template whose `"syncPubKeyDomain"` is set, the DNS Provider MUST perform the following steps and MUST reject the request if any step fails:
+
+. *Check for required parameters* — The request MUST carry both `"sig"` and `"key"` parameters.
+. *Retrieve the public key* — Query DNS for TXT records at the host formed by prepending the `"key"` parameter value as a label to `"syncPubKeyDomain"` (see <<pubkey-publication>>). If no such records are found, the request MUST be rejected.
+. *Reassemble key fragments* — Collect all TXT records at that host, parse each as a `"dc-pubkey-record"`, and concatenate the `"d"` values in ascending order of `"p"` to obtain the complete encoded public key.
+. *Determine algorithm and key format* — Read the `"a"` and `"t"` fields. If absent, assume `"RS256"` and `"x509"` respectively.
+. *Construct the canonical input string* — Ensure the query string is still in raw form as received from the client - originally URL-encoded, order of parameters kept. Remove the `"sig"` and `"key"` key/value pairs without reordering or re-encoding of the remaining of the query string.
+. *Verify the signature* — URL-decode then base64-decode per <<RFC4648>> the `"sig"` parameter value, and verify the signature against the input string using the retrieved public key and identified algorithm.
 
 [[browser-handling]]
 ===== Browser handling considerations
@@ -967,157 +1018,6 @@ Please note that even though in this case Service Provider is informed whether t
 
 One option is to disable the synchronous flow and use asynchronous OAuth. This can be controlled with the `"syncBlock"` value from the template. However, as will be seen below OAuth has a higher implementation burden and requires onboarding between each Service and DNS Provider.
 
-[[sec-signing]]
-===== Digital Signing of Requests
-
-//TODO: move it to own section describing mechanism
-
-Another option is to digitally sign the query string. A
-signature is appended as an additional query string parameter,
-properly URL encoded and of the form:
-
-[source]
-----
-sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
-7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
-F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
-5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
-HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
-SHgJq9%2FXoMTTw%3D%3D
-----
-
-The Service Provider generates this signature using a private key. As indicated,
-this signature is generated from the query string properly URL encoded.
-
-The Service Provider MUST publish their public key in one or more DNS TXT records
-under the host specified by the `"key"` parameter within the domain given by
-`"syncPubKeyDomain"` in the template.
-Each TXT record MUST conform to the following grammar:
-
-[source,abnf]
-----
-dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
-dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
-                   / ( "d" "=" dc-frag-data )
-                   / ( "a" "=" dc-alg-id )
-                   / ( "t" "=" dc-key-type )
-
-dc-frag-index     =  1*DIGIT
-                   ; positive decimal integer; 
-                   ; used for p=
-dc-frag-data      =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
-                   ; standard base64 per RFC 4648; 
-                   ; used for d=
-dc-alg-id         =  1*( ALPHA / DIGIT / "-" )
-                   ; JWS algorithm identifier per RFC 7518;
-                   ; used for a=
-dc-key-type       =  1*( ALPHA / DIGIT / "-" )
-                   ; public key format identifier; 
-                   ; used for t=
-----
-
-Multiple TXT records at the same host are used to split a large key across DNS
-record size limits; they MUST be reassembled in ascending order of the `"p"`
-(fragment index) field.
-
-[cols=",,",options="header",title="Properties of the public key TXT record"]
-|=======================================================================
-|Property
-|Key
-|Description
-
-|*Fragment Index*
-|p
-|(REQUIRED) The sequence number of this key fragment. +
-
-The value MUST conform to the `dc-frag-index` rule above: a positive decimal integer. +
-
-Fragments MUST be reassembled in ascending numeric order of `"p"`.
-
-|*Fragment Payload*
-|d
-|(REQUIRED) The base64-encoded key material for this fragment. +
-
-The value MUST conform to the `dc-frag-data` rule above: standard base64 encoding per <<RFC4648>>.
-
-|*Signing Algorithm*
-|a
-|(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
-
-The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
-
-If omitted, MUST be assumed to be `"RS256"`. +
-
-Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
-
-|*Public Key Format*
-|t
-|(OPTIONAL) The format of the public key. +
-
-The value MUST conform to the `dc-key-type` rule above. +
-
-If omitted, MUST be assumed to be `"x509"`.
-|=======================================================================
-
-
-To allow for key rotation or usage of multiple keys, the host name of the TXT record MUST be appended as another query parameter on the query string of the form:
-
-[source]
-----
-key=_dcpubkeyv1
-----
-
-This example indicates that the public key can be found by doing a DNS
-query for a TXT record called _dcpubkeyv1 in the domain specified in the
-`"syncPubKeyDomain"` from the template.
-
-To account for DNS Servers with limits to the size of a TXT record, the public key MAY be split into multiple TXT records at the specified host. For example, a public key of:
-
-[source]
-.Example public key (line breaks are there for brevity)
-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
-4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
-+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
-NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
-tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
-2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
-----
-
-may contain several TXT records. The records would be of the form:
-
-[source]
-.Example public key broken down into DNS records (line breaks are there for brevity)
-----
-p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
-4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
-IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
-
-p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
-dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
-qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
-
-p=3,a=RS256,d=weDjXrJwIDAQAB
-
-----
-
-Here the public key is broken into three records in DNS, and the data also indicates that the signing algorithm is an RSA Signature with SHA-256. The representation as x509 certificate is the default in this case.
-
-The above data was generated for a query string:
-
-[source]
-----
-a=1&b=2&ip=10.10.10.10&domain=example.net
-----
-
-Signing the query string by the Service Provider is OPTIONAL. Not all Services Provider templates require or are able to provide this level of security. 
-Presence of the `"syncPubKeyDomain"` in the template indicates that the template requires signature verification.
-
-DNS Providers MUST reject any request to apply a template with `"syncPubKeyDomain"` present and no signing of a query string in place. 
-
-The digital signature MUST be generated on the full query string only, excluding the sig and key parameters. This is everything after the ?, except the sig and key values which MUST be appended to the signed query string.
-
-The values of each query string value key/value pair MUST be properly URL Encoded before the signature is generated.
 
 [[sec-warnings]]
 ===== Warnings
@@ -2137,6 +2037,117 @@ For example, say a Service Provider requires a CNAME of one of three values for 
 
 The value in the template could simply contain `"%servercluster%"`, and the fully qualified string passed in. Alternatively, the value in the template could contain `"%var%.example.com"` and a value of `"01"`, `"02"`, or `"03"` passed in. By placing more fixed data into the template, the template is less prone to error or misuse and allows better review of intent by the DNS Provider when onboarding the template.
 
+[[pubkey-publication]]
+=== Public Key Publication
+
+The Service Provider MUST publish their public signing key in one or more
+DNS TXT records at the host formed by prepending the `"key"` apply
+parameter value as a label to the `"syncPubKeyDomain"` template field
+value.
+
+Each TXT record MUST conform to the following grammar:
+
+[source,abnf]
+----
+dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
+dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
+                   / ( "d" "=" dc-frag-data )
+                   / ( "a" "=" dc-alg-id )
+                   / ( "t" "=" dc-key-type )
+
+dc-frag-index     =  1*DIGIT
+                   ; positive decimal integer;
+                   ; used for p=
+dc-frag-data      =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
+                   ; standard base64 per RFC 4648;
+                   ; used for d=
+dc-alg-id         =  1*( ALPHA / DIGIT / "-" )
+                   ; JWS algorithm identifier per RFC 7518;
+                   ; used for a=
+dc-key-type       =  1*( ALPHA / DIGIT / "-" )
+                   ; public key format identifier;
+                   ; used for t=
+----
+
+[cols=",,",options="header",title="Properties of the public key TXT record"]
+|=======================================================================
+|Property
+|Key
+|Description
+
+|*Fragment Index*
+|p
+|(REQUIRED) The sequence number of this key fragment. +
+
+The value MUST conform to the `dc-frag-index` rule above: a positive decimal integer. +
+
+Fragments MUST be reassembled in ascending numeric order of `"p"`.
+
+|*Fragment Payload*
+|d
+|(REQUIRED) A Fragment of base64-encoded key material. +
+
+The value MUST conform to the `dc-frag-data` rule above: standard base64 encoding per <<RFC4648>>.
+
+|*Signing Algorithm*
+|a
+|(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
+
+The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
+
+If omitted, MUST be assumed to be `"RS256"`. +
+
+Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
+
+|*Public Key Format*
+|t
+|(OPTIONAL) The format of the public key. +
+
+The value MUST conform to the `dc-key-type` rule above. +
+
+If omitted, MUST be assumed to be `"x509"`.
+|=======================================================================
+
+To allow for key rotation or use of multiple keys, the Service Provider
+MAY publish key records at multiple hosts within `"syncPubKeyDomain"`.
+The `"key"` apply parameter identifies which host to query for each
+request and MUST be included in the signed apply request.
+
+To account for DNS record size limits, a public key MAY be split across
+multiple TXT records at the same host. All fragments MUST be reassembled
+in ascending numeric order of `"p"` before use.
+The values `"a"` and '"d"' MUST be equal for all such TXT records on the
+same host. 
+
+Given the public key (line breaks for brevity):
+[source]
+----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
++HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
+NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
+tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
+2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
+----
+
+Published at `"_dcpubkeyv1.<syncPubKeyDomain>"` as (line breaks for brevity):
+
+.Example: public key published as DNS TXT records
+====
+[source]
+----
+p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
+IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
+
+p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
+dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
+
+p=3,a=RS256,d=weDjXrJwIDAQAB
+----
+====
+
 [[template-processing]]
 == Resolving Template Variables
 [[variables]]
@@ -2456,7 +2467,7 @@ rather than using the value returned during DNS Provider discovery.
 
 Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value — for example, a hijacked IP address — and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.
 
-Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: disabling the synchronous flow via `"syncBlock"` (see <<sec-sync-blocking,format=title>>), digitally signing apply requests (see the Section <<sec-signing,format=title>>), and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user (see <<sec-warnings,format=title>>).
+Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: disabling the synchronous flow via `"syncBlock"` (see <<sec-sync-blocking,format=title>>), digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user (see <<sec-warnings,format=title>>).
 
 [#iana]
 == IANA Considerations
@@ -2534,6 +2545,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Moved runtime processing rules out of parameter and template field definitions into their appropriate processing sections.
 - <<security-considerations,format=title>> section restructured: phishing threat description moved from <<apply-template,format=title>> into new <<sec-variable-phishing,format=title>> subsection; editorial cleanup including section reordering, heading renames, and example block formatting.
 - Added <<group-filtering,format=title>> subsection to <<template-application,format=title>>.
+- Restructured request signing description into three focused sections: <<signing-procedure,format=title>>, <<sig-verification,format=title>> and <<pubkey-publication,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

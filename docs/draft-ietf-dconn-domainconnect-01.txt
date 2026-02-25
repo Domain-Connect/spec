@@ -2773,24 +2773,24 @@ Internet-Draft               Domain Connect                December 2025
    the zone by querying the authoritative DNS server for the domain.
 
    DNS verification MUST be treated as the authoritative signal of
-   success.  In particular:
+   success.  The reliability of the protocol-level completion signal
+   depends on the flow used:
 
-   *  A "redirect_uri" callback received without an "error" parameter
-      does not constitute proof that the template was applied.  Users
-      can modify redirect URIs in the user agent, so a successful-
-      looking redirect MUST NOT be relied upon as confirmation of DNS
-      changes.
+   *  In the synchronous flow, a "redirect_uri" callback received
+      without an "error" parameter does not constitute proof that the
+      template was applied.  Users can modify redirect URIs in the user
+      agent, so a successful-looking redirect MUST NOT be relied upon as
+      confirmation of DNS changes, or the DNS Provider may encounter an
+      internal error after returning the response.  A "redirect_uri"
+      callback received with an "error" parameter does not constitute
+      proof that the template was NOT applied; the DNS Provider MAY have
+      applied the template before the error condition arose.
 
-   *  A "redirect_uri" callback received with an "error" parameter does
-      not constitute proof that the template was NOT applied.  The DNS
-      Provider MAY have applied the template before the error condition
-      arose.
-
-   Receipt of a "redirect_uri" callback MAY be used as a signal to
-   initiate DNS verification.  However, the Service Provider MUST
-   account for DNS propagation delay and MUST implement a retry
-   mechanism with appropriate intervals until the expected records are
-   observed or a timeout is reached.
+   *  In the asynchronous flow, a 2xx HTTP response to the apply request
+      confirms that the DNS Provider accepted and processed the request.
+      While this response cannot be tampered with by the user, it does
+      not guarantee that the DNS zone has been updated; the DNS Provider
+      may encounter an internal error after returning the response.
 
 
 
@@ -2801,6 +2801,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 50]
 
 Internet-Draft               Domain Connect                December 2025
 
+
+   Receipt of a protocol-level completion signal MAY be used as a
+   trigger to initiate DNS verification.  However, the Service Provider
+   MUST account for DNS propagation delay and MUST implement a retry
+   mechanism with appropriate intervals until the expected records are
+   observed or a timeout is reached.
 
    To minimise delays caused by DNS resolver caching, it is RECOMMENDED
    that the Service Provider query a DNS resolver configured with low
@@ -2844,12 +2850,6 @@ Internet-Draft               Domain Connect                December 2025
    +-------------+--------+-------------------+------------------------+
    |*Service Id* |String  |serviceId          |(REQUIRED) The name or  |
    |             |        |                   |identifier of the       |
-   |             |        |                   |template.  This is used |
-   |             |        |                   |in URLs to identify the |
-   |             |        |                   |template and in the     |
-   |             |        |                   |scope parameter for     |
-   |             |        |                   |OAuth.                  |
-   |             |        |                   |The value MUST conform  |
 
 
 
@@ -2858,6 +2858,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 51]
 Internet-Draft               Domain Connect                December 2025
 
 
+   |             |        |                   |template.  This is used |
+   |             |        |                   |in URLs to identify the |
+   |             |        |                   |template and in the     |
+   |             |        |                   |scope parameter for     |
+   |             |        |                   |OAuth.                  |
+   |             |        |                   |The value MUST conform  |
    |             |        |                   |to the dc-id syntax (see|
    |             |        |                   |Section 3).             |
    +-------------+--------+-------------------+------------------------+
@@ -2900,12 +2906,6 @@ Internet-Draft               Domain Connect                December 2025
    |             |        |                   |UX.                     |
    |             |        |                   |When present, the value |
    |             |        |                   |MUST be a valid URI     |
-   |             |        |                   |[RFC3986] with scheme   |
-   |             |        |                   |"https".                |
-   +-------------+--------+-------------------+------------------------+
-   |*Description*|String  |description        |(OPTIONAL) A textual    |
-   |             |        |                   |description of what this|
-   |             |        |                   |template does, intended |
 
 
 
@@ -2914,6 +2914,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 52]
 Internet-Draft               Domain Connect                December 2025
 
 
+   |             |        |                   |[RFC3986] with scheme   |
+   |             |        |                   |"https".                |
+   +-------------+--------+-------------------+------------------------+
+   |*Description*|String  |description        |(OPTIONAL) A textual    |
+   |             |        |                   |description of what this|
+   |             |        |                   |template does, intended |
    |             |        |                   |for developer reference.|
    |             |        |                   |This value is not       |
    |             |        |                   |intended for display to |
@@ -2956,12 +2962,6 @@ Internet-Draft               Domain Connect                December 2025
    |*Shared      |Boolean |sharedProviderName |(OPTIONAL) When "true", |
    |Provider     |        |                   |indicates that the      |
    |Name*        |        |                   |caller MAY supply an    |
-   |             |        |                   |additional              |
-   |             |        |                   |"providerName" parameter|
-   |             |        |                   |at apply time.          |
-   |             |        |                   |The default is "false". |
-   |             |        |                   |For backward            |
-   |             |        |                   |compatibility with DNS  |
 
 
 
@@ -2970,6 +2970,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 53]
 Internet-Draft               Domain Connect                December 2025
 
 
+   |             |        |                   |additional              |
+   |             |        |                   |"providerName" parameter|
+   |             |        |                   |at apply time.          |
+   |             |        |                   |The default is "false". |
+   |             |        |                   |For backward            |
+   |             |        |                   |compatibility with DNS  |
    |             |        |                   |Providers prior to v2.2,|
    |             |        |                   |it is RECOMMENDED that  |
    |             |        |                   |the deprecated "shared" |
@@ -3012,12 +3018,6 @@ Internet-Draft               Domain Connect                December 2025
    |             |        |                   |template is designed to |
    |             |        |                   |be applied multiple     |
    |             |        |                   |times to the same domain|
-   |             |        |                   |and host.               |
-   |             |        |                   |The default is "false". |
-   +-------------+--------+-------------------+------------------------+
-   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When "true", |
-   |Phishing*    |        |                   |signals that the        |
-   |             |        |                   |template contains       |
 
 
 
@@ -3026,6 +3026,12 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 54]
 Internet-Draft               Domain Connect                December 2025
 
 
+   |             |        |                   |and host.               |
+   |             |        |                   |The default is "false". |
+   +-------------+--------+-------------------+------------------------+
+   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When "true", |
+   |Phishing*    |        |                   |signals that the        |
+   |             |        |                   |template contains       |
    |             |        |                   |variables that cannot be|
    |             |        |                   |constrained by digital  |
    |             |        |                   |signing and may be      |
@@ -3065,6 +3071,17 @@ Internet-Draft               Domain Connect                December 2025
    Each record MUST contain the following elements unless otherwise
    specified.
 
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 55]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    +===========+======+=========================+======================+
    |Data       |Type  |Key                      |Description           |
    |Element    |      |                         |                      |
@@ -3074,14 +3091,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |DNS, or the operation |
    |           |      |                         |impacting DNS.        |
    |           |      |                         |Valid values include: |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 55]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |A, AAAA, CNAME, MX,   |
    |           |      |                         |TXT, SRV, or SPFM.    |
    |           |      |                         |The DNS Provider MUST |
@@ -3121,6 +3130,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |belongs to when       |
    |           |      |                         |applying changes.  The|
    |           |      |                         |value MUST conform to |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 56]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |      |                         |the dc-id syntax (see |
    |           |      |                         |Section 3) and MUST   |
    |           |      |                         |NOT contain variable  |
@@ -3130,14 +3147,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |parameter indicates   |
    |           |      |                         |how the record is     |
    |           |      |                         |treated during        |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 56]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |conflict detection    |
    |           |      |                         |with existing         |
    |           |      |                         |templates.            |
@@ -3177,6 +3186,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |of the applied host   |
    |           |      |                         |and domain.  In other |
    |           |      |                         |words                 |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 57]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |      |                         |"[host.]example.com.".|
    |           |      |                         |When used in a        |
    |           |      |                         |template definition,  |
@@ -3186,14 +3203,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |Section 3).           |
    |           |      |                         |After variable        |
    |           |      |                         |substitution, the     |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 57]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |resolved value MUST   |
    |           |      |                         |conform to the domain-|
    |           |      |                         |name syntax (see      |
@@ -3233,6 +3242,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |template definition,  |
    |           |      |                         |the value MUST conform|
    |           |      |                         |to the dc-pointsto-   |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 58]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |      |                         |tmpl syntax (see      |
    |           |      |                         |Section 3).           |
    |           |      |                         |After variable        |
@@ -3242,14 +3259,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |name syntax (see      |
    |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 58]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |*TTL*      |Int or|ttl                      |The time-to-live for  |
    |           |string|                         |the record in DNS.    |
    |           |repr. |                         |Valid for A, AAAA,    |
@@ -3289,6 +3298,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |template application  |
    |           |      |                         |because of invalid    |
    |           |      |                         |value, rather pick the|
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 59]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |      |                         |nearest supported     |
    |           |      |                         |value or a default, in|
    |           |      |                         |order to avoid        |
@@ -3298,14 +3315,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |Support of variables  |
    |           |      |                         |in this field is      |
    |           |      |                         |OPTIONAL for DNS      |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 59]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |Provider.             |
    +-----------+------+-------------------------+----------------------+
    |*Data*     |String|data                     |The data for a TXT    |
@@ -3345,6 +3354,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |MUST be assumed to be |
    |           |      |                         |"None".               |
    +-----------+------+-------------------------+----------------------+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 60]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
    |Conflict   |      |                         |conflicts when        |
    |Matching   |      |                         |txtConflict-          |
@@ -3354,14 +3371,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |The value MUST conform|
    |           |      |                         |to the dc-conflict-   |
    |           |      |                         |prefix syntax (see    |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 60]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |Section 3).           |
    +-----------+------+-------------------------+----------------------+
    |*Priority* |Int or|priority                 |The priority for an MX|
@@ -3401,6 +3410,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |Provider.             |
    +-----------+------+-------------------------+----------------------+
    |*Port*     |Int or|port                     |The port for the SRV  |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 61]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |string|                         |record.               |
    |           |repr. |                         |When used in a        |
    |           |of Int|                         |template definition,  |
@@ -3410,14 +3427,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |Section 3).           |
    |           |      |                         |After variable        |
    |           |      |                         |substitution, the     |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 61]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |           |      |                         |resolved value MUST   |
    |           |      |                         |conform to the dc-    |
    |           |      |                         |uint16-value syntax.  |
@@ -3457,6 +3466,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |Section 3), or be the |
    |           |      |                         |single label "." to   |
    |           |      |                         |indicate that the     |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 62]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |      |                         |service is not        |
    |           |      |                         |available.            |
    |           |      |                         |After variable        |
@@ -3466,14 +3483,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |      |                         |name syntax (see      |
    |           |      |                         |Section 3), or be ".".|
    +-----------+------+-------------------------+----------------------+
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 62]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |*SPF Rules*|String|spfRules                 |These are desired     |
    |           |      |                         |rules for the SPF TXT |
    |           |      |                         |record.  These rules  |
@@ -3500,15 +3509,6 @@ Internet-Draft               Domain Connect                December 2025
 
    The following table lists the fields that MAY be defined for each
    record type.  Other fields MUST NOT be used.
-
-
-
-
-
-
-
-
-
 
 
 

@@ -557,7 +557,7 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 <table anchor="_14049357-6f3a-1de7-18dd-9ca5589dcdad"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
 </section>
-    <section anchor="_d4af8e1e-d234-0969-342b-267a0f01c219"><name>Applying Domain Connect</name>
+    <section anchor="_3534eab7-223c-a77e-ab00-8f7c715ce479"><name>Applying Domain Connect</name>
 
 <section anchor="_87be5e71-83dd-a3db-c804-4e182760c60e"><name>Endpoints</name>
 
@@ -933,13 +933,13 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 
 <t anchor="_fd03d438-0130-abb7-e907-8e5457a52de1">After the synchronous or asynchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.</t>
 
-<t anchor="_e97f2c16-f125-ee22-4348-9e1c78d035dd">DNS verification MUST be treated as the authoritative signal of success. In particular:</t>
+<t anchor="_adbbb8ba-aef0-2602-c4b9-c7659c079cca">DNS verification MUST be treated as the authoritative signal of success. The reliability of the protocol-level completion signal depends on the flow used:</t>
 
-<ul anchor="_ac5bcd72-b761-d042-09e0-1d8005e842c6"><li>A <tt>"redirect_uri"</tt> callback received without an <tt>"error"</tt> parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes.</li>
-<li>A <tt>"redirect_uri"</tt> callback received with an <tt>"error"</tt> parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.</li>
+<ul anchor="_1067b050-3960-bde5-a246-bc6613181dd2"><li>In the synchronous flow, a <tt>"redirect_uri"</tt> callback received without an <tt>"error"</tt> parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes, or the DNS Provider may encounter an internal error after returning the response. A <tt>"redirect_uri"</tt> callback received with an <tt>"error"</tt> parameter does not constitute proof that the template was NOT applied; the DNS Provider MAY have applied the template before the error condition arose.</li>
+<li>In the asynchronous flow, a 2xx HTTP response to the apply request confirms that the DNS Provider accepted and processed the request. While this response cannot be tampered with by the user, it does not guarantee that the DNS zone has been updated; the DNS Provider may encounter an internal error after returning the response.</li>
 </ul>
 
-<t anchor="_f3843e55-b62c-1731-a4ce-d7b3a79eeec8">Receipt of a <tt>"redirect_uri"</tt> callback MAY be used as a signal to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.</t>
+<t anchor="_ad9b0e6a-b25d-1ddb-18ed-dfeef1b91bff">Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.</t>
 
 <t anchor="_89dc638b-29de-fc76-0fca-bfdc8b52a96b">To minimise delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.</t>
 </section>

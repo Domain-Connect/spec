@@ -1590,12 +1590,12 @@ Like all OAuth flows, the user may revoke the access at any time using UX at the
 
 After the synchronous or asynchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.
 
-DNS verification MUST be treated as the authoritative signal of success. In particular:
+DNS verification MUST be treated as the authoritative signal of success. The reliability of the protocol-level completion signal depends on the flow used:
 
-* A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes.
-* A `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.
+* In the synchronous flow, a `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes, or the DNS Provider may encounter an internal error after returning the response. A `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied; the DNS Provider MAY have applied the template before the error condition arose.
+* In the asynchronous flow, a 2xx HTTP response to the apply request confirms that the DNS Provider accepted and processed the request. While this response cannot be tampered with by the user, it does not guarantee that the DNS zone has been updated; the DNS Provider may encounter an internal error after returning the response.
 
-Receipt of a `"redirect_uri"` callback MAY be used as a signal to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
+Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
 
 To minimise delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.
 

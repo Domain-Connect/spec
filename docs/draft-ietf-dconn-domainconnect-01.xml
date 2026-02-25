@@ -557,7 +557,7 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 <table anchor="_14049357-6f3a-1de7-18dd-9ca5589dcdad"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
 </section>
-    <section anchor="_3e7e82b0-47b0-da2b-12bf-b48407199eeb"><name>Applying Domain Connect</name>
+    <section anchor="_d4af8e1e-d234-0969-342b-267a0f01c219"><name>Applying Domain Connect</name>
 
 <section anchor="_87be5e71-83dd-a3db-c804-4e182760c60e"><name>Endpoints</name>
 
@@ -931,11 +931,17 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 
 <section anchor="verification-of-changes"><name>Verification of Changes</name>
 
-<t anchor="_a38c7209-5a4e-00ad-b7e0-499f4b012620">There are circumstances where the Service Provider may wish to verify that the template was successfully applied. Without Domain Donnect, this typically involved the Service Provider querying DNS to see if the changes to DNS had been made.</t>
+<t anchor="_fd03d438-0130-abb7-e907-8e5457a52de1">After the synchronous or asynchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.</t>
 
-<t anchor="_dbfe8f08-fe7c-5140-8dd4-8e1d786d9421">This same technique works with Domain Connect, and if necessary can be triggered either manually on the Service Provider site or automatically upon page or window activation when the user agent session with the DNS Provider is closed.</t>
+<t anchor="_e97f2c16-f125-ee22-4348-9e1c78d035dd">DNS verification MUST be treated as the authoritative signal of success. In particular:</t>
 
-<t anchor="_7af3d008-70cf-da65-3dbe-752fd925e8ae">When the <tt>"redirect_uri"</tt> is used and an error is not present in the URI, the Service Provider can not assume the changes were applied to DNS. While true in most circumstances, users can tamper with or alter the return url in the user agent. As such it is recommend that enablement of a service be based on verification of changes to DNS.</t>
+<ul anchor="_ac5bcd72-b761-d042-09e0-1d8005e842c6"><li>A <tt>"redirect_uri"</tt> callback received without an <tt>"error"</tt> parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes.</li>
+<li>A <tt>"redirect_uri"</tt> callback received with an <tt>"error"</tt> parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.</li>
+</ul>
+
+<t anchor="_f3843e55-b62c-1731-a4ce-d7b3a79eeec8">Receipt of a <tt>"redirect_uri"</tt> callback MAY be used as a signal to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.</t>
+
+<t anchor="_89dc638b-29de-fc76-0fca-bfdc8b52a96b">To minimise delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.</t>
 </section>
 </section>
     <section anchor="_6556a023-90c8-5f34-9a32-5a3d0bf5870b"><name>Domain Connect Objects and Templates</name>
@@ -1417,11 +1423,11 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_f21a2a54-9e63-820f-8759-afedcf3ba71b" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_995f89fa-28cf-56c4-1f19-fb8dfb426bb7" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_5d276d96-a2f9-e22d-fe90-8c8d2252d0f0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_06fdd56e-fa22-8aec-11c2-5894df82a328" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
 
-<ul anchor="_0fe065e0-8989-16e4-2b52-3e1395c68a12"><li>Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.</li>
+<ul anchor="_cefb1f1e-3d49-6315-c0c8-16eee3ed92e5"><li>Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.</li>
 <li>Clarify explicit IDN support for domain name parameters (undefined before).</li>
 <li>Replaced informal prose constraints across all endpoint parameter tables and template field definitions with normative ABNF references</li>
 <li>Public-key TXT record format replaced with a formal ABNF grammar and detailed specification.</li>
@@ -1434,6 +1440,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Restructured request signing description into three focused sections: <xref target="signing-procedure" format="title"></xref>, <xref target="sig-verification" format="title"></xref> and <xref target="pubkey-publication" format="title"></xref>.</li>
 <li>Replaced Sync Apply Interaction with a normative three-part structure (Request, Response, Error Response)</li>
 <li>Replaced all occurrences of the term "browser" with "user agent" throughout the document.</li>
+<li>Rewrote <xref target="verification-of-changes" format="title"></xref> as normative text.</li>
 </ul>
 </section>
 

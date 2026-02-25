@@ -2606,7 +2606,7 @@ https://{+_domainconnect}/v2/{domain}/settings</pre><a href="#section-6-11" clas
 </div>
 </section>
 </div>
-<div id="_3e7e82b0-47b0-da2b-12bf-b48407199eeb">
+<div id="_d4af8e1e-d234-0969-342b-267a0f01c219">
 <section id="section-7">
       <h2 id="name-applying-domain-connect">
 <a href="#section-7" class="section-number selfRef">7. </a><a href="#name-applying-domain-connect" class="section-name selfRef">Applying Domain Connect</a>
@@ -3894,14 +3894,23 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
         <h3 id="name-verification-of-changes">
 <a href="#section-7.5" class="section-number selfRef">7.5. </a><a href="#name-verification-of-changes" class="section-name selfRef">Verification of Changes</a>
         </h3>
-<div id="_a38c7209-5a4e-00ad-b7e0-499f4b012620">
-<p id="section-7.5-1">There are circumstances where the Service Provider may wish to verify that the template was successfully applied. Without Domain Donnect, this typically involved the Service Provider querying DNS to see if the changes to DNS had been made.<a href="#section-7.5-1" class="pilcrow">¶</a></p>
+<div id="_fd03d438-0130-abb7-e907-8e5457a52de1">
+<p id="section-7.5-1">After the synchronous or asynchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.<a href="#section-7.5-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_dbfe8f08-fe7c-5140-8dd4-8e1d786d9421">
-<p id="section-7.5-2">This same technique works with Domain Connect, and if necessary can be triggered either manually on the Service Provider site or automatically upon page or window activation when the user agent session with the DNS Provider is closed.<a href="#section-7.5-2" class="pilcrow">¶</a></p>
+<div id="_e97f2c16-f125-ee22-4348-9e1c78d035dd">
+<p id="section-7.5-2">DNS verification MUST be treated as the authoritative signal of success. In particular:<a href="#section-7.5-2" class="pilcrow">¶</a></p>
 </div>
-<div id="_7af3d008-70cf-da65-3dbe-752fd925e8ae">
-<p id="section-7.5-3">When the <code>"redirect_uri"</code> is used and an error is not present in the URI, the Service Provider can not assume the changes were applied to DNS. While true in most circumstances, users can tamper with or alter the return url in the user agent. As such it is recommend that enablement of a service be based on verification of changes to DNS.<a href="#section-7.5-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.5-3.1">A <code>"redirect_uri"</code> callback received without an <code>"error"</code> parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes.<a href="#section-7.5-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-7.5-3.2">A <code>"redirect_uri"</code> callback received with an <code>"error"</code> parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.<a href="#section-7.5-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<div id="_f3843e55-b62c-1731-a4ce-d7b3a79eeec8">
+<p id="section-7.5-4">Receipt of a <code>"redirect_uri"</code> callback MAY be used as a signal to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.<a href="#section-7.5-4" class="pilcrow">¶</a></p>
+</div>
+<div id="_89dc638b-29de-fc76-0fca-bfdc8b52a96b">
+<p id="section-7.5-5">To minimise delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.<a href="#section-7.5-5" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -5252,13 +5261,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_f21a2a54-9e63-820f-8759-afedcf3ba71b">
+<div id="_995f89fa-28cf-56c4-1f19-fb8dfb426bb7">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_5d276d96-a2f9-e22d-fe90-8c8d2252d0f0">
+<div id="_06fdd56e-fa22-8aec-11c2-5894df82a328">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
 <a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
@@ -5290,6 +5299,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
           <li class="normal" id="section-15.1-1.12">Replaced Sync Apply Interaction with a normative three-part structure (Request, Response, Error Response)<a href="#section-15.1-1.12" class="pilcrow">¶</a>
 </li>
           <li class="normal" id="section-15.1-1.13">Replaced all occurrences of the term "browser" with "user agent" throughout the document.<a href="#section-15.1-1.13" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.14">Rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.1-1.14" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

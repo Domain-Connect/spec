@@ -2251,21 +2251,33 @@ Table of Contents
 
 7.5.  Verification of Changes
 
-   There are circumstances where the Service Provider may wish to verify
-   that the template was successfully applied.  Without Domain Donnect,
-   this typically involved the Service Provider querying DNS to see if
-   the changes to DNS had been made.
+   After the synchronous or asynchronous flow completes, the Service
+   Provider SHOULD verify that the expected DNS records are present in
+   the zone by querying the authoritative DNS server for the domain.
 
-   This same technique works with Domain Connect, and if necessary can
-   be triggered either manually on the Service Provider site or
-   automatically upon page or window activation when the user agent
-   session with the DNS Provider is closed.
+   DNS verification MUST be treated as the authoritative signal of
+   success.  In particular:
 
-   When the "redirect_uri" is used and an error is not present in the
-   URI, the Service Provider can not assume the changes were applied to
-   DNS.  While true in most circumstances, users can tamper with or
-   alter the return url in the user agent.  As such it is recommend that
-   enablement of a service be based on verification of changes to DNS.
+   *  A "redirect_uri" callback received without an "error" parameter
+      does not constitute proof that the template was applied.  Users
+      can modify redirect URIs in the user agent, so a successful-
+      looking redirect MUST NOT be relied upon as confirmation of DNS
+      changes.
+
+   *  A "redirect_uri" callback received with an "error" parameter does
+      not constitute proof that the template was NOT applied.  The DNS
+      Provider MAY have applied the template before the error condition
+      arose.
+
+   Receipt of a "redirect_uri" callback MAY be used as a signal to
+   initiate DNS verification.  However, the Service Provider MUST
+   account for DNS propagation delay and MUST implement a retry
+   mechanism with appropriate intervals until the expected records are
+   observed or a timeout is reached.
+
+   To minimise delays caused by DNS resolver caching, it is RECOMMENDED
+   that the Service Provider query a DNS resolver configured with low
+   TTL overrides, or query the authoritative name servers directly.
 
 8.  Domain Connect Objects and Templates
 
@@ -3726,6 +3738,8 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
 
    *  Replaced all occurrences of the term "browser" with "user agent"
       throughout the document.
+
+   *  Rewrote Verification of Changes as normative text.
 
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00

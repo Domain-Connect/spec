@@ -2304,15 +2304,15 @@ Each step is described in detail in the sections below.
 
 . *Verify template applicability* — For synchronous flow requests, the DNS Provider MUST verify that the template's `"syncBlock"` field is not `"true"`. If it is, the DNS Provider MUST NOT process the request and MUST return an error.
 . *Verify zone ownership* — The DNS Provider MUST verify that the target zone identified by `"domain"` is present in the user's account and that the user is authorized to make changes to it.
-. *Filter records to apply* - select records applicable for further processing based on `"groupId"` property of the template and `"groupId"` apply parameter
-. *Resolve variables* — All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied.
+. *Filter records to apply* - select records applicable for further processing based on `"groupId"` property of the template and `"groupId"` apply parameter (see <<group-filtering>>).
+. *Resolve variables* — All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied (see <<variable-substitution>>).
   .. abort if rendered RRs are not possible to be applied to the target zone
 . *Perform conflict detection* — The DNS Provider checks the resolved RR set against the existing zone content according to the conflict detection rules (see <<record-types-conflicts>>).
   .. Identify individual zone records that conflict with the resolved RR set.
   .. (only DNS Providers tracking template state): Check each resolved RR against essential records of previously applied templates. Identify which previously applied templates own conflicting records and would be removed in their entirety (see <<essential-records>>).
   .. (only DNS Providers tracking template state): Mark instances of the same template applied on the same `"host"` for removal unless `"multiInstance"` is set for the template (see <<multi-instance>>).
 . *Pre-calculate conflict resolution* — Determine the full set of records and,
-  where applicable, template instances that would be removed upon application.
+  where applicable, template instances that would be removed upon application (see <<calc-conflict-resolution>>).
 . *Obtain user authorization* — The DNS Provider MUST present the intended
   changes and the pre-calculated conflict consequences to the user and obtain
   explicit authorization before proceeding (see <<user_authorization_of_changes>>).
@@ -2380,8 +2380,9 @@ A template record is considered essential when it MUST be present and remain con
 
 A DNS Provider that maintains applied template state MUST treat an attempt of removal or modification of such an essential record as a conflict indicator, and MUST require the full template to be removed or abort.
 
-Records with `"essential=OnApply"` MUST be applied when the template is first applied, but MAY be subsequently removed or altered — by the user or through the application of another template — without triggering conflict detection or removal of the owning template.
+Records with `"essential=OnApply"` MUST be applied when the template is first applied, but MAY be subsequently removed or altered — by the user or through the application of another template — without triggering conflict or removal of the owning template.
 
+[[calc-conflict-resolution]]
 === Calculating Conflict Resolution
 
 A DNS Provider not maintainig applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.
@@ -2393,7 +2394,7 @@ When a DNS Provider maintains applied template state, applying a template whose 
 
 It is ultimately left to the DNS Provider to determine the amount of disclosure and/or conflict detection.
 
-The DNS Provider MUST inform the user of the service that is about to be enabled when requesting authorization.  If the user wishes to review the specifics, the DNS Provider SHOULD make the individual DNS records being set available, in order to allow informed decision before changes are applied.
+The DNS Provider MUST inform the user of the service that is about to be enabled when requesting authorization. If the user wishes to review the specifics, the DNS Provider SHOULD make the individual DNS records being set available, in order to allow informed decision before changes are applied.
 
 If conflicts are detected — at either the template or record level — the DNS Provider SHOULD present these to the user before authorization is granted. For template instances this means identifying services that would be disabled; for records this means identifying records that would be deleted or overwritten.
 

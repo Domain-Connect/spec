@@ -1225,10 +1225,10 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_fbd89c36-9d6d-f82c-83a0-15efae699ec4">The following steps give an overview of the template application process. Each step is described in detail in the sections below.</t>
 
-<ol anchor="_7f0c801d-e311-d317-ea3d-dac1059dbecb" type="1"><li><strong>Verify template applicability</strong> - For synchronous flow requests, the DNS Provider MUST verify that the template's <tt>"syncBlock"</tt> field is not <tt>"true"</tt>. If it is, the DNS Provider MUST NOT process the request and MUST return an error.</li>
+<ol anchor="_b2856857-2058-ca17-6162-5b9f3a687152" type="1"><li><strong>Verify template applicability</strong> - For synchronous flow requests, the DNS Provider MUST verify that the template's <tt>"syncBlock"</tt> field is not <tt>"true"</tt>. If it is, the DNS Provider MUST NOT process the request and MUST return an error.</li>
 <li><strong>Verify zone ownership</strong> - The DNS Provider MUST verify that the target zone identified by <tt>"domain"</tt> is present in the user's account and that the user is authorized to make changes to it.</li>
-<li><strong>Filter records to apply</strong> - select records applicable for further processing based on <tt>"groupId"</tt> property of the template and <tt>"groupId"</tt> apply parameter</li>
-<li><t anchor="_5ab15e71-8424-d0c9-6fc1-0b2fdad61ed6"><strong>Resolve variables</strong> - All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied.</t>
+<li><strong>Filter records to apply</strong> - select records applicable for further processing based on <tt>"groupId"</tt> property of the template and <tt>"groupId"</tt> apply parameter (see <xref target="group-filtering"></xref>).</li>
+<li><t anchor="_ab880f51-9fb7-8cb7-bfcb-d91c16d61f9e"><strong>Resolve variables</strong> - All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied (see <xref target="variable-substitution"></xref>).</t>
 <ol anchor="_8217b420-3260-b804-4079-b71a1a062c31" type="a"><li>abort if rendered RRs are not possible to be applied to the target zone</li>
 </ol>
 </li>
@@ -1238,7 +1238,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>(only DNS Providers tracking template state): Mark instances of the same template applied on the same <tt>"host"</tt> for removal unless <tt>"multiInstance"</tt> is set for the template (see <xref target="multi-instance"></xref>).</li>
 </ol>
 </li>
-<li><strong>Pre-calculate conflict resolution</strong> - Determine the full set of records and, where applicable, template instances that would be removed upon application.</li>
+<li><strong>Pre-calculate conflict resolution</strong> - Determine the full set of records and, where applicable, template instances that would be removed upon application (see  <xref target="calc-conflict-resolution"></xref>).</li>
 <li><t anchor="_ab236120-0db3-499a-16a6-c79f68bcb758"><strong>Obtain user authorization</strong> - The DNS Provider MUST present the intended changes and the pre-calculated conflict consequences to the user and obtain explicit authorization before proceeding (see  <xref target="user_authorization_of_changes"></xref>).</t>
 <ol anchor="_31206fe6-f01d-3151-e6ee-ac53eb7958ce" type="a"><li>abort if authorization not granted</li>
 </ol>
@@ -1291,7 +1291,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_74ccc8aa-4e51-f067-ecb5-7c302db34a7b">Note: DNS Provider MUST also check applicability of all generated records to the target DNS zone in its own system. For example it is very common for DNS provider not to allow CNAME records to be at the zone apex.</t>
 
-<section anchor="_9ebd391a-e966-da5f-e512-cd3d13e9f12f"><name>Conflict Detection Special Handling</name>
+<section anchor="_628dca40-ba11-e3a4-5fc7-11a07217f805"><name>Conflict Detection Special Handling</name>
 
 <section anchor="multi-instance"><name>Multi-Instance</name>
 
@@ -1310,12 +1310,12 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_8f0aee14-9a5b-1a02-fabc-e622703b3c14">A DNS Provider that maintains applied template state MUST treat an attempt of removal or modification of such an essential record as a conflict indicator, and MUST require the full template to be removed or abort.</t>
 
-<t anchor="_2a12ed87-5f16-1d2f-ce6a-034c7effef47">Records with <tt>"essential=OnApply"</tt> MUST be applied when the template is first applied, but MAY be subsequently removed or altered - by the user or through the application of another template - without triggering conflict detection or removal of the owning template.</t>
+<t anchor="_74a06b0f-92a7-d854-e342-63a3eedeb59b">Records with <tt>"essential=OnApply"</tt> MUST be applied when the template is first applied, but MAY be subsequently removed or altered - by the user or through the application of another template - without triggering conflict or removal of the owning template.</t>
 </section>
 </section>
 </section>
 
-<section anchor="_bd1477ff-dd84-1c89-b4c8-006afc2f4d87"><name>Calculating Conflict Resolution</name>
+<section anchor="calc-conflict-resolution"><name>Calculating Conflict Resolution</name>
 
 <t anchor="_04f41577-6ef6-c809-c516-457709aef107">A DNS Provider not maintainig applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.</t>
 
@@ -1326,7 +1326,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_d32af00d-13e5-d971-18a6-44f173f3acfd">It is ultimately left to the DNS Provider to determine the amount of disclosure and/or conflict detection.</t>
 
-<t anchor="_839cac2c-1d30-0d61-2810-0db1dc2f65c6">The DNS Provider MUST inform the user of the service that is about to be enabled when requesting authorization.  If the user wishes to review the specifics, the DNS Provider SHOULD make the individual DNS records being set available, in order to allow informed decision before changes are applied.</t>
+<t anchor="_c9c09e01-d4ff-61c1-e2e0-b43fd7cd2b73">The DNS Provider MUST inform the user of the service that is about to be enabled when requesting authorization. If the user wishes to review the specifics, the DNS Provider SHOULD make the individual DNS records being set available, in order to allow informed decision before changes are applied.</t>
 
 <t anchor="_288348c6-cb03-bbe9-1cb7-256d67d88ed0">If conflicts are detected - at either the template or record level - the DNS Provider SHOULD present these to the user before authorization is granted. For template instances this means identifying services that would be disabled; for records this means identifying records that would be deleted or overwritten.</t>
 

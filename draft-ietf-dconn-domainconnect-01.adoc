@@ -497,6 +497,526 @@ Steps:
 . *DNS Server Returns New DNS Records*: The DNS Server returns the updated DNS records.
 . *Service Provider Reports Success (Asynchronous)*: The Service Provider reports to the user that the domain has been successfully connected to the service.
 
+== Domain Connect Objects and Templates
+
+[[template-definition]]
+=== Template Definition
+
+A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.
+
+[cols=",,,",options="header",title="properties of the template definition"]
+|=======================================================================
+|Data Element
+|Type
+|Key
+|Description
+
+|*Service Provider Id*
+|String
+|providerId
+|(REQUIRED) The unique identifier of the Service Provider that created this template. This is used in the URLs to identify the Service Provider. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>). +
+
+To ensure non-coordinated uniqueness, this SHOULD be the domain name of the Service Provider (e.g. exampleservice.example).
+
+|*Service Provider Name*
+|String
+|providerName
+|(REQUIRED) The name of the Service Provider, suitable for display to the user. +
+
+The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
+
+
+|*Service Id*
+|String
+|serviceId
+|(REQUIRED) The name or identifier of the template.
+This is used in URLs to identify the template and in the scope parameter for OAuth. +
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>).
+
+
+|*Service Name*
+|String
+|serviceName
+|(REQUIRED) The name of the service, suitable for display to the user. +
+
+The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
+
+
+|*Version*
+|Integer
+|version
+|(OPTIONAL)
+If present this represents a version of the template and SHOULD be changed with each update of the template content. This opaque value is mainly informational to improve communication and transparency between providers. +
+
+The value MUST conform to the `dc-version` syntax (see <<terminology>>). +
+
+This is a strict subset of the `"JSON number"`: a positive integer with no leading zeros, no fractional part, and no exponent part.
+
+|*Logo*
+|String
+|logoUrl
+|(OPTIONAL) A graphical logo representing the Service Provider and/or Service for use in any web-based flow. If present this MAY be displayed to the user on the DNS Provider consent UX. +
+
+When present, the value MUST be a valid URI <<RFC3986>> with scheme `"https"`.
+
+|*Description*
+|String
+|description
+|(OPTIONAL) A textual description of what this template does, intended for developer reference. This value is not intended for display to the end user. +
+
+The value MUST conform to the `dc-description-text` syntax (see <<terminology>>).
+
+
+|*Variable Description*
+|String
+|variableDescription
+|(OPTIONAL) A textual description of the template variables, intended for developer reference. This value is not intended for display to the end user. +
+
+The value MUST conform to the `dc-description-text` syntax (see <<terminology>>).
+
+
+|*Synchronous Block*
+|Boolean
+|syncBlock
+|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. +
+
+The default is `"false"`.
+
+|*Shared*
+|Boolean
+|shared
+|(OPTIONAL)
+This flag has been deprecated. It used to indicate that the template allowed a dynamic `"providerName"` on the query string. It is replaced with the `"sharedProviderName"` flag in v2.2 of the spec.
+
+|*Shared Provider Name*
+|Boolean
+|sharedProviderName
+|(OPTIONAL) When `"true"`, indicates that the caller MAY supply an additional `"providerName"` parameter at apply time. +
+
+The default is `"false"`. +
+
+For backward compatibility with DNS Providers prior to v2.2, it is RECOMMENDED that the deprecated `"shared"` flag also be set.
+
+|*Shared Service Name*
+|Boolean
+|sharedServiceName
+|(OPTIONAL) When `"true"`, indicates that the caller MAY supply an additional `"serviceName"` parameter at apply time. +
+
+The default is `"false"`.
+
+|*Synchronous Public Key Domain*
+|String
+|syncPubKeyDomain
+|(OPTIONAL) The domain name under which the Service Provider's public signing key TXT record is published. When present, this field signals that digital signing is required for synchronous apply requests. +
+
+The value MUST conform to the `dc-pubkey-domain` syntax (see <<terminology>>).
+
+
+|*Synchronous Redirect Domains*
+|String
+|syncRedirectDomain
+|(OPTIONAL) A comma-separated list of domain names to which the DNS Provider is permitted to send the post-apply redirect in the synchronous flow. +
+
+The value MUST conform to the `"dc-host-list"` syntax (see <<terminology>>).
+
+
+|[[multiInstance]]*Multiple Instance*
+|Boolean
+|multiInstance
+|(OPTIONAL) When `"true"`, indicates that the template is designed to be applied multiple times to the same domain and host. +
+
+The default is `"false"`.
+
+|*Warn Phishing*
+|Boolean
+|warnPhishing
+|(OPTIONAL) When `"true"`, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing. +
+
+The default is `"false"`.
+
+|*Host Required*
+|Boolean
+|hostRequired
+|(OPTIONAL) When `"true"`, indicates that the template is designed to work only when both `"domain"` and `"host"` apply parameters are provided, for example when the template contains a CNAME record targeted at the fully qualified domain name. +
+
+The default is `"false"`.
+
+|*Template Records*
+|Array of Template Records
+|records
+|(REQUIRED) A list of records for the template.
+|=======================================================================
+
+[[template-record]]
+=== Template Record
+
+Each template record is an entry that contains a type and several
+other values depending on the type.
+
+Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <<variables>>). Variables are replaced with values when the template is applied.
+
+
+Each record MUST contain the following elements unless otherwise specified.
+
+[cols=",,,",options="header",title="properties of the template record definition"]
+|=======================================================================
+|Data Element
+|Type
+|Key
+|Description
+
+|*Type*
+|enum
+|type
+|(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
+
+Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM. +
+The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV. +
+The DNS Provider SHOULD support SPFM record for high interoperability with existing templates +
+ +
+All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL. +
+
+The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
+
+
+|*Group ID*
+|String
+|groupId
+|(OPTIONAL)
+This parameter identifies the group the record belongs to when applying changes.
+
+The value MUST conform to the `dc-id` syntax (see <<terminology>>) and MUST NOT contain variable expressions.
+
+
+|*Essential*
+|enum
+|essential
+|(OPTIONAL)
+This parameter indicates how the record is treated during conflict detection with
+existing templates. +
+
+If the DNS Provider is not implementing applied template state in DNS this is ignored. +
+
+Always (default) - record MUST be applied and kept with the template +
+
+OnApply - record MUST be applied but can be later removed without dropping the whole
+template +
+
+The value MUST conform to the `dc-essential` syntax (see <<terminology>>). +
+
+If omitted, the value MUST be assumed to be `"Always"`.
+
+|*Host*
+|String
+|host
+|
+(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values. +
+
+This value is relative to the applied host and domain, unless trailed by a ".". +
+
+A value of empty or `"@"` indicates the root of the applied host and domain. In other words `"[host.]example.com."`. +
+
+When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
+|*Name*
+|String
+|name
+|The name for the SRV record. +
+
+This value is relative to the applied host and domain. A value of empty or `"@"` indicates the root of the applied host and domain. +
+
+When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
+|[[pointsto-record]]*Points To*
+|String
+|pointsTo
+|
+The pointsTo location for A, AAAA, CNAME, NS and MX records. +
+
+A value of empty or @ indicates the host and domain name being applied or [host.]example.com +
+
+When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+
+|*TTL*
+|Int or string repr. of Int
+|ttl
+|The time-to-live for the record in DNS. Valid
+for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
+This SHOULD NOT contain variables unless absolutely necessary. +
+
+When used in a template definition, the value MUST conform to the `dc-ttl-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-ttl-value` syntax.
+
+This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
+
+Support of variables in this field is OPTIONAL for DNS Provider.
+
+|*Data*
+|String
+|data
+|
+The data for a TXT record in DNS.
+A value of empty or `"@"` indicates the host and domain name being applied (i.e., `"[host.]example.com"`). +
+
+For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. It MUST NOT be present in a template record for any record type that has type-specific data fields defined in this specification.
+
+|*TXT Conflict Matching Mode*
+|String
+|txtConflictMatchingMode
+|Describes how conflicts on the TXT record are detected. Possible values are
+None, All, or Prefix. <<record-types-conflicts, See below>>. +
+
+The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
+
+If omitted, the value MUST be assumed to be `"None"`.
+
+|*TXT Conflict Matching Prefix*
+|String
+|txtConflictMatchingPrefix
+|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<record-types-conflicts, See below>>. +
+
+The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
+
+|*Priority*
+|Int or string repr. of Int
+|priority
+|The priority for an MX or SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
+
+Support of variables in this field is OPTIONAL for DNS Provider.
+
+|*Weight*
+|Int or string repr. of Int
+|weight
+|The weight for the SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
+
+Support of variables in this field is OPTIONAL for DNS Provider.
+
+|*Port*
+|Int or string repr. of Int
+|port
+|The port for the SRV record. +
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
+
+The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>. +
+
+Support of variables in this field is OPTIONAL for DNS Provider.
+
+|*Protocol*
+|String
+|protocol
+|The protocol for the SRV record. +
+
+The value MUST conform to the `dc-srv-protocol` syntax (see <<terminology>>).
+
+|*Service*
+|String
+|service
+|The symbolic service name for the SRV record. +
+
+The value MUST conform to the `dc-srv-service` syntax (see <<terminology>>).
+
+|*Target*
+|String
+|target
+|The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
+
+When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
+
+After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
+
+|[[spf-rules]]*SPF Rules*
+|String
+|spfRules
+|These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
+The value MUST contain only mechanism and modifier terms as defined in <<RFC7208>> Section 5,
+excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
+The DNS Provider MUST validate the syntax before merging.
+
+|=======================================================================
+
+The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
+
+[cols=",",options="header",title="Fields per record type"]
+|=======================================================================
+|Type|Required fields
+
+|`"A"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"AAAA"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"CNAME"`|`"host"`, `"pointsTo"`, `"ttl"` (`"host"` MUST NOT be `"@"` or empty unless `"hostRequired"` is `"true"` in the template)
+
+|`"NS"`|`"host"`, `"pointsTo"`, `"ttl"`
+
+|`"TXT"`|`"host"`, `"data"`, `"ttl"`, `"txtConflictMatchingMode"`, `"txtConflictMatchingPrefix"`
+
+|`"MX"`|`"host"`, `"pointsTo"`, `"ttl"`, `"priority"`
+
+|`"SRV"`|`"name"`, `"target"`, `"ttl"`, `"priority"`, `"protocol"`, `"service"`, `"weight"`, `"port"`
+
+|`"SPFM"`|`"host"`, `"spfRules"`
+
+|other types|`"host"`, `"data"`, `"ttl"`
+
+|=======================================================================
+
+=== Template Considerations
+
+[[template-scope]]
+==== Template Scope
+
+Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. For synchronous operations, the `"host"` value is specified in the URL. For asynchronous operations, permissions are granted for specific `"host"` values, whose value is later specified when applying the template.
+
+The template's `"host"` or `"name"` field values are interpreted relative to this scope, as described in <<host-name-rendering>>.
+
+==== Sub Domains
+
+The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection for asynchronous (OAuth) flows.
+
+To add a record at the Zone Apex even when a Sub Domain is specified in the apply request, the template `"host"` field value `"%domain%."` MAY be used, which resolves to the absolute Zone Apex name regardless of the `"host"` parameter.
+
+When a template is not applicable at the Zone Apex — for example because it contains a CNAME record or any other record type that is incompatible with Apex placement — the `"hostRequired"` flag SHOULD be set to `"true"` in the template definition (see <<template-definition, hostRequired>>).
+
+==== Variable Scope Minimisation
+
+It is noted that as a best practice the variable portions SHOULD be constrained to as small as possible a portion of the resulting DNS record.
+
+For example, say a Service Provider requires a CNAME of one of three values for their users: `"s01.example.com"`, `"s02.example.com"`, and `"s03.example.com"`.
+
+The value in the template could simply contain `"%servercluster%"`, and the fully qualified string passed in. Alternatively, the value in the template could contain `"%var%.example.com"` and a value of `"01"`, `"02"`, or `"03"` passed in. By placing more fixed data into the template, the template is less prone to error or misuse and allows better review of intent by the DNS Provider when onboarding the template.
+
+[[pubkey-publication]]
+=== Public Key Publication
+
+The Service Provider MUST publish their public signing key in one or more
+DNS TXT records at the host formed by prepending the `"key"` apply
+parameter value as a label to the `"syncPubKeyDomain"` template field
+value.
+
+Each TXT record MUST conform to the following grammar:
+
+[source,abnf]
+----
+dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
+dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
+                   / ( "d" "=" dc-frag-data )
+                   / ( "a" "=" dc-alg-id )
+                   / ( "t" "=" dc-key-type )
+
+dc-frag-index     =  1*DIGIT
+                   ; positive decimal integer;
+                   ; used for p=
+dc-frag-data      =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
+                   ; standard base64 per RFC 4648;
+                   ; used for d=
+dc-alg-id         =  1*( ALPHA / DIGIT / "-" )
+                   ; JWS algorithm identifier per RFC 7518;
+                   ; used for a=
+dc-key-type       =  1*( ALPHA / DIGIT / "-" )
+                   ; public key format identifier;
+                   ; used for t=
+----
+
+[cols=",,",options="header",title="Properties of the public key TXT record"]
+|=======================================================================
+|Property
+|Key
+|Description
+
+|*Fragment Index*
+|p
+|(REQUIRED) The sequence number of this key fragment. +
+
+The value MUST conform to the `dc-frag-index` rule above: a positive decimal integer. +
+
+Fragments MUST be reassembled in ascending numeric order of `"p"`.
+
+|*Fragment Payload*
+|d
+|(REQUIRED) A Fragment of base64-encoded key material. +
+
+The value MUST conform to the `dc-frag-data` rule above: standard base64 encoding per <<RFC4648>>.
+
+|*Signing Algorithm*
+|a
+|(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
+
+The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
+
+If omitted, MUST be assumed to be `"RS256"`. +
+
+Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
+
+|*Public Key Format*
+|t
+|(OPTIONAL) The format of the public key. +
+
+The value MUST conform to the `dc-key-type` rule above. +
+
+If omitted, MUST be assumed to be `"x509"`.
+|=======================================================================
+
+To allow for key rotation or use of multiple keys, the Service Provider
+MAY publish key records at multiple hosts within `"syncPubKeyDomain"`.
+The `"key"` apply parameter identifies which host to query for each
+request and MUST be included in the signed apply request.
+
+To account for DNS record size limits, a public key MAY be split across
+multiple TXT records at the same host. All fragments MUST be reassembled
+in ascending numeric order of `"p"` before use.
+The values `"a"` and '"d"' MUST be equal for all such TXT records on the
+same host. 
+
+Given the public key (line breaks for brevity):
+[source]
+----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
+4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
++HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
+NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
+tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
+2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
+----
+
+Published at `"_dcpubkeyv1.<syncPubKeyDomain>"` as (line breaks for brevity):
+
+.Example: public key published as DNS TXT records
+====
+[source]
+----
+p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
+4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
+IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
+
+p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
+dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
+
+p=3,a=RS256,d=weDjXrJwIDAQAB
+----
+====
+
 [[dns-provider-discovery]]
 == DNS Provider Discovery
 
@@ -1598,526 +2118,6 @@ DNS verification MUST be treated as the authoritative signal of success. The rel
 Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
 
 To minimise delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.
-
-== Domain Connect Objects and Templates
-
-[[template-definition]]
-=== Template Definition
-
-A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.
-
-[cols=",,,",options="header",title="properties of the template definition"]
-|=======================================================================
-|Data Element
-|Type
-|Key
-|Description
-
-|*Service Provider Id*
-|String
-|providerId
-|(REQUIRED) The unique identifier of the Service Provider that created this template. This is used in the URLs to identify the Service Provider. +
-
-The value MUST conform to the `dc-id` syntax (see <<terminology>>). +
-
-To ensure non-coordinated uniqueness, this SHOULD be the domain name of the Service Provider (e.g. exampleservice.example).
-
-|*Service Provider Name*
-|String
-|providerName
-|(REQUIRED) The name of the Service Provider, suitable for display to the user. +
-
-The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
-
-
-|*Service Id*
-|String
-|serviceId
-|(REQUIRED) The name or identifier of the template.
-This is used in URLs to identify the template and in the scope parameter for OAuth. +
-
-The value MUST conform to the `dc-id` syntax (see <<terminology>>).
-
-
-|*Service Name*
-|String
-|serviceName
-|(REQUIRED) The name of the service, suitable for display to the user. +
-
-The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
-
-
-|*Version*
-|Integer
-|version
-|(OPTIONAL)
-If present this represents a version of the template and SHOULD be changed with each update of the template content. This opaque value is mainly informational to improve communication and transparency between providers. +
-
-The value MUST conform to the `dc-version` syntax (see <<terminology>>). +
-
-This is a strict subset of the `"JSON number"`: a positive integer with no leading zeros, no fractional part, and no exponent part.
-
-|*Logo*
-|String
-|logoUrl
-|(OPTIONAL) A graphical logo representing the Service Provider and/or Service for use in any web-based flow. If present this MAY be displayed to the user on the DNS Provider consent UX. +
-
-When present, the value MUST be a valid URI <<RFC3986>> with scheme `"https"`.
-
-|*Description*
-|String
-|description
-|(OPTIONAL) A textual description of what this template does, intended for developer reference. This value is not intended for display to the end user. +
-
-The value MUST conform to the `dc-description-text` syntax (see <<terminology>>).
-
-
-|*Variable Description*
-|String
-|variableDescription
-|(OPTIONAL) A textual description of the template variables, intended for developer reference. This value is not intended for display to the end user. +
-
-The value MUST conform to the `dc-description-text` syntax (see <<terminology>>).
-
-
-|*Synchronous Block*
-|Boolean
-|syncBlock
-|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. +
-
-The default is `"false"`.
-
-|*Shared*
-|Boolean
-|shared
-|(OPTIONAL)
-This flag has been deprecated. It used to indicate that the template allowed a dynamic `"providerName"` on the query string. It is replaced with the `"sharedProviderName"` flag in v2.2 of the spec.
-
-|*Shared Provider Name*
-|Boolean
-|sharedProviderName
-|(OPTIONAL) When `"true"`, indicates that the caller MAY supply an additional `"providerName"` parameter at apply time. +
-
-The default is `"false"`. +
-
-For backward compatibility with DNS Providers prior to v2.2, it is RECOMMENDED that the deprecated `"shared"` flag also be set.
-
-|*Shared Service Name*
-|Boolean
-|sharedServiceName
-|(OPTIONAL) When `"true"`, indicates that the caller MAY supply an additional `"serviceName"` parameter at apply time. +
-
-The default is `"false"`.
-
-|*Synchronous Public Key Domain*
-|String
-|syncPubKeyDomain
-|(OPTIONAL) The domain name under which the Service Provider's public signing key TXT record is published. When present, this field signals that digital signing is required for synchronous apply requests. +
-
-The value MUST conform to the `dc-pubkey-domain` syntax (see <<terminology>>).
-
-
-|*Synchronous Redirect Domains*
-|String
-|syncRedirectDomain
-|(OPTIONAL) A comma-separated list of domain names to which the DNS Provider is permitted to send the post-apply redirect in the synchronous flow. +
-
-The value MUST conform to the `"dc-host-list"` syntax (see <<terminology>>).
-
-
-|[[multiInstance]]*Multiple Instance*
-|Boolean
-|multiInstance
-|(OPTIONAL) When `"true"`, indicates that the template is designed to be applied multiple times to the same domain and host. +
-
-The default is `"false"`.
-
-|*Warn Phishing*
-|Boolean
-|warnPhishing
-|(OPTIONAL) When `"true"`, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing. +
-
-The default is `"false"`.
-
-|*Host Required*
-|Boolean
-|hostRequired
-|(OPTIONAL) When `"true"`, indicates that the template is designed to work only when both `"domain"` and `"host"` apply parameters are provided, for example when the template contains a CNAME record targeted at the fully qualified domain name. +
-
-The default is `"false"`.
-
-|*Template Records*
-|Array of Template Records
-|records
-|(REQUIRED) A list of records for the template.
-|=======================================================================
-
-[[template-record]]
-=== Template Record
-
-Each template record is an entry that contains a type and several
-other values depending on the type.
-
-Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <<variables>>). Variables are replaced with values when the template is applied.
-
-
-Each record MUST contain the following elements unless otherwise specified.
-
-[cols=",,,",options="header",title="properties of the template record definition"]
-|=======================================================================
-|Data Element
-|Type
-|Key
-|Description
-
-|*Type*
-|enum
-|type
-|(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
-
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM. +
-The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV. +
-The DNS Provider SHOULD support SPFM record for high interoperability with existing templates +
- +
-All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL. +
-
-The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
-
-
-|*Group ID*
-|String
-|groupId
-|(OPTIONAL)
-This parameter identifies the group the record belongs to when applying changes.
-
-The value MUST conform to the `dc-id` syntax (see <<terminology>>) and MUST NOT contain variable expressions.
-
-
-|*Essential*
-|enum
-|essential
-|(OPTIONAL)
-This parameter indicates how the record is treated during conflict detection with
-existing templates. +
-
-If the DNS Provider is not implementing applied template state in DNS this is ignored. +
-
-Always (default) - record MUST be applied and kept with the template +
-
-OnApply - record MUST be applied but can be later removed without dropping the whole
-template +
-
-The value MUST conform to the `dc-essential` syntax (see <<terminology>>). +
-
-If omitted, the value MUST be assumed to be `"Always"`.
-
-|*Host*
-|String
-|host
-|
-(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values. +
-
-This value is relative to the applied host and domain, unless trailed by a ".". +
-
-A value of empty or `"@"` indicates the root of the applied host and domain. In other words `"[host.]example.com."`. +
-
-When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
-
-|*Name*
-|String
-|name
-|The name for the SRV record. +
-
-This value is relative to the applied host and domain. A value of empty or `"@"` indicates the root of the applied host and domain. +
-
-When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
-
-|[[pointsto-record]]*Points To*
-|String
-|pointsTo
-|
-The pointsTo location for A, AAAA, CNAME, NS and MX records. +
-
-A value of empty or @ indicates the host and domain name being applied or [host.]example.com +
-
-When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
-
-|*TTL*
-|Int or string repr. of Int
-|ttl
-|The time-to-live for the record in DNS. Valid
-for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
-This SHOULD NOT contain variables unless absolutely necessary. +
-
-When used in a template definition, the value MUST conform to the `dc-ttl-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-ttl-value` syntax.
-
-This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Data*
-|String
-|data
-|
-The data for a TXT record in DNS.
-A value of empty or `"@"` indicates the host and domain name being applied (i.e., `"[host.]example.com"`). +
-
-For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. It MUST NOT be present in a template record for any record type that has type-specific data fields defined in this specification.
-
-|*TXT Conflict Matching Mode*
-|String
-|txtConflictMatchingMode
-|Describes how conflicts on the TXT record are detected. Possible values are
-None, All, or Prefix. <<record-types-conflicts, See below>>. +
-
-The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
-
-If omitted, the value MUST be assumed to be `"None"`.
-
-|*TXT Conflict Matching Prefix*
-|String
-|txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<record-types-conflicts, See below>>. +
-
-The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
-
-|*Priority*
-|Int or string repr. of Int
-|priority
-|The priority for an MX or SRV record. +
-
-When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Weight*
-|Int or string repr. of Int
-|weight
-|The weight for the SRV record. +
-
-When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Port*
-|Int or string repr. of Int
-|port
-|The port for the SRV record. +
-
-When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
-
-The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>. +
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Protocol*
-|String
-|protocol
-|The protocol for the SRV record. +
-
-The value MUST conform to the `dc-srv-protocol` syntax (see <<terminology>>).
-
-|*Service*
-|String
-|service
-|The symbolic service name for the SRV record. +
-
-The value MUST conform to the `dc-srv-service` syntax (see <<terminology>>).
-
-|*Target*
-|String
-|target
-|The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
-
-When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
-
-After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
-
-|[[spf-rules]]*SPF Rules*
-|String
-|spfRules
-|These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
-The value MUST contain only mechanism and modifier terms as defined in <<RFC7208>> Section 5,
-excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
-The DNS Provider MUST validate the syntax before merging.
-
-|=======================================================================
-
-The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
-
-[cols=",",options="header",title="Fields per record type"]
-|=======================================================================
-|Type|Required fields
-
-|`"A"`|`"host"`, `"pointsTo"`, `"ttl"`
-
-|`"AAAA"`|`"host"`, `"pointsTo"`, `"ttl"`
-
-|`"CNAME"`|`"host"`, `"pointsTo"`, `"ttl"` (`"host"` MUST NOT be `"@"` or empty unless `"hostRequired"` is `"true"` in the template)
-
-|`"NS"`|`"host"`, `"pointsTo"`, `"ttl"`
-
-|`"TXT"`|`"host"`, `"data"`, `"ttl"`, `"txtConflictMatchingMode"`, `"txtConflictMatchingPrefix"`
-
-|`"MX"`|`"host"`, `"pointsTo"`, `"ttl"`, `"priority"`
-
-|`"SRV"`|`"name"`, `"target"`, `"ttl"`, `"priority"`, `"protocol"`, `"service"`, `"weight"`, `"port"`
-
-|`"SPFM"`|`"host"`, `"spfRules"`
-
-|other types|`"host"`, `"data"`, `"ttl"`
-
-|=======================================================================
-
-=== Template Considerations
-
-[[template-scope]]
-==== Template Scope
-
-Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. For synchronous operations, the `"host"` value is specified in the URL. For asynchronous operations, permissions are granted for specific `"host"` values, whose value is later specified when applying the template.
-
-The template's `"host"` or `"name"` field values are interpreted relative to this scope, as described in <<host-name-rendering>>.
-
-==== Sub Domains
-
-The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection for asynchronous (OAuth) flows.
-
-To add a record at the Zone Apex even when a Sub Domain is specified in the apply request, the template `"host"` field value `"%domain%."` MAY be used, which resolves to the absolute Zone Apex name regardless of the `"host"` parameter.
-
-When a template is not applicable at the Zone Apex — for example because it contains a CNAME record or any other record type that is incompatible with Apex placement — the `"hostRequired"` flag SHOULD be set to `"true"` in the template definition (see <<template-definition, hostRequired>>).
-
-==== Variable Scope Minimisation
-
-It is noted that as a best practice the variable portions SHOULD be constrained to as small as possible a portion of the resulting DNS record.
-
-For example, say a Service Provider requires a CNAME of one of three values for their users: `"s01.example.com"`, `"s02.example.com"`, and `"s03.example.com"`.
-
-The value in the template could simply contain `"%servercluster%"`, and the fully qualified string passed in. Alternatively, the value in the template could contain `"%var%.example.com"` and a value of `"01"`, `"02"`, or `"03"` passed in. By placing more fixed data into the template, the template is less prone to error or misuse and allows better review of intent by the DNS Provider when onboarding the template.
-
-[[pubkey-publication]]
-=== Public Key Publication
-
-The Service Provider MUST publish their public signing key in one or more
-DNS TXT records at the host formed by prepending the `"key"` apply
-parameter value as a label to the `"syncPubKeyDomain"` template field
-value.
-
-Each TXT record MUST conform to the following grammar:
-
-[source,abnf]
-----
-dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
-dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
-                   / ( "d" "=" dc-frag-data )
-                   / ( "a" "=" dc-alg-id )
-                   / ( "t" "=" dc-key-type )
-
-dc-frag-index     =  1*DIGIT
-                   ; positive decimal integer;
-                   ; used for p=
-dc-frag-data      =  1*( ALPHA / DIGIT / "+" / "/" / "=" )
-                   ; standard base64 per RFC 4648;
-                   ; used for d=
-dc-alg-id         =  1*( ALPHA / DIGIT / "-" )
-                   ; JWS algorithm identifier per RFC 7518;
-                   ; used for a=
-dc-key-type       =  1*( ALPHA / DIGIT / "-" )
-                   ; public key format identifier;
-                   ; used for t=
-----
-
-[cols=",,",options="header",title="Properties of the public key TXT record"]
-|=======================================================================
-|Property
-|Key
-|Description
-
-|*Fragment Index*
-|p
-|(REQUIRED) The sequence number of this key fragment. +
-
-The value MUST conform to the `dc-frag-index` rule above: a positive decimal integer. +
-
-Fragments MUST be reassembled in ascending numeric order of `"p"`.
-
-|*Fragment Payload*
-|d
-|(REQUIRED) A Fragment of base64-encoded key material. +
-
-The value MUST conform to the `dc-frag-data` rule above: standard base64 encoding per <<RFC4648>>.
-
-|*Signing Algorithm*
-|a
-|(OPTIONAL) The JWS algorithm identifier for the signing algorithm. +
-
-The value MUST conform to the `dc-alg-id` rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <<RFC7518>>. +
-
-If omitted, MUST be assumed to be `"RS256"`. +
-
-Support for `"RS256"` is MANDATORY for both DNS Providers and Service Providers.
-
-|*Public Key Format*
-|t
-|(OPTIONAL) The format of the public key. +
-
-The value MUST conform to the `dc-key-type` rule above. +
-
-If omitted, MUST be assumed to be `"x509"`.
-|=======================================================================
-
-To allow for key rotation or use of multiple keys, the Service Provider
-MAY publish key records at multiple hosts within `"syncPubKeyDomain"`.
-The `"key"` apply parameter identifies which host to query for each
-request and MUST be included in the signed apply request.
-
-To account for DNS record size limits, a public key MAY be split across
-multiple TXT records at the same host. All fragments MUST be reassembled
-in ascending numeric order of `"p"` before use.
-The values `"a"` and '"d"' MUST be equal for all such TXT records on the
-same host. 
-
-Given the public key (line breaks for brevity):
-[source]
-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
-4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
-+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
-NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
-tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
-2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB
-----
-
-Published at `"_dcpubkeyv1.<syncPubKeyDomain>"` as (line breaks for brevity):
-
-.Example: public key published as DNS TXT records
-====
-[source]
-----
-p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
-4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
-IZLNyMfI6qiXnM+HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfy
-
-p=2,a=RS256,d=R/XSEWC5u16EBNvRnNAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1
-dbdRy2opRPQ2FdZpovUgknybq/6FkeDtW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+
-qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8
-
-p=3,a=RS256,d=weDjXrJwIDAQAB
-----
-====
 
 [[template-processing]]
 == Resolving Template Variables

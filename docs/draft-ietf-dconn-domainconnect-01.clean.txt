@@ -415,6 +415,9 @@ Table of Contents
                     /  1*( dc-name-char / named-variable )
                     ; mix of literal chars and %-variables
 
+    dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
+                    ; mix of literal chars and %-variables
+
    ; -- integer fields with optional variable --
 
    dc-ttl-tmpl    =  1*DIGIT / named-variable
@@ -1174,23 +1177,23 @@ Table of Contents
    |*Points To*|String|pointsTo                 |The pointsTo location |
    |           |      |                         |for A, AAAA, CNAME, NS|
    |           |      |                         |and MX records.       |
-   |           |      |                         |A value of empty or @ |
-   |           |      |                         |indicates the host and|
-   |           |      |                         |domain name being     |
-   |           |      |                         |applied or            |
-   |           |      |                         |[host.]example.com    |
    |           |      |                         |When used in a        |
    |           |      |                         |template definition,  |
    |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-pointsto-   |
-   |           |      |                         |tmpl syntax (see      |
+   |           |      |                         |to the "dc-pointsto-  |
+   |           |      |                         |tmpl" syntax for      |
+   |           |      |                         |"CNAME"/"MX" and to   |
+   |           |      |                         |the "dc-pointsto-nat- |
+   |           |      |                         |tmpl" syntax for      |
+   |           |      |                         |A/AAAA/NS (see        |
    |           |      |                         |Section 3).           |
    |           |      |                         |After variable        |
    |           |      |                         |substitution, the     |
    |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3).           |
+   |           |      |                         |conform to the        |
+   |           |      |                         |presentation format of|
+   |           |      |                         |the corresponding     |
+   |           |      |                         |resource record type. |
    +-----------+------+-------------------------+----------------------+
    |*TTL*      |Int or|ttl                      |The time-to-live for  |
    |           |string|                         |the record in DNS.    |
@@ -3138,17 +3141,15 @@ Table of Contents
    "domain=example.com&host=sub1", "%fqdn%" in a template would be
    "sub1.example.com".
 
-   The "@" variable has special meaning, and can be used in the host/
-   name field or in the pointsTo/data field in isolation.
-
-   For the host/name field it is a shortcut for the value "%fqdn%.".
-   The trailing dot here is equal to the DNS master file notation
-   [RFC1035], which indicates the value is absolute.  Without the
-   trailing ".", the value in this field is relative to the
-   [host.]example.com value.
-
-   For the pointsTo/data field it is a shortcut for for the "%fqdn%".
-   The pointsTo and data files are always absolute for these fields.
+   The "@" variable has special meaning, and can be used in the
+   "host"/"name" field or in the "pointsTo" field in isolation.  For the
+   "host"/"name" and "pointsTo" fields it is a shortcut for the value
+   "%fqdn%.".  The trailing dot here is equal to the DNS master file
+   notation [RFC1035], which indicates the value is absolute.  For some
+   record types, like "A" or "AAAA" usage of "@" in pointsTo would not
+   render a valid IP address, therefore MUST NOT be used.  Likewise in
+   "NS" record types it would render a circular delegation therefore
+   MUST NOT be used.
 
 9.2.  Variable substitution
 

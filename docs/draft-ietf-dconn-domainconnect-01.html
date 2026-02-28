@@ -1845,7 +1845,7 @@ li > p:last-of-type:only-child {
 <div id="_0b56576e-a987-a78d-9d33-6c1e875899b9">
 <p id="section-3-9">The following additional ABNF rules are defined in this document and used normatively throughout.<a href="#section-3-9" class="pilcrow">¶</a></p>
 </div>
-<div id="_756b106c-4a0d-7604-1d06-8e078da9fd02">
+<div id="_c5acee20-8b33-9a0e-8477-7e119a9a652c">
 <div class="breakable lang-abnf sourcecode" id="section-3-10">
 <pre>; ---- Identifier rules ----
 
@@ -1964,6 +1964,9 @@ dc-rdata-escape =  "\" ( 3DIGIT / %x21-7E )
  dc-pointsto-tmpl =  template-apex-var
                  ; "@" alone
                  /  1*( dc-name-char / named-variable )
+                 ; mix of literal chars and %-variables
+
+ dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
                  ; mix of literal chars and %-variables
 
 ; -- integer fields with optional variable --
@@ -2387,7 +2390,7 @@ dc-srv-service  =  dc-underscore-label
 </div>
 </section>
 </div>
-<div id="_2270d425-3ac1-c3f4-54f6-6ff889dc14c4">
+<div id="_5686d59b-6685-b17c-2b20-cb202ea679cc">
 <section id="section-6">
       <h2 id="name-domain-connect-objects-and-">
 <a href="#section-6" class="section-number selfRef">6. </a><a href="#name-domain-connect-objects-and-" class="section-name selfRef">Domain Connect Objects and Templates</a>
@@ -2578,7 +2581,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_105fd4aa-73cf-da31-ab18-d99f9b9070b3">
 <p id="section-6.2-3">Each record MUST contain the following elements unless otherwise specified.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
 </div>
-<span id="name-properties-of-the-template-r"></span><div id="_28496e9d-79dd-f8ee-5776-616e197c782f">
+<span id="name-properties-of-the-template-r"></span><div id="_b8e0a42d-3bc2-3d4e-4231-6f912a9c6f3c">
 <table class="center" id="table-2">
           <caption>
 <a href="#table-2" class="selfRef">Table 2</a>:
@@ -2639,7 +2642,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
               <td class="text-left" rowspan="1" colspan="1">String</td>
               <td class="text-left" rowspan="1" colspan="1">pointsTo</td>
-              <td class="text-left" rowspan="1" colspan="1">The pointsTo location for A, AAAA, CNAME, NS and MX records.<br>  A value of empty or @ indicates the host and domain name being applied or [host.]example.com<br>  When used in a template definition, the value MUST conform to the  <code>dc-pointsto-tmpl</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<br>  After variable substitution, the resolved value MUST conform to the  <code>domain-name</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).</td>
+              <td class="text-left" rowspan="1" colspan="1">The pointsTo location for A, AAAA, CNAME, NS and MX records.<br>  When used in a template definition, the value MUST conform to the  <code>"dc-pointsto-tmpl"</code> syntax for <code>"CNAME"</code>/<code>"MX"</code> and to the <code>"dc-pointsto-nat-tmpl"</code> syntax for A/AAAA/NS (see <a href="#terminology" class="auto internal xref">Section 3</a>).<br>  After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
@@ -4583,14 +4586,8 @@ https://connect.dnsprovider.example/v2/domainTemplates/providers
 <div id="_61223692-8f1f-4bac-01d2-9fc7615d7332">
 <p id="section-9.1.2-3">For example, with the query string "domain=example.com&amp;host=", <code>"%fqdn%"</code> in a template would be "example.com", and with "domain=example.com&amp;host=sub1", <code>"%fqdn%"</code> in a template would be "sub1.example.com".<a href="#section-9.1.2-3" class="pilcrow">¶</a></p>
 </div>
-<div id="_71f0c1b9-af19-9ac6-b46b-7d6c2a9117ef">
-<p id="section-9.1.2-4">The <code>"@"</code> variable has special meaning, and can be used in the host/name field or in the pointsTo/data field in isolation.<a href="#section-9.1.2-4" class="pilcrow">¶</a></p>
-</div>
-<div id="_09b1452a-4929-8c89-fdd4-e7f4a08e9573">
-<p id="section-9.1.2-5">For the host/name field it is a shortcut for the value <code>"%fqdn%."</code>. The trailing dot here is equal to the DNS master file notation <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>, which indicates the value is absolute. Without the trailing ".", the value in this field is relative to the [host.]example.com value.<a href="#section-9.1.2-5" class="pilcrow">¶</a></p>
-</div>
-<div id="_a37d98dc-0f0a-6782-7ec2-b114d48e6bbc">
-<p id="section-9.1.2-6">For the pointsTo/data field it is a shortcut for for the <code>"%fqdn%"</code>. The pointsTo and data files are always absolute for these fields.<a href="#section-9.1.2-6" class="pilcrow">¶</a></p>
+<div id="_c1f756d4-6eba-77bb-8eea-f1cc036f16df">
+<p id="section-9.1.2-4">The <code>"@"</code> variable has special meaning, and can be used in the <code>"host"</code>/<code>"name"</code> field or in the <code>"pointsTo"</code> field in isolation. For the <code>"host"</code>/<code>"name"</code> and <code>"pointsTo"</code> fields it is a shortcut for the value <code>"%fqdn%."</code>. The trailing dot here is equal to the DNS master file notation <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span>, which indicates the value is absolute. For some record types, like  <code>"A"</code> or <code>"AAAA"</code> usage of <code>"@"</code> in pointsTo would not render a valid IP address, therefore MUST NOT be used. Likewise in <code>"NS"</code> record types it would render a circular delegation therefore MUST NOT be used.<a href="#section-9.1.2-4" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>

@@ -286,6 +286,9 @@ Table of Contents
    "service-name":  "Service Name" as defined in Section 5.1 of
       [RFC6335].
 
+   "presentation format":  "Presentation Format" as defined in Section 1
+      of [RFC9499].
+
    The following additional syntax rules are defined in this document
    and used normatively throughout.
 
@@ -387,6 +390,19 @@ Table of Contents
    dc-conflict-prefix =  1*(%x21-7E)
                    ; non-empty printable ASCII (U+0021..U+007E);
                    ; no variable expressions permitted
+
+   ; -- property value field --
+
+   dc-prop-value  =  *( dc-prop-char / dc-rdata-escape )
+                   ; DNS presentation format (RFC 9499);
+
+   dc-prop-char   =  %x20-7E
+                   ; space and all printable ASCII (U+0020..U+007E);
+
+   dc-rdata-escape =  "\" ( 3DIGIT / %x21-7E )
+                    ; RFC 1035 Section 5.1 octet escape:
+                    ; "\DDD" three decimal digits, or
+                    ; "\" followed by any printable non-digit character
 
    ; -- host / name / pointsTo / target fields --
 
@@ -1262,27 +1278,32 @@ Table of Contents
    |           |      |                         |OPTIONAL for DNS      |
    |           |      |                         |Provider.             |
    +-----------+------+-------------------------+----------------------+
-   |*Data*     |String|data                     |The data for a TXT    |
-   |           |      |                         |record in DNS.  A     |
-   |           |      |                         |value of empty or "@" |
-   |           |      |                         |indicates the host and|
-   |           |      |                         |domain name being     |
-   |           |      |                         |applied (i.e.,        |
-   |           |      |                         |"[host.]example.com").|
-   |           |      |                         |For any unspecified   |
-   |           |      |                         |record type, this     |
-   |           |      |                         |field contains the    |
-   |           |      |                         |canonical presentation|
-   |           |      |                         |format of the record, |
-   |           |      |                         |following [RFC3597]   |
-   |           |      |                         |generic or type-      |
-   |           |      |                         |specific encoding.  It|
-   |           |      |                         |MUST NOT be present in|
-   |           |      |                         |a template record for |
-   |           |      |                         |any record type that  |
-   |           |      |                         |has type-specific data|
+   |*Data*     |String|data                     |For TXT record "data" |
+   |           |      |                         |contains TXT-DATA     |
+   |           |      |                         |[RFC1035] in          |
+   |           |      |                         |presentation format.  |
+   |           |      |                         |For a single          |
+   |           |      |                         |"<character-string>"  |
+   |           |      |                         |the heading and       |
+   |           |      |                         |trailing " character  |
+   |           |      |                         |MAY be omitted even if|
+   |           |      |                         |space character is    |
+   |           |      |                         |present in the value. |
+   |           |      |                         |"data" MUST NOT be    |
+   |           |      |                         |present in a template |
+   |           |      |                         |record for any other  |
+   |           |      |                         |record type that has  |
+   |           |      |                         |type-specific data    |
    |           |      |                         |fields defined in this|
-   |           |      |                         |specification.        |
+   |           |      |                         |specification.  For   |
+   |           |      |                         |any unspecified record|
+   |           |      |                         |type, this field      |
+   |           |      |                         |contains the canonical|
+   |           |      |                         |presentation format of|
+   |           |      |                         |the record, following |
+   |           |      |                         |[RFC3597] generic or  |
+   |           |      |                         |type-specific         |
+   |           |      |                         |encoding.             |
    +-----------+------+-------------------------+----------------------+
    |*TXT       |String|txtConflictMatchingMode  |Describes how         |
    |Conflict   |      |                         |conflicts on the TXT  |
@@ -2019,118 +2040,129 @@ Table of Contents
 
 8.3.2.  Parameters/properties
 
-   +=============+==============+======================================+
-   | Property    | Request      | Description                          |
-   |             | Parameter    |                                      |
-   +=============+==============+======================================+
-   | *URL Sync   | urlSyncUX    | (REQUIRED) The base URL of the DNS   |
-   | UX*         |              | Provider synchronous UX endpoint,    |
-   |             |              | taken from the "urlSyncUX" field     |
-   |             |              | of the settings endpoint response    |
-   |             |              | (see Section 7).                     |
-   |             |              | This MUST be a valid URI [RFC3986]   |
-   |             |              | with scheme "https"                  |
-   +-------------+--------------+--------------------------------------+
-   | *Service    | providerId   | (REQUIRED) Identifier of the         |
-   | Provider    |              | Service Provider of the template     |
-   | Id*         |              | to be applied.  The value MUST       |
-   |             |              | conform to the dc-id syntax (see     |
-   |             |              | Section 3).                          |
-   +-------------+--------------+--------------------------------------+
-   | *Service    | serviceId    | (REQUIRED) Identifier of the         |
-   | Id*         |              | template to be applied.  The value   |
-   |             |              | MUST conform to the dc-id syntax     |
-   |             |              | (see Section 3).                     |
-   +-------------+--------------+--------------------------------------+
-   | *Domain*    | domain       | (REQUIRED) The domain name being     |
-   |             |              | configured.  This is the Zone Apex   |
-   |             |              | (the registered domain or            |
-   |             |              | delegated zone).  The value MUST     |
-   |             |              | conform to the domain-name syntax    |
-   |             |              | (see Section 3).                     |
-   +-------------+--------------+--------------------------------------+
-   | *Host*      | host         | (OPTIONAL) The host name of the      |
-   |             |              | Sub Domain within the zone           |
-   |             |              | identified by "domain".              |
-   |             |              | When present, the value MUST be a    |
-   |             |              | single name conforming to domain-    |
-   |             |              | name (see Section 3) or an empty     |
-   |             |              | string.                              |
-   +-------------+--------------+--------------------------------------+
-   | *Redirect   | redirect_uri | (OPTIONAL) The location to direct    |
-   | URI*        |              | the user agent to upon successful    |
-   |             |              | authorization or upon error.         |
-   |             |              | The value MUST be an absolute URI    |
-   |             |              | conforming to [RFC3986].             |
-   +-------------+--------------+--------------------------------------+
-   | *State*     | state        | (OPTIONAL) A random and unique       |
-   |             |              | string passed along to prevent       |
-   |             |              | CSRF, or to pass back state.         |
-   |             |              | The value MUST conform to the        |
-   |             |              | "state" syntax (see Section 3).      |
-   +-------------+--------------+--------------------------------------+
-   | *Name/Value | properties   | (REQUIRED) Variable values to be     |
-   | Pairs*      |              | substituted into the template.       |
-   |             |              | Each parameter name MUST             |
-   |             |              | correspond to a variable name        |
-   |             |              | defined in the template and MUST     |
-   |             |              | conform to the variable-name         |
-   |             |              | syntax (see Section 3).              |
-   |             |              | The parameter value corresponds to   |
-   |             |              | the value that will be used when     |
-   |             |              | applying the template.               |
-   +-------------+--------------+--------------------------------------+
-   | *Provider   | providerName | (OPTIONAL) Additional display text   |
-   | Name*       |              | for the template "providerName",     |
-   |             |              | provided by the caller.  If          |
-   |             |              | "sharedProviderName" is not set in   |
-   |             |              | the template, this parameter MUST    |
-   |             |              | NOT be set.  Note: this used to be   |
-   |             |              | controlled by the "shared"           |
-   |             |              | attribute in the template, which     |
-   |             |              | has been deprecated.                 |
-   |             |              | The value MUST conform to the dc-    |
-   |             |              | display-name syntax (see             |
-   |             |              | Section 3).                          |
-   +-------------+--------------+--------------------------------------+
-   | *Service    | serviceName  | (OPTIONAL) Additional display text   |
-   | Name*       |              | for the template "serviceName",      |
-   |             |              | provided by the caller.  If          |
-   |             |              | "sharedServiceName" is not set in    |
-   |             |              | the template, this parameter MUST    |
-   |             |              | NOT be set.                          |
-   |             |              | The value MUST conform to the dc-    |
-   |             |              | display-name syntax (see             |
-   |             |              | Section 3).                          |
-   +-------------+--------------+--------------------------------------+
-   | *Group ID*  | groupId      | (OPTIONAL) Specifies the subset of   |
-   |             |              | groups from the template to apply.   |
-   |             |              | The value MUST conform to the dc-    |
-   |             |              | id-list syntax (see Section 3).      |
-   +-------------+--------------+--------------------------------------+
-   | *Signature* | sig          | (OPTIONAL) A digital signature of    |
-   |             |              | the canonical query string.  The     |
-   |             |              | value MUST conform to the dc-sig     |
-   |             |              | syntax (see Section 3):              |
-   |             |              | a standard base64-encoded            |
-   |             |              | [RFC4648] signature, URL-encoded     |
-   |             |              | when carried in the query string.    |
-   |             |              | See the Section 8.3.2.1 below for    |
-   |             |              | the signing procedure.               |
-   +-------------+--------------+--------------------------------------+
-   | *Key*       | key          | (OPTIONAL) The DNS host label        |
-   |             |              | within the syncPubKeyDomain at       |
-   |             |              | which the public key TXT record is   |
-   |             |              | published.                           |
-   |             |              | The value MUST conform to the dc-    |
-   |             |              | key-label syntax (see Section 3):    |
-   |             |              | a single DNS label, either a plain   |
-   |             |              | ACE-form label or an RFC 8552        |
-   |             |              | underscore-prefixed label.           |
-   |             |              | See the Section 8.3.2.1 below.       |
-   +-------------+--------------+--------------------------------------+
+   For "properties" name/value pairs, parameter names and values MUST be
+   URL-decoded (percent-decoded per [RFC3986]) before processing.
 
-    Table 9: URI template parameters of the apply call in the sync flow
+    +=============+==============+===================================+
+    | Property    | Request      | Description                       |
+    |             | Parameter    |                                   |
+    +=============+==============+===================================+
+    | *URL Sync   | urlSyncUX    | (REQUIRED) The base URL of the    |
+    | UX*         |              | DNS Provider synchronous UX       |
+    |             |              | endpoint, taken from the          |
+    |             |              | "urlSyncUX" field of the settings |
+    |             |              | endpoint response (see            |
+    |             |              | Section 7).                       |
+    |             |              | This MUST be a valid URI          |
+    |             |              | [RFC3986] with scheme "https"     |
+    +-------------+--------------+-----------------------------------+
+    | *Service    | providerId   | (REQUIRED) Identifier of the      |
+    | Provider    |              | Service Provider of the template  |
+    | Id*         |              | to be applied.  The value MUST    |
+    |             |              | conform to the dc-id syntax (see  |
+    |             |              | Section 3).                       |
+    +-------------+--------------+-----------------------------------+
+    | *Service    | serviceId    | (REQUIRED) Identifier of the      |
+    | Id*         |              | template to be applied.  The      |
+    |             |              | value MUST conform to the dc-id   |
+    |             |              | syntax (see Section 3).           |
+    +-------------+--------------+-----------------------------------+
+    | *Domain*    | domain       | (REQUIRED) The domain name being  |
+    |             |              | configured.  This is the Zone     |
+    |             |              | Apex (the registered domain or    |
+    |             |              | delegated zone).  The value MUST  |
+    |             |              | conform to the domain-name syntax |
+    |             |              | (see Section 3).                  |
+    +-------------+--------------+-----------------------------------+
+    | *Host*      | host         | (OPTIONAL) The host name of the   |
+    |             |              | Sub Domain within the zone        |
+    |             |              | identified by "domain".           |
+    |             |              | When present, the value MUST be a |
+    |             |              | single name conforming to domain- |
+    |             |              | name (see Section 3) or an empty  |
+    |             |              | string.                           |
+    +-------------+--------------+-----------------------------------+
+    | *Redirect   | redirect_uri | (OPTIONAL) The location to direct |
+    | URI*        |              | the user agent to upon successful |
+    |             |              | authorization or upon error.      |
+    |             |              | The value MUST be an absolute URI |
+    |             |              | conforming to [RFC3986].          |
+    +-------------+--------------+-----------------------------------+
+    | *State*     | state        | (OPTIONAL) A random and unique    |
+    |             |              | string passed along to prevent    |
+    |             |              | CSRF, or to pass back state.      |
+    |             |              | The value MUST conform to the     |
+    |             |              | "state" syntax (see Section 3).   |
+    +-------------+--------------+-----------------------------------+
+    | *Name/Value | properties   | (REQUIRED) Variable values to be  |
+    | Pairs*      |              | substituted into the template.    |
+    |             |              | Each parameter name MUST          |
+    |             |              | correspond to a variable name     |
+    |             |              | defined in the template and MUST  |
+    |             |              | conform to the variable-name      |
+    |             |              | syntax (see Section 3).           |
+    |             |              | Each parameter value MUST conform |
+    |             |              | to the dc-prop-value syntax (see  |
+    |             |              | Section 3), using the DNS         |
+    |             |              | presentation format [RFC9499].    |
+    |             |              | The parameter value corresponds   |
+    |             |              | to the value that will be used    |
+    |             |              | when applying the template.       |
+    +-------------+--------------+-----------------------------------+
+    | *Provider   | providerName | (OPTIONAL) Additional display     |
+    | Name*       |              | text for the template             |
+    |             |              | "providerName", provided by the   |
+    |             |              | caller.  If "sharedProviderName"  |
+    |             |              | is not set in the template, this  |
+    |             |              | parameter MUST NOT be set.  Note: |
+    |             |              | this used to be controlled by the |
+    |             |              | "shared" attribute in the         |
+    |             |              | template, which has been          |
+    |             |              | deprecated.                       |
+    |             |              | The value MUST conform to the dc- |
+    |             |              | display-name syntax (see          |
+    |             |              | Section 3).                       |
+    +-------------+--------------+-----------------------------------+
+    | *Service    | serviceName  | (OPTIONAL) Additional display     |
+    | Name*       |              | text for the template             |
+    |             |              | "serviceName", provided by the    |
+    |             |              | caller.  If "sharedServiceName"   |
+    |             |              | is not set in the template, this  |
+    |             |              | parameter MUST NOT be set.        |
+    |             |              | The value MUST conform to the dc- |
+    |             |              | display-name syntax (see          |
+    |             |              | Section 3).                       |
+    +-------------+--------------+-----------------------------------+
+    | *Group ID*  | groupId      | (OPTIONAL) Specifies the subset   |
+    |             |              | of groups from the template to    |
+    |             |              | apply.                            |
+    |             |              | The value MUST conform to the dc- |
+    |             |              | id-list syntax (see Section 3).   |
+    +-------------+--------------+-----------------------------------+
+    | *Signature* | sig          | (OPTIONAL) A digital signature of |
+    |             |              | the canonical query string.  The  |
+    |             |              | value MUST conform to the dc-sig  |
+    |             |              | syntax (see Section 3):           |
+    |             |              | a standard base64-encoded         |
+    |             |              | [RFC4648] signature, URL-encoded  |
+    |             |              | when carried in the query string. |
+    |             |              | See the Section 8.3.2.1 below for |
+    |             |              | the signing procedure.            |
+    +-------------+--------------+-----------------------------------+
+    | *Key*       | key          | (OPTIONAL) The DNS host label     |
+    |             |              | within the syncPubKeyDomain at    |
+    |             |              | which the public key TXT record   |
+    |             |              | is published.                     |
+    |             |              | The value MUST conform to the dc- |
+    |             |              | key-label syntax (see Section 3): |
+    |             |              | a single DNS label, either a      |
+    |             |              | plain ACE-form label or an RFC    |
+    |             |              | 8552 underscore-prefixed label.   |
+    |             |              | See the Section 8.3.2.1 below.    |
+    +-------------+--------------+-----------------------------------+
+
+      Table 9: URI template parameters of the apply call in the sync
+                                   flow
 
    An example query string:
 
@@ -2434,30 +2466,37 @@ Table of Contents
 
    The following table describes the values of the URI template for the
    request for the OAuth consent flow that must be included unless
-   otherwise indicated
+   otherwise indicated.
+
+   For "properties" name/value pairs, parameter names and values MUST be
+   URL-decoded (percent-decoded per [RFC3986]) before processing.
 
    +===========+===============+=======================================+
    | Property  | Key           | Description                           |
    +===========+===============+=======================================+
-   | *URL      | urlAsyncUX    | (REQUIRED) The base URL of the DNS    |
-   | Async UX* |               | Provider asynchronous UX endpoint,    |
-   |           |               | taken from the "urlAsyncUX" field of  |
-   |           |               | the settings endpoint response (see   |
+   | *URL      | urlAsyncUX    | (REQUIRED) The base URL of the        |
+   | Async UX* |               | DNS Provider asynchronous UX          |
+   |           |               | endpoint, taken from the              |
+   |           |               | "urlAsyncUX" field of the             |
+   |           |               | settings endpoint response (see       |
    |           |               | Section 7).                           |
    +-----------+---------------+---------------------------------------+
-   | *Service  | providerId    | (REQUIRED) Identifier of the Service  |
-   | Provider  |               | Provider of the template to be        |
-   | Id*       |               | applied.  The value MUST conform to   |
-   |           |               | the dc-id syntax (see Section 3).     |
+   | *Service  | providerId    | (REQUIRED) Identifier of the          |
+   | Provider  |               | Service Provider of the template      |
+   | Id*       |               | to be applied.  The value MUST        |
+   |           |               | conform to the dc-id syntax (see      |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Domain*  | domain        | (REQUIRED) The domain name being      |
-   |           |               | configured.  This is the Zone Apex.   |
+   |           |               | configured.  This is the Zone         |
+   |           |               | Apex.                                 |
    |           |               | The value MUST conform to the         |
-   |           |               | domain-name syntax (see Section 3).   |
+   |           |               | domain-name syntax (see               |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
-   | *Host*    | host          | (OPTIONAL) A comma-separated list of  |
-   |           |               | host names upon which the template    |
-   |           |               | may be applied.                       |
+   | *Host*    | host          | (OPTIONAL) A comma-separated list     |
+   |           |               | of host names upon which the          |
+   |           |               | template may be applied.              |
    |           |               | The value MUST conform to the dc-     |
    |           |               | host-list syntax (see Section 3).     |
    +-----------+---------------+---------------------------------------+
@@ -2474,63 +2513,76 @@ Table of Contents
    |           |               | authorization or upon error.          |
    |           |               | The value MUST be an absolute URI     |
    |           |               | conforming to [RFC3986].              |
-   |           |               | The DNS Provider MUST validate the    |
-   |           |               | value against the redirect URIs       |
-   |           |               | registered during onboarding.         |
+   |           |               | The DNS Provider MUST validate        |
+   |           |               | the value against the redirect        |
+   |           |               | URIs registered during                |
+   |           |               | onboarding.                           |
    +-----------+---------------+---------------------------------------+
    | *Response | response_type | (OPTIONAL) If present, the value      |
    | Type*     |               | MUST be the string "code" to          |
-   |           |               | indicate that an authorization code   |
-   |           |               | is being requested, as defined in     |
-   |           |               | Section 3.1.1 of [RFC6749].           |
+   |           |               | indicate that an authorization        |
+   |           |               | code is being requested, as           |
+   |           |               | defined in Section 3.1.1 of           |
+   |           |               | [RFC6749].                            |
    +-----------+---------------+---------------------------------------+
    | *Scope*   | scope         | (REQUIRED) The OAuth scope            |
-   |           |               | identifying the requested templates,  |
-   |           |               | as defined in Section 3.3 of          |
-   |           |               | [RFC6749].                            |
+   |           |               | identifying the requested             |
+   |           |               | templates, as defined in              |
+   |           |               | Section 3.3 of [RFC6749].             |
    |           |               | The value MUST conform to the dc-     |
    |           |               | scope syntax (see Section 3): a       |
-   |           |               | space-separated list of "serviceId"   |
-   |           |               | values, each conforming to dc-id.     |
+   |           |               | space-separated list of               |
+   |           |               | "serviceId" values, each              |
+   |           |               | conforming to dc-id.                  |
    +-----------+---------------+---------------------------------------+
-   | *Provider | providerName  | (OPTIONAL) This parameter allows for  |
-   | Name*     |               | the caller to provide additional      |
-   |           |               | text for display with the template    |
-   |           |               | "providerName".  This text SHOULD be  |
-   |           |               | used to augment the "providerName"    |
-   |           |               | value from the template, not replace  |
+   | *Provider | providerName  | (OPTIONAL) This parameter allows      |
+   | Name*     |               | for the caller to provide             |
+   |           |               | additional text for display with      |
+   |           |               | the template "providerName".          |
+   |           |               | This text SHOULD be used to           |
+   |           |               | augment the "providerName" value      |
+   |           |               | from the template, not replace        |
    |           |               | it.                                   |
    |           |               | The value MUST conform to the dc-     |
-   |           |               | display-name syntax (see Section 3).  |
+   |           |               | display-name syntax (see              |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
-   | *Service  | serviceName   | (OPTIONAL) This parameter allows for  |
-   | Name*     |               | the caller to provide additional      |
-   |           |               | text for display with the template    |
-   |           |               | "serviceName" values.  It SHOULD be   |
-   |           |               | used to augment the "serviceName"     |
+   | *Service  | serviceName   | (OPTIONAL) This parameter allows      |
+   | Name*     |               | for the caller to provide             |
+   |           |               | additional text for display with      |
+   |           |               | the template "serviceName"            |
+   |           |               | values.  It SHOULD be used to         |
+   |           |               | augment the "serviceName"             |
    |           |               | value(s) from the template, not       |
    |           |               | replace them.                         |
    |           |               | The value MUST conform to the dc-     |
-   |           |               | display-name syntax (see Section 3).  |
+   |           |               | display-name syntax (see              |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
-   | *State*   | state         | (OPTIONAL) A random, unique string    |
-   |           |               | passed along to prevent CSRF or to    |
-   |           |               | pass state back to the caller.        |
+   | *State*   | state         | (OPTIONAL) A random, unique           |
+   |           |               | string passed along to prevent        |
+   |           |               | CSRF or to pass state back to the     |
+   |           |               | caller.                               |
    |           |               | The value MUST conform to the         |
    |           |               | "state" syntax as defined in          |
    |           |               | Appendix A of [RFC6749] (see          |
    |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
-   | *Name/    | properties    | (OPTIONAL) Variable values required   |
-   | Value     |               | for conflict detection prior to       |
-   | Pairs*    |               | template application.  Each           |
-   |           |               | parameter name MUST correspond to a   |
-   |           |               | variable name defined in the          |
-   |           |               | template and MUST conform to the      |
-   |           |               | variable-name syntax (see             |
-   |           |               | Section 3).  This includes variables  |
-   |           |               | used in hosts and data in certain     |
-   |           |               | TXT records.                          |
+   | *Name/    | properties    | (OPTIONAL) Variable values            |
+   | Value     |               | required for conflict detection       |
+   | Pairs*    |               | prior to template application.        |
+   |           |               | Each parameter name MUST              |
+   |           |               | correspond to a variable name         |
+   |           |               | defined in the template and MUST      |
+   |           |               | conform to the variable-name          |
+   |           |               | syntax (see Section 3).               |
+   |           |               | Each parameter value MUST conform     |
+   |           |               | to the dc-prop-value syntax (see      |
+   |           |               | Section 3), using the DNS             |
+   |           |               | presentation format [RFC9499].        |
+   |           |               | This includes variables used in       |
+   |           |               | hosts and data in certain TXT         |
+   |           |               | records.                              |
    +-----------+---------------+---------------------------------------+
 
       Table 11: URI template parameters of the authorization end-point
@@ -2765,107 +2817,112 @@ Table of Contents
 
    Calls to apply a template via OAuth require the following parameters
    posted to the above URL unless otherwise indicated.  The DNS Provider
-   MUST accept parameters in query string or body of this post.
+   MUST accept parameters in query string or body of this post.  When
+   "properties" name/value pairs are passed as query string parameters,
+   the names and values MUST be URL-decoded (percent-decoded per
+   [RFC3986]) before processing.
 
    The body is application/json encoded.
 
-   +===========+==============+========================================+
-   | Property  | Key          | Description                            |
-   +===========+==============+========================================+
-   | *URL API* | urlAPI       | (REQUIRED) The base URL of the DNS     |
-   |           |              | Provider API, taken from the           |
-   |           |              | "urlAPI" field of the settings         |
-   |           |              | endpoint response (see Section 7).     |
-   |           |              | The value MUST be an absolute URI      |
-   |           |              | conforming to [RFC3986].               |
-   +-----------+--------------+----------------------------------------+
-   | *Service  | providerId   | (REQUIRED) Identifier of the Service   |
-   | Provider  |              | Provider of the template to be         |
-   | Id*       |              | applied.                               |
-   |           |              | The value MUST conform to the dc-id    |
-   |           |              | syntax (see Section 3).                |
-   +-----------+--------------+----------------------------------------+
-   | *Service  | serviceId    | (REQUIRED) Identifier of the           |
-   | Id*       |              | template to be applied.                |
-   |           |              | The value MUST conform to the dc-id    |
-   |           |              | syntax (see Section 3).                |
-   +-----------+--------------+----------------------------------------+
-   | *Domain*  | domain       | (REQUIRED) The Zone Apex domain name   |
-   |           |              | being configured.                      |
-   |           |              | The value MUST conform to the          |
-   |           |              | domain-name syntax (see Section 3).    |
-   +-----------+--------------+----------------------------------------+
-   | *Host*    | host         | (OPTIONAL) The host name of the Sub    |
-   |           |              | Domain within the zone identified by   |
-   |           |              | "domain".                              |
-   |           |              | When present, the value MUST be a      |
-   |           |              | single name conforming to domain-      |
-   |           |              | name (see Section 3) or an empty       |
-   |           |              | string.                                |
-   +-----------+--------------+----------------------------------------+
-   | *Name/    | *            | (REQUIRED) Variable values to be       |
-   | Value     |              | substituted into the template.  Each   |
-   | Pairs*    |              | parameter name MUST correspond to a    |
-   |           |              | variable name defined in the           |
-   |           |              | template and MUST conform to the       |
-   |           |              | variable-name syntax (see              |
-   |           |              | Section 3).                            |
-   |           |              | The DNS Provider MUST ignore any       |
-   |           |              | parameter not referenced in the        |
-   |           |              | template.                              |
-   +-----------+--------------+----------------------------------------+
-   | *Group    | groupId      | (OPTIONAL) Specifies the subset of     |
-   | ID*       |              | groups from the template to apply.     |
-   |           |              | The value MUST conform to the dc-id-   |
-   |           |              | list syntax (see Section 3).           |
-   +-----------+--------------+----------------------------------------+
-   | *Force*   | force        | (OPTIONAL) Specifies that the          |
-   |           |              | template SHOULD be applied             |
-   |           |              | independently of any conflicts that    |
-   |           |              | may exist on the domain.               |
-   |           |              | The value MUST conform to the dc-      |
-   |           |              | force syntax (see Section 3).          |
-   |           |              | The default when omitted is "0".       |
-   +-----------+--------------+----------------------------------------+
-   | *Provider | providerName | (OPTIONAL) This parameter allows for   |
-   | Name*     |              | the caller to provide additional       |
-   |           |              | context for the "providerName" that    |
-   |           |              | applied the template.  It MAY be       |
-   |           |              | used by DNS Providers that want to     |
-   |           |              | display state regarding which          |
-   |           |              | templates have been applied.  It is    |
-   |           |              | only allowed when the                  |
-   |           |              | "sharedProviderName" attribute is      |
-   |           |              | set in the template being applied.     |
-   |           |              | The value MUST conform to the dc-      |
-   |           |              | display-name syntax (see Section 3).   |
-   +-----------+--------------+----------------------------------------+
-   | *Service  | serviceName  | (OPTIONAL) This parameter allows for   |
-   | Name*     |              | the caller to provide additional       |
-   |           |              | context for the "serviceName" that     |
-   |           |              | applied the template.  It MAY be       |
-   |           |              | used by DNS Providers that want to     |
-   |           |              | display state regarding which          |
-   |           |              | templates have been applied.  It is    |
-   |           |              | only allowed when the                  |
-   |           |              | "sharedServiceName" attribute is set   |
-   |           |              | in the template being applied.         |
-   |           |              | The value MUST conform to the dc-      |
-   |           |              | display-name syntax (see Section 3).   |
-   +-----------+--------------+----------------------------------------+
-   | *Instance | instanceId   | (OPTIONAL) Only applicable to          |
-   | Id*       |              | templates supporting multiple          |
-   |           |              | instances (see multiInstance           |
-   |           |              | (Section 6.1) template property).      |
-   |           |              | Allows for later removal of one        |
-   |           |              | template instance by DNS Providers     |
-   |           |              | storing this information.              |
-   |           |              | The value MUST conform to the dc-id    |
-   |           |              | syntax (see Section 3).                |
-   +-----------+--------------+----------------------------------------+
+   +===========+==============+=======================================+
+   | Property  | Key          | Description                           |
+   +===========+==============+=======================================+
+   | *URL API* | urlAPI       | (REQUIRED) The base URL of the DNS    |
+   |           |              | Provider API, taken from the "urlAPI" |
+   |           |              | field of the settings endpoint        |
+   |           |              | response (see Section 7).             |
+   |           |              | The value MUST be an absolute URI     |
+   |           |              | conforming to [RFC3986].              |
+   +-----------+--------------+---------------------------------------+
+   | *Service  | providerId   | (REQUIRED) Identifier of the Service  |
+   | Provider  |              | Provider of the template to be        |
+   | Id*       |              | applied.                              |
+   |           |              | The value MUST conform to the dc-id   |
+   |           |              | syntax (see Section 3).               |
+   +-----------+--------------+---------------------------------------+
+   | *Service  | serviceId    | (REQUIRED) Identifier of the template |
+   | Id*       |              | to be applied.                        |
+   |           |              | The value MUST conform to the dc-id   |
+   |           |              | syntax (see Section 3).               |
+   +-----------+--------------+---------------------------------------+
+   | *Domain*  | domain       | (REQUIRED) The Zone Apex domain name  |
+   |           |              | being configured.                     |
+   |           |              | The value MUST conform to the domain- |
+   |           |              | name syntax (see Section 3).          |
+   +-----------+--------------+---------------------------------------+
+   | *Host*    | host         | (OPTIONAL) The host name of the Sub   |
+   |           |              | Domain within the zone identified by  |
+   |           |              | "domain".                             |
+   |           |              | When present, the value MUST be a     |
+   |           |              | single name conforming to domain-name |
+   |           |              | (see Section 3) or an empty string.   |
+   +-----------+--------------+---------------------------------------+
+   | *Name/    | *            | (REQUIRED) Variable values to be      |
+   | Value     |              | substituted into the template.  Each  |
+   | Pairs*    |              | parameter name MUST correspond to a   |
+   |           |              | variable name defined in the template |
+   |           |              | and MUST conform to the variable-name |
+   |           |              | syntax (see Section 3).               |
+   |           |              | Each parameter value MUST conform to  |
+   |           |              | the dc-prop-value syntax (see         |
+   |           |              | Section 3), using the DNS             |
+   |           |              | presentation format [RFC9499].        |
+   |           |              | The DNS Provider MUST ignore any      |
+   |           |              | parameter not referenced in the       |
+   |           |              | template.                             |
+   +-----------+--------------+---------------------------------------+
+   | *Group    | groupId      | (OPTIONAL) Specifies the subset of    |
+   | ID*       |              | groups from the template to apply.    |
+   |           |              | The value MUST conform to the dc-id-  |
+   |           |              | list syntax (see Section 3).          |
+   +-----------+--------------+---------------------------------------+
+   | *Force*   | force        | (OPTIONAL) Specifies that the         |
+   |           |              | template SHOULD be applied            |
+   |           |              | independently of any conflicts that   |
+   |           |              | may exist on the domain.              |
+   |           |              | The value MUST conform to the dc-     |
+   |           |              | force syntax (see Section 3).         |
+   |           |              | The default when omitted is "0".      |
+   +-----------+--------------+---------------------------------------+
+   | *Provider | providerName | (OPTIONAL) This parameter allows for  |
+   | Name*     |              | the caller to provide additional      |
+   |           |              | context for the "providerName" that   |
+   |           |              | applied the template.  It MAY be used |
+   |           |              | by DNS Providers that want to display |
+   |           |              | state regarding which templates have  |
+   |           |              | been applied.  It is only allowed     |
+   |           |              | when the "sharedProviderName"         |
+   |           |              | attribute is set in the template      |
+   |           |              | being applied.                        |
+   |           |              | The value MUST conform to the dc-     |
+   |           |              | display-name syntax (see Section 3).  |
+   +-----------+--------------+---------------------------------------+
+   | *Service  | serviceName  | (OPTIONAL) This parameter allows for  |
+   | Name*     |              | the caller to provide additional      |
+   |           |              | context for the "serviceName" that    |
+   |           |              | applied the template.  It MAY be used |
+   |           |              | by DNS Providers that want to display |
+   |           |              | state regarding which templates have  |
+   |           |              | been applied.  It is only allowed     |
+   |           |              | when the "sharedServiceName"          |
+   |           |              | attribute is set in the template      |
+   |           |              | being applied.                        |
+   |           |              | The value MUST conform to the dc-     |
+   |           |              | display-name syntax (see Section 3).  |
+   +-----------+--------------+---------------------------------------+
+   | *Instance | instanceId   | (OPTIONAL) Only applicable to         |
+   | Id*       |              | templates supporting multiple         |
+   |           |              | instances (see multiInstance          |
+   |           |              | (Section 6.1) template property).     |
+   |           |              | Allows for later removal of one       |
+   |           |              | template instance by DNS Providers    |
+   |           |              | storing this information.             |
+   |           |              | The value MUST conform to the dc-id   |
+   |           |              | syntax (see Section 3).               |
+   +-----------+--------------+---------------------------------------+
 
-      Table 16: URI template parameters of the apply end-point in the
-                                 async flow
+     Table 16: URI template parameters of the apply end-point in the
+                                async flow
 
    An example call is below.  In this example, it is contemplated that
    there are two variables in this template, "IP" and "RANDOMTEXT" which
@@ -3841,6 +3898,11 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       a new IANA "Domain Connect Settings Properties" registry with
       Specification Needed policy.
 
+   *  Added ABNF rule defining the normative syntax for "properties"
+      parameter values across the Parameters/properties, OAuth Flow:
+      Getting an Authorization Code, and OAuth Flow: Apply Template to
+      Domain. parameter tables.
+
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
@@ -4002,6 +4064,10 @@ Normative References
               Writing an IANA Considerations Section in RFCs", IETF,
               DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017,
               <https://www.rfc-editor.org/info/rfc8126>.
+
+   [RFC9499]  Hoffman, P. and K. Fujiwara, "DNS Terminology", IETF,
+              DOI 10.17487/RFC9499, BCP 219, RFC 9499, March 2024,
+              <https://www.rfc-editor.org/info/rfc9499>.
 
 Informative References
 

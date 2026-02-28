@@ -118,6 +118,7 @@ The following definitions and rules are imported normatively from other document
 `"JSON number"`:: "number" as defined in Section 6 of <<RFC8259>>.
 `"srv-rdata"`:: SRV RDATA fields as defined in Section 3.1 of <<RFC2782>>.
 `"service-name"`:: "Service Name" as defined in Section 5.1 of <<RFC6335>>.
+`"presentation format"`:: "Presentation Format" as defined in Section 1 of <<RFC9499>>.
 
 The following additional syntax rules are defined in this document and used normatively throughout.
 
@@ -219,6 +220,19 @@ dc-txt-conflict-mode =  "None" / "All" / "Prefix"
 dc-conflict-prefix =  1*(%x21-7E)
                 ; non-empty printable ASCII (U+0021..U+007E);
                 ; no variable expressions permitted
+
+; -- property value field --
+
+dc-prop-value  =  *( dc-prop-char / dc-rdata-escape )
+                ; DNS presentation format (RFC 9499);
+
+dc-prop-char   =  %x20-7E
+                ; space and all printable ASCII (U+0020..U+007E);
+
+dc-rdata-escape =  "\" ( 3DIGIT / %x21-7E )
+                 ; RFC 1035 Section 5.1 octet escape:
+                 ; "\DDD" three decimal digits, or
+                 ; "\" followed by any printable non-digit character
 
 ; -- host / name / pointsTo / target fields --
 
@@ -769,10 +783,11 @@ Support of variables in this field is OPTIONAL for DNS Provider.
 |String
 |data
 |
-The data for a TXT record in DNS.
-A value of empty or `"@"` indicates the host and domain name being applied (i.e., `"[host.]example.com"`). +
+For TXT record `"data"` contains TXT-DATA <<RFC1035>> in presentation format. For a single `"<character-string>"` the heading and trailing `"` character MAY be omitted even if space character is present in the value.
 
-For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. It MUST NOT be present in a template record for any record type that has type-specific data fields defined in this specification.
+`"data"` MUST NOT be present in a template record for any other record type that has type-specific data fields defined in this specification.
+
+For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. 
 
 |*TXT Conflict Matching Mode*
 |String
@@ -1328,6 +1343,8 @@ This is the URL, where the user agent is directed to apply a template to a dns z
 [[apply-template-params]]
 ==== Parameters/properties
 
+For `"properties"` name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
+
 [cols=",,",options="header",title="URI template parameters of the apply call in the sync flow"]
 |=======================================================================
 |Property
@@ -1385,7 +1402,9 @@ The value MUST conform to the `"state"` syntax (see <<terminology>>).
 |(REQUIRED) Variable values to be substituted into the template.
 Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>). +
 
-// TODO: the syntax for parameter values is not yet defined
+Each parameter value MUST conform to the `dc-prop-value` syntax (see <<terminology>>),
+using the DNS presentation format <<RFC9499>>. +
+
 The parameter value corresponds to the value that will be used when applying the template.
 
 |*Provider Name*
@@ -1566,6 +1585,7 @@ compromised secret.
 The DNS Provider SHOULD give the Service Provider a client id and a secret which will be used when requesting tokens. For simplicity the client id MAY be the same as the providerId, however it is up to the agreement between the parties involved.
 Any other form of client authentication within OAuth framework MAY be agreed between the parties. 
 
+[[oauth-authorization-request]]
 ==== OAuth Flow: Getting an Authorization Code
 
 
@@ -1612,7 +1632,9 @@ The same considerations as in the synchronous flow apply here.
 
 The state value passed into the call MUST be passed back on the query string as `"state="`.
 
-The following table describes the values of the URI template for the request for the OAuth consent flow that must be included unless otherwise indicated
+The following table describes the values of the URI template for the request for the OAuth consent flow that must be included unless otherwise indicated.
+
+For `"properties"` name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
 
 [cols=",,",options="header",title="URI template parameters of the authorization end-point in async flow"]
 |=======================================================================
@@ -1686,8 +1708,11 @@ The value MUST conform to the `”state”` syntax as defined in Appendix A of <
 |*Name/Value Pairs*
 |properties
 |(OPTIONAL) Variable values required for conflict detection prior to template application.
-Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>).
-// TODO: the syntax for parameter values is not yet defined
+Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>). +
+
+Each parameter value MUST conform to the `dc-prop-value` syntax (see <<terminology>>),
+using the DNS presentation format <<RFC9499>>. +
+
 This includes variables used in hosts and data in certain TXT records.
 |=======================================================================
 
@@ -1871,6 +1896,7 @@ Because the user often isn't present at the time of this error, it is up the Ser
 
 Calls to apply a template via OAuth require the following parameters posted to the above URL unless otherwise indicated.
 The DNS Provider MUST accept parameters in query string or body of this post.
+When `"properties"` name/value pairs are passed as query string parameters, the names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
 
 The body is application/json encoded.
 
@@ -1914,7 +1940,10 @@ When present, the value MUST be a single name conforming to `domain-name` (see <
 |*
 |(REQUIRED) Variable values to be substituted into the template.
 Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the `variable-name` syntax (see <<terminology>>). +
-// TODO: the syntax for parameter values is not yet defined
+
+Each parameter value MUST conform to the `dc-prop-value` syntax (see <<terminology>>),
+using the DNS presentation format <<RFC9499>>. +
+
 The DNS Provider MUST ignore any parameter not referenced in the template.
 
 |*Group ID*
@@ -2609,6 +2638,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Rewrote <<verification-of-changes,format=title>> as normative text.
 - Clarified the meaning of "synchronous" in <<synchronous-flow,format=title>>: the term describes the user-interaction model (user present, single session) and does not imply immediate DNS propagation; added normative note directing Service Providers to <<verification-of-changes,format=title>>.
 - Defined an extensibility model for the <<dns-provider-discovery,format=title>> settings response: unknown properties MUST be ignored by clients; DNS Providers MAY add properties; all properties are registered in a new IANA "Domain Connect Settings Properties" registry with Specification Needed policy.
+- Added ABNF rule defining the normative syntax for `"properties"` parameter values across the <<apply-template-params,format=title>>, <<oauth-authorization-request,format=title>>, and <<oauth-apply-template,format=title>> parameter tables.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00
@@ -2678,7 +2708,8 @@ The authors wish to thank the following persons for their feedback and suggestio
 * [[[RFC5891,RFC 5891]]] Klensin, J., "Internationalized Domain Names in Applications (IDNA): Protocol", IETF, DOI 10.17487/RFC5891, RFC 5891, August 2010, <https://www.rfc-editor.org/info/rfc5891>.
 * [[[RFC5890, RFC 5890]]] Klensin, J., "Internationalized Domain Names for Applications (IDNA): Definitions and Document Framework", RFC 5890, DOI 10.17487/RFC5890, August 2010, <https://www.rfc-editor.org/info/rfc5890>.
 * [[[RFC9839,RFC 9839]]] Salowey, J. and R. Housley, "Unicode Character Repertoire Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, <https://www.rfc-editor.org/info/rfc9839>.
-* [[[RFC8126,RFC 8126]]] Cotton, M., Leiba, B., and T. Narten, "Guidelines for Writing an IANA Considerations Section in RFCs", IETF, BCP 26, RFC 8126, DOI 10.17487/RFC8126, June 2017, <https://www.rfc-editor.org/info/rfc8126>.
+* [[[RFC8126,RFC 8126]]] Cotton, M., Leiba, B., and T. Narten, "Guidelines for Writing an IANA Considerations Section in RFCs", IETF, DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017, <https://www.rfc-editor.org/info/rfc8126>.
+* [[[RFC9499,RFC 9499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC9499, RFC 9499, March 2024, <https://www.rfc-editor.org/info/rfc9499>.
 
 [bibliography,normative=false]
 == Informative References

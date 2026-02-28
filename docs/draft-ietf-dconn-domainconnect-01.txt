@@ -90,17 +90,17 @@ Table of Contents
    8.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  41
      8.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  41
      8.2.  Query Supported Template  . . . . . . . . . . . . . . . .  42
-     8.3.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  43
-       8.3.1.  Apply Template URL  . . . . . . . . . . . . . . . . .  43
-       8.3.2.  Parameters/properties . . . . . . . . . . . . . . . .  43
-       8.3.3.  Template Apply Request  . . . . . . . . . . . . . . .  47
-       8.3.4.  Signature Verification  . . . . . . . . . . . . . . .  47
-       8.3.5.  Template Apply Response . . . . . . . . . . . . . . .  48
+     8.3.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  44
+       8.3.1.  Apply Template URL  . . . . . . . . . . . . . . . . .  44
+       8.3.2.  Parameters/properties . . . . . . . . . . . . . . . .  44
+       8.3.3.  Template Apply Request  . . . . . . . . . . . . . . .  48
+       8.3.4.  Signature Verification  . . . . . . . . . . . . . . .  48
+       8.3.5.  Template Apply Response . . . . . . . . . . . . . . .  49
        8.3.6.  Template Apply Error Response . . . . . . . . . . . .  49
-     8.4.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  49
-       8.4.1.  General information . . . . . . . . . . . . . . . . .  49
+     8.4.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  50
+       8.4.1.  General information . . . . . . . . . . . . . . . . .  50
        8.4.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  50
-       8.4.3.  OAuth Flow: Getting an Authorization Code . . . . . .  50
+       8.4.3.  OAuth Flow: Getting an Authorization Code . . . . . .  51
        8.4.4.  OAuth Flow: Requesting an Access Token  . . . . . . .  55
        8.4.5.  OAuth Flow: Making Requests with Access Tokens  . . .  59
        8.4.6.  OAuth Flow: Apply Template to Domain. . . . . . . . .  59
@@ -142,22 +142,22 @@ Internet-Draft               Domain Connect                December 2025
      11.1.  OAuth Client Secret Leakage  . . . . . . . . . . . . . .  78
      11.2.  Template Variable Phishing . . . . . . . . . . . . . . .  78
    12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  79
-   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  79
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  80
-   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  80
-   Normative References  . . . . . . . . . . . . . . . . . . . . . .  83
-   Informative References  . . . . . . . . . . . . . . . . . . . . .  85
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  85
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  85
-     A.2.  Example Records: Single static host record  . . . . . . .  86
-     A.3.  Example Records: Single variable host record for A  . . .  87
-     A.4.  Example Records: Unspecified record type CAA  . . . . . .  87
+     12.1.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  79
+     12.2.  Domain Connect Settings Properties Registry  . . . . . .  79
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  80
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  81
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  81
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  84
+   Informative References  . . . . . . . . . . . . . . . . . . . . .  86
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  87
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  87
+     A.2.  Example Records: Single static host record  . . . . . . .  88
+     A.3.  Example Records: Single variable host record for A  . . .  88
+     A.4.  Example Records: Unspecified record type CAA  . . . . . .  88
      A.5.  Example: Template application to DNS Zone and Conflict
-           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  88
-     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  90
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  91
-
-
+           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  89
+     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  91
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  92
 
 
 
@@ -2206,6 +2206,14 @@ Internet-Draft               Domain Connect                December 2025
 
              Table 5: properties of the settings data structure
 
+   Clients MUST ignore any JSON properties in the settings response that
+   are not defined in this specification or not recognized from an
+   applicable extension.  DNS Providers MAY include additional JSON
+   properties in the settings response beyond those defined in this
+   specification, however it is RECOMMENDED that those properties are
+   registered in the "Domain Connect Settings Properties" registry
+   defined in Section 12.2 in order to avoid name conflicts.
+
    EXAMPLE 2: Example Settings End-Point response
 
    {
@@ -2223,6 +2231,17 @@ Internet-Draft               Domain Connect                December 2025
        domainsdns.example"]
    }
 
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 40]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    When constructing a deep link using "urlControlPanel", the Service
    Provider MUST replace any occurrence of the literal token "%domain%"
    with the percent-encoded ACE-form domain name per [RFC3986].  The
@@ -2234,13 +2253,6 @@ Internet-Draft               Domain Connect                December 2025
    been reached.  A mismatch may indicate a stale or incorrect
    "_domainconnect" TXT record, or a deliberate administrative change
    such as pre-provisioning with a new DNS provider.
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 40]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    Discovery MUST work on the Zone Apex only.  Bear in mind that zones
    can be delegated to other users, making this information valuable to
@@ -2275,6 +2287,17 @@ Internet-Draft               Domain Connect                December 2025
    The Domain Connect endpoints returned in the JSON during discovery
    are in the form of URLs.
 
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 41]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    The first set of endpoints are for the UX that the Service Provider
    links to.  These are for the synchronous flow where the user can
    click to grant consent and have changes applied, and for the
@@ -2289,14 +2312,6 @@ Internet-Draft               Domain Connect                December 2025
 
    They MAY also include any path segment at the discretion of the DNS
    Provider.  For example:
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 41]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    https://connect.dnsprovider.example/api
 
@@ -2316,6 +2331,28 @@ Internet-Draft               Domain Connect                December 2025
    Provider supports a specific template.
 
    The following table describes the parameters of the URI template:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 42]
+
+Internet-Draft               Domain Connect                December 2025
+
 
       +==========+============+====================================+
       | Property | Key        | Description                        |
@@ -2347,13 +2384,6 @@ Internet-Draft               Domain Connect                December 2025
    in a JSON object with field "version" (see: version field
    (Section 6.1) or the full JSON object of deployed template.
 
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 42]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    Returning a status of 404 indicates the template is not supported.
 
       +===========+==========+======================================+
@@ -2370,6 +2400,15 @@ Internet-Draft               Domain Connect                December 2025
 
             Table 8: https status codes for the Query Supported
                              Template end-point
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 43]
+
+Internet-Draft               Domain Connect                December 2025
+
 
 8.3.  Synchronous Flow
 
@@ -2402,14 +2441,6 @@ Internet-Draft               Domain Connect                December 2025
    |             |              | (see Section 7).                     |
    |             |              | This MUST be a valid URI [RFC3986]   |
    |             |              | with scheme "https"                  |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 43]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    +-------------+--------------+--------------------------------------+
    | *Service    | providerId   | (REQUIRED) Identifier of the         |
    | Provider    |              | Service Provider of the template     |
@@ -2427,6 +2458,14 @@ Internet-Draft               Domain Connect                December 2025
    |             |              | (the registered domain or            |
    |             |              | delegated zone).  The value MUST     |
    |             |              | conform to the domain-name syntax    |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 44]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |             |              | (see Section 3).                     |
    +-------------+--------------+--------------------------------------+
    | *Host*      | host         | (OPTIONAL) The host name of the      |
@@ -2458,14 +2497,6 @@ Internet-Draft               Domain Connect                December 2025
    |             |              | syntax (see Section 3).              |
    |             |              | The parameter value corresponds to   |
    |             |              | the value that will be used when     |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 44]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |             |              | applying the template.               |
    +-------------+--------------+--------------------------------------+
    | *Provider   | providerName | (OPTIONAL) Additional display text   |
@@ -2483,6 +2514,14 @@ Internet-Draft               Domain Connect                December 2025
    +-------------+--------------+--------------------------------------+
    | *Service    | serviceName  | (OPTIONAL) Additional display text   |
    | Name*       |              | for the template "serviceName",      |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 45]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |             |              | provided by the caller.  If          |
    |             |              | "sharedServiceName" is not set in    |
    |             |              | the template, this parameter MUST    |
@@ -2514,14 +2553,6 @@ Internet-Draft               Domain Connect                December 2025
    |             |              | key-label syntax (see Section 3):    |
    |             |              | a single DNS label, either a plain   |
    |             |              | ACE-form label or an RFC 8552        |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 45]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |             |              | underscore-prefixed label.           |
    |             |              | See the Section 8.3.2.1 below.       |
    +-------------+--------------+--------------------------------------+
@@ -2539,6 +2570,14 @@ Internet-Draft               Domain Connect                December 2025
    This call indicates that the Service Provider wishes to connect the
    domain example.com to the service using the template identified by
    the composite key of the provider (exampleservice.example) and the
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 46]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    service template owned by them (template1).  In this example, there
    are two variables in this template, "IP" and "RANDOMTEXT".  These
    variables are passed as name/value pairs.
@@ -2569,15 +2608,6 @@ Internet-Draft               Domain Connect                December 2025
 
    3.  Base64-encode the resulting signature per [RFC4648].
 
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 46]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    4.  Append the URL-encoded "sig" value and the "key" identifier to
        the query string.
 
@@ -2594,6 +2624,15 @@ Internet-Draft               Domain Connect                December 2025
    5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
    HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
    SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 47]
+
+Internet-Draft               Domain Connect                December 2025
+
 
 8.3.3.  Template Apply Request
 
@@ -2624,16 +2663,6 @@ Internet-Draft               Domain Connect                December 2025
        "syncPubKeyDomain" (see Section 6.4).  If no such records are
        found, the request MUST be rejected.
 
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 47]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    3.  *Reassemble key fragments* - Collect all TXT records at that
        host, parse each as a "dc-pubkey-record", and concatenate the "d"
        values in ascending order of "p" to obtain the complete encoded
@@ -2652,6 +2681,14 @@ Internet-Draft               Domain Connect                December 2025
        [RFC4648] the "sig" parameter value, and verify the signature
        against the input string using the retrieved public key and
        identified algorithm.
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 48]
+
+Internet-Draft               Domain Connect                December 2025
+
 
 8.3.5.  Template Apply Response
 
@@ -2682,14 +2719,6 @@ Internet-Draft               Domain Connect                December 2025
    The Service Provider SHOULD verify the outcome via DNS regardless of
    how the flow terminates (see Section 8.5).
 
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 48]
-
-Internet-Draft               Domain Connect                December 2025
-
-
 8.3.6.  Template Apply Error Response
 
    If the DNS Provider cannot complete the apply operation - for example
@@ -2706,6 +2735,16 @@ Internet-Draft               Domain Connect                December 2025
       "unauthorized_client", "access_denied",
       "unsupported_response_type", "invalid_scope", "server_error", or
       "temporarily_unavailable".
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 49]
+
+Internet-Draft               Domain Connect                December 2025
+
 
    *  "error_description" - OPTIONAL.  A developer-oriented plain-text
       description of the error.  The DNS Provider SHOULD keep
@@ -2736,16 +2775,6 @@ Internet-Draft               Domain Connect                December 2025
    Providers that have more complex configurations that may require
    multiple steps and/or are asynchronous from the user's interaction.
 
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 49]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    Details of an OAuth implementation are beyond the scope of this
    specification.  Instead, an overview of how OAuth is used by Domain
    Connect is given here.
@@ -2760,6 +2789,18 @@ Internet-Draft               Domain Connect                December 2025
    OAuth client with each DNS Provider.  This is typically a manual
    process, however other solutions like OAuth Dynamic Client
    Registration [RFC7591] MAY be offered by DNS Provider as well.
+
+
+
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 50]
+
+Internet-Draft               Domain Connect                December 2025
+
 
    To register, the Service Provider would provide (in addition to their
    template) any configuration necessary for the DNS Providers OAuth
@@ -2793,15 +2834,6 @@ Internet-Draft               Domain Connect                December 2025
    To initiate the OAuth flow the Service Provider first links to the
    DNS Provider to gain consent.
 
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 50]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    This endpoint is similar to the synchronous flow described above.
    The DNS Provider MUST authenticate the user, verify the user has
    control of the DNS Zone for the domain, and ask the user for
@@ -2817,6 +2849,15 @@ Internet-Draft               Domain Connect                December 2025
    provided in the consent flow.  This primarily includes variables in
    hosts, and variables in the data portion for certain TXT records.
 
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 51]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    The protocol allows for the Service Provider to gain consent to apply
    multiple templates.  These templates are specified in the "scope"
    parameter.  It also allows for the Service Provider to gain consent
@@ -2830,33 +2871,6 @@ Internet-Draft               Domain Connect                December 2025
    protocol) of the template serviceIds.  The host parameter is an
    OPTIONAL comma separated list of hosts.  A blank entry for the host
    implies the template can be applied to the Zone Apex For example:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 51]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    +===============================================+==================+
    | *Query String*                                | *Description*    |
@@ -2892,6 +2906,14 @@ Internet-Draft               Domain Connect                December 2025
    append an error code as query parameter "error".  These errors are
    also from the OAuth 2.0 [RFC6749] (4.1.2.1.  Error Response - "error"
    parameter).  Valid values include: invalid_request,
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 52]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    unauthorized_client, access_denied, unsupported_response_type,
    invalid_scope, server_error, and temporarily_unavailable.  An
    OPTIONAL error_description suitable for developers may also be
@@ -2904,15 +2926,6 @@ Internet-Draft               Domain Connect                December 2025
    The following table describes the values of the URI template for the
    request for the OAuth consent flow that must be included unless
    otherwise indicated
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 52]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    +===========+===============+=======================================+
    | Property  | Key           | Description                           |
@@ -2949,6 +2962,14 @@ Internet-Draft               Domain Connect                December 2025
    +-----------+---------------+---------------------------------------+
    | *Redirect | redirect_uri  | (REQUIRED) The location to direct     |
    | URI*      |               | the user agent upon successful        |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 53]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |               | authorization or upon error.          |
    |           |               | The value MUST be an absolute URI     |
    |           |               | conforming to [RFC3986].              |
@@ -2962,14 +2983,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |               | is being requested, as defined in     |
    |           |               | Section 3.1.1 of [RFC6749].           |
    +-----------+---------------+---------------------------------------+
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 53]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    | *Scope*   | scope         | (REQUIRED) The OAuth scope            |
    |           |               | identifying the requested templates,  |
    |           |               | as defined in Section 3.3 of          |
@@ -3005,6 +3018,14 @@ Internet-Draft               Domain Connect                December 2025
    |           |               | The value MUST conform to the         |
    |           |               | "state" syntax as defined in          |
    |           |               | Appendix A of [RFC6749] (see          |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 54]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Name/    | properties    | (OPTIONAL) Variable values required   |
@@ -3018,13 +3039,6 @@ Internet-Draft               Domain Connect                December 2025
    |           |               | used in hosts and data in certain     |
    |           |               | TXT records.                          |
    +-----------+---------------+---------------------------------------+
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 54]
-
-Internet-Draft               Domain Connect                December 2025
-
 
       Table 11: URI template parameters of the authorization end-point
                                in async flow
@@ -3059,6 +3073,15 @@ Internet-Draft               Domain Connect                December 2025
    completed before that time has expired or the process will need to be
    repeated.
 
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 55]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    This token exchange is typically done via a server to server API call
    from the Service Provider to the DNS Provider using a POST.  When
    called in this manner a secret is provided along with the
@@ -3074,13 +3097,6 @@ Internet-Draft               Domain Connect                December 2025
    the body of the post.  This is again particularly important for the
    client_secret, as passing secrets via a query string is generally
    frowned upon given that various systems often log URLs.
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 55]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    The body of the post is application/json encoded.
 
@@ -3114,6 +3130,14 @@ Internet-Draft               Domain Connect                December 2025
    |                |               | is set.                          |
    |                |               | The value MUST conform to the    |
    |                |               | "refresh_token" syntax as        |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 56]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    |                |               | defined in Appendix A,           |
    |                |               | Section A.17 of [RFC6749].       |
    +----------------+---------------+----------------------------------+
@@ -3130,14 +3154,6 @@ Internet-Draft               Domain Connect                December 2025
    |                |               | The value MUST be either         |
    |                |               | "authorization_code" or          |
    |                |               | "refresh_token", as defined      |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 56]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    |                |               | in Appendix A, Section A.10      |
    |                |               | of [RFC6749].                    |
    +----------------+---------------+----------------------------------+
@@ -3164,22 +3180,6 @@ Internet-Draft               Domain Connect                December 2025
 
    Upon successful token exchange, the DNS Provider MUST return a
    response with 4 properties in the body of the response.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4380,6 +4380,8 @@ Internet-Draft               Domain Connect                December 2025
 
 12.  IANA Considerations
 
+12.1.  Underscore "_domainconnect" DNS Node Name
+
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:
 
@@ -4392,6 +4394,74 @@ Internet-Draft               Domain Connect                December 2025
                       Table 19: IANA Registration for
                                _domainconnect
 
+12.2.  Domain Connect Settings Properties Registry
+
+   IANA is requested to create a new registry named "Domain Connect
+   Settings Properties" under a new registry group "Domain Connect
+   Protocol".
+
+   Registration policy: Specification Needed (see [RFC8126]).
+
+   Each entry in the registry MUST include:
+
+   *  *Property name*: the JSON key as it appears in the settings
+      response.
+
+   *  *Status*: the lifecycle state of the registration.  The following
+      values are defined; IANA MAY define additional values as needed:
+
+      -  "Active": the property is currently in use and its definition
+         is normative.
+
+      -  "Deprecated": the property SHOULD NOT be used in new
+         implementations; it MAY appear in existing deployments for
+         backwards compatibility.
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 79]
+
+Internet-Draft               Domain Connect                December 2025
+
+
+   *  *Kind*: the nature of the defining document.  The value MUST be
+      one of: "IETF Standard" for properties defined in a standards-
+      track RFC, "Informational" for properties defined in an
+      Informational RFC, or "Other" for any other specification.
+
+   *  *Reference*: the document that defines the property.
+
+   The following properties from this specification constitute the
+   initial contents of the registry:
+
+   +=======================+==========+===============+===============+
+   | *Property Name*       | *Status* | *Kind*        | *Reference*   |
+   +=======================+==========+===============+===============+
+   | "providerId"          | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "providerName"        | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "providerDisplayName" | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "urlSyncUX"           | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "urlAsyncUX"          | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "urlAPI"              | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "width"               | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "height"              | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "urlControlPanel"     | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+   | "nameServers"         | Active   | IETF Standard | This document |
+   +-----------------------+----------+---------------+---------------+
+
+           Table 20: Initial Domain Connect Settings Properties
+
 Implementation Status
 
    This section is to be removed before publishing as an RFC.
@@ -4402,6 +4472,15 @@ Open Source
 
    *  Server library (Python):https://github.com/Domain-Connect/
       DomainConnectApplyZone
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 80]
+
+Internet-Draft               Domain Connect                December 2025
+
 
 Priopriatery implementations
 
@@ -4417,14 +4496,6 @@ Open Source
    *  Example service:
       https://exampleservice.domainconnect.org/https://github.com/
       Domain-Connect/exampleservice
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 79]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    *  Client library (Python):https://github.com/Domain-Connect/
       domainconnect_python
@@ -4459,6 +4530,14 @@ Change History
 
 Change from draft-ietf-dconn-domainconnect-00 to -01
 
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 81]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    *  Added comprehensive ABNF grammar to the Terminology section,
       providing normative syntax definitions for all protocol
       identifiers, domain name forms, template fields, OAuth parameters,
@@ -4473,14 +4552,6 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
 
    *  Public-key TXT record format replaced with a formal ABNF grammar
       and detailed specification.
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 80]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    *  Restructured Template Application: replaced ad-hoc conflict
       sections with focused Conflict Detection, User Authorization of
@@ -4515,6 +4586,14 @@ Internet-Draft               Domain Connect                December 2025
    *  Replaced all occurrences of the term "browser" with "user agent"
       throughout the document.
 
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 82]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    *  Rewrote Verification of Changes as normative text.
 
    *  Clarified the meaning of "synchronous" in Synchronous Flow: the
@@ -4523,20 +4602,18 @@ Internet-Draft               Domain Connect                December 2025
       normative note directing Service Providers to Verification of
       Changes.
 
+   *  Defined an extensibility model for the DNS Provider Discovery
+      settings response: unknown properties MUST be ignored by clients;
+      DNS Providers MAY add properties; all properties are registered in
+      a new IANA "Domain Connect Settings Properties" registry with
+      Specification Needed policy.
+
 Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
    *  DCONN WG adoption.  No other changes.
 
 Change from -01 to -02
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 81]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    *  Draft refresh from expire.  No content changes.
 
@@ -4565,6 +4642,14 @@ Change from -00 to -01
 Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-
 domainconnect-00
 
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 83]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    *  Added possibility to specify any DNS record type in a generic
       manner.
 
@@ -4583,16 +4668,6 @@ Change from -02 to -03
    *  Added width/height JSON values returned by DNS Provider Discovery.
 
    *  Corrected text of GET method for getting the authorization token.
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 82]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    *  Added clarifying text to Group ID description parameter of the
       apply template POST method.  Quite a few minor edits and
@@ -4621,6 +4696,16 @@ Normative References
               DOI 10.17487/RFC2782, RFC 2782, February 2000,
               <https://www.rfc-editor.org/info/rfc2782>.
 
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 84]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
               RFC 2119, March 1997,
@@ -4639,16 +4724,6 @@ Normative References
    [RFC6749]  Hardt, D., "The OAuth 2.0 Authorization Framework", IETF,
               DOI 10.17487/RFC6749, RFC 6749, October 2012,
               <https://www.rfc-editor.org/info/rfc6749>.
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 83]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    [RFC3597]  Gustafsson, A., "Handling of Unknown DNS Resource Record
               (RR) Types", IETF, DOI 10.17487/RFC3597, RFC 3597,
@@ -4680,6 +4755,13 @@ Internet-Draft               Domain Connect                December 2025
               DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
               <https://www.rfc-editor.org/info/rfc6335>.
 
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 85]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    [RFC6570]  Gregorio, J., Fielding, R., Hadley, M., Nottingham, M.,
               and D. Orchard, "URI Template", IETF,
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
@@ -4699,13 +4781,6 @@ Internet-Draft               Domain Connect                December 2025
               DOI 10.17487/RFC5891, RFC 5891, August 2010,
               <https://www.rfc-editor.org/info/rfc5891>.
 
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 84]
-
-Internet-Draft               Domain Connect                December 2025
-
-
    [RFC5890]  Klensin, J., "Internationalized Domain Names for
               Applications (IDNA): Definitions and Document Framework",
               IETF, DOI 10.17487/RFC5890, RFC 5890, August 2010,
@@ -4714,6 +4789,11 @@ Internet-Draft               Domain Connect                December 2025
    [RFC9839]  Bray, T. and P. Hoffman, "Unicode Character Repertoire
               Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, August
               2025, <https://www.rfc-editor.org/info/rfc9839>.
+
+   [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "Guidelines for
+              Writing an IANA Considerations Section in RFCs", IETF,
+              DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017,
+              <https://www.rfc-editor.org/info/rfc8126>.
 
 Informative References
 
@@ -4730,37 +4810,19 @@ Informative References
               IETF, DOI 10.17487/RFC7591, RFC 7591, July 2015,
               <https://www.rfc-editor.org/info/rfc7591>.
 
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 86]
+
+Internet-Draft               Domain Connect                December 2025
+
+
 Appendix A.  Examples
 
 A.1.  Example Template
 
    EXAMPLE: Full template example
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 85]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    {
        "providerId": "example.com",
@@ -4802,6 +4864,16 @@ Internet-Draft               Domain Connect                December 2025
        ]
    }
 
+
+
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 87]
+
+Internet-Draft               Domain Connect                December 2025
+
+
 A.2.  Example Records: Single static host record
 
    Consider a template for setting a single host record.  The records
@@ -4809,14 +4881,6 @@ A.2.  Example Records: Single static host record
    could have a value of:
 
    EXAMPLE: Single static host record example
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 86]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    [{
        "type": "A",
@@ -4861,15 +4925,7 @@ A.4.  Example Records: Unspecified record type CAA
 
 
 
-
-
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 87]
+Kowalik, et al.           Expires 20 June 2026                 [Page 88]
 
 Internet-Draft               Domain Connect                December 2025
 
@@ -4925,7 +4981,7 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
 
 
 
-Kowalik, et al.           Expires 20 June 2026                 [Page 88]
+Kowalik, et al.           Expires 20 June 2026                 [Page 89]
 
 Internet-Draft               Domain Connect                December 2025
 
@@ -4981,7 +5037,7 @@ Internet-Draft               Domain Connect                December 2025
 
 
 
-Kowalik, et al.           Expires 20 June 2026                 [Page 89]
+Kowalik, et al.           Expires 20 June 2026                 [Page 90]
 
 Internet-Draft               Domain Connect                December 2025
 
@@ -5037,7 +5093,7 @@ A.6.  Example: SPF Record Merging
 
 
 
-Kowalik, et al.           Expires 20 June 2026                 [Page 90]
+Kowalik, et al.           Expires 20 June 2026                 [Page 91]
 
 Internet-Draft               Domain Connect                December 2025
 
@@ -5093,7 +5149,7 @@ Authors' Addresses
 
 
 
-Kowalik, et al.           Expires 20 June 2026                 [Page 91]
+Kowalik, et al.           Expires 20 June 2026                 [Page 92]
 
 Internet-Draft               Domain Connect                December 2025
 
@@ -5149,4 +5205,4 @@ Internet-Draft               Domain Connect                December 2025
 
 
 
-Kowalik, et al.           Expires 20 June 2026                 [Page 92]
+Kowalik, et al.           Expires 20 June 2026                 [Page 93]

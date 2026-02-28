@@ -6,7 +6,7 @@
 :intended-series: standard
 :submission-type: IETF
 :docnumber: draft-ietf-dconn-domainconnect-01
-:published-date: 2025-12-17
+:published-date: 2026-03-01
 :status: informational
 :ipr: trust200902
 :area: Applications and Real-Time
@@ -299,6 +299,7 @@ Templates MAY also contain variable portions, as often values of data in DNS cha
 
 The template is defined by the Service Provider and manually onboarded with the DNS Provider. This is an out-of-band process between the Service Provider and the DNS Provider and not covered by this specification.
 
+[[trust-model]]
 === Trust Model
 
 DNS Providers are trusted parties by virtue of their existing full access to the DNS zone. DNS Providers enforce user authorization checks before enacting any DNS zone changes, and present proposed changes to the user in a human-readable form.
@@ -507,6 +508,7 @@ Steps:
 . *DNS Server Returns New DNS Records*: The DNS Server returns the updated DNS records.
 . *Service Provider Reports Success (Asynchronous)*: The Service Provider reports to the user that the domain has been successfully connected to the service.
 
+[[domain-connect-objects-and-templates]]
 == Domain Connect Objects and Templates
 
 [[template-definition]]
@@ -783,7 +785,7 @@ For any unspecified record type, this field contains the canonical presentation 
 |String
 |txtConflictMatchingMode
 |Describes how conflicts on the TXT record are detected. Possible values are
-None, All, or Prefix. <<record-types-conflicts, See below>>. +
+None, All, or Prefix. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
 
@@ -792,7 +794,7 @@ If omitted, the value MUST be assumed to be `"None"`.
 |*TXT Conflict Matching Prefix*
 |String
 |txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<record-types-conflicts, See below>>. +
+|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
 
@@ -1214,7 +1216,7 @@ call was successful. The response is the JSON described above.
 |A response of a 404 indicates that the DNS Provider does not have the zone.
 |=======================================================================
 
-
+[[applying-domain-connect]]
 == Applying Domain Connect
 
 === Endpoints
@@ -2327,7 +2329,7 @@ Each step is described in detail in the sections below.
 . *Filter records to apply* - select records applicable for further processing based on `"groupId"` property of the template and `"groupId"` apply parameter (see <<group-filtering>>).
 . *Resolve variables* — All variable expressions in active template records are substituted with the values provided by the caller, producing a concrete set of DNS resource records (RRs) to be applied (see <<variable-substitution>>).
   .. abort if rendered RRs are not possible to be applied to the target zone
-. *Perform conflict detection* — The DNS Provider checks the resolved RR set against the existing zone content according to the conflict detection rules (see <<record-types-conflicts>>).
+. *Perform conflict detection* — The DNS Provider checks the resolved RR set against the existing zone content according to the conflict detection rules (see <<conflict-detection>>).
   .. Identify individual zone records that conflict with the resolved RR set.
   .. (only DNS Providers tracking template state): Check each resolved RR against essential records of previously applied templates. Identify which previously applied templates own conflicting records and would be removed in their entirety (see <<essential-records>>).
   .. (only DNS Providers tracking template state): Mark instances of the same template applied on the same `"host"` for removal unless `"multiInstance"` is set for the template (see <<multi-instance>>).
@@ -2363,7 +2365,7 @@ When a `"groupId"` parameter is supplied, the apply operation is additive: only 
 
 Consequently, for DNS Providers that maintain applied template state, an existing instance of the same template on the same `"domain"` and `"host"` MUST NOT be removed before the new records are written, regardless of conflict-detection outcome for the active record set, however such provider MUST remove the records previously written for the same group(s) before writing the new active record set, in order to avoid accumulation of stale records from superseded group applications.
 
-[[record-types-conflicts]]
+[[conflict-detection]]
 === Conflict Detection
 
 Conflict detection is performed by the DNS Provider prior to template application.  The rules below ensure predictable conflict resolution between DNS Providers.  Each rule applies to records on the same host, unless otherwise specified.
@@ -2606,23 +2608,14 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-00 to -01
-- Added comprehensive ABNF grammar to the Terminology section, providing normative syntax definitions for all protocol identifiers, domain name forms, template fields, OAuth parameters, and signing artifacts.
-- Clarify explicit IDN support for domain name parameters (undefined before).
-- Replaced informal prose constraints across all endpoint parameter tables and template field definitions with normative ABNF references
-- Public-key TXT record format replaced with a formal ABNF grammar and detailed specification.
-- Restructured Template Application: replaced ad-hoc conflict sections with focused Conflict Detection, User Authorization of Changes, and Template Application sections; added Essential Records definition and Steps to Apply a Template.
-- Removed non-normative content: Public Template Repository, General Considerations, and Extensions/Exclusions sections.
-- Moved display-related and UX behavioral requirements out of field definitions into <<user_authorization_of_changes,format=title>>; reworded developer-only fields to express intent rather than normative prohibition.
-- Moved runtime processing rules out of parameter and template field definitions into their appropriate processing sections.
-- <<security-considerations,format=title>> section restructured: phishing threat description moved from <<synchronous-flow,format=title>> into new <<sec-variable-phishing,format=title>> subsection; editorial cleanup including section reordering, heading renames, and example block formatting.
-- Added <<group-filtering,format=title>> subsection to <<template-application,format=title>>.
-- Restructured request signing description into three focused sections: <<signing-procedure,format=title>>, <<sig-verification,format=title>> and <<pubkey-publication,format=title>>.
-- Replaced Sync Apply Interaction with a normative three-part structure (Request, Response, Error Response)
-- Replaced all occurrences of the term "browser" with "user agent" throughout the document.
-- Rewrote <<verification-of-changes,format=title>> as normative text.
-- Clarified the meaning of "synchronous" in <<synchronous-flow,format=title>>: the term describes the user-interaction model (user present, single session) and does not imply immediate DNS propagation; added normative note directing Service Providers to <<verification-of-changes,format=title>>.
-- Defined an extensibility model for the <<dns-provider-discovery,format=title>> settings response: unknown properties MUST be ignored by clients; DNS Providers MAY add properties; all properties are registered in a new IANA "Domain Connect Settings Properties" registry with Specification Needed policy.
-- Added ABNF rule defining the normative syntax for `"properties"` parameter values across the <<apply-template-params,format=title>>, <<oauth-authorization-request,format=title>>, and <<oauth-apply-template,format=title>> parameter tables.
+- Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.
+- Restructured <<template-application,format=title>>: added <<group-filtering,format=title>>, Essential Records, Steps to Apply a Template, and focused <<conflict-detection,format=title>>, <<user_authorization_of_changes,format=title>> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <<domain-connect-objects-and-templates,format=title>> before <<applying-domain-connect,format=title>> in the document structure.
+- Restructured request signing into <<signing-procedure,format=title>>, <<sig-verification,format=title>>, and <<pubkey-publication,format=title>>
+- Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <<verification-of-changes,format=title>> as normative text.
+- Restructured <<security-considerations,format=title>>: moved phishing threat into new <<sec-variable-phishing,format=title>> subsection; editorial cleanup.
+- Defined extensibility model for <<dns-provider-discovery,format=title>> settings response and added IANA "Domain Connect Settings Properties" registry.
+- Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".
+- Shortened <<trust-model,format=title>> section.
 
 [toc=exclude,numbered=false]
 === Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00

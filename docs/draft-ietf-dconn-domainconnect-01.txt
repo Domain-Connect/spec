@@ -72,11 +72,9 @@ Table of Contents
    4.  Protocol design . . . . . . . . . . . . . . . . . . . . . . .  10
      4.1.  Templates . . . . . . . . . . . . . . . . . . . . . . . .  11
      4.2.  Trust Model . . . . . . . . . . . . . . . . . . . . . . .  11
-       4.2.1.  Trust Establishment . . . . . . . . . . . . . . . . .  11
-       4.2.2.  Template Security . . . . . . . . . . . . . . . . . .  12
-   5.  Protocol Flows Overview . . . . . . . . . . . . . . . . . . .  12
+   5.  Protocol Flows Overview . . . . . . . . . . . . . . . . . . .  11
      5.1.  General information . . . . . . . . . . . . . . . . . . .  12
-     5.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .  13
+     5.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .  12
      5.3.  The Asynchronous Flow . . . . . . . . . . . . . . . . . .  16
    6.  Domain Connect Objects and Templates  . . . . . . . . . . . .  18
      6.1.  Template Definition . . . . . . . . . . . . . . . . . . .  18
@@ -106,6 +104,8 @@ Table of Contents
        8.4.6.  OAuth Flow: Apply Template to Domain. . . . . . . . .  60
        8.4.7.  OAuth Flow: Revert Template . . . . . . . . . . . . .  65
        8.4.8.  OAuth Flow: Revoking access . . . . . . . . . . . . .  67
+     8.5.  Verification of Changes . . . . . . . . . . . . . . . . .  67
+   9.  Resolving Template Variables  . . . . . . . . . . . . . . . .  68
 
 
 
@@ -114,8 +114,6 @@ Kowalik, et al.           Expires 20 June 2026                  [Page 2]
 Internet-Draft               Domain Connect                December 2025
 
 
-     8.5.  Verification of Changes . . . . . . . . . . . . . . . . .  67
-   9.  Resolving Template Variables  . . . . . . . . . . . . . . . .  68
      9.1.  Variables . . . . . . . . . . . . . . . . . . . . . . . .  68
        9.1.1.  Variable Syntax . . . . . . . . . . . . . . . . . . .  68
        9.1.2.  Special and Built-In Variables  . . . . . . . . . . .  68
@@ -158,6 +156,8 @@ Internet-Draft               Domain Connect                December 2025
            Resolution  . . . . . . . . . . . . . . . . . . . . . . .  91
      A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  93
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  94
+
+
 
 
 
@@ -587,29 +587,29 @@ Internet-Draft               Domain Connect                December 2025
 
 4.2.  Trust Model
 
-   The Domain Connect protocol relies on a robust trust model to ensure
-   the security and reliability of DNS configuration delegation between
-   Service Providers and DNS Providers.  This model addresses the
-   necessary trust relationships between users, Service Providers, and
-   DNS Providers, centering on secure template utilization and DNS
-   Provider vetting processes.
+   DNS Providers are trusted parties by virtue of their existing full
+   access to the DNS zone.  DNS Providers enforce user authorization
+   checks before enacting any DNS zone changes, and present proposed
+   changes to the user in a human-readable form.
 
-4.2.1.  Trust Establishment
+   Service Providers are not assumed to be trusted by default.  A
+   malicious actor may attempt to exploit user trust by impersonating a
+   legitimate Service Provider.  Trust between DNS Providers and Service
+   Providers is therefore established out-of-band - typically through an
+   onboarding process involving contractual agreements or template
+   acceptance policies - during which the DNS Provider verifies the
+   legitimacy of the Service Provider and its templates.
 
-   User trust in the DNS Provider is an essential factor.  DNS Provider
-   is a trusted party by the fact that DNS Provider has full technical
-   access to the DNS zone already.  Users depend on their DNS Providers
-   to accurately reflect DNS record modifications initiated through
-   Domain Connect.  Consequently, DNS Providers are expected implement
-   authorization checks to validate user permissions prior to enacting
-   any DNS zone changes.  Furthermore, DNS Providers are responsible for
-   translating template specifications into a human-readable format,
-   enabling users to readily comprehend the nature and impact of
-   proposed DNS record changes.
+   Templates define and restrict the permitted scope of DNS
+   modifications.  By fixing the records that a Service Provider may
+   affect, templates ensure that no changes beyond the approved scope
+   can be applied.
 
-   Users would typically place trust in Service Providers to act
-   responsibly and only make DNS modifications that are within the scope
-   defined by the approved template, however it shall be observed that a
+5.  Protocol Flows Overview
+
+
+
+
 
 
 
@@ -617,37 +617,6 @@ Kowalik, et al.           Expires 20 June 2026                 [Page 11]
 
 Internet-Draft               Domain Connect                December 2025
 
-
-   malicious actor may try to exploit this trust by acting as a benign
-   Service Provider or building a fake one, therefore by default Service
-   Provider shall not be assumed to be a trusted party in the protocol
-   considerations.
-
-   A foundational element to close this gap is the establishment of
-   trust between DNS Providers and Service Providers.  DNS Providers
-   verify the legitimacy and security of templates provided by Service
-   Providers as well as they are able to verify textual information
-   included in the template and provided to the user, such as provider
-   name or service name.  This trust is typically established through an
-   onboarding process which may involve contractual agreements or
-   appropriate template acceptance policies.
-
-4.2.2.  Template Security
-
-   Templates are central to the trust model, defining the permitted
-   scope of DNS zone modifications and restricting Service Provider
-   actions, preventing unauthorized changes beyond the template's
-   specified parameters.  The template defines the types of DNS records
-   within the zone and together with a distinct domain name and
-   optionally sub-domain with user consent it defines clearly the part
-   of the zone that the Service Provider is authorized to modify via the
-   template application.  Service Providers create templates which are
-   then onboarded by DNS Providers, either adhering to a published
-   template definition or based on bilateral agreements.  The DNS
-   Provider has very explicit knowledge and control of the settings
-   being changed to enable a service.
-
-5.  Protocol Flows Overview
 
 5.1.  General information
 
@@ -665,14 +634,6 @@ Internet-Draft               Domain Connect                December 2025
    To apply the changes to DNS, there are two use cases.  The first is a
    synchronous web flow, and the second is an asynchronous flow using
    OAuth and an API.
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 12]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    It is noted that a DNS Provider MAY choose to only implement one of
    the flows, however it is RECOMMENDED to implement Synchronous Flow
@@ -705,6 +666,14 @@ Internet-Draft               Domain Connect                December 2025
       1 Provides domain name               |                      |
          |------------->|                  |                      |
          |              |                  |                      |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 12]
+
+Internet-Draft               Domain Connect                December 2025
+
+
          |              |       2 Initiates DNS discovery         |
          |              |---------------------------------------->|
          |              |                  |                      |
@@ -722,14 +691,6 @@ Internet-Draft               Domain Connect                December 2025
          |              |----------------->|                      |
          |              |                  |                      |
          |              7 Responds template|                      |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 13]
-
-Internet-Draft               Domain Connect                December 2025
-
-
          |              support status     |                      |
          |              |<-----------------|                      |
          |              |                  |                      |
@@ -761,6 +722,14 @@ Internet-Draft               Domain Connect                December 2025
          |-------------------------------->|                      |
          |              |                  |                      |
          |              |                  |----.                 |
+
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 13]
+
+Internet-Draft               Domain Connect                December 2025
+
+
          |              |                  |    | 14 Check domain |
          |              |                  |<---' ame in          |
          |              |                  |      customer's      |
@@ -778,14 +747,6 @@ Internet-Draft               Domain Connect                December 2025
          |              |                  |                      |
          |           18 Redirect/ Close window                    |
          |              |<- - - - - - - - -|                      |
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 14]
-
-Internet-Draft               Domain Connect                December 2025
-
-
          |              |                  |                      |
          |              |          19 Query DNS records           |
          |              |---------------------------------------->|
@@ -818,6 +779,13 @@ Internet-Draft               Domain Connect                December 2025
    5.   *DNS Provider Provides Settings*: The DNS Provider provides the
         settings, including information about API endpoints.
 
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 14]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    6.   *Service Provider Queries for Supported Template*: The Service
         Provider checks if the DNS Provider supports the specific
         template required for the service.
@@ -831,16 +799,6 @@ Internet-Draft               Domain Connect                December 2025
 
    9.   *User Navigates to DNS Provider*: The user navigates the link
         and user agent is directed to the DNS Provider's website.
-
-
-
-
-
-
-Kowalik, et al.           Expires 20 June 2026                 [Page 15]
-
-Internet-Draft               Domain Connect                December 2025
-
 
    10.  *DNS Provider Performs URL Lookup and Signature Key Verification
         (if required)*: If the template requires signing, the DNS
@@ -877,6 +835,13 @@ Internet-Draft               Domain Connect                December 2025
         queries the DNS records to verify that the changes have been
         applied.
 
+
+
+Kowalik, et al.           Expires 20 June 2026                 [Page 15]
+
+Internet-Draft               Domain Connect                December 2025
+
+
    20.  *DNS Server Returns New DNS Records*: The DNS Server returns the
         updated DNS records.
 
@@ -890,6 +855,41 @@ Internet-Draft               Domain Connect                December 2025
    wishes to make changes to DNS asynchronously with respect to the user
    interaction, or wishes to make multiple or additional changes to DNS
    over time.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -94,9 +94,9 @@ Table of Contents
        8.3.3.  Template Apply Request  . . . . . . . . . . . . . . .  48
        8.3.4.  Signature Verification  . . . . . . . . . . . . . . .  48
        8.3.5.  Template Apply Response . . . . . . . . . . . . . . .  49
-       8.3.6.  Template Apply Error Response . . . . . . . . . . . .  49
+       8.3.6.  Template Apply Error Response . . . . . . . . . . . .  50
      8.4.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . .  50
-       8.4.1.  General information . . . . . . . . . . . . . . . . .  50
+       8.4.1.  General information . . . . . . . . . . . . . . . . .  51
        8.4.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . .  51
        8.4.3.  OAuth Flow: Getting an Authorization Code . . . . . .  51
        8.4.4.  OAuth Flow: Requesting an Access Token  . . . . . . .  56
@@ -2604,28 +2604,28 @@ Internet-Draft               Domain Connect                   March 2026
 
    1.  Construct the canonical input string:
 
-       a.  Start with the full query string (everything after "?").
+       a.  Take all apply parameters except "sig" and "key".
 
-       b.  Remove the "sig" and "key" key/value pairs.
+       b.  URL-encode each parameter name and value per [RFC3986].
 
-       c.  Ensure all remaining parameter values are URL-encoded per
-           [RFC3986].
+       c.  Sort the parameters in ascending lexicographic order of the
+           URL-encoded parameter name.
+
+       d.  Concatenate them as name=value pairs joined by "&".
 
    2.  Sign the canonical input string using the private key
        corresponding to the public key published at the host identified
        by the "key" parameter within "syncPubKeyDomain" (see
        Section 6.4), using the algorithm identified by the "a" field of
-       the key record (default: "RS256").
+       the key record (default: "RS256").  The "RS256" identifier
+       denotes RSASSA-PKCS1-v1_5 using SHA-256, as defined in [RFC7518]
+       Section 3.3.
 
-   3.  Base64-encode the resulting signature per [RFC4648].
+   3.  The resulting signature MUST be Base64-encoded using the standard
+       alphabet per [RFC4648] Section 4 (conforming to the dc-sig rule).
 
    4.  Append the URL-encoded "sig" value and the "key" identifier to
-       the query string.
-
-   EXAMPLE: Example: signed query string parameters
-
-   The following parameters were appended to a request whose canonical
-   input was:
+       the canonical input string to form a signed query string.
 
 
 
@@ -2634,7 +2634,17 @@ Kowalik, et al.         Expires 2 September 2026               [Page 47]
 Internet-Draft               Domain Connect                   March 2026
 
 
-   a=1&b=2&ip=10.10.10.10&domain=example.net
+   The signed query string MUST be used as-is as the query string of the
+   request URL, without re-encoding, adding or re-ordering of query
+   parameters.
+
+   EXAMPLE: Example: signed query string parameters
+
+   Example canonical input:
+
+   a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb
+
+   Example signature:
 
    sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
    7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
@@ -2670,17 +2680,7 @@ Internet-Draft               Domain Connect                   March 2026
    2.  *Retrieve the public key* - Query DNS for TXT records at the host
        formed by prepending the "key" parameter value as a label to
        "syncPubKeyDomain" (see Section 6.4).  If no such records are
-       found, the request MUST be rejected.
-
-   3.  *Reassemble key fragments* - Collect all TXT records at that
-       host, parse each as a "dc-pubkey-record", and concatenate the "d"
-       values in ascending order of "p" to obtain the complete encoded
-       public key.
-
-   4.  *Determine algorithm and key format* - Read the "a" and "t"
-       fields.  If absent, assume "RS256" and "x509" respectively.
-
-
+       found, the processing fails.
 
 
 
@@ -2690,13 +2690,25 @@ Kowalik, et al.         Expires 2 September 2026               [Page 48]
 Internet-Draft               Domain Connect                   March 2026
 
 
-   5.  *Construct the canonical input string* - Ensure the query string
-       is still in raw form as received from the client - originally
-       URL-encoded, order of parameters kept.  Remove the "sig" and
-       "key" key/value pairs without reordering or re-encoding of the
-       remaining of the query string.
+   3.  *Reassemble key fragments* - Collect all TXT records at that
+       host, parse each as a "dc-pubkey-record", and concatenate the "d"
+       values in ascending order of "p" to obtain the complete encoded
+       public key.
 
-   6.  *Verify the signature* - URL-decode then base64-decode per
+   4.  *Determine algorithm and key format* - Read the "a" and "t"
+       fields.  If absent, assume "RS256" and "x509" respectively.
+
+   5.  *Decode the public key* - decode the key from Base64 encoding and
+       key format indicated by "t".
+
+   6.  *Construct the canonical input string* - Remove the "sig" and
+       "key" key/value pairs from the received query string without
+       reordering or re-encoding the remaining of the query string.  If
+       the canonical string needs to be reconstructed from individual
+       parameters (what is not RECOMMENDED), the same construction steps
+       as the signing procedure MUST be followed (see Section 8.3.2.1).
+
+   7.  *Verify the signature* - URL-decode then base64-decode per
        [RFC4648] the "sig" parameter value, and verify the signature
        against the input string using the retrieved public key and
        identified algorithm.
@@ -2723,6 +2735,17 @@ Internet-Draft               Domain Connect                   March 2026
       DNS Provider's page was opened in a separate window or tab, the
       DNS Provider SHOULD attempt to close that window or tab.
 
+
+
+
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 49]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    To prevent open redirects, the DNS Provider MUST NOT redirect the
    user agent to a "redirect_uri" value whose registered domain is not
    listed in the template's "syncRedirectDomain" field, unless the
@@ -2737,14 +2760,6 @@ Internet-Draft               Domain Connect                   March 2026
    because authentication failed, the user does not control the domain,
    the domain is suspended, or the user explicitly canceled - the DNS
    Provider MUST signal an error.
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 49]
-
-Internet-Draft               Domain Connect                   March 2026
-
 
    If "redirect_uri" is present and the open-redirect constraint is
    satisfied, the DNS Provider MUST redirect the user agent to the
@@ -2779,6 +2794,14 @@ Internet-Draft               Domain Connect                   March 2026
 
 8.4.  Asynchronous Flow: OAuth
 
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 50]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
 8.4.1.  General information
 
    Using the OAuth flow is a more advanced use case needed by Service
@@ -2792,15 +2815,6 @@ Internet-Draft               Domain Connect                   March 2026
    Not all DNS Providers will support the asynchronous flow.  As such it
    is recommended that Service Providers relying on an OAuth
    implementation also implement a synchronous implementation.
-
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 50]
-
-Internet-Draft               Domain Connect                   March 2026
-
 
 8.4.2.  OAuth Flow: Setup
 
@@ -2831,6 +2845,19 @@ Internet-Draft               Domain Connect                   March 2026
    Normative URI template of the Authorization Code End-Point per
    [RFC6570]:
 
+
+
+
+
+
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 51]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    GET
 
    {+urlAsyncUX}/v2/domainTemplates/providers/{providerId}{?domain,host,
@@ -2849,14 +2876,6 @@ Internet-Draft               Domain Connect                   March 2026
    on their behalf.  Similarly the DNS Provider MAY warn the user that
    (the eventual) application of a template might change existing
    records and/or disrupt existing services attached to the domain.
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 51]
-
-Internet-Draft               Domain Connect                   March 2026
-
 
    While the variables for the applied template would be provided later,
    the values of some variables may be necessary to determine conflicts.
@@ -2877,6 +2896,23 @@ Internet-Draft               Domain Connect                   March 2026
    protocol) of the template serviceIds.  The host parameter is an
    OPTIONAL comma separated list of hosts.  A blank entry for the host
    implies the template can be applied to the Zone Apex For example:
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 52]
+
+Internet-Draft               Domain Connect                   March 2026
+
 
    +===============================================+==================+
    | *Query String*                                | *Description*    |
@@ -2903,17 +2939,6 @@ Internet-Draft               Domain Connect                   March 2026
        Table 10: examples of scope and host parameter values in the
                                 async flow
 
-
-
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 52]
-
-Internet-Draft               Domain Connect                   March 2026
-
-
    Upon successful authorization/verification/consent from the user, the
    DNS Provider MUST direct the user agent to the redirect URI.  The
    authorization code MUST be appended to this URI as a query parameter
@@ -2935,6 +2960,15 @@ Internet-Draft               Domain Connect                   March 2026
    The following table describes the values of the URI template for the
    request for the OAuth consent flow that must be included unless
    otherwise indicated.
+
+
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 53]
+
+Internet-Draft               Domain Connect                   March 2026
+
 
    For "properties" name/value pairs, parameter names and values MUST be
    URL-decoded (percent-decoded per [RFC3986]) before processing.
@@ -2962,14 +2996,6 @@ Internet-Draft               Domain Connect                   March 2026
    |           |               | domain-name syntax (see               |
    |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 53]
-
-Internet-Draft               Domain Connect                   March 2026
-
-
    | *Host*    | host          | (OPTIONAL) A comma-separated list     |
    |           |               | of host names upon which the          |
    |           |               | template may be applied.              |
@@ -2992,6 +3018,14 @@ Internet-Draft               Domain Connect                   March 2026
    |           |               | The DNS Provider MUST validate        |
    |           |               | the value against the redirect        |
    |           |               | URIs registered during                |
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 54]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    |           |               | onboarding.                           |
    +-----------+---------------+---------------------------------------+
    | *Response | response_type | (OPTIONAL) If present, the value      |
@@ -3018,14 +3052,6 @@ Internet-Draft               Domain Connect                   March 2026
    |           |               | This text SHOULD be used to           |
    |           |               | augment the "providerName" value      |
    |           |               | from the template, not replace        |
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 54]
-
-Internet-Draft               Domain Connect                   March 2026
-
-
    |           |               | it.                                   |
    |           |               | The value MUST conform to the dc-     |
    |           |               | display-name syntax (see              |
@@ -3048,6 +3074,14 @@ Internet-Draft               Domain Connect                   March 2026
    |           |               | CSRF or to pass state back to the     |
    |           |               | caller.                               |
    |           |               | The value MUST conform to the         |
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 55]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    |           |               | "state" syntax as defined in          |
    |           |               | Appendix A of [RFC6749] (see          |
    |           |               | Section 3).                           |
@@ -3071,16 +3105,6 @@ Internet-Draft               Domain Connect                   March 2026
 
       Table 11: URI template parameters of the authorization end-point
                                in async flow
-
-
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 55]
-
-Internet-Draft               Domain Connect                   March 2026
-
 
 8.4.4.  OAuth Flow: Requesting an Access Token
 
@@ -3106,6 +3130,14 @@ Internet-Draft               Domain Connect                   March 2026
    Once authorization has been granted, the Service Provider MUST use
    the Authorization Code provided to request an Access Token.  The
    OAuth specification recommends that the Authorization Code be a short
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 56]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    lived token, and a reasonable recommended setting is ten minutes,
    however the specific setup would depend on specifics of DNS
    Provider's implementation.  As such this exchange needs to be
@@ -3129,14 +3161,6 @@ Internet-Draft               Domain Connect                   March 2026
    frowned upon given that various systems often log URLs.
 
    The body of the post is application/json encoded.
-
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 56]
-
-Internet-Draft               Domain Connect                   March 2026
-
 
    For an initial access token request, "code" MUST be set and
    "refresh_token" MUST NOT be set.  For a refresh request,
@@ -3162,6 +3186,14 @@ Internet-Draft               Domain Connect                   March 2026
    +----------------+---------------+----------------------------------+
    | *Refresh       | refresh_token | (CONDITIONAL) The refresh        |
    | Token*         |               | token used to obtain a new       |
+
+
+
+Kowalik, et al.         Expires 2 September 2026               [Page 57]
+
+Internet-Draft               Domain Connect                   March 2026
+
+
    |                |               | access token when the current    |
    |                |               | one has expired.  This value     |
    |                |               | MUST NOT be set when "code"      |
@@ -3186,14 +3218,6 @@ Internet-Draft               Domain Connect                   March 2026
    |                |               | "refresh_token", as defined      |
    |                |               | in Appendix A, Section A.10      |
    |                |               | of [RFC6749].                    |
-
-
-
-Kowalik, et al.         Expires 2 September 2026               [Page 57]
-
-Internet-Draft               Domain Connect                   March 2026
-
-
    +----------------+---------------+----------------------------------+
    | *Client ID*    | client_id     | (REQUIRED) The client            |
    |                |               | identifier issued by the DNS     |
@@ -3218,30 +3242,6 @@ Internet-Draft               Domain Connect                   March 2026
 
    Upon successful token exchange, the DNS Provider MUST return a
    response with 4 properties in the body of the response.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

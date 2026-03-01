@@ -3535,50 +3535,58 @@ IP=192.168.42.42&amp;RANDOMTEXT=shm%3A1542108821%3AHello</pre><a href="#section-
 <div id="_6a39b0a6-a83e-122a-93c8-1cc8ba1097bb">
 <p id="section-8.3.2.1-2">The Service Provider MUST generate the digital signature as follows:<a href="#section-8.3.2.1-2" class="pilcrow">¶</a></p>
 </div>
-<div id="_9168971e-431e-aa65-6440-ed8d3075aa18">
+<div id="_c18fcd90-dc19-f860-537a-68eb7d6f61c2">
 <ol start="1" type="1" class="normal type-1" id="section-8.3.2.1-3">
 <li id="section-8.3.2.1-3.1">
                 <div id="_22c9b8f2-6c89-bb91-53f7-c9ccd829c580">
 <p id="section-8.3.2.1-3.1.1">Construct the canonical input string:<a href="#section-8.3.2.1-3.1.1" class="pilcrow">¶</a></p>
 </div>
-<div id="_b1ed3e24-9127-0fb9-f9ba-6025c8539474">
+<div id="_a6ece73d-1490-1a73-0fe0-612c5957b7d8">
 <ol start="1" type="a" class="normal type-a" id="section-8.3.2.1-3.1.2">
-<li id="section-8.3.2.1-3.1.2.1">Start with the full query string (everything after <code>"?"</code>).<a href="#section-8.3.2.1-3.1.2.1" class="pilcrow">¶</a>
+<li id="section-8.3.2.1-3.1.2.1">Take all apply parameters except <code>"sig"</code> and <code>"key"</code>.<a href="#section-8.3.2.1-3.1.2.1" class="pilcrow">¶</a>
 </li>
-                  <li id="section-8.3.2.1-3.1.2.2">Remove the <code>"sig"</code> and <code>"key"</code> key/value pairs.<a href="#section-8.3.2.1-3.1.2.2" class="pilcrow">¶</a>
+                  <li id="section-8.3.2.1-3.1.2.2">URL-encode each parameter name and value per <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-8.3.2.1-3.1.2.2" class="pilcrow">¶</a>
 </li>
-                  <li id="section-8.3.2.1-3.1.2.3">Ensure all remaining parameter values are URL-encoded per <span>[<a href="#RFC3986" class="cite xref">RFC3986</a>]</span>.<a href="#section-8.3.2.1-3.1.2.3" class="pilcrow">¶</a>
+                  <li id="section-8.3.2.1-3.1.2.3">Sort the parameters in ascending lexicographic order of the URL-encoded parameter name.<a href="#section-8.3.2.1-3.1.2.3" class="pilcrow">¶</a>
+</li>
+                  <li id="section-8.3.2.1-3.1.2.4">Concatenate them as <code>name=value</code> pairs joined by <code>"&amp;"</code>.<a href="#section-8.3.2.1-3.1.2.4" class="pilcrow">¶</a>
 </li>
                 </ol>
 </div>
 </li>
-              <li id="section-8.3.2.1-3.2">Sign the canonical input string using the private key corresponding to the public key published at the host identified by the  <code>"key"</code> parameter within  <code>"syncPubKeyDomain"</code> (see <a href="#pubkey-publication" class="auto internal xref">Section 6.4</a>), using the algorithm identified by the  <code>"a"</code> field of the key record (default: <code>"RS256"</code>).<a href="#section-8.3.2.1-3.2" class="pilcrow">¶</a>
+              <li id="section-8.3.2.1-3.2">Sign the canonical input string using the private key corresponding to the public key published at the host identified by the <code>"key"</code> parameter within <code>"syncPubKeyDomain"</code> (see <a href="#pubkey-publication" class="auto internal xref">Section 6.4</a>), using the algorithm identified by the <code>"a"</code> field of the key record (default: <code>"RS256"</code>). The <code>"RS256"</code> identifier denotes <code>RSASSA-PKCS1-v1_5</code> using SHA-256, as defined in <span>[<a href="#RFC7518" class="cite xref">RFC7518</a>]</span> Section 3.3.<a href="#section-8.3.2.1-3.2" class="pilcrow">¶</a>
 </li>
-              <li id="section-8.3.2.1-3.3">Base64-encode the resulting signature per <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span>.<a href="#section-8.3.2.1-3.3" class="pilcrow">¶</a>
+              <li id="section-8.3.2.1-3.3">The resulting signature MUST be Base64-encoded using the standard alphabet per <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span> Section 4 (conforming to the <code>dc-sig</code> rule).<a href="#section-8.3.2.1-3.3" class="pilcrow">¶</a>
 </li>
-              <li id="section-8.3.2.1-3.4">Append the URL-encoded <code>"sig"</code> value and the <code>"key"</code> identifier to the query string.<a href="#section-8.3.2.1-3.4" class="pilcrow">¶</a>
+              <li id="section-8.3.2.1-3.4">Append the URL-encoded <code>"sig"</code> value and the <code>"key"</code> identifier to the canonical input string to form a signed query string.<a href="#section-8.3.2.1-3.4" class="pilcrow">¶</a>
 </li>
             </ol>
 </div>
-<div id="_e32e0d1b-a448-aef7-df87-53fd9c587f41">
-<p id="section-8.3.2.1-4" class="keepWithNext">EXAMPLE: Example: signed query string parameters<a href="#section-8.3.2.1-4" class="pilcrow">¶</a></p>
+<div id="_5181ddd9-9828-471a-f1ea-947b1556b0f2">
+<p id="section-8.3.2.1-4">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.<a href="#section-8.3.2.1-4" class="pilcrow">¶</a></p>
 </div>
-<div id="_c230f7be-5fc3-2aa4-fe3c-8bd518f7892f">
-<p id="section-8.3.2.1-5">The following parameters were appended to a request whose canonical input was:<a href="#section-8.3.2.1-5" class="pilcrow">¶</a></p>
+<div id="_425021c2-1d7e-b109-5e9e-bbfe81631097">
+<p id="section-8.3.2.1-5" class="keepWithNext">EXAMPLE: Example: signed query string parameters<a href="#section-8.3.2.1-5" class="pilcrow">¶</a></p>
 </div>
-<div id="_48bba002-211e-ccdf-123b-7a13ec6c8e3e">
-<div class="sourcecode" id="section-8.3.2.1-6">
-<pre>a=1&amp;b=2&amp;ip=10.10.10.10&amp;domain=example.net</pre><a href="#section-8.3.2.1-6" class="pilcrow">¶</a>
+<div id="_bd26df97-8cfa-589b-39bd-f7c64a9d28b0">
+<p id="section-8.3.2.1-6">Example canonical input:<a href="#section-8.3.2.1-6" class="pilcrow">¶</a></p>
 </div>
+<div id="_634d3cd4-f315-5a7c-98fe-8860d20fecd8">
+<div class="sourcecode" id="section-8.3.2.1-7">
+<pre>a=1&amp;b=2&amp;domain=example.net&amp;ip=10.10.10.10&amp;text=a%2Bb</pre><a href="#section-8.3.2.1-7" class="pilcrow">¶</a>
+</div>
+</div>
+<div id="_6e01ac1c-9e2f-93e8-f3fd-e767cc4c94cd">
+<p id="section-8.3.2.1-8">Example signature:<a href="#section-8.3.2.1-8" class="pilcrow">¶</a></p>
 </div>
 <div id="_9fd1b34c-f4da-6e2d-7598-08d28107442a">
-<div class="sourcecode" id="section-8.3.2.1-7">
+<div class="sourcecode" id="section-8.3.2.1-9">
 <pre>sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
 HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
-SHgJq9%2FXoMTTw%3D%3D&amp;key=_dcpubkeyv1</pre><a href="#section-8.3.2.1-7" class="pilcrow">¶</a>
+SHgJq9%2FXoMTTw%3D%3D&amp;key=_dcpubkeyv1</pre><a href="#section-8.3.2.1-9" class="pilcrow">¶</a>
 </div>
 </div>
 </section>
@@ -3609,13 +3617,13 @@ SHgJq9%2FXoMTTw%3D%3D&amp;key=_dcpubkeyv1</pre><a href="#section-8.3.2.1-7" clas
 <div id="_724acf24-241b-f541-f2bf-6b630bb7aab5">
 <p id="section-8.3.4-1">Upon receiving a Template Apply Request for a template whose <code>"syncPubKeyDomain"</code> is set, the DNS Provider MUST perform the following steps and MUST reject the request if any step fails:<a href="#section-8.3.4-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_eb521140-12c1-03b1-9abf-8c323e60c4ad">
+<div id="_b5e59ce9-4c8c-5c30-6fad-63f3f3759e96">
 <ol start="1" type="1" class="normal type-1" id="section-8.3.4-2">
 <li id="section-8.3.4-2.1">
               <strong>Check for required parameters</strong> - The request MUST carry both <code>"sig"</code> and <code>"key"</code> parameters.<a href="#section-8.3.4-2.1" class="pilcrow">¶</a>
 </li>
             <li id="section-8.3.4-2.2">
-              <strong>Retrieve the public key</strong> - Query DNS for TXT records at the host formed by prepending the <code>"key"</code> parameter value as a label to <code>"syncPubKeyDomain"</code> (see <a href="#pubkey-publication" class="auto internal xref">Section 6.4</a>). If no such records are found, the request MUST be rejected.<a href="#section-8.3.4-2.2" class="pilcrow">¶</a>
+              <strong>Retrieve the public key</strong> - Query DNS for TXT records at the host formed by prepending the <code>"key"</code> parameter value as a label to <code>"syncPubKeyDomain"</code> (see <a href="#pubkey-publication" class="auto internal xref">Section 6.4</a>). If no such records are found, the processing fails.<a href="#section-8.3.4-2.2" class="pilcrow">¶</a>
 </li>
             <li id="section-8.3.4-2.3">
               <strong>Reassemble key fragments</strong> - Collect all TXT records at that host, parse each as a <code>"dc-pubkey-record"</code>, and concatenate the <code>"d"</code> values in ascending order of <code>"p"</code> to obtain the complete encoded public key.<a href="#section-8.3.4-2.3" class="pilcrow">¶</a>
@@ -3624,10 +3632,13 @@ SHgJq9%2FXoMTTw%3D%3D&amp;key=_dcpubkeyv1</pre><a href="#section-8.3.2.1-7" clas
               <strong>Determine algorithm and key format</strong> - Read the <code>"a"</code> and <code>"t"</code> fields. If absent, assume <code>"RS256"</code> and <code>"x509"</code> respectively.<a href="#section-8.3.4-2.4" class="pilcrow">¶</a>
 </li>
             <li id="section-8.3.4-2.5">
-              <strong>Construct the canonical input string</strong> - Ensure the query string is still in raw form as received from the client - originally URL-encoded, order of parameters kept. Remove the <code>"sig"</code> and <code>"key"</code> key/value pairs without reordering or re-encoding of the remaining of the query string.<a href="#section-8.3.4-2.5" class="pilcrow">¶</a>
+              <strong>Decode the public key</strong> - decode the key from Base64 encoding and key format indicated by <code>"t"</code>.<a href="#section-8.3.4-2.5" class="pilcrow">¶</a>
 </li>
             <li id="section-8.3.4-2.6">
-              <strong>Verify the signature</strong> - URL-decode then base64-decode per <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span> the <code>"sig"</code> parameter value, and verify the signature against the input string using the retrieved public key and identified algorithm.<a href="#section-8.3.4-2.6" class="pilcrow">¶</a>
+              <strong>Construct the canonical input string</strong> - Remove the <code>"sig"</code> and <code>"key"</code> key/value pairs from the received query string without reordering or re-encoding the remaining of the query string. If the canonical string needs to be reconstructed from individual parameters (what is not RECOMMENDED), the same construction steps as the signing procedure MUST be followed (see <a href="#signing-procedure" class="auto internal xref">Section 8.3.2.1</a>).<a href="#section-8.3.4-2.6" class="pilcrow">¶</a>
+</li>
+            <li id="section-8.3.4-2.7">
+              <strong>Verify the signature</strong> - URL-decode then base64-decode per <span>[<a href="#RFC4648" class="cite xref">RFC4648</a>]</span> the <code>"sig"</code> parameter value, and verify the signature against the input string using the retrieved public key and identified algorithm.<a href="#section-8.3.4-2.7" class="pilcrow">¶</a>
 </li>
           </ol>
 </div>

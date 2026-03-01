@@ -760,18 +760,21 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 
 <t anchor="_6a39b0a6-a83e-122a-93c8-1cc8ba1097bb">The Service Provider MUST generate the digital signature as follows:</t>
 
-<ol anchor="_9168971e-431e-aa65-6440-ed8d3075aa18" type="1"><li><t anchor="_22c9b8f2-6c89-bb91-53f7-c9ccd829c580">Construct the canonical input string:</t>
-<ol anchor="_b1ed3e24-9127-0fb9-f9ba-6025c8539474" type="a"><li>Start with the full query string (everything after <tt>"?"</tt>).</li>
-<li>Remove the <tt>"sig"</tt> and <tt>"key"</tt> key/value pairs.</li>
-<li>Ensure all remaining parameter values are URL-encoded per <xref target="RFC3986" section="" relative=""></xref>.</li>
+<ol anchor="_c18fcd90-dc19-f860-537a-68eb7d6f61c2" type="1"><li><t anchor="_22c9b8f2-6c89-bb91-53f7-c9ccd829c580">Construct the canonical input string:</t>
+<ol anchor="_a6ece73d-1490-1a73-0fe0-612c5957b7d8" type="a"><li>Take all apply parameters except <tt>"sig"</tt> and <tt>"key"</tt>.</li>
+<li>URL-encode each parameter name and value per <xref target="RFC3986" section="" relative=""></xref>.</li>
+<li>Sort the parameters in ascending lexicographic order of the URL-encoded parameter name.</li>
+<li>Concatenate them as <tt>name=value</tt> pairs joined by <tt>"&#x26;"</tt>.</li>
 </ol>
 </li>
-<li>Sign the canonical input string using the private key corresponding to the public key published at the host identified by the  <tt>"key"</tt> parameter within  <tt>"syncPubKeyDomain"</tt> (see <xref target="pubkey-publication"></xref>), using the algorithm identified by the  <tt>"a"</tt> field of the key record (default: <tt>"RS256"</tt>).</li>
-<li>Base64-encode the resulting signature per <xref target="RFC4648" section="" relative=""></xref>.</li>
-<li>Append the URL-encoded <tt>"sig"</tt> value and the <tt>"key"</tt> identifier to the query string.</li>
+<li>Sign the canonical input string using the private key corresponding to the public key published at the host identified by the <tt>"key"</tt> parameter within <tt>"syncPubKeyDomain"</tt> (see <xref target="pubkey-publication"></xref>), using the algorithm identified by the <tt>"a"</tt> field of the key record (default: <tt>"RS256"</tt>). The <tt>"RS256"</tt> identifier denotes <tt>RSASSA-PKCS1-v1_5</tt> using SHA-256, as defined in <xref target="RFC7518" section="" relative=""></xref> Section 3.3.</li>
+<li>The resulting signature MUST be Base64-encoded using the standard alphabet per <xref target="RFC4648" section="" relative=""></xref> Section 4 (conforming to the <tt>dc-sig</tt> rule).</li>
+<li>Append the URL-encoded <tt>"sig"</tt> value and the <tt>"key"</tt> identifier to the canonical input string to form a signed query string.</li>
 </ol>
 
-<t anchor="_e32e0d1b-a448-aef7-df87-53fd9c587f41" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_c230f7be-5fc3-2aa4-fe3c-8bd518f7892f">The following parameters were appended to a request whose canonical input was:</t><sourcecode anchor="_48bba002-211e-ccdf-123b-7a13ec6c8e3e"><![CDATA[a=1&b=2&ip=10.10.10.10&domain=example.net]]></sourcecode><sourcecode anchor="_9fd1b34c-f4da-6e2d-7598-08d28107442a"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+<t anchor="_5181ddd9-9828-471a-f1ea-947b1556b0f2">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.</t>
+
+<t anchor="_425021c2-1d7e-b109-5e9e-bbfe81631097" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_bd26df97-8cfa-589b-39bd-f7c64a9d28b0">Example canonical input:</t><sourcecode anchor="_634d3cd4-f315-5a7c-98fe-8860d20fecd8"><![CDATA[a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb]]></sourcecode><t anchor="_6e01ac1c-9e2f-93e8-f3fd-e767cc4c94cd">Example signature:</t><sourcecode anchor="_9fd1b34c-f4da-6e2d-7598-08d28107442a"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
@@ -793,11 +796,12 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 
 <t anchor="_724acf24-241b-f541-f2bf-6b630bb7aab5">Upon receiving a Template Apply Request for a template whose <tt>"syncPubKeyDomain"</tt> is set, the DNS Provider MUST perform the following steps and MUST reject the request if any step fails:</t>
 
-<ol anchor="_eb521140-12c1-03b1-9abf-8c323e60c4ad" type="1"><li><strong>Check for required parameters</strong> - The request MUST carry both <tt>"sig"</tt> and <tt>"key"</tt> parameters.</li>
-<li><strong>Retrieve the public key</strong> - Query DNS for TXT records at the host formed by prepending the <tt>"key"</tt> parameter value as a label to <tt>"syncPubKeyDomain"</tt> (see <xref target="pubkey-publication"></xref>). If no such records are found, the request MUST be rejected.</li>
+<ol anchor="_b5e59ce9-4c8c-5c30-6fad-63f3f3759e96" type="1"><li><strong>Check for required parameters</strong> - The request MUST carry both <tt>"sig"</tt> and <tt>"key"</tt> parameters.</li>
+<li><strong>Retrieve the public key</strong> - Query DNS for TXT records at the host formed by prepending the <tt>"key"</tt> parameter value as a label to <tt>"syncPubKeyDomain"</tt> (see <xref target="pubkey-publication"></xref>). If no such records are found, the processing fails.</li>
 <li><strong>Reassemble key fragments</strong> - Collect all TXT records at that host, parse each as a <tt>"dc-pubkey-record"</tt>, and concatenate the <tt>"d"</tt> values in ascending order of <tt>"p"</tt> to obtain the complete encoded public key.</li>
 <li><strong>Determine algorithm and key format</strong> - Read the <tt>"a"</tt> and <tt>"t"</tt> fields. If absent, assume <tt>"RS256"</tt> and <tt>"x509"</tt> respectively.</li>
-<li><strong>Construct the canonical input string</strong> - Ensure the query string is still in raw form as received from the client - originally URL-encoded, order of parameters kept. Remove the <tt>"sig"</tt> and <tt>"key"</tt> key/value pairs without reordering or re-encoding of the remaining of the query string.</li>
+<li><strong>Decode the public key</strong> - decode the key from Base64 encoding and key format indicated by <tt>"t"</tt>.</li>
+<li><strong>Construct the canonical input string</strong> - Remove the <tt>"sig"</tt> and <tt>"key"</tt> key/value pairs from the received query string without reordering or re-encoding the remaining of the query string. If the canonical string needs to be reconstructed from individual parameters (what is not RECOMMENDED), the same construction steps as the signing procedure MUST be followed (see <xref target="signing-procedure"></xref>).</li>
 <li><strong>Verify the signature</strong> - URL-decode then base64-decode per <xref target="RFC4648" section="" relative=""></xref> the <tt>"sig"</tt> parameter value, and verify the signature against the input string using the retrieved public key and identified algorithm.</li>
 </ol>
 </section>

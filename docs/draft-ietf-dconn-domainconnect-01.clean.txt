@@ -2157,30 +2157,40 @@ Table of Contents
 
    1.  Construct the canonical input string:
 
-       a.  Start with the full query string (everything after "?").
+       a.  Take all apply parameters except "sig" and "key".
 
-       b.  Remove the "sig" and "key" key/value pairs.
+       b.  URL-encode each parameter name and value per [RFC3986].
 
-       c.  Ensure all remaining parameter values are URL-encoded per
-           [RFC3986].
+       c.  Sort the parameters in ascending lexicographic order of the
+           URL-encoded parameter name.
+
+       d.  Concatenate them as name=value pairs joined by "&".
 
    2.  Sign the canonical input string using the private key
        corresponding to the public key published at the host identified
        by the "key" parameter within "syncPubKeyDomain" (see
        Section 6.4), using the algorithm identified by the "a" field of
-       the key record (default: "RS256").
+       the key record (default: "RS256").  The "RS256" identifier
+       denotes RSASSA-PKCS1-v1_5 using SHA-256, as defined in [RFC7518]
+       Section 3.3.
 
-   3.  Base64-encode the resulting signature per [RFC4648].
+   3.  The resulting signature MUST be Base64-encoded using the standard
+       alphabet per [RFC4648] Section 4 (conforming to the dc-sig rule).
 
    4.  Append the URL-encoded "sig" value and the "key" identifier to
-       the query string.
+       the canonical input string to form a signed query string.
+
+   The signed query string MUST be used as-is as the query string of the
+   request URL, without re-encoding, adding or re-ordering of query
+   parameters.
 
    EXAMPLE: Example: signed query string parameters
 
-   The following parameters were appended to a request whose canonical
-   input was:
+   Example canonical input:
 
-   a=1&b=2&ip=10.10.10.10&domain=example.net
+   a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb
+
+   Example signature:
 
    sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
    7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
@@ -2216,7 +2226,7 @@ Table of Contents
    2.  *Retrieve the public key* - Query DNS for TXT records at the host
        formed by prepending the "key" parameter value as a label to
        "syncPubKeyDomain" (see Section 6.4).  If no such records are
-       found, the request MUST be rejected.
+       found, the processing fails.
 
    3.  *Reassemble key fragments* - Collect all TXT records at that
        host, parse each as a "dc-pubkey-record", and concatenate the "d"
@@ -2226,13 +2236,17 @@ Table of Contents
    4.  *Determine algorithm and key format* - Read the "a" and "t"
        fields.  If absent, assume "RS256" and "x509" respectively.
 
-   5.  *Construct the canonical input string* - Ensure the query string
-       is still in raw form as received from the client - originally
-       URL-encoded, order of parameters kept.  Remove the "sig" and
-       "key" key/value pairs without reordering or re-encoding of the
-       remaining of the query string.
+   5.  *Decode the public key* - decode the key from Base64 encoding and
+       key format indicated by "t".
 
-   6.  *Verify the signature* - URL-decode then base64-decode per
+   6.  *Construct the canonical input string* - Remove the "sig" and
+       "key" key/value pairs from the received query string without
+       reordering or re-encoding the remaining of the query string.  If
+       the canonical string needs to be reconstructed from individual
+       parameters (what is not RECOMMENDED), the same construction steps
+       as the signing procedure MUST be followed (see Section 8.3.2.1).
+
+   7.  *Verify the signature* - URL-decode then base64-decode per
        [RFC4648] the "sig" parameter value, and verify the signature
        against the input string using the retrieved public key and
        identified algorithm.

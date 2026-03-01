@@ -5,6 +5,9 @@ Domain Connect specification is published on GitHub and can be displayed under f
 * [IETF Draft](https://domain-connect.github.io/spec/) - this is Editor's copy of IETF draft.
   * The last published version is [here](https://datatracker.ietf.org/doc/draft-ietf-dconn-domainconnect/)
 
+* Editors working branch [draft-ietf-dconn-domainconnect-XX](https://github.com/Domain-Connect/spec/tree/ietf/draft-ietf-dconn-domainconnect-XX)
+* Release branch [ietf-submission](https://github.com/Domain-Connect/spec/tree/feature/ietf-submission)
+
 ## Lifecycle of the specification
 
 * New version of the specification is published by new commits on master branch of this repository.

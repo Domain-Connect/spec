@@ -1,0 +1,48 @@
+[[non-essential-record]]
+=== Non-essential records
+
+Typically a template specifies a list of DNS records which are required for the service.
+There may be cases where some records are only required for a very short period of time, and removing or altering the record later (either by the end user or through application of another template) should not trigger conflict detection.
+
+This can be controlled by the <<template-record, essential>> property of a record in the template.
+
+Again, this setting only impacts DNS Providers that maintain applied template state.
+
+
+==== SPF Record Merging
+
+The challenge with SPF records and Domain Connect is that an individual service might recommend an SPF record. If only one service were active, this would be accurate. But with several services together only the DNS Provider is able to determine the valid shape of a SPF TXT record.
+
+One solution to this problem is to merge all related records. At the highest level, this means taking everything between the “v=spf1” and the “all” from each of the records and merging them together, terminating with hard-coded modifier on `all` at the end.  For an SPF record to fulfill it's purpose of protection against malicious email delivery, Domain Connect advises a fixed modifier `"~"` advising lower rating of the messages from other sources not specified in SPF. This setup offers a reasonable level of protection of mail delivery, on the other side does not reject the message in case forwarding facility is in place.
+
+----
+@ TXT v=spf1 include:spf.mailer1.example include:_spf.newsletter.exam
+ple ~all
+----
+
+The other would be to write intermediate records, and reference these locally.
+
+----
+r1.example.com. TXT v=spf1 include:spf.mailer1.example ~all
+r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
+@ TXT v=spf1 include:r1.example.com include:r2.example.com ~all
+----
+
+There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.
+
+The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called `SPFM`. This has the following attribute:
+
+spfRules::
+Determines the desired rules, basically everything but leading "v=spf1" and trailing `all` rule -  see: <<template-record, SPF Rules>>
+
+When a template is added or removed with an `SPFM` record in the template, some code would need to take the aggregate value of all `SPFM` records in all templates applied as well as existing SPF TXT record on the host and recalculate the resulting SPF TXT record. In case several sources specify the same rule with a different policy DNS Provider SHOULD apply the least restrictive one as a result. `soft failure` SHOULD be preferred over `hard failure`, `neutral` SHOULD be preferred over `soft failure`.
+
+DNS Provider SHOULD also allow the end user to modify the SPF record after merging.
+
+Due to merging step in between, the resulting SPF TXT records are considered non-essential. That means the user may decide to override the final calculated value or remove the whole SPF record. This action MUST NOT lead to removal of any related templates in conflict detection and template integrity routines if implemented by the DNS Provider.
+
+If the existing TXT record makes the merging operation not possible, the DNS Provider MUST handle this situation the same way as a conflict and either let the end-user resolve it in the UX (both in Synchronous and Asynchronous flow) or return the conflict as an error in the Asynchronous flow unless the `force=true` parameter is used, effectively removing the existing record.
+
+Service Providers MUST NOT check content of TXT SPF record for an exact match, as it might be strongly influenced by the DNS Provider merging strategy and user actions.
+
+See <<example-spf-merge>>.

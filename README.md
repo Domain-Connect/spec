@@ -1,7 +1,9 @@
 # Domain Connect Specification
 
 Domain Connect specification is published on GitHub and can be displayed under following link
-* [Specification](Domain%20Connect%20Spec%20Draft.adoc)
+* [Specification](Domain%20Connect%20Spec%20Draft.adoc) - this version is not actively developed
+* [IETF Draft](https://domain-connect.github.io/spec/) - this is Editor's copy of IETF draft.
+  * The last published version is [here](https://datatracker.ietf.org/doc/draft-ietf-dconn-domainconnect/)
 
 ## Lifecycle of the specification
 

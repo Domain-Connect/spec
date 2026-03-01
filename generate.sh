@@ -49,3 +49,7 @@ xml2rfc --text --html --pdf --path "$OUTDIR" "$OUTDIR/$filename.xml"
 
 # Generate a clean text version into docs
 xml2rfc --text --no-pagination -o "$OUTDIR/$filename.clean.txt" "$OUTDIR/$filename.xml"
+
+# Replace instances in index.html
+cd "$OUTDIR"
+sed -i "s/draft-ietf-dconn-domainconnect-[0-9]\{2\}/$filename/g" index.html

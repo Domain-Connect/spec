@@ -26,4 +26,4 @@ The change will be then taken under Review.
 Using VSCode with Dev Container extension, launch VSCode with the configuration provided in .devcontainer
 
 Execute:
-`./generate.sh draft-kowalik-domainconnect-00`
+`./generate.sh draft-kowalik-domainconnect-02`

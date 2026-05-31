@@ -75,85 +75,65 @@ diff --git a/draft-ietf-dconn-domainconnect-02.adoc b/draft-ietf-dconn-domaincon
 index 67bf132..035bc6d 100644
 --- a/draft-ietf-dconn-domainconnect-02.adoc
 +++ b/draft-ietf-dconn-domainconnect-02.adoc
-// === DIFF: Use Cases ===
-@@ -70,7 +70,7 @@ The following use cases illustrate the wide range of applications where Domain C
- 
+
  * *SaaS Provider with One-Off DNS Configuration:* A Software as a Service (SaaS) Provider offering functionality with an option to assign own domain name, such as web hosting or email, can utilize Domain Connect to streamline the process of configuring DNS records for their customers. This automation eliminates the need for manual configuration and simplifies the onboarding experience for users.
- 
--* *SaaS Provider with Multi-Step DNS Configuration:* Some SaaS Providers may require a multi-step DNS configuration process, potentially involving asynchronous operations. For example, a service might require initial verification of domain ownership through a TXT record, followed by the creation of CNAME records for different subdomains. Domain Connect can handle such scenarios by utilizing its asynchronous flow. This allows the Service Provider to obtain user consent and apply the necessary DNS changes in multiple steps, even if the user is not actively present during the entire process.
-+* *SaaS Provider with Multi-Step DNS Configuration:* Some SaaS Providers may require a multi-step DNS configuration process. For example, a service might require initial verification of domain ownership through a TXT record, followed by the creation of CNAME records for different subdomains. Domain Connect can handle such scenarios by utilizing record groups (`"groupId"`) to apply parts of a template in separate interactions, each with explicit user consent.
- 
+
+* *SaaS Provider with Multi-Step DNS Configuration:* Some SaaS Providers may require a multi-step DNS configuration process, potentially involving asynchronous operations. For example, a service might require initial verification of domain ownership through a TXT record, followed by the creation of CNAME records for different subdomains. Domain Connect can handle such scenarios by utilizing its asynchronous flow. This allows the Service Provider to obtain user consent and apply the necessary DNS changes in multiple steps, even if the user is not actively present during the entire process.
+
  * *On-Premise Service with Publicly Accessible DNS Service:* An on-premise service, such as a local network device or server, can also benefit from Domain Connect if it utilizes a publicly accessible DNS service. By leveraging Domain Connect, the service can automatically update DNS records as needed, ensuring that the service remains accessible through its domain name.
  
-// === DIFF: Use Cases out of scope ===
-@@ -82,7 +82,7 @@ The following use cases illustrate the wide range of applications where Domain C
  
  While Domain Connect offers significant advantages in automating DNS configuration, it's important to recognize scenarios where it might not be the ideal solution:
  
--* *Automation or CI/CD Pipelines:* Domain Connect is primarily designed for user-driven DNS configuration, where an end user grants consent and applies changes. Automating this process within CI/CD pipelines or other automated workflows can be challenging, as it requires obtaining and securely storing OAuth tokens beforehand. However, if authorization tokens are pre-obtained from a user-driven setup process, Domain Connect can be also integrated into automation workflows.
-+* *Automation or CI/CD Pipelines:* Domain Connect is primarily designed for user-driven DNS configuration, where an end user grants consent and applies changes. Automating this process within CI/CD pipelines or other automated workflows is outside the scope of this specification.
+* *Automation or CI/CD Pipelines:* Domain Connect is primarily designed for user-driven DNS configuration, where an end user grants consent and applies changes. Automating this process within CI/CD pipelines or other automated workflows can be challenging, as it requires obtaining and securely storing OAuth tokens beforehand. However, if authorization tokens are pre-obtained from a user-driven setup process, Domain Connect can be also integrated into automation workflows.
  
  * *Private/Enterprise DNS with Public SaaS Providers:* Domain Connect relies on public DNS records and endpoints to facilitate discovery and configuration. If a private or enterprise DNS service is used, it might not be directly compatible with Domain Connect, unless the DNS service provides publicly accessible Domain Connect endpoints. 
  
-// === DIFF: Terminology — imported terms (client_id, response_type) ===
-@@ -111,8 +111,6 @@ The following definitions and rules are imported normatively from other document
- `"ldh-label"`:: "NR-LDH Label" as defined in Section 2.3.2.2. of <<RFC5890>>.
- `"domain-name"`:: "Internationalized Domain Name" as defined in Section 2.3.2.3. of <<RFC5890>>.
- `"state"`:: "state" as defined in Appendix A. Section A5 of <<RFC6749>>.
--`"client_id"`:: "client_id" as defined in Section 2.2 of <<RFC6749>>.
--`"response_type"`:: "response_type" as defined in Section 3.1.1 of <<RFC6749>>.
+`"ldh-label"`:: "NR-LDH Label" as defined in Section 2.3.2.2. of <<RFC5890>>.
+`"domain-name"`:: "Internationalized Domain Name" as defined in Section 2.3.2.3. of <<RFC5890>>.
+`"state"`:: "state" as defined in Appendix A. Section A5 of <<RFC6749>>.
+`"client_id"`:: "client_id" as defined in Section 2.2 of <<RFC6749>>.
+`"response_type"`:: "response_type" as defined in Section 3.1.1 of <<RFC6749>>.
  `"redirect_uri"`:: "redirect_uri" as defined in Appendix A, Section A.6 of <<RFC6749>>.
  `"unicode-assignable"`:: "Unicode Assignables" as defined in Section 4.3 of <<RFC9839>>.
  `"JSON number"`:: "number" as defined in Section 6 of <<RFC8259>>.
-// === DIFF: ABNF — dc-scope rule ===
-@@ -139,12 +137,6 @@ dc-id-list     =  dc-id *( "," dc-id )
-                 ; comma-separated list of dc-id values;
-                 ; used for groupId parameter
- 
--dc-scope       =  dc-id *( SP dc-id )
--                ; space-separated list of dc-id values;
--                ; strict subset of OAuth 2.0 scope (RFC 6749 
--                ; Appendix A.4);
--                ; used for the scope parameter
--
+                ; comma-separated list of dc-id values;
+                ; used for groupId parameter
+
+dc-scope       =  dc-id *( SP dc-id )
+                ; space-separated list of dc-id values;
+                ; strict subset of OAuth 2.0 scope (RFC 6749 
+                ; Appendix A.4);
+                ; used for the scope parameter
+
  dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                  ; comma-separated list of domain names
  
-// === DIFF: ABNF — dc-force rule ===
-@@ -176,10 +168,6 @@ dc-description-text =  0*2048unicode-assignable
-                 ; Assignable code points per RFC 9839 Section 4.3;
-                 ; used for description and variableDescription
- 
--dc-force       =  "0" / "1"
--                ; used for force parameter                     
--                ; 0 = respect conflicts, 1 = override conflicts
--
+                ; Assignable code points per RFC 9839 Section 4.3;
+                ; used for description and variableDescription
+
+dc-force       =  "0" / "1"
+                ; used for force parameter                     
+                ; 0 = respect conflicts, 1 = override conflicts
+
  dc-version     =  %x31-39 *DIGIT
                  ; positive integer, no leading zeros,
                  ; no fraction, no exponent;
-// === DIFF: Terminology prose — reserved-for-extensions added to base ===
-@@ -286,6 +274,9 @@ User:: Refers to the end-user who has means to control domain name's DNS configu
- 
- Service Template/Template:: A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a means of communication between Service Provider and DNS Provider.
- 
-+[[reserved-for-extensions]]
-+Certain labels, parameters, endpoints, and registry entries are present in this specification with _Reserved_ status. These items appear in the original Domain Connect community specification <<DC-SPEC>> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <<DC-SPEC>>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <<DC-SPEC>>.
-+
+
+Service Template/Template:: A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a means of communication between Service Provider and DNS Provider.
+
  :sectnums:
  
  == Protocol design
-// === DIFF: Protocol Flows — intro paragraph (two-flow description) ===
-@@ -314,11 +305,7 @@ To attach a domain name to a service provided by a Service Provider, the user wo
- 
- Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.
- 
--To apply the changes to DNS, there are two use cases. The first is a synchronous web flow, and the second is an asynchronous flow using OAuth and an API.
--
--It is noted that a DNS Provider MAY choose to only implement one of the flows, however it is RECOMMENDED to implement Synchronous Flow which fulfill needs of most Service Providers.
--
--Individual Service Providers MAY work with the synchronous flow only, the asynchronous flow only, or with both.
-+To apply the changes to DNS, this document defines a synchronous web flow. The DNS Provider presents a consent UX to the user and applies the template within the same interaction session.
- 
+
+Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.
+
+To apply the changes to DNS, there are two use cases. The first is a synchronous web flow, and the second is an asynchronous flow using OAuth and an API.
+
+It is noted that a DNS Provider MAY choose to only implement one of the flows, however it is RECOMMENDED to implement Synchronous Flow which fulfill needs of most Service Providers.
+
+
+
  === The Synchronous Flow
  This flow is tailored for the Service Provider that requires a user-attended, one-time change to DNS configuration.
 . *DNS Server Returns New DNS Records*: The DNS Server returns the updated DNS records.
@@ -232,66 +212,49 @@ Steps:
 [[domain-connect-objects-and-templates]]
  == Domain Connect Objects and Templates
  
-// === DIFF: Template fields — serviceId description, syncBlock ===
-@@ -544,7 +461,7 @@ The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
- |String
- |serviceId
- |(REQUIRED) The name or identifier of the template.
--This is used in URLs to identify the template and in the scope parameter for OAuth. +
-+This is used in URLs to identify the template. +
+|String
+|serviceId
+|(REQUIRED) The name or identifier of the template.
+This is used in URLs to identify the template and in the scope parameter for OAuth. +
  
  The value MUST conform to the `dc-id` syntax (see <<terminology>>).
  
-// === DIFF: Template fields — syncBlock description ===
-@@ -593,7 +510,7 @@ The value MUST conform to the `dc-description-text` syntax (see <<terminology>>)
- |*Synchronous Block*
- |Boolean
- |syncBlock
--|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. +
-+|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. The DNS Provider MUST refuse a synchronous apply request for this template and MUST return an appropriate error to the user. +
+|*Synchronous Block*
+|Boolean
+|syncBlock
+|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. +
  
  The default is `"false"`.
  
-// === DIFF: Template Scope and Sub Domains descriptions ===
-@@ -897,13 +814,13 @@ The following table lists the fields that MAY be defined for each record type. O
- [[template-scope]]
- ==== Template Scope
- 
--Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. For synchronous operations, the `"host"` value is specified in the URL. For asynchronous operations, permissions are granted for specific `"host"` values, whose value is later specified when applying the template.
-+Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. The `"host"` value is specified in the apply URL.
- 
- The template's `"host"` or `"name"` field values are interpreted relative to this scope, as described in <<host-name-rendering>>.
- 
- ==== Sub Domains
- 
--The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection for asynchronous (OAuth) flows.
-+The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection.
+[[template-scope]]
+==== Template Scope
+
+Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. For synchronous operations, the `"host"` value is specified in the URL. For asynchronous operations, permissions are granted for specific `"host"` values, whose value is later specified when applying the template.
+
+The template's `"host"` or `"name"` field values are interpreted relative to this scope, as described in <<host-name-rendering>>.
+
+==== Sub Domains
+
+The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection for asynchronous (OAuth) flows.
  
  To add a record at the Zone Apex even when a Sub Domain is specified in the apply request, the template `"host"` field value `"%domain%."` MAY be used, which resolves to the absolute Zone Apex name regardless of the `"host"` parameter.
  
-// === DIFF: Settings response — urlAsyncUX field definition ===
-@@ -1113,11 +1030,7 @@ The URI MAY include a path component.
- |*UX URL Prefix for Asynchronous Flows*
- |urlAsyncUX
- |String
--|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain. +
--
--This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
--
--The URI MAY include a path component.
-+|(Reserved. See <<reserved-for-extensions>>.)
- 
- |*API URL Prefix*
+|*UX URL Prefix for Asynchronous Flows*
+|urlAsyncUX
+|String
+|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain. +
+
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
+
+
+|*API URL Prefix*
  |urlAPI
-// === DIFF: Endpoints section — async OAuth flow mention ===
-@@ -1226,9 +1139,7 @@ discovery are in the form of URLs.
- 
- The first set of endpoints are for the UX that the Service Provider
- links to. These are for the synchronous flow where the user can click
--to grant consent and have changes applied, and for the
--asynchronous OAuth flow where the user can grant consent for
--OAuth access.
-+to grant consent and have changes applied.
+
+The first set of endpoints are for the UX that the Service Provider
+links to. These are for the synchronous flow where the user can click
+to grant consent and have changes applied, and for the
+asynchronous OAuth flow where the user can grant consent for
+OAuth access.
  
  The second set of endpoints are for the REST API.
  
@@ -895,68 +858,47 @@ DNS verification MUST be treated as the authoritative signal of success. The rel
 
 Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
  
-// === DIFF: §9.1 OAuth Client Secret Leakage (Security Considerations) ===
-@@ -2448,18 +1770,6 @@ Examples of template processing are in <<examples>>.
- [[security-considerations]]
- == Security Considerations
- 
--=== OAuth Client Secret Leakage
--
--When the `"client_secret"` is used in the OAuth token exchange, care must
--be taken to prevent secret leakage. A malicious actor could create a domain
--with a false `"_domainconnect"` TXT record pointing to a server under their
--control, causing a Service Provider that uses the discovered `"urlAPI"` value
--to inadvertently expose the secret to that server.
--
--The Service Provider SHOULD therefore maintain the `"urlAPI"` endpoint for
--OAuth token requests as a stored, pre-registered value per DNS Provider,
--rather than using the value returned during DNS Provider discovery.
--
+[[security-considerations]]
+== Security Considerations
+
+=== OAuth Client Secret Leakage
+
+When the `"client_secret"` is used in the OAuth token exchange, care must
+be taken to prevent secret leakage. A malicious actor could create a domain
+with a false `"_domainconnect"` TXT record pointing to a server under their
+control, causing a Service Provider that uses the discovered `"urlAPI"` value
+to inadvertently expose the secret to that server.
+
+The Service Provider SHOULD therefore maintain the `"urlAPI"` endpoint for
+OAuth token requests as a stored, pre-registered value per DNS Provider,
+rather than using the value returned during DNS Provider discovery.
+
  [[sec-variable-phishing]]
  === Template Variable Phishing
  
-// === DIFF: IANA registry — Reserved status value and urlAsyncUX row ===
-@@ -2499,6 +1809,7 @@ Each entry in the registry MUST include:
- * *Status*: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
- ** `"Active"`: the property is currently in use and its definition is normative.
- ** `"Deprecated"`: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.
-+** `"Reserved"`: the property appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
- * *Kind*: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for properties defined in a standards-track RFC, `"Informational"` for properties defined in an Informational RFC, or `"Other"` for any other specification.
- * *Reference*: the document that defines the property.
- 
-@@ -2532,7 +1843,7 @@ The following properties from this specification constitute the initial contents
- |This document
- 
- |`"urlAsyncUX"`
--|Active
-+|Reserved
- |IETF Standard
- |This document
- 
-// === DIFF: Change History — -02 to -03 entry added to base ===
-@@ -2610,6 +1921,15 @@ The authors wish to thank the following persons for their feedback and suggestio
- [removeInRFC=true,toc=include,numbered=false]
- == Change History
- 
-+[toc=exclude,numbered=false]
-+=== Change from draft-ietf-dconn-domainconnect-02 to -03
-+- Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.
-+- Removed ABNF rules `dc-scope` and `dc-force`, and imported terms `"client_id"` and `"response_type"`, as these are specific to the asynchronous flow; removed informative reference to <<RFC7591>> (OAuth Dynamic Client Registration).
-+- Added <<reserved-for-extensions,format=title>> statement to <<terminology,format=title>>; marked the `"urlAsyncUX"` settings property and its <<iana-settings-properties,format=title>> registry entry as Reserved for back-compatibility with <<DC-SPEC>>.
-+- Added `"Reserved"` status value to the <<iana-settings-properties,format=title>> registry.
-+- Removed OAuth Client Secret Leakage from <<security-considerations,format=title>>; retained <<sec-variable-phishing,format=title>>.
-+- Re-described the `"syncBlock"` template field: the DNS Provider MUST refuse a synchronous apply request for this template and MUST return an appropriate error.
-+
+* *Status*: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
+** `"Active"`: the property is currently in use and its definition is normative.
+** `"Deprecated"`: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.
+* *Kind*: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for properties defined in a standards-track RFC, `"Informational"` for properties defined in an Informational RFC, or `"Other"` for any other specification.
+* *Reference*: the document that defines the property.
+
+|This document
+
+|`"urlAsyncUX"`
+|Active
+|IETF Standard
+|This document
+
+[removeInRFC=true,toc=include,numbered=false]
+== Change History
+
  [toc=exclude,numbered=false]
  === Change from draft-ietf-dconn-domainconnect-00 to -01
  - Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.
-// === DIFF: References — RFC7591 removed, DC-SPEC added to base ===
-@@ -2696,7 +2016,7 @@ The authors wish to thank the following persons for their feedback and suggestio
- == Informative References
- * [[[RFC9364,RFC 9364]]] Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF, DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023, <https://www.rfc-editor.org/info/rfc9364>.
- * [[[RFC8499,RFC 8499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, <https://www.rfc-editor.org/info/rfc8499>.
--* [[[RFC7591, RFC 7591]]] Jones, M., Bradley, J., Machulak, M., Hunt, P., and J.Richer, "OAuth 2.0 Dynamic Client Registration Protocol",IETF, DOI 10.17487/RFC7591, RFC 7591, July 2015, <https://www.rfc-editor.org/info/rfc7591>.
-+* [[[DC-SPEC,DC-SPEC]]] "Domain Connect Specification", Version 2.3 Rev. 67, Domain Connect Community, <https://github.com/Domain-Connect/spec/releases/tag/rev.67>.
+== Informative References
+* [[[RFC9364,RFC 9364]]] Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF, DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023, <https://www.rfc-editor.org/info/rfc9364>.
+* [[[RFC8499,RFC 8499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, <https://www.rfc-editor.org/info/rfc8499>.
+* [[[RFC7591, RFC 7591]]] Jones, M., Bradley, J., Machulak, M., Hunt, P., and J.Richer, "OAuth 2.0 Dynamic Client Registration Protocol",IETF, DOI 10.17487/RFC7591, RFC 7591, July 2015, <https://www.rfc-editor.org/info/rfc7591>.
  
  [appendix]
  [[examples]]

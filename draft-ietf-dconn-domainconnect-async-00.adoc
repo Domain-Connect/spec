@@ -124,56 +124,46 @@ Steps:
 . *DNS Server Returns New DNS Records*: The DNS Server returns the updated DNS records.
 . *Service Provider Reports Success (Asynchronous)*: The Service Provider reports to the user that the domain has been successfully connected to the service.
 
-[[domain-connect-objects-and-templates]]
- == Domain Connect Objects and Templates
- 
-|String
-|serviceId
-|(REQUIRED) The name or identifier of the template.
-This is used in URLs to identify the template and in the scope parameter for OAuth. +
- 
- The value MUST conform to the `dc-id` syntax (see <<terminology>>).
- 
-|*Synchronous Block*
-|Boolean
-|syncBlock
-|(OPTIONAL) When `"true"`, indicates that this template does not support the synchronous flow. +
- 
- The default is `"false"`.
- 
+////
+FRAGMENTS TO BE INCORPORATED INTO §4 (DNS Provider Discovery Extension) AND §5 (OAuth).
+These are original spec fragments preserved here pending restructuring in later steps.
+
+--- Fragment: Template scope note (for §5 prose, async host scoping) ---
+
 [[template-scope]]
-==== Template Scope
+Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair.
+For asynchronous operations, permissions are granted for specific `"host"` values, whose
+value is later specified when applying the template.
 
-Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair. For synchronous operations, the `"host"` value is specified in the URL. For asynchronous operations, permissions are granted for specific `"host"` values, whose value is later specified when applying the template.
+The template's `"host"` or `"name"` field values are interpreted relative to this scope,
+as described in the base draft.
 
-The template's `"host"` or `"name"` field values are interpreted relative to this scope, as described in <<host-name-rendering>>.
+Sub Domains note: Template `"host"` field values containing variables that resolve to
+sub-domain labels cause the template scope to be indeterminate at consent time, which
+prevents accurate conflict detection for asynchronous (OAuth) flows.
 
-==== Sub Domains
+--- Fragment: urlAsyncUX settings table row (for §4) ---
 
-The recommended way to configure records on a Sub Domain is to use the `"host"` apply parameter rather than embedding sub-domain labels in template `"host"` field values as variables. This keeps the template scope unambiguous and enables correct conflict detection and template state tracking. Template `"host"` field values containing variables that resolve to sub-domain labels cause the template scope to be indeterminate at consent time, which prevents accurate conflict detection for asynchronous (OAuth) flows.
- 
- To add a record at the Zone Apex even when a Sub Domain is specified in the apply request, the template `"host"` field value `"%domain%."` MAY be used, which resolves to the absolute Zone Apex name regardless of the `"host"` parameter.
- 
 |*UX URL Prefix for Asynchronous Flows*
 |urlAsyncUX
 |String
-|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the asynchronous flow on this domain. +
+|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the
+asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting
+the asynchronous flow on this domain. +
 
-This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority component, and MUST NOT contain a query component or fragment component. +
+This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority
+component, and MUST NOT contain a query component or fragment component. +
 
+The URI MAY include a path component.
 
-|*API URL Prefix*
- |urlAPI
+--- Fragment: redirect_uri constraint prose (for §5.3) ---
 
-The first set of endpoints are for the UX that the Service Provider
-links to. These are for the synchronous flow where the user can click
-to grant consent and have changes applied, and for the
-asynchronous OAuth flow where the user can grant consent for
-OAuth access.
- 
- The second set of endpoints are for the REST API.
- 
-If `"redirect_uri"` is not present or the open-redirect constraint is not satisfied, the DNS Provider MUST gracefully terminate the user flow and SHOULD present an appropriate error indication to the user. When the user agent is a web browser and the DNS Provider's page was opened in a separate window or tab, the DNS Provider SHOULD attempt to close that window or tab.
+If `"redirect_uri"` is not present or the open-redirect constraint is not satisfied,
+the DNS Provider MUST gracefully terminate the user flow and SHOULD present an appropriate
+error indication to the user. When the user agent is a web browser and the DNS Provider's
+page was opened in a separate window or tab, the DNS Provider SHOULD attempt to close
+that window or tab.
+////
 
 === Asynchronous Flow: OAuth
 ==== General information

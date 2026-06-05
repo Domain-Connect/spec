@@ -6,7 +6,7 @@
 :intended-series: standard
 :submission-type: IETF
 :docnumber: draft-ietf-dconn-domainconnect-02
-:published-date: 2026-03-01
+:published-date: 2026-06-05
 :status: informational
 :ipr: trust200902
 :area: Applications and Real-Time
@@ -306,6 +306,8 @@ To attach a domain name to a service provided by a Service Provider, the user wo
 Instead of relying on examination of the nameservers and mapping these to DNS Providers, DNS Provider discovery is handled through simple records in DNS and an API. The Service Provider queries for a specific record in the zone that returns a REST endpoint to initiate the protocol. When this endpoint is called, a Domain Connect compliant DNS Provider returns information about that domain and how to configure it using Domain Connect.
 
 To apply the changes to DNS, this document defines a synchronous web flow. The DNS Provider presents a consent UX to the user and applies the template within the same interaction session.
+
+<<DC-SPEC>> also defines an asynchronous flow based on OAuth. Other flows may be defined in the future. Therefore, although it is RECOMMENDED to cover the synchronous flow, implementers MAY decide not to do so and only implement other flows not defined in this document. The signaling offered by DNS Provider discovery allows for that.
 
 === The Synchronous Flow
 This flow is tailored for the Service Provider that requires a user-attended, one-time change to DNS configuration.
@@ -1467,7 +1469,7 @@ If `"redirect_uri"` is not present or the open-redirect constraint is not satisf
 
 After the synchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.
 
-DNS verification MUST be treated as the authoritative signal of success. A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes. A `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied; the DNS Provider MAY have applied the template before the error condition arose.
+DNS verification MUST be treated as the authoritative signal of success. A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes. Similarly, a `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied; the DNS Provider MAY have applied the template before the error condition arose.
 
 Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
 
@@ -1775,7 +1777,7 @@ Examples of template processing are in <<examples>>.
 
 Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value — for example, a hijacked IP address — and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.
 
-Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: disabling the synchronous flow via `"syncBlock"`, digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
+Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), using an alternative flow not prone to this risk and disabling the synchronous flow via `"syncBlock"`, and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
 
 [#iana]
 == IANA Considerations
@@ -1924,11 +1926,6 @@ The authors wish to thank the following persons for their feedback and suggestio
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-02 to -03
 - Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.
-- Removed ABNF rules `dc-scope` and `dc-force`, and imported terms `"client_id"` and `"response_type"`, as these are specific to the asynchronous flow; removed informative reference to <<RFC7591>> (OAuth Dynamic Client Registration).
-- Added <<reserved-for-extensions,format=title>> statement to <<terminology,format=title>>; marked the `"urlAsyncUX"` settings property and its <<iana-settings-properties,format=title>> registry entry as Reserved for back-compatibility with <<DC-SPEC>>.
-- Added `"Reserved"` status value to the <<iana-settings-properties,format=title>> registry.
-- Removed OAuth Client Secret Leakage from <<security-considerations,format=title>>; retained <<sec-variable-phishing,format=title>>.
-- Re-described the `"syncBlock"` template field: the DNS Provider MUST refuse a synchronous apply request for this template and MUST return an appropriate error.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-00 to -01
@@ -2016,7 +2013,39 @@ The authors wish to thank the following persons for their feedback and suggestio
 == Informative References
 * [[[RFC9364,RFC 9364]]] Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF, DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023, <https://www.rfc-editor.org/info/rfc9364>.
 * [[[RFC8499,RFC 8499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, <https://www.rfc-editor.org/info/rfc8499>.
-* [[[DC-SPEC,DC-SPEC]]] "Domain Connect Specification", Version 2.3 Rev. 67, Domain Connect Community, <https://github.com/Domain-Connect/spec/releases/tag/rev.67>.
+
+// Documentation of asciibib: https://www.relaton.org/asciibib/
+
+[[DC-SPEC,DC-SPEC]]
+[%bibitem]
+==== Domain Connect Specification, Version 2.3 Rev. 67
+type:: standard
+link::
+link.type:: src
+link.content:: https://github.com/Domain-Connect/spec/blob/rev.67/Domain%20Connect%20Spec%20Draft.adoc
+
+date::
+date.type:: published
+date.on:: 2025-03-02
+
+contributor::
+contributor.role.type:: publisher
+contributor.organization.name:: Domain Connect Community
+
+contributor::
+contributor.role.type:: author
+contributor.person.name.surname:: Blinn
+contributor.person.name.forename:: A.
+
+contributor::
+contributor.role.type:: author
+contributor.person.name.surname:: Kerola
+contributor.person.name.forename:: S.
+
+contributor::
+contributor.role.type:: author
+contributor.person.name.surname:: Kowalik
+contributor.person.name.forename:: P.
 
 [appendix]
 [[examples]]

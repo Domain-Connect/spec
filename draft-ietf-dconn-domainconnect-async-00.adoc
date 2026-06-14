@@ -59,14 +59,10 @@ This document defines the Asynchronous OAuth 2.0 extension to the Domain Connect
 == Introduction
 
 The Domain Connect Protocol, as specified in <<DOMAINCONNECT-BASE>>, defines a synchronous flow for DNS configuration provisioning between Service Providers and DNS Providers.
-This document extends that protocol with an asynchronous OAuth 2.0 flow, needed by Service Providers that have more complex configurations that may require multiple steps and/or are asynchronous from the user's interaction.
+This document extends that protocol with an asynchronous OAuth 2.0 based flow, needed by Service Providers that have more complex configurations that may require multiple steps and/or are asynchronous from the user's interaction.
 
-Implementations of this extension MUST also implement <<DOMAINCONNECT-BASE>>.
-The asynchronous flow defined in this document is OPTIONAL.
-DNS Providers that do not implement this extension continue to interoperate with Service Providers that use only the synchronous flow defined in <<DOMAINCONNECT-BASE>>.
+Implementations of this extension MUST also implement <<DOMAINCONNECT-BASE>> however the implementation of synchronous flow is in this case OPTIONAL.
 It is RECOMMENDED that Service Providers that implement the asynchronous flow also implement the synchronous flow as a fallback for DNS Providers that do not support the asynchronous flow.
-
-The asynchronous flow defined in this document is compatible with the Domain Connect Specification <<DC-SPEC>> Version 2.3 Rev. 67.
 
 [glossary]
 [toc=exclude]
@@ -86,6 +82,11 @@ The following terms are imported from <<RFC6749>>:
 `"client_id"`:: `"client_id"` as defined in Section 2.2 of <<RFC6749>>.
 `"response_type"`:: `"response_type"` as defined in Section 3.1.1 of <<RFC6749>>.
 
+The following term is used as an abbreviation in this document:
+
+[horizontal]
+OAuth:: Used in this document as an alias for OAuth 2.0, as defined in <<RFC6749>>.
+
 The following ABNF rules are defined in this document:
 
 [source,abnf]
@@ -104,8 +105,6 @@ dc-force       =  "0" / "1"
 The `dc-id` rule is defined in <<DOMAINCONNECT-BASE>>.
 
 The `dc-host-list` rule is defined in <<DOMAINCONNECT-BASE>>.
-In the context of this document it is used in the authorization request `"host"` parameter
-as a comma-separated list of host names for which the Service Provider is requesting consent.
 
 :sectnums:
 
@@ -114,7 +113,7 @@ as a comma-separated list of host names for which the Service Provider is reques
 
 The asynchronous OAuth flow is tailored for the Service Provider that wishes to make changes to DNS asynchronously with respect to the user interaction, or wishes to make multiple or additional changes to DNS over time.
 
-Steps 1–14 of the asynchronous flow are identical to those of the Synchronous Flow defined in <<DOMAINCONNECT-BASE>>. This section describes the divergence beginning at step 15, where the DNS Provider requests OAuth consent for future DNS changes instead of applying the template immediately.
+Steps 1-14 of the asynchronous flow are identical to those of the Synchronous Flow defined in <<DOMAINCONNECT-BASE>>. This section describes the divergence beginning at step 15, where the DNS Provider requests OAuth consent for future DNS changes instead of applying the template immediately.
 
 .Sequence diagram of Asynchronous Flow
 ....
@@ -182,47 +181,6 @@ Steps:
 . *DNS Server Returns New DNS Records*: The DNS Server returns the updated DNS records.
 . *Service Provider Reports Success (Asynchronous)*: The Service Provider reports to the user that the domain has been successfully connected to the service.
 
-////
-FRAGMENTS TO BE INCORPORATED INTO §4 (DNS Provider Discovery Extension) AND §5 (OAuth).
-These are original spec fragments preserved here pending restructuring in later steps.
-
---- Fragment: Template scope note (for §5 prose, async host scoping) ---
-
-[[template-scope]]
-Templates MUST be considered as scoped to the `"domain"` and `"host"` apply parameter pair.
-For asynchronous operations, permissions are granted for specific `"host"` values, whose
-value is later specified when applying the template.
-
-The template's `"host"` or `"name"` field values are interpreted relative to this scope,
-as described in the base draft.
-
-Sub Domains note: Template `"host"` field values containing variables that resolve to
-sub-domain labels cause the template scope to be indeterminate at consent time, which
-prevents accurate conflict detection for asynchronous (OAuth) flows.
-
---- Fragment: urlAsyncUX settings table row (for §4) ---
-
-|*UX URL Prefix for Asynchronous Flows*
-|urlAsyncUX
-|String
-|(OPTIONAL) The URL Prefix for linking to the UX elements of Domain Connect for the
-asynchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting
-the asynchronous flow on this domain. +
-
-This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an authority
-component, and MUST NOT contain a query component or fragment component. +
-
-The URI MAY include a path component.
-
---- Fragment: redirect_uri constraint prose (for §5.3) ---
-
-If `"redirect_uri"` is not present or the open-redirect constraint is not satisfied,
-the DNS Provider MUST gracefully terminate the user flow and SHOULD present an appropriate
-error indication to the user. When the user agent is a web browser and the DNS Provider's
-page was opened in a separate window or tab, the DNS Provider SHOULD attempt to close
-that window or tab.
-////
-
 [[dns-provider-discovery]]
 == DNS Provider Discovery Extension
 
@@ -261,35 +219,17 @@ API endpoints defined in this document (see <<oauth-token-request>> and
 
 == Asynchronous Flow: OAuth
 === General information
-////
-Moved to Introduction: "Using the OAuth flow is a more advanced use case needed by Service
-Providers that have more complex configurations that may require multiple steps and/or are
-asynchronous from the user's interaction."
-
-Duplicate of Introduction (lines 66-68): "Not all DNS Providers will support the asynchronous
-flow. As such it is recommended that Service Providers relying on an OAuth implementation also
-implement a synchronous implementation."
-////
 
 Details of an OAuth implementation are beyond the scope of this specification. Instead, an overview of how OAuth is used by Domain Connect is given here.
 
 === OAuth Flow: Setup
 
-Service Providers wishing to use the OAuth flow MUST register as an
-OAuth client with each DNS Provider. This is typically a manual
-process, however other solutions like OAuth Dynamic Client Registration <<RFC7591>> MAY be offered by DNS Provider as well.
+Service Providers wishing to use the OAuth flow MUST register as an OAuth client with each DNS Provider. This is typically a manual process, however other solutions like OAuth Dynamic Client Registration <<RFC7591>> MAY be offered by DNS Provider as well.
 
-To register, the Service Provider would provide (in addition to their
-template) any configuration necessary for the DNS Providers OAuth
-implementation. This includes valid URLs and Domains for redirects upon
-success or errors of OAuth flow, token validity, presence and validity of refresh tokens etc.
-
-Note: The validity of redirects are very important in any OAuth implementation.
-Most OAuth vulnerabilities are a combination of an open redirect and/or a
-compromised secret.
+To register, the Service Provider would provide (in addition to their template) any configuration necessary for the DNS Providers OAuth implementation. This includes valid URLs and Domains for redirects upon success or errors of OAuth flow, token validity, presence and validity of refresh tokens etc.
 
 The DNS Provider SHOULD give the Service Provider a client id and a secret which will be used when requesting tokens. For simplicity the client id MAY be the same as the providerId, however it is up to the agreement between the parties involved.
-Any other form of client authentication within OAuth framework MAY be agreed between the parties.
+Alternatively, any other form of client authentication within OAuth framework MAY be agreed between the parties.
 
 [[oauth-authorization-request]]
 === OAuth Flow: Getting an Authorization Code
@@ -306,15 +246,19 @@ state,properties*}
 }
 ----
 
-To initiate the OAuth flow the Service Provider first links to the DNS Provider to gain consent.
+To initiate the OAuth flow the Service Provider first redirects the user agent to the DNS Provider to gain consent.
 
-This endpoint is similar to the synchronous flow described above. The DNS Provider MUST authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for permission. Instead of permission to make a change to DNS, the permission is now to allow the Service Provider to make the changes on their behalf. Similarly the DNS Provider MAY warn the user that (the eventual) application of a template might change existing records and/or disrupt existing services attached to the domain.
+This endpoint is similar to the synchronous flow described in <<DOMAINCONNECT-BASE>>. The DNS Provider MUST authenticate the user, verify the user has control of the DNS Zone for the domain, and ask the user for permission. Instead of permission to make a change to DNS, the permission is now to allow the Service Provider to make the changes on their behalf. Similarly the DNS Provider MAY warn the user that (the eventual) application of a template might change existing records and/or disrupt existing services attached to the domain.
 
 While the variables for the applied template would be provided later, the values of some variables may be necessary to determine conflicts. As such, any variables impacting conflicting records SHOULD be provided in the consent flow. This primarily includes variables in hosts, and variables in the data portion for certain TXT records.
 
 The protocol allows for the Service Provider to gain consent to apply multiple templates. These templates are specified in the `"scope"` parameter. It also allows for the Service Provider to gain consent to apply these templates to the domain or to the domain with multiple sub-domains. These are specified in the `"domain"` and `"host"` parameter. If conflict detection is implemented by the DNS Provider, they SHOULD account for all permutations, in order to inform the end user of all possible consequences of the authorized change.
 
-The scope parameter is a space separated list (as per the OAuth protocol) of the template serviceIds. The host parameter is an OPTIONAL comma separated list of hosts. A blank entry for the host implies the template can be applied to the Zone Apex For example:
+Templates are scoped to the `"domain"` and `"host"` apply-parameter pair, and the specific `"host"` values authorized at consent time are bound by the access token (see <<oauth-apply-template>>). Note that a template whose `"host"` or `"name"` field contains a variable that resolves to one or more sub-domain labels has a scope that cannot be fully determined at consent time, since the resolved labels are only known when the template is applied. This prevents accurate conflict detection for such templates in the asynchronous flow.
+
+The scope parameter is a space separated list (as per the OAuth protocol) of the template serviceIds.
+
+The host parameter is an OPTIONAL comma separated list of hosts. A blank entry for the host implies the template can be applied to the Zone Apex For example:
 
 [cols=",",options="header",title="examples of scope and host parameter values in the async flow"]
 |=======================================================================
@@ -333,7 +277,10 @@ The scope parameter is a space separated list (as per the OAuth protocol) of the
 
 Upon successful authorization/verification/consent from the user, the DNS Provider MUST direct the user agent to the redirect URI. The authorization code MUST be appended to this URI as a query parameter of `"code="` as per the OAuth specification.
 
-Similar to the synchronous flow, upon error the DNS Provider MAY append an error code as query parameter `"error"`. These errors are also from the OAuth 2.0 <<RFC6749>> (4.1.2.1. Error Response - "error" parameter). Valid values include: `invalid_request`, `unauthorized_client`, `access_denied`, `unsupported_response_type`, `invalid_scope`, `server_error`, and `temporarily_unavailable`. An OPTIONAL `error_description` suitable for developers may also be returned at the discretion of the DNS Provider.
+If `"redirect_uri"` is not present or invalid, the DNS Provider MUST gracefully terminate the user flow and SHOULD present an appropriate error indication to the user, without any attempt to redirect user agent to this URL.
+
+Similar to the synchronous flow, upon error the DNS Provider MAY append an error code as query parameter `"error"`. These errors are also from the OAuth <<RFC6749>> (4.1.2.1. Error Response - "error" parameter). Valid values include: `invalid_request`, `unauthorized_client`, `access_denied`, `unsupported_response_type`, `invalid_scope`, `server_error`, and `temporarily_unavailable`. An OPTIONAL `error_description` suitable for developers may also be returned at the discretion of the DNS Provider.
+
 The same considerations as in the synchronous flow apply here.
 
 The state value passed into the call MUST be passed back on the query string as `"state="`.
@@ -452,15 +399,15 @@ Once authorization has been granted, the Service Provider MUST use the Authoriza
 
 This token exchange is typically done via a server to server API call from the Service Provider to the DNS Provider using a POST. When called in this manner a secret is provided along with the Authorization Code.
 
-OAuth does allow for retrieving the access token without a secret. This is typically done when the OAuth client is a client application.
-When onboarding with the DNS Provider this would need to be enabled.
-
+OAuth does allow for retrieving the access token without a secret. This is typically done when the OAuth client is a client application. When onboarding with the DNS Provider this would need to be enabled if required by the Service Provider.
 
 The following table describes the POST parameters that MUST be included in the
 request for the access token unless otherwise indicated.
 The parameters SHALL be accepted via the query string or the body of the post. This is again particularly important for the `client_secret`, as passing secrets via a query string is generally frowned upon given that various systems often log URLs.
 
-The body of the post is application/json encoded.
+//TODO: define preference rules if query and post parameters are used same time
+
+The body of the post is `"application/json"` encoded.
 
 For an initial access token request, `"code"` MUST be set and `"refresh_token"` MUST NOT be set. For a refresh request, `"refresh_token"` MUST be set and `"code"` MUST NOT be set. If `"redirect_uri"` was included in the original authorization request, it MUST be present in the token request and MUST be identical to the value used in that request.
 
@@ -564,7 +511,7 @@ call was successful. The response is the JSON described above.
 
 Once the Service Provider has the access token, they can call the DNS Provider's API to make changes to DNS on the domain by applying and (OPTIONALLY) removing authorized templates. These templates can be applied to the Zone Apex or to any Sub Domain that has been authorized.
 
-All calls to this API pass the access token in the Authorization Header of the request to the call to the API. More details can be found in the OAuth specifications, but as an example:
+All calls to this API pass the access token in the Authorization request header field as a bearer token, as specified in <<RFC6750>>, for example:
 
 [source]
 ----
@@ -574,8 +521,6 @@ Host: example.com
 
 Authorization: Bearer mF_9.B5f-4.1JqM
 ----
-
-While the calls below do not have the same security consideration of passing the secret, it is recommend that the urlAPI be from a stored value vs. the value returned during discovery here as well.
 
 [[oauth-apply-template]]
 === OAuth Flow: Apply Template to Domain
@@ -592,19 +537,21 @@ serviceName,instanceId,properties*}
 
 The primary function of the API is to apply a template to a user domain.
 
-While the `"providerId"` is implied in the authorization, this is on the path for consistency with the synchronous flows and other APIs. If not matching what was authorized, an error MUST be returned.
+While the `"providerId"` is implied in the authorization, this is on the URL path for consistency with the synchronous flows and other APIs. If not matching what was authorized, an error MUST be returned.
 
 When applying a template to a domain, it is possible that a conflict may exist with previous settings. While it is recommended that conflicts be detected when the user grants consent, because OAuth is asynchronous it is possible that a new conflict was introduced by the user.
 
-While it is up to the DNS Provider to determine what constitutes a conflict (see section on Conflicts below), when one is detected calling this API MUST return an error. This error SHOULD enumerate the conflicting records in a format described below.
+While it is up to the DNS Provider to determine what constitutes a conflict (see section on Conflict Detection in <<DOMAINCONNECT-BASE>>), when one is detected calling this API MUST return an error. This error SHOULD enumerate the conflicting records in a format described below.
 
 Because the user often isn't present at the time of this error, it is up the Service Provider to determine how to handle this condition. Some providers may decide to notify the user. Others may decide to apply their template anyway using the `"force"` parameter. This parameter will bypass error checks for conflicts, and after the call the service will be in its desired state.
 
 Calls to apply a template via OAuth require the following parameters posted to the above URL unless otherwise indicated.
-The DNS Provider MUST accept parameters in query string or body of this post.
-When `"properties"` name/value pairs are passed as query string parameters, the names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
 
-The body is application/json encoded.
+The DNS Provider MUST accept parameters in query string or body of this post. When `"properties"` name/value pairs are passed as query string parameters, the names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
+
+//TODO: also here define rules of precedence
+
+The body is `"application/json"` encoded.
 
 [cols=",,",options="header",title="URI template parameters of the apply end-point in the async flow"]
 |=======================================================================
@@ -681,7 +628,7 @@ The value MUST conform to the `dc-display-name` syntax (see <<terminology>>).
 |*Instance Id*
 |instanceId
 |(OPTIONAL) Only applicable to templates supporting multiple instances
-(see <<template-definition, multiInstance>> template property). Allows for later removal of one template instance by DNS Providers storing this information. +
+(see `"multiInstance"` template property in <<DOMAINCONNECT-BASE>>). Allows for later removal of one template instance by DNS Providers storing this information. +
 
 The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
@@ -691,11 +638,13 @@ An example call is below. In this example, it is contemplated that there are two
 
 [source]
 ----
-POST
+POST /v2/domainTemplates/providers/exampleservice.example/services
+/template1/apply?IP=192.0.2.42&RANDOMTEXT=shm%3A1542108821%3AHello
+&force=1 HTTP/1.1
 
-https://connect.dnsprovider.example/v2/domainTemplates/providers/
-exampleservice.example/services/template1/apply?IP=192.0.2.42&
-RANDOMTEXT=shm%3A1542108821%3AHello&force=1
+Host: connect.dnsprovider.example
+
+Authorization: Bearer mF_9.B5f-4.1JqM
 ----
 
 The API MUST validate the access token, and that the domain belongs to the user and is represented by the token being presented. The `"domain"` and `"host"` values MUST match those that were authorized in the access token. Any errors with variables, conflicting templates, or problems with the state of the domain are returned; otherwise the template is applied.
@@ -759,8 +708,7 @@ When a 409 is returned, the body of the response SHOULD contain details of the c
 ----
 ====
 
-In this example, the Service Provider tried to apply a new hosting
-template. The domain had an existing service applied for hosting.
+In this example, the Service Provider tried to apply a new hosting template. The domain had an existing service applied for hosting.
 
 === OAuth Flow: Revert Template
 
@@ -778,7 +726,6 @@ POST
 ----
 
 This API allows the removal of a template from a user domain/host using an OAuth request.
-
 
 An example URL might look like:
 
@@ -830,7 +777,7 @@ When present, the value MUST be a single name conforming to `domain-name` (see <
 |*Instance Id*
 |instanceId
 |(OPTIONAL) Only applicable to templates supporting multiple instances
-(see <<template-definition, multiInstance>> template property). +
+(see `"multiInstance"` template property in <<DOMAINCONNECT-BASE>>). +
 
 This value indicates an applied template instance to be removed. +
 
@@ -838,18 +785,18 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 |=======================================================================
 
 
-The DNS Provider MUST be able to accept these on the query string or in the body of the POST with `application/json` encoding.
+The DNS Provider MUST be able to accept these on the query string or in the body of the POST with `"application/json"` encoding.
 
 The DNS Provider MUST validate the access token and verify that the domain belongs to the user represented by the token. The `"domain"` and `"host"` values MUST match those that were authorized in the access token. The DNS Provider MUST further verify that the template identified by `"providerId"`/`"serviceId"` and optionally `"instanceId"` has been applied to the `"domain"`/`"host"`; if it has not, an error response with code 410 SHOULD be returned.
 
 If `"InstanceId"` is provided only the single template instance which was applied with provided `"InstanceId"` MUST be removed, otherwise all instances of applied template MUST be removed.
 
-The DNS Provider MUST remove all still active DNS Resource Records belonging to the identified template.
+The DNS Provider MUST remove all still active DNS Resource Records belonging to the identified template. Any other modification to the DNS Resource Records being a result of original template application, such as SPF record merging, MUST be reverted as well. 
 
-Response codes Success, Authorization, and Errors are identical to above with the addition of the 501 code.
+Response codes Success, Authorization, and Errors are identical to above with the addition of 410 and 501 codes.
 
 === OAuth Flow: Revoking Access
-Like all OAuth flows, the user may revoke the access at any time using UX at the DNS Provider site. As such the Service Provider needs to be aware that their access to the API may be denied.
+Like all OAuth flows, the user may revoke the access at any time using UX at the DNS Provider site. As such the Service Provider needs to be aware that their access to the API may be denied at any time.
 
 [[verification-of-changes]]
 == Verification of Changes
@@ -866,17 +813,30 @@ Receipt of the 2xx response MAY be used as a trigger to initiate DNS verificatio
 [[security-considerations]]
 == Security Considerations
 
-=== OAuth Client Secret Leakage
+=== DNS Provider Discovery Spoofing of the API Endpoint
 
-When the `"client_secret"` is used in the OAuth token exchange, care must
-be taken to prevent secret leakage. A malicious actor could create a domain
-with a false `"_domainconnect"` TXT record pointing to a server under their
-control, causing a Service Provider that uses the discovered `"urlAPI"` value
-to inadvertently expose the secret to that server.
+The `"urlAPI"` value used by the asynchronous flow is obtained via DNS Provider
+discovery (see <<dns-provider-discovery>>), which relies on a `"_domainconnect"`
+TXT record in the user's zone. A malicious actor who can create a domain with a
+false `"_domainconnect"` TXT record pointing to a server under their control can
+cause a Service Provider that uses the discovered `"urlAPI"` value to direct
+requests to that server.
 
-The Service Provider SHOULD therefore maintain the `"urlAPI"` endpoint for
-OAuth token requests as a stored, pre-registered value per DNS Provider,
-rather than using the value returned during DNS Provider discovery.
+This is most severe for the OAuth token exchange (see <<oauth-token-request>>):
+when the `"client_secret"` is used in the token request, a spoofed `"urlAPI"`
+would cause the Service Provider to inadvertently expose the secret to the
+attacker-controlled server.
+
+The subsequent API calls that use the access token — such as applying or
+revoking a template — do not transmit the `"client_secret"`, so they do not
+carry the same secret-leakage risk. They are nonetheless subject to the same
+endpoint-spoofing concern, and directing them to an attacker-controlled server
+could disclose the access token or the contents of DNS change requests.
+
+The Service Provider SHOULD therefore maintain the `"urlAPI"` endpoint as a
+stored, pre-registered value per DNS Provider for both the OAuth token request
+and the subsequent API calls, rather than using the value returned during DNS
+Provider discovery.
 
 [[sec-variable-phishing]]
 === Template Variable Phishing
@@ -884,18 +844,6 @@ rather than using the value returned during DNS Provider discovery.
 The phishing risks described in the Template Variable Phishing section of <<DOMAINCONNECT-BASE>> apply equally to the asynchronous flow.
 In particular, the `"properties"` parameter of the authorization request (see <<oauth-authorization-request>>) supplies variable values at consent time, and a malicious actor could craft a consent URL substituting harmful values.
 The mitigations described in <<DOMAINCONNECT-BASE>> (disabling the synchronous flow via `"syncBlock"`, digitally signing apply requests, and setting `"warnPhishing"`) apply to the asynchronous flow as well.
-
-////
-FRAGMENTS TO BE INCORPORATED INTO §8 (IANA Considerations).
-These are original spec fragments preserved here pending step 10.
-
---- Fragment: IANA registry rows for urlAsyncUX ---
-
-|`"urlAsyncUX"`
-|Active
-|IETF Standard
-|This document
-////
 
 == IANA Considerations
 
@@ -919,10 +867,10 @@ Properties" registry (created by <<DOMAINCONNECT-BASE>>) as follows:
 == Change History
 
 [toc=exclude,numbered=false]
-=== draft-ietf-dconn-domainconnect-async-00
-- Initial version. Defines the asynchronous OAuth 2.0 extension to the Domain Connect
-  Protocol. Restores and restructures the asynchronous flow content previously present
-  in draft-ietf-dconn-domainconnect-02, split into this companion document.
+=== Change from draft-ietf-dconn-domainconnect-01 to draft-ietf-dconn-domainconnect-async-00
+- Split the Asynchronous OAuth Flow out of draft-ietf-dconn-domainconnect-01 into this companion extension specification; the base document retains only the synchronous flow as of draft-ietf-dconn-domainconnect-02.
+- Restructured the asynchronous flow as a standalone document with its own Terminology, ABNF rules (`dc-scope`, `dc-force`), and references; rebased shared definitions on <<DOMAINCONNECT-BASE>>.
+- Moved the inline note about using a stored `"urlAPI"` value into <<security-considerations,format=title>> and expanded it to cover both the OAuth token request and the subsequent API calls.
 
 [bibliography,normative=true]
 == Normative References
@@ -935,10 +883,9 @@ Properties" registry (created by <<DOMAINCONNECT-BASE>>) as follows:
 * [[[RFC3986,RFC 3986]]] Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform Resource Identifier (URI): Generic Syntax", IETF, STD 66, DOI 10.17487/RFC3986, RFC 3986, January 2005, <https://www.rfc-editor.org/info/rfc3986>.
 * [[[RFC6570,RFC 6570]]] Gregorio, J., Fielding, R., Hadley, M., Nottingham, M., and D. Orchard, "URI Template", IETF, DOI 10.17487/RFC6570, RFC 6570, March 2012, <https://www.rfc-editor.org/info/rfc6570>.
 * [[[RFC9499,RFC 9499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC9499, RFC 9499, March 2024, <https://www.rfc-editor.org/info/rfc9499>.
-* [[[DOMAINCONNECT-BASE,DOMAINCONNECT-BASE]]] Kowalik, P., Blinn, A., Kolker, J., and S. Kerola, "Domain Connect Protocol - DNS provisioning between Services and DNS Providers", IETF Internet-Draft, draft-ietf-dconn-domainconnect (work in progress).
+* [[[DOMAINCONNECT-BASE, IETF(I-D.draft-ietf-dconn-domainconnect-02)]]] Kowalik, P., Blinn, A, Kolker, J., and S. Kerola, "Domain Connect Protocol - DNS provisioning between Services and DNS Providers", June 2026, <https://datatracker.ietf.org/doc/html/draft-ietf-dconn-domainconnect-02>.
 
 [bibliography,normative=false]
 == Informative References
 
 * [[[RFC7591,RFC 7591]]] Jones, M., Bradley, J., Machulak, M., Hunt, P., and J. Richer, "OAuth 2.0 Dynamic Client Registration Protocol", IETF, DOI 10.17487/RFC7591, RFC 7591, July 2015, <https://www.rfc-editor.org/info/rfc7591>.
-* [[[DC-SPEC,DC-SPEC]]] "Domain Connect Specification", Version 2.3 Rev. 67, Domain Connect Community, <https://github.com/Domain-Connect/spec/releases/tag/rev.67>.

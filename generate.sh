@@ -50,6 +50,11 @@ xml2rfc --text --html --pdf --path "$OUTDIR" "$OUTDIR/$filename.xml"
 # Generate a clean text version into docs
 xml2rfc --text --no-pagination -o "$OUTDIR/$filename.clean.txt" "$OUTDIR/$filename.xml"
 
-# Replace instances in index.html
+# Update the links for THIS spec in the landing page (docs/index.html), which
+# lists the editor's copies of all specs. Only links whose base name matches the
+# spec just built are rewritten to the new version, so building one spec does not
+# disturb the links of the other(s). The base is the filename without the
+# trailing two-digit version (e.g. "...-async-00" -> base "...-async").
 cd "$OUTDIR"
-sed -i "s/draft-ietf-dconn-domainconnect-[0-9]\{2\}/$filename/g" index.html
+base=`echo "$filename" | sed 's/-[0-9]\{2\}$//'`
+sed -i "s/$base-[0-9]\{2\}\./$filename./g" index.html

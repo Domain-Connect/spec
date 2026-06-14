@@ -70,22 +70,23 @@ Internet-Draft            Domain Connect Async                 June 2026
 Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
-   3.  The Asynchronous Flow . . . . . . . . . . . . . . . . . . . .   4
-   4.  DNS Provider Discovery Extension  . . . . . . . . . . . . . .   7
-   5.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . . . .   7
-     5.1.  General information . . . . . . . . . . . . . . . . . . .   8
-     5.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . . . .   8
-     5.3.  OAuth Flow: Getting an Authorization Code . . . . . . . .   8
-     5.4.  OAuth Flow: Requesting an Access Token  . . . . . . . . .  13
-     5.5.  OAuth Flow: Making Requests with Access Tokens  . . . . .  17
-     5.6.  OAuth Flow: Apply Template to Domain  . . . . . . . . . .  17
-     5.7.  OAuth Flow: Revert Template . . . . . . . . . . . . . . .  22
-     5.8.  OAuth Flow: Revoking Access . . . . . . . . . . . . . . .  25
-   6.  Verification of Changes . . . . . . . . . . . . . . . . . . .  25
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  26
-     7.1.  DNS Provider Discovery Spoofing of the API Endpoint . . .  26
-     7.2.  Template Variable Phishing  . . . . . . . . . . . . . . .  26
-   8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  26
+   2.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   4.  The Asynchronous Flow . . . . . . . . . . . . . . . . . . . .   4
+   5.  DNS Provider Discovery Extension  . . . . . . . . . . . . . .   7
+   6.  Asynchronous Flow: OAuth  . . . . . . . . . . . . . . . . . .   7
+     6.1.  General information . . . . . . . . . . . . . . . . . . .   8
+     6.2.  OAuth Flow: Setup . . . . . . . . . . . . . . . . . . . .   8
+     6.3.  OAuth Flow: Getting an Authorization Code . . . . . . . .   8
+     6.4.  OAuth Flow: Requesting an Access Token  . . . . . . . . .  13
+     6.5.  OAuth Flow: Making Requests with Access Tokens  . . . . .  17
+     6.6.  OAuth Flow: Apply Template to Domain  . . . . . . . . . .  17
+     6.7.  OAuth Flow: Revert Template . . . . . . . . . . . . . . .  22
+     6.8.  OAuth Flow: Revoking Access . . . . . . . . . . . . . . .  25
+   7.  Verification of Changes . . . . . . . . . . . . . . . . . . .  25
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  26
+     8.1.  DNS Provider Discovery Spoofing of the API Endpoint . . .  26
+     8.2.  Template Variable Phishing  . . . . . . . . . . . . . . .  26
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  26
    Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  27
    Normative References  . . . . . . . . . . . . . . . . . . . . . .  27
    Informative References  . . . . . . . . . . . . . . . . . . . . .  28
@@ -108,7 +109,6 @@ Table of Contents
 
 
 
-
 Kowalik, et al.         Expires 16 December 2026                [Page 2]
 
 Internet-Draft            Domain Connect Async                 June 2026
@@ -121,13 +121,54 @@ Internet-Draft            Domain Connect Async                 June 2026
    the synchronous flow as a fallback for DNS Providers that do not
    support the asynchronous flow.
 
-2.  Terminology
+2.  Use Cases
+
+   The following use cases illustrate scenarios where the asynchronous
+   flow defined in this document is needed, typically because the DNS
+   configuration involves multiple steps, recurring updates, or changes
+   that occur while the User is not actively present.
+
+   *  *Multi-Step DNS Configuration:* Some Service Providers require a
+      multi-step DNS configuration process, potentially involving
+      asynchronous operations.  For example, a service might require
+      initial verification of domain ownership through a TXT record,
+      followed by the creation of CNAME records for different
+      subdomains.  The asynchronous flow allows the Service Provider to
+      obtain User consent once and apply the necessary DNS changes in
+      multiple steps, even if the User is not actively present during
+      the entire process.
+
+   *  *Regularly Updated DNS Entries:* A tool or service that requires
+      regular updates to DNS entries, such as a dynamic DNS service or a
+      DNS-based load balancer, can use the asynchronous flow to apply
+      changes on an ongoing basis after a one-time User authorization.
+
+   *  *Unattended Services:* On-premise services and packaged software,
+      whether open-source or proprietary, can use the asynchronous flow
+      to update DNS records without User interaction after an initial
+      setup, relying on the authorization obtained during that setup.
+
+   *  *Automation Workflows:* Although Domain Connect is primarily
+      designed for User-driven DNS configuration, the asynchronous flow
+      enables integration into automation workflows, such as CI/CD
+      pipelines, provided that authorization is pre-obtained from a
+      User-driven setup process and the resulting tokens are stored
+      securely.
+
+3.  Terminology
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
    "OPTIONAL" in this document are to be interpreted as described in BCP
    14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
+
+
+
+Kowalik, et al.         Expires 16 December 2026                [Page 3]
+
+Internet-Draft            Domain Connect Async                 June 2026
+
 
    All terms defined in [I-D.draft-ietf-dconn-domainconnect] apply to
    this document.
@@ -161,19 +202,10 @@ Internet-Draft            Domain Connect Async                 June 2026
 
    The dc-id rule is defined in [I-D.draft-ietf-dconn-domainconnect].
 
-
-
-
-
-Kowalik, et al.         Expires 16 December 2026                [Page 3]
-
-Internet-Draft            Domain Connect Async                 June 2026
-
-
    The dc-host-list rule is defined in
    [I-D.draft-ietf-dconn-domainconnect].
 
-3.  The Asynchronous Flow
+4.  The Asynchronous Flow
 
    The asynchronous OAuth flow is tailored for the Service Provider that
    wishes to make changes to DNS asynchronously with respect to the user
@@ -185,38 +217,6 @@ Internet-Draft            Domain Connect Async                 June 2026
    This section describes the divergence beginning at step 15, where the
    DNS Provider requests OAuth consent for future DNS changes instead of
    applying the template immediately.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -338,7 +338,7 @@ Kowalik, et al.         Expires 16 December 2026                [Page 6]
 Internet-Draft            Domain Connect Async                 June 2026
 
 
-4.  DNS Provider Discovery Extension
+5.  DNS Provider Discovery Extension
 
    This document extends the settings response defined in
    [I-D.draft-ietf-dconn-domainconnect] by normatively defining the
@@ -378,9 +378,9 @@ Internet-Draft            Domain Connect Async                 June 2026
 
    The "urlAPI" field defined in [I-D.draft-ietf-dconn-domainconnect] is
    also used for the asynchronous API endpoints defined in this document
-   (see Section 5.4 and Section 5.6).
+   (see Section 6.4 and Section 6.6).
 
-5.  Asynchronous Flow: OAuth
+6.  Asynchronous Flow: OAuth
 
 
 
@@ -394,13 +394,13 @@ Kowalik, et al.         Expires 16 December 2026                [Page 7]
 Internet-Draft            Domain Connect Async                 June 2026
 
 
-5.1.  General information
+6.1.  General information
 
    Details of an OAuth implementation are beyond the scope of this
    specification.  Instead, an overview of how OAuth is used by Domain
    Connect is given here.
 
-5.2.  OAuth Flow: Setup
+6.2.  OAuth Flow: Setup
 
    Service Providers wishing to use the OAuth flow MUST register as an
    OAuth client with each DNS Provider.  This is typically a manual
@@ -420,7 +420,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    form of client authentication within OAuth framework MAY be agreed
    between the parties.
 
-5.3.  OAuth Flow: Getting an Authorization Code
+6.3.  OAuth Flow: Getting an Authorization Code
 
    Normative URI template of the Authorization Code End-Point per
    [RFC6570]:
@@ -477,7 +477,7 @@ Internet-Draft            Domain Connect Async                 June 2026
 
    Templates are scoped to the "domain" and "host" apply-parameter pair,
    and the specific "host" values authorized at consent time are bound
-   by the access token (see Section 5.6).  Note that a template whose
+   by the access token (see Section 6.6).  Note that a template whose
    "host" or "name" field contains a variable that resolves to one or
    more sub-domain labels has a scope that cannot be fully determined at
    consent time, since the resolved labels are only known when the
@@ -577,26 +577,26 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | endpoint, taken from the              |
    |           |               | "urlAsyncUX" field of the             |
    |           |               | settings endpoint response (see       |
-   |           |               | Section 4).                           |
+   |           |               | Section 5).                           |
    +-----------+---------------+---------------------------------------+
    | *Service  | providerId    | (REQUIRED) Identifier of the          |
    | Provider  |               | Service Provider of the template      |
    | Id*       |               | to be applied.  The value MUST        |
    |           |               | conform to the dc-id syntax (see      |
-   |           |               | Section 2).                           |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Domain*  | domain        | (REQUIRED) The domain name being      |
    |           |               | configured.  This is the Zone         |
    |           |               | Apex.                                 |
    |           |               | The value MUST conform to the         |
    |           |               | domain-name syntax (see               |
-   |           |               | Section 2).                           |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Host*    | host          | (OPTIONAL) A comma-separated list     |
    |           |               | of host names upon which the          |
    |           |               | template may be applied.              |
    |           |               | The value MUST conform to the dc-     |
-   |           |               | host-list syntax (see Section 2).     |
+   |           |               | host-list syntax (see Section 3).     |
    +-----------+---------------+---------------------------------------+
    | *Client   | client_id     | (REQUIRED) The client identifier      |
    | Id*       |               | issued by the DNS Provider to the     |
@@ -636,7 +636,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | templates, as defined in              |
    |           |               | Section 3.3 of [RFC6749].             |
    |           |               | The value MUST conform to the dc-     |
-   |           |               | scope syntax (see Section 2): a       |
+   |           |               | scope syntax (see Section 3): a       |
    |           |               | space-separated list of               |
    |           |               | "serviceId" values, each              |
    |           |               | conforming to dc-id.                  |
@@ -651,7 +651,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | it.                                   |
    |           |               | The value MUST conform to the dc-     |
    |           |               | display-name syntax (see              |
-   |           |               | Section 2).                           |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Service  | serviceName   | (OPTIONAL) This parameter allows      |
    | Name*     |               | for the caller to provide             |
@@ -663,7 +663,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | replace them.                         |
    |           |               | The value MUST conform to the dc-     |
    |           |               | display-name syntax (see              |
-   |           |               | Section 2).                           |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *State*   | state         | (OPTIONAL) A random, unique           |
 
@@ -680,7 +680,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | The value MUST conform to the         |
    |           |               | "state" syntax as defined in          |
    |           |               | Appendix A of [RFC6749] (see          |
-   |           |               | Section 2).                           |
+   |           |               | Section 3).                           |
    +-----------+---------------+---------------------------------------+
    | *Name/    | properties    | (OPTIONAL) Variable values            |
    | Value     |               | required for conflict detection       |
@@ -689,10 +689,10 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |               | correspond to a variable name         |
    |           |               | defined in the template and MUST      |
    |           |               | conform to the variable-name          |
-   |           |               | syntax (see Section 2).               |
+   |           |               | syntax (see Section 3).               |
    |           |               | Each parameter value MUST conform     |
    |           |               | to the dc-prop-value syntax (see      |
-   |           |               | Section 2), using the DNS             |
+   |           |               | Section 3), using the DNS             |
    |           |               | presentation format [RFC9499].        |
    |           |               | This includes variables used in       |
    |           |               | hosts and data in certain TXT         |
@@ -702,7 +702,7 @@ Internet-Draft            Domain Connect Async                 June 2026
       Table 3: URI template parameters of the authorization end-point
                                in async flow
 
-5.4.  OAuth Flow: Requesting an Access Token
+6.4.  OAuth Flow: Requesting an Access Token
 
    Normative URI template of the access token end-point per [RFC6570]:
 
@@ -805,7 +805,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |                |               | verification.                    |
    |                |               | The value MUST conform to the    |
    |                |               | "redirect_uri" syntax (see       |
-   |                |               | Section 2).                      |
+   |                |               | Section 3).                      |
    +----------------+---------------+----------------------------------+
    | *Grant Type*   | grant_type    | (REQUIRED) The grant type of     |
    |                |               | the token request.               |
@@ -821,7 +821,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |                |               | Provider during registration.    |
    |                |               | The value MUST conform to the    |
    |                |               | "client_id" syntax (see          |
-   |                |               | Section 2).                      |
+   |                |               | Section 3).                      |
    +----------------+---------------+----------------------------------+
    | *Client        | client_secret | (REQUIRED) The client secret     |
    | Secret*        |               | issued to the Service            |
@@ -910,7 +910,7 @@ Internet-Draft            Domain Connect Async                 June 2026
 
         Table 7: http status codes of the token end-point response
 
-5.5.  OAuth Flow: Making Requests with Access Tokens
+6.5.  OAuth Flow: Making Requests with Access Tokens
 
    Once the Service Provider has the access token, they can call the DNS
    Provider's API to make changes to DNS on the domain by applying and
@@ -928,7 +928,7 @@ Internet-Draft            Domain Connect Async                 June 2026
 
    Authorization: Bearer mF_9.B5f-4.1JqM
 
-5.6.  OAuth Flow: Apply Template to Domain
+6.6.  OAuth Flow: Apply Template to Domain
 
    Normative URI template of the asynchronous apply end-point per
    [RFC6570]:
@@ -989,7 +989,7 @@ Internet-Draft            Domain Connect Async                 June 2026
     |*URL API*| urlAPI       | (REQUIRED) The base URL of the DNS     |
     |         |              | Provider API, taken from the "urlAPI"  |
     |         |              | field of the settings endpoint         |
-    |         |              | response (see Section 4).              |
+    |         |              | response (see Section 5).              |
     |         |              | The value MUST be an absolute URI      |
     |         |              | conforming to [RFC3986].               |
     +---------+--------------+----------------------------------------+
@@ -997,7 +997,7 @@ Internet-Draft            Domain Connect Async                 June 2026
     |Provider |              | Provider of the template to be         |
     |Id*      |              | applied.                               |
     |         |              | The value MUST conform to the dc-id    |
-    |         |              | syntax (see Section 2).                |
+    |         |              | syntax (see Section 3).                |
     +---------+--------------+----------------------------------------+
     |*Service | serviceId    | (REQUIRED) Identifier of the template  |
     |Id*      |              | to be applied.                         |
@@ -1010,29 +1010,29 @@ Kowalik, et al.         Expires 16 December 2026               [Page 18]
 Internet-Draft            Domain Connect Async                 June 2026
 
 
-    |         |              | syntax (see Section 2).                |
+    |         |              | syntax (see Section 3).                |
     +---------+--------------+----------------------------------------+
     |*Domain* | domain       | (REQUIRED) The Zone Apex domain name   |
     |         |              | being configured.                      |
     |         |              | The value MUST conform to the domain-  |
-    |         |              | name syntax (see Section 2).           |
+    |         |              | name syntax (see Section 3).           |
     +---------+--------------+----------------------------------------+
     |*Host*   | host         | (OPTIONAL) The host name of the Sub    |
     |         |              | Domain within the zone identified by   |
     |         |              | "domain".                              |
     |         |              | When present, the value MUST be a      |
     |         |              | single name conforming to domain-name  |
-    |         |              | (see Section 2) or an empty string.    |
+    |         |              | (see Section 3) or an empty string.    |
     +---------+--------------+----------------------------------------+
     |*Name/   | *            | (REQUIRED) Variable values to be       |
     |Value    |              | substituted into the template.  Each   |
     |Pairs*   |              | parameter name MUST correspond to a    |
     |         |              | variable name defined in the template  |
     |         |              | and MUST conform to the variable-name  |
-    |         |              | syntax (see Section 2).                |
+    |         |              | syntax (see Section 3).                |
     |         |              | Each parameter value MUST conform to   |
     |         |              | the dc-prop-value syntax (see          |
-    |         |              | Section 2), using the DNS presentation |
+    |         |              | Section 3), using the DNS presentation |
     |         |              | format [RFC9499].                      |
     |         |              | The DNS Provider MUST ignore any       |
     |         |              | parameter not referenced in the        |
@@ -1041,14 +1041,14 @@ Internet-Draft            Domain Connect Async                 June 2026
     |*Group   | groupId      | (OPTIONAL) Specifies the subset of     |
     |ID*      |              | groups from the template to apply.     |
     |         |              | The value MUST conform to the dc-id-   |
-    |         |              | list syntax (see Section 2).           |
+    |         |              | list syntax (see Section 3).           |
     +---------+--------------+----------------------------------------+
     |*Force*  | force        | (OPTIONAL) Specifies that the template |
     |         |              | SHOULD be applied independently of any |
     |         |              | conflicts that may exist on the        |
     |         |              | domain.                                |
     |         |              | The value MUST conform to the dc-force |
-    |         |              | syntax (see Section 2).                |
+    |         |              | syntax (see Section 3).                |
     |         |              | The default when omitted is "0".       |
     +---------+--------------+----------------------------------------+
     |*Provider| providerName | (OPTIONAL) This parameter allows for   |
@@ -1069,7 +1069,7 @@ Internet-Draft            Domain Connect Async                 June 2026
     |         |              | the "sharedProviderName" attribute is  |
     |         |              | set in the template being applied.     |
     |         |              | The value MUST conform to the dc-      |
-    |         |              | display-name syntax (see Section 2).   |
+    |         |              | display-name syntax (see Section 3).   |
     +---------+--------------+----------------------------------------+
     |*Service | serviceName  | (OPTIONAL) This parameter allows for   |
     |Name*    |              | the caller to provide additional       |
@@ -1081,7 +1081,7 @@ Internet-Draft            Domain Connect Async                 June 2026
     |         |              | the "sharedServiceName" attribute is   |
     |         |              | set in the template being applied.     |
     |         |              | The value MUST conform to the dc-      |
-    |         |              | display-name syntax (see Section 2).   |
+    |         |              | display-name syntax (see Section 3).   |
     +---------+--------------+----------------------------------------+
     |*Instance| instanceId   | (OPTIONAL) Only applicable to          |
     |Id*      |              | templates supporting multiple          |
@@ -1092,7 +1092,7 @@ Internet-Draft            Domain Connect Async                 June 2026
     |         |              | template instance by DNS Providers     |
     |         |              | storing this information.              |
     |         |              | The value MUST conform to the dc-id    |
-    |         |              | syntax (see Section 2).                |
+    |         |              | syntax (see Section 3).                |
     +---------+--------------+----------------------------------------+
 
        Table 8: URI template parameters of the apply end-point in the
@@ -1206,7 +1206,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    In this example, the Service Provider tried to apply a new hosting
    template.  The domain had an existing service applied for hosting.
 
-5.7.  OAuth Flow: Revert Template
+6.7.  OAuth Flow: Revert Template
 
    This call reverts the application of a specific template from a
    domain.
@@ -1296,31 +1296,31 @@ Internet-Draft            Domain Connect Async                 June 2026
    | *URL API* | urlAPI     | (REQUIRED) The base URL of the DNS      |
    |           |            | Provider API, taken from the "urlAPI"   |
    |           |            | field of the settings endpoint response |
-   |           |            | (see Section 4).  The value MUST be an  |
+   |           |            | (see Section 5).  The value MUST be an  |
    |           |            | absolute URI conforming to [RFC3986].   |
    +-----------+------------+-----------------------------------------+
    | *Service  | providerId | (REQUIRED) Identifier of the Service    |
    | Provider  |            | Provider of the template to be          |
    | Id*       |            | reverted.                               |
    |           |            | The value MUST conform to the dc-id     |
-   |           |            | syntax (see Section 2).                 |
+   |           |            | syntax (see Section 3).                 |
    +-----------+------------+-----------------------------------------+
    | *Service  | serviceId  | (REQUIRED) Identifier of the template   |
    | Id*       |            | to be reverted.                         |
    |           |            | The value MUST conform to the dc-id     |
-   |           |            | syntax (see Section 2).                 |
+   |           |            | syntax (see Section 3).                 |
    +-----------+------------+-----------------------------------------+
    | *Domain*  | domain     | (REQUIRED) The Zone Apex domain name    |
    |           |            | being configured.                       |
    |           |            | The value MUST conform to the domain-   |
-   |           |            | name syntax (see Section 2).            |
+   |           |            | name syntax (see Section 3).            |
    +-----------+------------+-----------------------------------------+
    | *Host*    | host       | (OPTIONAL) The host name of the Sub     |
    |           |            | Domain within the zone identified by    |
    |           |            | "domain", as authorized in the token.   |
    |           |            | When present, the value MUST be a       |
    |           |            | single name conforming to domain-name   |
-   |           |            | (see Section 2) or an empty string.     |
+   |           |            | (see Section 3) or an empty string.     |
    +-----------+------------+-----------------------------------------+
    | *Instance | instanceId | (OPTIONAL) Only applicable to templates |
    | Id*       |            | supporting multiple instances (see      |
@@ -1329,7 +1329,7 @@ Internet-Draft            Domain Connect Async                 June 2026
    |           |            | This value indicates an applied         |
    |           |            | template instance to be removed.        |
    |           |            | The value MUST conform to the dc-id     |
-   |           |            | syntax (see Section 2).                 |
+   |           |            | syntax (see Section 3).                 |
    +-----------+------------+-----------------------------------------+
 
      Table 10: URI template parameters of the revert end-point in the
@@ -1366,14 +1366,14 @@ Internet-Draft            Domain Connect Async                 June 2026
    Response codes Success, Authorization, and Errors are identical to
    above with the addition of 410 and 501 codes.
 
-5.8.  OAuth Flow: Revoking Access
+6.8.  OAuth Flow: Revoking Access
 
    Like all OAuth flows, the user may revoke the access at any time
    using UX at the DNS Provider site.  As such the Service Provider
    needs to be aware that their access to the API may be denied at any
    time.
 
-6.  Verification of Changes
+7.  Verification of Changes
 
    After the asynchronous flow completes, the Service Provider SHOULD
    verify that the expected DNS records are present in the zone by
@@ -1402,19 +1402,19 @@ Kowalik, et al.         Expires 16 December 2026               [Page 25]
 Internet-Draft            Domain Connect Async                 June 2026
 
 
-7.  Security Considerations
+8.  Security Considerations
 
-7.1.  DNS Provider Discovery Spoofing of the API Endpoint
+8.1.  DNS Provider Discovery Spoofing of the API Endpoint
 
    The "urlAPI" value used by the asynchronous flow is obtained via DNS
-   Provider discovery (see Section 4), which relies on a
+   Provider discovery (see Section 5), which relies on a
    "_domainconnect" TXT record in the user's zone.  A malicious actor
    who can create a domain with a false "_domainconnect" TXT record
    pointing to a server under their control can cause a Service Provider
    that uses the discovered "urlAPI" value to direct requests to that
    server.
 
-   This is most severe for the OAuth token exchange (see Section 5.4):
+   This is most severe for the OAuth token exchange (see Section 6.4):
    when the "client_secret" is used in the token request, a spoofed
    "urlAPI" would cause the Service Provider to inadvertently expose the
    secret to the attacker-controlled server.
@@ -1431,19 +1431,19 @@ Internet-Draft            Domain Connect Async                 June 2026
    token request and the subsequent API calls, rather than using the
    value returned during DNS Provider discovery.
 
-7.2.  Template Variable Phishing
+8.2.  Template Variable Phishing
 
    The phishing risks described in the Template Variable Phishing
    section of [I-D.draft-ietf-dconn-domainconnect] apply equally to the
    asynchronous flow.  In particular, the "properties" parameter of the
-   authorization request (see Section 5.3) supplies variable values at
+   authorization request (see Section 6.3) supplies variable values at
    consent time, and a malicious actor could craft a consent URL
    substituting harmful values.  The mitigations described in
    [I-D.draft-ietf-dconn-domainconnect] (disabling the synchronous flow
    via "syncBlock", digitally signing apply requests, and setting
    "warnPhishing") apply to the asynchronous flow as well.
 
-8.  IANA Considerations
+9.  IANA Considerations
 
    IANA is requested to update the "urlAsyncUX" entry in the "Domain
    Connect Settings Properties" registry (created by

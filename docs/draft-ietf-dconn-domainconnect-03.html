@@ -1516,10 +1516,19 @@ li > p:last-of-type:only-child {
             <p id="section-toc.1-1.11.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
-                <p id="section-toc.1-1.11.2.1.1"><a href="#section-12.1" class="auto internal xref">12.1</a>.  <a href="#name-underscore-_domainconnect-d" class="internal xref">Underscore <code>"_domainconnect"</code> DNS Node Name</a></p>
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-12.1" class="auto internal xref">12.1</a>.  <a href="#name-registration-procedure-for-" class="internal xref">Registration Procedure for Domain Connect Registries</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
-                <p id="section-toc.1-1.11.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-domain-connect-settings-pro" class="internal xref">Domain Connect Settings Properties Registry</a></p>
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-underscore-_domainconnect-d" class="internal xref">Underscore <code>"_domainconnect"</code> DNS Node Name</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#section-12.3" class="auto internal xref">12.3</a>.  <a href="#name-domain-connect-fully-specif" class="internal xref">Domain Connect Fully Specified Record Types Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4">
+                <p id="section-toc.1-1.11.2.4.1"><a href="#section-12.4" class="auto internal xref">12.4</a>.  <a href="#name-guidance-to-the-dns-resourc" class="internal xref">Guidance to the DNS Resource Record (RR) TYPEs Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.5">
+                <p id="section-toc.1-1.11.2.5.1"><a href="#section-12.5" class="auto internal xref">12.5</a>.  <a href="#name-domain-connect-settings-pro" class="internal xref">Domain Connect Settings Properties Registry</a></p>
 </li>
             </ul>
 </li>
@@ -1551,7 +1560,7 @@ li > p:last-of-type:only-child {
                 <p id="section-toc.1-1.17.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-example-records-single-vari" class="internal xref">Example Records: Single variable host record for A</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.4">
-                <p id="section-toc.1-1.17.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-example-records-unspecified" class="internal xref">Example Records: Unspecified record type CAA</a></p>
+                <p id="section-toc.1-1.17.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-example-records-generic-rec" class="internal xref">Example Records: Generic Record Type CAA</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.5">
                 <p id="section-toc.1-1.17.2.5.1"><a href="#appendix-A.5" class="auto internal xref">A.5</a>.  <a href="#name-example-template-applicatio" class="internal xref">Example: Template application to DNS Zone and Conflict Resolution</a></p>
@@ -1790,7 +1799,7 @@ li > p:last-of-type:only-child {
 <div id="_0b56576e-a987-a78d-9d33-6c1e875899b9">
 <p id="section-3-9">The following additional ABNF rules are defined in this document and used normatively throughout.<a href="#section-3-9" class="pilcrow">¶</a></p>
 </div>
-<div id="_35e36f40-a56a-b84d-1c0b-8b7e42caaf45">
+<div id="_0d4d2b06-878e-9392-e9ea-17897f6473e8">
 <div class="breakable lang-abnf sourcecode" id="section-3-10">
 <pre>; ---- Identifier rules ----
 
@@ -1857,13 +1866,26 @@ variable-name   =  1*( ALPHA / DIGIT / "-" / "_" )
 
 ; ---- Template record field rules ----
 
-dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
-                  / "SRV" / "SPFM" / "NS" )
-                ; named core and pseudo record types
-                /  "TYPE" 1*DIGIT
+dc-record-type =  dc-type-name / dc-rfc3597-type
+                ; a registered RR TYPE mnemonic (covering
+                ; Fully Specified, Computed, and Generic types
+                ; alike), or the RFC 3597 unknown-type form.
+
+dc-type-name   =  "A"
+                /  ( UALPHA *( UALPHA / DIGIT / "-" )
+                     ( UALPHA / DIGIT ) )
+                ; RR TYPE mnemonic per RFC 6895:
+                ; [A-Z][A-Z0-9-]*[A-Z0-9], i.e. starts with an
+                ; uppercase letter and ends with a letter or
+                ; digit; "A" is grandfathered as a single-letter
+                ; mnemonic. MUST NOT be of the reserved forms
+                ; "TYPE"&lt;n&gt; or "CLASS"&lt;n&gt; (&lt;&lt;RFC3597&gt;&gt;, &lt;&lt;RFC6895&gt;&gt;).
+
+dc-rfc3597-type =  "TYPE" 1*DIGIT
                 ; unknown type per RFC 3597
-                /  1*(ALPHA / DIGIT / "-")
-                ; any other IANA-registered RR type name
+
+UALPHA         =  %x41-5A
+                ; A-Z (uppercase letter)
 
 dc-essential   =  "Always" / "OnApply"
                 ; default is "Always"
@@ -1931,7 +1953,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_5c27fd53-bd19-d175-5684-807399297ec8">
 <p id="section-3-11">Internationalized domain names (IDN) are handled in accordance with <span>[<a href="#RFC5891" class="cite xref">RFC5891</a>]</span>. Where a parameter description specifies  <code>"domain-name"</code>, both the ACE (<code>"A-label"</code>) and the Unicode (<code>"U-label"</code>) forms are accepted.<a href="#section-3-11" class="pilcrow">¶</a></p>
 </div>
-<span class="break"></span><div id="_fbdabfe8-d168-c0d3-4db4-a81cb269406b">
+<span class="break"></span><div id="_fd96102b-bf09-a2f5-e11c-4541c583b52d">
 <dl class="dlParallel" id="section-3-12">
         <dt id="section-3-12.1">Service Provider:</dt>
         <dd id="section-3-12.2" style="margin-left: 1.5em">
@@ -1965,6 +1987,33 @@ dc-srv-service  =  dc-underscore-label
 <div id="_971fe7d8-33e3-bb13-cfc1-29123c77e8ba">
           <div id="_46ca1fa7-d548-982c-556c-ffc1bc707165">
 <p id="section-3-12.8.1">A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a means of communication between Service Provider and DNS Provider.<a href="#section-3-12.8.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+        </dd>
+<dd class="break"></dd>
+<dt id="section-3-12.9">Fully Specified Record Type:</dt>
+        <dd id="section-3-12.10" style="margin-left: 1.5em">
+<div id="_e987cf10-949c-b41a-1785-227c291f2207">
+          <div id="_fbd48458-d917-cc18-5adb-ee7aa5b5cfdd">
+<p id="section-3-12.10.1">A DNS resource record type for which this document, or a specification registered in the IANA "Domain Connect Fully Specified Record Types" registry (see <a href="#iana-fully-specified-types" class="auto internal xref">Section 12.3</a>), defines a breakdown of the record's RDATA into individual, normatively-typed template fields rather than carrying the RDATA opaquely.<a href="#section-3-12.10.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+        </dd>
+<dd class="break"></dd>
+<dt id="section-3-12.11">Computed Record Type:</dt>
+        <dd id="section-3-12.12" style="margin-left: 1.5em">
+<div id="_726b1206-3685-3adf-e404-d372d7095d12">
+          <div id="_ed37ef32-c743-33ae-01d5-04f1796ee71e">
+<p id="section-3-12.12.1">A template record type that does not correspond to a single DNS resource record placed verbatim into the zone. Instead, it instructs the DNS Provider to derive one or more DNS resource records by a computation defined for that type. The resulting record types and RDATA need not match the Computed Record Type's own name.<a href="#section-3-12.12.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+        </dd>
+<dd class="break"></dd>
+<dt id="section-3-12.13">Generic Record Type:</dt>
+        <dd id="section-3-12.14" style="margin-left: 1.5em">
+<div id="_34c3b922-fb0a-2d60-efa9-f5881a6769c3">
+          <div id="_02b7c85d-4c93-02dd-e350-8209d03b2b12">
+<p id="section-3-12.14.1">Any DNS resource record type, identified by its IANA RR TYPE mnemonic or by the <code>"TYPE"</code> form of <span>[<a href="#RFC3597" class="cite xref">RFC3597</a>]</span>, whose RDATA is carried opaquely in the <code>"data"</code> field in DNS presentation format.<a href="#section-3-12.14.1" class="pilcrow">¶</a></p>
 </div>
 </div>
       </dd>
@@ -2409,7 +2458,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_105fd4aa-73cf-da31-ab18-d99f9b9070b3">
 <p id="section-6.2-3">Each record MUST contain the following elements unless otherwise specified.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
 </div>
-<span id="name-properties-of-the-template-r"></span><div id="_b8e0a42d-3bc2-3d4e-4231-6f912a9c6f3c">
+<span id="name-properties-of-the-template-r"></span><div id="_403bc2b1-f848-fe5b-db11-e3e291d06223">
 <table class="center" id="table-2">
           <caption>
 <a href="#table-2" class="selfRef">Table 2</a>:
@@ -2430,7 +2479,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
               <td class="text-left" rowspan="1" colspan="1">enum</td>
               <td class="text-left" rowspan="1" colspan="1">type</td>
-              <td class="text-left" rowspan="1" colspan="1">(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.<br>  Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM.<br> The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV.<br> The DNS Provider SHOULD support SPFM record for high interoperability with existing templates<br> <br> All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per  <span>[<a href="#RFC3597" class="cite xref">RFC3597</a>]</span> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL.<br>  The value MUST conform to the  <code>dc-record-type</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).</td>
+              <td class="text-left" rowspan="1" colspan="1">(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.<br>  Record types fall into three classes (see  <a href="#terminology" class="auto internal xref">Section 3</a>):<br>  <em>Fully Specified Record Types</em> - A, AAAA, CNAME, MX, TXT, SRV, NS - whose RDATA is broken into dedicated template fields. The complete set is managed by the IANA "Domain Connect Fully Specified Record Types" registry (see <a href="#iana-fully-specified-types" class="auto internal xref">Section 12.3</a>).<br>  <em>Computed Record Types</em> - which instruct the DNS Provider to derive DNS records by a defined computation rather than write a verbatim record. <code>"SPFM"</code> is the Computed Record Type defined in this document.<br>  <em>Generic Record Types</em> - any other IANA-registered RR TYPE mnemonic, or the <code>"TYPE"</code> form of <span>[<a href="#RFC3597" class="cite xref">RFC3597</a>]</span>, whose RDATA is carried opaquely in the <code>"data"</code> field.<br>  The DNS Provider MUST support the core Fully Specified Record Types A, AAAA, CNAME, MX, TXT, SRV.<br> The DNS Provider SHOULD support the  <code>"SPFM"</code> Computed Record Type for high interoperability with existing templates.<br> Support for NS, for Generic Record Types, and for any Fully Specified Record Type registered by another specification is OPTIONAL.<br>  The value MUST conform to the  <code>dc-record-type</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
@@ -2454,7 +2503,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
               <td class="text-left" rowspan="1" colspan="1">String</td>
               <td class="text-left" rowspan="1" colspan="1">host</td>
-              <td class="text-left" rowspan="1" colspan="1">(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values.<br>  This value is relative to the applied host and domain, unless trailed by a ".".<br>  A value of empty or  <code>"@"</code> indicates the root of the applied host and domain. In other words <code>"[host.]example.com."</code>.<br>  When used in a template definition, the value MUST conform to the  <code>dc-host-tmpl</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<br>  After variable substitution, the resolved value MUST conform to the  <code>domain-name</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).</td>
+              <td class="text-left" rowspan="1" colspan="1">(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic Record Type values.<br>  This value is relative to the applied host and domain, unless trailed by a ".".<br>  A value of empty or  <code>"@"</code> indicates the root of the applied host and domain. In other words <code>"[host.]example.com."</code>.<br>  When used in a template definition, the value MUST conform to the  <code>dc-host-tmpl</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<br>  After variable substitution, the resolved value MUST conform to the  <code>domain-name</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
@@ -2486,7 +2535,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
               <td class="text-left" rowspan="1" colspan="1">String</td>
               <td class="text-left" rowspan="1" colspan="1">data</td>
-              <td class="text-left" rowspan="1" colspan="1">For TXT record <code>"data"</code> contains TXT-DATA <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span> in presentation format. For a single <code>"&lt;character-string&gt;"</code> the heading and trailing <code>"</code> character MAY be omitted even if space character is present in the value.  <code>"data"</code> MUST NOT be present in a template record for any other record type that has type-specific data fields defined in this specification.  For any unspecified record type, this field contains the canonical presentation format of the record, following  <span>[<a href="#RFC3597" class="cite xref">RFC3597</a>]</span> generic or type-specific encoding.</td>
+              <td class="text-left" rowspan="1" colspan="1">For TXT record <code>"data"</code> contains TXT-DATA <span>[<a href="#RFC1035" class="cite xref">RFC1035</a>]</span> in presentation format. For a single <code>"&lt;character-string&gt;"</code> the heading and trailing <code>"</code> character MAY be omitted even if space character is present in the value.  <code>"data"</code> MUST NOT be present in a template record for any Fully Specified or Computed Record Type, which use type-specific data fields defined in this specification.  For a Generic Record Type, this field contains the canonical presentation format of the record, following  <span>[<a href="#RFC3597" class="cite xref">RFC3597</a>]</span> generic or type-specific encoding.</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
@@ -2566,7 +2615,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_994811e9-01bd-b42d-6658-19766396d284">
 <p id="section-6.2-5">The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.<a href="#section-6.2-5" class="pilcrow">¶</a></p>
 </div>
-<span id="name-fields-per-record-type"></span><div id="_c2da8504-568e-931c-177f-f5f0a663c6f0">
+<span id="name-fields-per-record-type"></span><div id="_4cf73fe2-22b6-0706-59f2-fe54564a1ca4">
 <table class="center" id="table-3">
           <caption>
 <a href="#table-3" class="selfRef">Table 3</a>:
@@ -2643,7 +2692,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
             </tr>
             <tr>
-              <td class="text-left" rowspan="1" colspan="1">other types</td>
+              <td class="text-left" rowspan="1" colspan="1">Generic types</td>
               <td class="text-left" rowspan="1" colspan="1">
                 <code>"host"</code>, <code>"data"</code>, <code>"ttl"</code>
 </td>
@@ -2982,7 +3031,7 @@ https://{+_domainconnect}/v2/{domain}/settings</pre><a href="#section-7-11" clas
       </table>
 </div>
 <div id="_0ccab7a7-92d2-3e53-58c0-028568ed6207">
-<p id="section-7-15">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <a href="#iana-settings-properties" class="auto internal xref">Section 12.2</a> in order to avoid name conflicts.<a href="#section-7-15" class="pilcrow">¶</a></p>
+<p id="section-7-15">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <a href="#iana-settings-properties" class="auto internal xref">Section 12.5</a> in order to avoid name conflicts.<a href="#section-7-15" class="pilcrow">¶</a></p>
 </div>
 <div id="_e34f6030-ea5f-8b43-1790-47c56cac6880">
 <p id="section-7-16" class="keepWithNext">EXAMPLE 2: Example Settings End-Point response<a href="#section-7-16" class="pilcrow">¶</a></p>
@@ -3797,8 +3846,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_8a23b49f-08bc-3084-5f2a-ec73f10d542e">
 <p id="section-9.4-6">There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.<a href="#section-9.4-6" class="pilcrow">¶</a></p>
 </div>
-<div id="_d45f751b-0288-e46b-8ebc-8a8a10d39f8c">
-<p id="section-9.4-7">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called <code>"SPFM"</code>. This has the following attribute:<a href="#section-9.4-7" class="pilcrow">¶</a></p>
+<div id="_4898ec71-9bea-2958-5655-54e51ca138e6">
+<p id="section-9.4-7">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a Computed Record Type (see <a href="#terminology" class="auto internal xref">Section 3</a>) is introduced in the template called <code>"SPFM"</code>. This has the following attribute:<a href="#section-9.4-7" class="pilcrow">¶</a></p>
 </div>
 <span class="break"></span><div id="_35eeb2bc-8dcd-77b1-ef60-8f013d34c082">
 <dl class="dlParallel" id="section-9.4-8">
@@ -4152,15 +4201,37 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <h2 id="name-iana-considerations">
 <a href="#section-12" class="section-number selfRef">12. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
-<div id="iana-underscore">
+<div id="iana-registration-procedure">
 <section id="section-12.1">
-        <h3 id="name-underscore-_domainconnect-d">
-<a href="#section-12.1" class="section-number selfRef">12.1. </a><a href="#name-underscore-_domainconnect-d" class="section-name selfRef">Underscore <code>"_domainconnect"</code> DNS Node Name</a>
+        <h3 id="name-registration-procedure-for-">
+<a href="#section-12.1" class="section-number selfRef">12.1. </a><a href="#name-registration-procedure-for-" class="section-name selfRef">Registration Procedure for Domain Connect Registries</a>
         </h3>
-<div id="_4a861a3b-a5d1-88a7-2e8a-3f0176fffed3">
-<p id="section-12.1-1">Per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:<a href="#section-12.1-1" class="pilcrow">¶</a></p>
+<div id="_e2744165-b803-3a52-bbc9-cc5c424df2ca">
+<p id="section-12.1-1">IANA is requested to create a new registry group named "Domain Connect Protocol". The registration procedure described in this section applies to all registries established by this document under that registry group.<a href="#section-12.1-1" class="pilcrow">¶</a></p>
 </div>
-<span id="name-iana-registration-for-_doma"></span><div id="_25cb6e1e-a8bf-f787-bf36-87b0f1ab2b25">
+<div id="_17c77f46-abca-ac89-4928-f22630f55f17">
+<p id="section-12.1-2">Values are registered on a Specification Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>) basis after a three-week review period on the &lt;<span><a href="mailto:dconn@ietf.org">mailto:dconn@ietf.org</a></span>&gt; mailing list or its successor, on the advice of one or more designated experts. To allow for the allocation of values prior to publication, the designated experts MAY approve registration once they are satisfied that the corresponding specification will be published.<a href="#section-12.1-2" class="pilcrow">¶</a></p>
+</div>
+<div id="_9c096ae3-b770-4a56-8593-05388f6b90ea">
+<p id="section-12.1-3">Registration requests sent to the review mailing list SHOULD use an appropriate subject line (e.g., "Request to register Domain Connect record type: example"). Registration requests that remain undetermined for a period longer than 21 days MAY be brought to IANA's attention (using the &lt;<span><a href="mailto:iana@iana.org">mailto:iana@iana.org</a></span>&gt; mailing list) for resolution.<a href="#section-12.1-3" class="pilcrow">¶</a></p>
+</div>
+<div id="_493f8d2f-ea2f-781f-8bbe-69ae2d251aff">
+<p id="section-12.1-4">The designated experts SHOULD determine whether a registration request contains enough information for the registry to be populated and whether the proposed new functionality already exists. In the case of an incomplete registration, or an attempt to register already existing functionality, the designated experts SHOULD ask for corrections or reject the registration.<a href="#section-12.1-4" class="pilcrow">¶</a></p>
+</div>
+<div id="_4955e1e2-5a0b-e963-5d29-d04134d7cf45">
+<p id="section-12.1-5">IANA is requested to appoint one or more designated experts for the registries in the "Domain Connect Protocol" registry group. It is RECOMMENDED that multiple designated experts be appointed who are able to represent the perspectives of different Service Providers and DNS Providers, in order to enable broadly informed review of registration decisions. In cases where a registration decision could be perceived as creating a conflict of interest for a particular expert, that expert SHOULD defer to the judgment of the other experts.<a href="#section-12.1-5" class="pilcrow">¶</a></p>
+</div>
+</section>
+</div>
+<div id="iana-underscore">
+<section id="section-12.2">
+        <h3 id="name-underscore-_domainconnect-d">
+<a href="#section-12.2" class="section-number selfRef">12.2. </a><a href="#name-underscore-_domainconnect-d" class="section-name selfRef">Underscore <code>"_domainconnect"</code> DNS Node Name</a>
+        </h3>
+<div id="_3483f641-4404-0788-e70d-0791a5da06de">
+<p id="section-12.2-1">Per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:<a href="#section-12.2-1" class="pilcrow">¶</a></p>
+</div>
+<span id="name-iana-registration-for-_doma"></span><div id="_73198c8c-9ac1-a4be-4eb8-2d298492f480">
 <table class="center" id="table-10">
           <caption>
 <a href="#table-10" class="selfRef">Table 10</a>:
@@ -4184,54 +4255,415 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </div>
 </section>
 </div>
-<div id="iana-settings-properties">
-<section id="section-12.2">
-        <h3 id="name-domain-connect-settings-pro">
-<a href="#section-12.2" class="section-number selfRef">12.2. </a><a href="#name-domain-connect-settings-pro" class="section-name selfRef">Domain Connect Settings Properties Registry</a>
+<div id="iana-fully-specified-types">
+<section id="section-12.3">
+        <h3 id="name-domain-connect-fully-specif">
+<a href="#section-12.3" class="section-number selfRef">12.3. </a><a href="#name-domain-connect-fully-specif" class="section-name selfRef">Domain Connect Fully Specified Record Types Registry</a>
         </h3>
-<div id="_14530192-1794-59f7-7cdb-c3e432ddc65e">
-<p id="section-12.2-1">IANA is requested to create a new registry named "Domain Connect Settings Properties" under a new registry group "Domain Connect Protocol".<a href="#section-12.2-1" class="pilcrow">¶</a></p>
+<div id="_993f3c05-b681-eced-8291-b6a501bac2f3">
+<p id="section-12.3-1">IANA is requested to create a new registry named "Domain Connect Fully Specified Record Types" under the "Domain Connect Protocol" registry group.<a href="#section-12.3-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_b7366f70-dc18-e7db-e818-efd6e97a2673">
-<p id="section-12.2-2">Registration policy: Specification Needed (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-12.2-2" class="pilcrow">¶</a></p>
+<div id="_c524a923-4cf8-c05f-ccee-f8d7e1e21376">
+<p id="section-12.3-2">Registration policy: Specification Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>), following the procedure in <a href="#iana-registration-procedure" class="auto internal xref">Section 12.1</a>.<a href="#section-12.3-2" class="pilcrow">¶</a></p>
 </div>
-<div id="_234aff10-d622-01bd-6d65-dc963726ebe2">
-<p id="section-12.2-3">Each entry in the registry MUST include:<a href="#section-12.2-3" class="pilcrow">¶</a></p>
-</div>
-<ul class="normal">
-<li class="normal" id="section-12.2-4.1">
-            <strong>Property name</strong>: the JSON key as it appears in the settings response.<a href="#section-12.2-4.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-12.2-4.2">
-            <div id="_2e1c43d1-9102-fe79-f5cc-c84d6a278a6c">
-<p id="section-12.2-4.2.1"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:<a href="#section-12.2-4.2.1" class="pilcrow">¶</a></p>
+<div id="_4acfb74b-ef81-5e69-a919-a9062f68504d">
+<p id="section-12.3-3">Each entry in the registry MUST include:<a href="#section-12.3-3" class="pilcrow">¶</a></p>
 </div>
 <ul class="normal">
-<li class="normal" id="section-12.2-4.2.2.1">
-                <code>"Active"</code>: the property is currently in use and its definition is normative.<a href="#section-12.2-4.2.2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-12.3-4.1">
+            <strong>RR Type</strong>: the record type name as it appears in a template record <code>"type"</code> field. The value MUST conform to the <code>dc-type-name</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<a href="#section-12.3-4.1" class="pilcrow">¶</a>
 </li>
-              <li class="normal" id="section-12.2-4.2.2.2">
-                <code>"Deprecated"</code>: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.<a href="#section-12.2-4.2.2.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-12.3-4.2">
+            <div id="_626e7308-89e7-a75a-a613-ae4fa9bbcb15">
+<p id="section-12.3-4.2.1"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:<a href="#section-12.3-4.2.1" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.3-4.2.2.1">
+                <code>"Active"</code>: the type is currently in use and its definition is normative.<a href="#section-12.3-4.2.2.1" class="pilcrow">¶</a>
 </li>
-              <li class="normal" id="section-12.2-4.2.2.3">
-                <code>"Reserved"</code>: the property appears in earlier versions of the Domain Connect specification (see <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>. See <a href="#reserved-for-extensions" class="auto internal xref">Section 3, Paragraph 13</a>.<a href="#section-12.2-4.2.2.3" class="pilcrow">¶</a>
+              <li class="normal" id="section-12.3-4.2.2.2">
+                <code>"Deprecated"</code>: the type SHOULD NOT be used in new templates; it MAY appear in existing deployments for backwards compatibility. If the corresponding DNS RR TYPE is marked deprecated or obsolete in the IANA "Resource Record (RR) TYPEs" registry, the entry here SHOULD be set to <code>"Deprecated"</code>.<a href="#section-12.3-4.2.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-12.3-4.2.2.3">
+                <code>"Reserved"</code>: the type appears in earlier versions of the Domain Connect specification (see <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>, and MAY only be defined by a specification that extends this document. See <a href="#reserved-for-extensions" class="auto internal xref">Section 3, Paragraph 13</a>.<a href="#section-12.3-4.2.2.3" class="pilcrow">¶</a>
 </li>
             </ul>
 </li>
-          <li class="normal" id="section-12.2-4.3">
-            <strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <code>"IETF Standard"</code> for properties defined in a standards-track RFC, <code>"Informational"</code> for properties defined in an Informational RFC, or <code>"Other"</code> for any other specification.<a href="#section-12.2-4.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-12.3-4.3">
+            <strong>Class</strong>: the handling class of the type. The value MUST be one of <code>"Fully Specified"</code> (RDATA broken into dedicated template fields) or <code>"Computed"</code> (records derived by a defined computation). A <code>"Reserved"</code> entry MAY leave this field unassigned.<a href="#section-12.3-4.3" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-12.2-4.4">
-            <strong>Reference</strong>: the document that defines the property.<a href="#section-12.2-4.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-12.3-4.4">
+            <strong>DNS RR TYPE</strong>: the name of the corresponding entry in the IANA "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group. A <code>"Fully Specified"</code> type SHOULD correspond to a registered DNS RR TYPE of the same name; before registering such a type, the designated experts MUST verify that the named DNS RR TYPE exists in that registry. For a <code>"Computed"</code> type, a <code>"Reserved"</code> type, or any other type for which no corresponding DNS RR TYPE exists or would be meaningful, the value MUST be <code>"N/A"</code>. Where a <code>"Fully Specified"</code> type would use a name that is not yet a registered DNS RR TYPE, the designated experts SHOULD coordinate with the designated experts of the "Resource Record (RR) TYPEs" registry before completing the registration.<a href="#section-12.3-4.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.3-4.5">
+            <strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <code>"IETF Standard"</code> for types defined in a standards-track RFC, <code>"Informational"</code> for types defined in an Informational RFC, or <code>"Other"</code> for any other specification.<a href="#section-12.3-4.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.3-4.6">
+            <strong>Reference</strong>: the document that defines the type.<a href="#section-12.3-4.6" class="pilcrow">¶</a>
 </li>
         </ul>
-<div id="_9ca5288e-2973-7ca5-e8fd-72eb13a9538d">
-<p id="section-12.2-5">The following properties from this specification constitute the initial contents of the registry:<a href="#section-12.2-5" class="pilcrow">¶</a></p>
+<div id="_5ff712f3-1e72-751f-1ab3-dee4e8cba936">
+<p id="section-12.3-5">A registration request MUST provide the following:<a href="#section-12.3-5" class="pilcrow">¶</a></p>
 </div>
-<span id="name-initial-domain-connect-sett"></span><div id="_e74606b0-cae2-37b3-0a26-ba6abfcde356">
+<span class="break"></span><div id="_82c9e4bc-f724-d4a3-9415-6b549ac870f3">
+<dl class="dlParallel" id="section-12.3-6">
+          <dt id="section-12.3-6.1">RR Type:</dt>
+          <dd id="section-12.3-6.2" style="margin-left: 1.5em">
+<div id="_df5dcc19-9a87-0904-1991-65b45337f427">
+            <div id="_7cb94364-e1fc-94ae-5b32-b401612af1fa">
+<p id="section-12.3-6.2.1">The record type name (the <code>"type"</code> value), conforming to the <code>dc-type-name</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<a href="#section-12.3-6.2.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.3-6.3">Status:</dt>
+          <dd id="section-12.3-6.4" style="margin-left: 1.5em">
+<div id="_dac50577-d9c3-7d8e-7458-3c8df31193b9">
+            <div id="_bac6ad8d-ef63-6c82-126b-c4812d3e66aa">
+<p id="section-12.3-6.4.1">One of <code>"Active"</code>, <code>"Deprecated"</code>, or <code>"Reserved"</code>.<a href="#section-12.3-6.4.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.3-6.5">Class:</dt>
+          <dd id="section-12.3-6.6" style="margin-left: 1.5em">
+<div id="_74163013-9929-bdd2-46a1-14f92f1aa1cb">
+            <div id="_04d3e15b-558d-f40b-cefc-4841af180a49">
+<p id="section-12.3-6.6.1"><code>"Fully Specified"</code> or <code>"Computed"</code>; omitted for a <code>"Reserved"</code> entry.<a href="#section-12.3-6.6.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.3-6.7">DNS RR TYPE:</dt>
+          <dd id="section-12.3-6.8" style="margin-left: 1.5em">
+<div id="_438acb2b-f0d4-4c77-cb24-0f80b349376c">
+            <div id="_0dc52a04-3c7a-b092-0c17-89848d1df991">
+<p id="section-12.3-6.8.1">The name of the corresponding IANA DNS RR TYPE, or <code>"N/A"</code>.<a href="#section-12.3-6.8.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.3-6.9">Kind:</dt>
+          <dd id="section-12.3-6.10" style="margin-left: 1.5em">
+<div id="_897df591-94b3-f542-77f7-ab4d3d0d01a2">
+            <div id="_a71401b8-b6d3-b166-fab5-cc7b85fb851b">
+<p id="section-12.3-6.10.1"><code>"IETF Standard"</code>, <code>"Informational"</code>, or <code>"Other"</code>.<a href="#section-12.3-6.10.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.3-6.11">Reference:</dt>
+          <dd id="section-12.3-6.12" style="margin-left: 1.5em">
+<div id="_1eaaa876-84b7-0428-e4d2-802b0fe11335">
+            <div id="_3f3c52f7-4e7c-2bd2-1a07-cfd75764b7c8">
+<p id="section-12.3-6.12.1">The document that defines the type, preferably including a URI from which a copy can be retrieved.<a href="#section-12.3-6.12.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+        </dd>
+<dd class="break"></dd>
+</dl>
+</div>
+<div id="_02657c2c-1c87-ff0c-da07-f2b74b4a3e9a">
+<p id="section-12.3-7">The following types from this specification constitute the initial contents of the registry:<a href="#section-12.3-7" class="pilcrow">¶</a></p>
+</div>
+<span id="name-initial-domain-connect-full"></span><div id="_c0e45de5-d96e-cc97-620a-fb82196efe10">
 <table class="center" id="table-11">
           <caption>
 <a href="#table-11" class="selfRef">Table 11</a>:
+<a href="#name-initial-domain-connect-full" class="selfRef">Initial Domain Connect Fully Specified Record Types</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>RR Type</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Status</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Class</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>DNS RR TYPE</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Kind</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Reference</strong>
+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"AAAA"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"AAAA"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"CNAME"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"CNAME"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"MX"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"MX"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"TXT"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"TXT"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"SRV"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"SRV"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"NS"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Fully Specified</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"NS"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"SPFM"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">Computed</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"N/A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"APEXCNAME"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"N/A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"REDIR301"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"N/A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"REDIR302"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"N/A"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"DS"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Reserved</td>
+              <td class="text-left" rowspan="1" colspan="1">-</td>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"DS"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
+<div id="iana-rrtype-guidance">
+<section id="section-12.4">
+        <h3 id="name-guidance-to-the-dns-resourc">
+<a href="#section-12.4" class="section-number selfRef">12.4. </a><a href="#name-guidance-to-the-dns-resourc" class="section-name selfRef">Guidance to the DNS Resource Record (RR) TYPEs Registry</a>
+        </h3>
+<div id="_25b5cc87-6c45-01ac-54cb-d301120ac087">
+<p id="section-12.4-1">To avoid collisions between newly assigned DNS RR TYPE mnemonics and the record type names used by Domain Connect, IANA is requested to add the following note to the registration procedure of the "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group (see <span>[<a href="#RFC6895" class="cite xref">RFC6895</a>]</span>):<a href="#section-12.4-1" class="pilcrow">¶</a></p>
+</div>
+<blockquote id="section-12.4-2">
+          <div id="_f3b0e3ea-3955-c000-e0b8-2f4b19802ce0">
+<p id="section-12.4-2.1">When evaluating a request to assign a new RR TYPE mnemonic, the designated experts SHOULD consult the "Domain Connect Fully Specified Record Types" registry. If the requested mnemonic matches the name of an entry in that registry whose <strong>DNS RR TYPE</strong> field is <code>"N/A"</code>, the designated experts SHOULD flag the potential conflict and consult the designated experts of the "Domain Connect Fully Specified Record Types" registry before completing the assignment.<a href="#section-12.4-2.1" class="pilcrow">¶</a></p>
+</div>
+</blockquote>
+<div id="_f4f514de-b52f-05c8-4a73-a1e53e846841">
+<p id="section-12.4-3">This coupling ensures that a Domain Connect record type name that does not (yet) correspond to a DNS RR TYPE - such as a <code>"Computed"</code> type - is not inadvertently assigned a conflicting meaning in the DNS RR TYPEs registry.<a href="#section-12.4-3" class="pilcrow">¶</a></p>
+</div>
+<div id="_ab4a8d18-dc2d-aeed-4570-b5cbb0d7d8c4">
+<p id="section-12.4-4">In addition, IANA is requested to update the "Reference" of the "Resource Record (RR) TYPEs" registry to cite this document alongside the existing references:<a href="#section-12.4-4" class="pilcrow">¶</a></p>
+</div>
+<blockquote id="section-12.4-5">
+          <div id="_cc6b8b87-0646-5e6e-65c6-faeec8eaa95e">
+<p id="section-12.4-5.1">OLD: [RFC6895][RFC1035]<br> NEW: [RFC6895][RFC1035][This document]<a href="#section-12.4-5.1" class="pilcrow">¶</a></p>
+</div>
+</blockquote>
+<div id="_90b1c11e-05b8-6eea-0428-e783e68298b1">
+<p id="section-12.4-6">This records, on the DNS side, the obligation to consult the "Domain Connect Fully Specified Record Types" registry described above.<a href="#section-12.4-6" class="pilcrow">¶</a></p>
+</div>
+</section>
+</div>
+<div id="iana-settings-properties">
+<section id="section-12.5">
+        <h3 id="name-domain-connect-settings-pro">
+<a href="#section-12.5" class="section-number selfRef">12.5. </a><a href="#name-domain-connect-settings-pro" class="section-name selfRef">Domain Connect Settings Properties Registry</a>
+        </h3>
+<div id="_7524ccbf-559c-8d7f-b45e-9027f0cbed28">
+<p id="section-12.5-1">IANA is requested to create a new registry named "Domain Connect Settings Properties" under the "Domain Connect Protocol" registry group.<a href="#section-12.5-1" class="pilcrow">¶</a></p>
+</div>
+<div id="_59850843-295a-b3c5-a56b-ec312ec3b09f">
+<p id="section-12.5-2">Registration policy: Specification Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>), following the procedure in <a href="#iana-registration-procedure" class="auto internal xref">Section 12.1</a>.<a href="#section-12.5-2" class="pilcrow">¶</a></p>
+</div>
+<div id="_ec639534-08ff-9ff3-b823-9dfe9c96718c">
+<p id="section-12.5-3">Each entry in the registry MUST include:<a href="#section-12.5-3" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.5-4.1">
+            <strong>Property name</strong>: the JSON key as it appears in the settings response.<a href="#section-12.5-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.5-4.2">
+            <div id="_806bc1ff-68bf-91c3-024f-16876eef8fbb">
+<p id="section-12.5-4.2.1"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:<a href="#section-12.5-4.2.1" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.5-4.2.2.1">
+                <code>"Active"</code>: the property is currently in use and its definition is normative.<a href="#section-12.5-4.2.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-12.5-4.2.2.2">
+                <code>"Deprecated"</code>: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.<a href="#section-12.5-4.2.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-12.5-4.2.2.3">
+                <code>"Reserved"</code>: the property appears in earlier versions of the Domain Connect specification (see <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>. See <a href="#reserved-for-extensions" class="auto internal xref">Section 3, Paragraph 13</a>.<a href="#section-12.5-4.2.2.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-12.5-4.3">
+            <strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <code>"IETF Standard"</code> for properties defined in a standards-track RFC, <code>"Informational"</code> for properties defined in an Informational RFC, or <code>"Other"</code> for any other specification.<a href="#section-12.5-4.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.5-4.4">
+            <strong>Reference</strong>: the document that defines the property.<a href="#section-12.5-4.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<div id="_26c71660-4650-0df1-9d58-9dff4a72038c">
+<p id="section-12.5-5">A registration request MUST provide the following:<a href="#section-12.5-5" class="pilcrow">¶</a></p>
+</div>
+<span class="break"></span><div id="_b1b544cd-198b-a2eb-2aac-04f9407563ce">
+<dl class="dlParallel" id="section-12.5-6">
+          <dt id="section-12.5-6.1">Property name:</dt>
+          <dd id="section-12.5-6.2" style="margin-left: 1.5em">
+<div id="_61a5ea10-1bc9-3cd9-b3af-4095d97b9f2e">
+            <div id="_c5d3b392-d50e-cdff-17a1-a6e65d589d0a">
+<p id="section-12.5-6.2.1">The JSON key as it appears in the settings response.<a href="#section-12.5-6.2.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.5-6.3">Status:</dt>
+          <dd id="section-12.5-6.4" style="margin-left: 1.5em">
+<div id="_8c9d8437-5918-ad38-a4f5-1ba7af0ffa9d">
+            <div id="_cc7c8478-4cd8-3c20-6745-c4d24ab9707a">
+<p id="section-12.5-6.4.1">One of <code>"Active"</code>, <code>"Deprecated"</code>, or <code>"Reserved"</code>.<a href="#section-12.5-6.4.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.5-6.5">Kind:</dt>
+          <dd id="section-12.5-6.6" style="margin-left: 1.5em">
+<div id="_ec096480-c029-6995-2324-01611da68498">
+            <div id="_756c8a11-7163-72e3-b991-49d6c6819524">
+<p id="section-12.5-6.6.1"><code>"IETF Standard"</code>, <code>"Informational"</code>, or <code>"Other"</code>.<a href="#section-12.5-6.6.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+          </dd>
+<dd class="break"></dd>
+<dt id="section-12.5-6.7">Reference:</dt>
+          <dd id="section-12.5-6.8" style="margin-left: 1.5em">
+<div id="_72ec9629-fe0e-492a-ac0c-e694273576f7">
+            <div id="_96622552-8be4-c623-9e84-8809732293bf">
+<p id="section-12.5-6.8.1">The document that defines the property, preferably including a URI from which a copy can be retrieved.<a href="#section-12.5-6.8.1" class="pilcrow">¶</a></p>
+</div>
+</div>
+        </dd>
+<dd class="break"></dd>
+</dl>
+</div>
+<div id="_2a98aca1-5764-9859-d165-c81cfd91e8f6">
+<p id="section-12.5-7">The following properties from this specification constitute the initial contents of the registry:<a href="#section-12.5-7" class="pilcrow">¶</a></p>
+</div>
+<span id="name-initial-domain-connect-sett"></span><div id="_69e42305-a0b9-bde0-14bb-c8842d3fc924">
+<table class="center" id="table-12">
+          <caption>
+<a href="#table-12" class="selfRef">Table 12</a>:
 <a href="#name-initial-domain-connect-sett" class="selfRef">Initial Domain Connect Settings Properties</a>
           </caption>
 <thead>
@@ -4438,163 +4870,178 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_f945cc02-5025-68a9-3f8b-bf5aca765f11">
+<div id="_839fe489-30b5-f4f0-8038-2282946166ae">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_5a56b794-3bda-cffa-89cd-b24fc0d592a2">
+<div id="_7cda4012-1806-e0ac-4982-e005233ecbc0">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
-<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
+<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.1-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.1-1.1">Classified template record types as Fully Specified, Computed, or Generic.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.2">Added a shared <a href="#iana-registration-procedure" class="internal xref">Registration Procedure for Domain Connect Registries</a> section (designated-expert assignment and review process) governing all Domain Connect registries.<a href="#section-15.1-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.3">Coupled the "Domain Connect Fully Specified Record Types" registry to the IANA DNS Resource Record (RR) TYPEs registry as a bidirectional maintenance contract (following the pattern set by RFC 9108 for that registry).<a href="#section-15.1-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_02925ca8-4482-a926-e023-0a6d4ec7b5ee">
+<div id="_e13bed84-21e2-6cba-ec5a-c2d8d8875627">
 <section id="section-15.2">
         <h3 id="name-change-from-draft-ietf-dconn">
-<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.2-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.2-1.2" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.2-1.3" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.2-1.4" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.2-1.5" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.2-1.6" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.2-1.7" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.2-1.8" class="pilcrow">¶</a>
+<li class="normal" id="section-15.2-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2">
+<div id="_3017fa67-1f90-3b84-f30f-61ad0588ca47">
 <section id="section-15.3">
+        <h3 id="name-change-from-draft-ietf-dconn-">
+<a href="#name-change-from-draft-ietf-dconn-" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+        </h3>
+<ul class="normal">
+<li class="normal" id="section-15.3-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.3-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.3-1.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.3-1.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.3-1.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.3-1.6" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.3-1.7" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.3-1.8" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="_185d452b-d175-d533-06c0-20658b0a5627">
+<section id="section-15.4">
         <h3 id="name-change-from-draft-kowalik-d">
 <a href="#name-change-from-draft-kowalik-d" class="section-name selfRef">Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.3-1.1">DCONN WG adoption. No other changes.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.4-1.1">DCONN WG adoption. No other changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_4d4c4c9f-351a-10a3-d04e-76a1553f2315">
-<section id="section-15.4">
+<div id="_290ff768-7fd5-69ce-582f-82c092c27a44">
+<section id="section-15.5">
         <h3 id="name-change-from-01-to-02">
 <a href="#name-change-from-01-to-02" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.4-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.5-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_def9df4f-c596-7360-362c-4ae0274c386e">
-<section id="section-15.5">
+<div id="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd">
+<section id="section-15.6">
         <h3 id="name-change-from-00-to-01">
 <a href="#name-change-from-00-to-01" class="section-name selfRef">Change from -00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.5-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.6-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.5-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.6-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.3">Added Use Cases<a href="#section-15.5-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.3">Added Use Cases<a href="#section-15.6-1.3" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.4">Added Trust Model<a href="#section-15.5-1.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.4">Added Trust Model<a href="#section-15.6-1.4" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.5-1.5" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.6-1.5" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.6">Reviewed use of normative language<a href="#section-15.5-1.6" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.6">Reviewed use of normative language<a href="#section-15.6-1.6" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.7">Cleaned up usage of terminology<a href="#section-15.5-1.7" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.7">Cleaned up usage of terminology<a href="#section-15.6-1.7" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.8">Variable substitution description updated<a href="#section-15.5-1.8" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.8">Variable substitution description updated<a href="#section-15.6-1.8" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.5-1.9" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.6-1.9" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe">
-<section id="section-15.6">
+<div id="_50ddde01-05e4-e309-ec7f-b2427fe96bab">
+<section id="section-15.7">
         <h3 id="name-change-from-draft-kowalik-r">
 <a href="#name-change-from-draft-kowalik-r" class="section-name selfRef">Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.6-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.7-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.6-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.7-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.6-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.7-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_850b1957-8cbb-7471-842d-647d078aa2eb">
-<section id="section-15.7">
+<div id="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa">
+<section id="section-15.8">
         <h3 id="name-change-from-draft-carney-re">
 <a href="#name-change-from-draft-carney-re" class="section-name selfRef">Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.7-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.8-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_8ebbb1e9-101a-1f50-ec97-c29881817d3f">
-<section id="section-15.8">
+<div id="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81">
+<section id="section-15.9">
         <h3 id="name-change-from-02-to-03">
 <a href="#name-change-from-02-to-03" class="section-name selfRef">Change from -02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.8-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.9-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.8-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.9-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.8-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.9-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_21346331-a4e8-ef23-2b3f-8a87a2165141">
-<section id="section-15.9">
+<div id="_18413bea-2fa8-bfff-6311-b992ae783e6d">
+<section id="section-15.10">
         <h3 id="name-change-from-01-to-02-2">
 <a href="#name-change-from-01-to-02-2" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.9-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.10-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_537a2365-e463-7813-b108-67d216fb18e6">
-<section id="section-15.10">
+<div id="_de573b06-ed44-1c01-72a6-7cb201ea5059">
+<section id="section-15.11">
         <h3 id="name-change-from-draft-carney-reg">
 <a href="#name-change-from-draft-carney-reg" class="section-name selfRef">Change from draft-carney-regext-domainconnect-00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.10-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.11-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.11-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
 </section>
 </div>
-<div id="_0ff85693-2f9a-753f-865f-450005656560">
+<div id="_3ba40d82-f4a7-39f5-7759-10f9dca87801">
 <section id="section-16">
       <h2 id="name-normative-references">
 <a href="#name-normative-references" class="section-name selfRef">Normative References</a>
@@ -4647,6 +5094,10 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <dt id="RFC6335">[RFC6335]</dt>
       <dd>
 <span class="refAuthor">Cotton, M.</span>, <span class="refAuthor">Eggert, L.</span>, <span class="refAuthor">Touch, J.</span>, <span class="refAuthor">Westerlund, M.</span>, and <span class="refAuthor">S. Cheshire</span>, <span class="refTitle">"Internet Assigned Numbers Authority (IANA) Procedures for the Management of the Service Name and Transport Protocol Port Number Registry"</span>, <span class="stream">IETF</span>, <span class="seriesInfo">DOI 10.17487/RFC6335</span>, <span class="seriesInfo">BCP 165</span>, <span class="seriesInfo">RFC 6335</span>, <time datetime="2011-08" class="refDate">August 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6335">https://www.rfc-editor.org/info/rfc6335</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6895">[RFC6895]</dt>
+      <dd>
+<span class="refAuthor">3rd, D. E.</span>, <span class="refTitle">"Domain Name System (DNS) IANA Considerations"</span>, <span class="stream">IETF</span>, <span class="seriesInfo">DOI 10.17487/RFC6895</span>, <span class="seriesInfo">BCP 42</span>, <span class="seriesInfo">RFC 6895</span>, <time datetime="2013-04" class="refDate">April 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6895">https://www.rfc-editor.org/info/rfc6895</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC6570">[RFC6570]</dt>
       <dd>
@@ -4822,16 +5273,16 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </div>
 </section>
 </div>
-<div id="_2058f3d5-562e-7847-a0c4-8d6cad2d43f8">
+<div id="_0cccb592-44d5-73c1-4882-0f6557a536aa">
 <section id="appendix-A.4">
-        <h3 id="name-example-records-unspecified">
-<a href="#appendix-A.4" class="section-number selfRef">A.4. </a><a href="#name-example-records-unspecified" class="section-name selfRef">Example Records: Unspecified record type CAA</a>
+        <h3 id="name-example-records-generic-rec">
+<a href="#appendix-A.4" class="section-number selfRef">A.4. </a><a href="#name-example-records-generic-rec" class="section-name selfRef">Example Records: Generic Record Type CAA</a>
         </h3>
-<div id="_c9782a55-c8ef-a117-6f64-1fbb3c9104ab">
-<p id="appendix-A.4-1">This example shows how to include a set of unspecified record types on an example of CAA records:<a href="#appendix-A.4-1" class="pilcrow">¶</a></p>
+<div id="_46efdba6-4332-a8e2-bca5-bc95631a4015">
+<p id="appendix-A.4-1">This example shows how to include a set of Generic Record Types on an example of CAA records:<a href="#appendix-A.4-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_d4310efd-f480-3035-e32e-b52a0ddf5889">
-<p id="appendix-A.4-2" class="keepWithNext">EXAMPLE: Unspecified record type CAA example<a href="#appendix-A.4-2" class="pilcrow">¶</a></p>
+<div id="_32999057-22ec-1e5c-8189-5236ab166606">
+<p id="appendix-A.4-2" class="keepWithNext">EXAMPLE: Generic Record Type CAA example<a href="#appendix-A.4-2" class="pilcrow">¶</a></p>
 </div>
 <div id="_ebe67f4d-bd73-a4f6-9ee6-38e79930dd4b">
 <div class="lang-json sourcecode" id="appendix-A.4-3">

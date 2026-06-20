@@ -120,7 +120,7 @@ The following definitions and rules are imported normatively from other document
 
 The following additional syntax rules are defined in this document and used normatively throughout.
 
-`"dc-name-char"`:: any Unicode Assignable code point allowed in `"domain-name"` except "%" and "@"
+`"dc-name-char"`:: any Unicode Assignable code point allowed in `"domain-name"` except `"%"` and `"@"`
 
 The following additional ABNF rules are defined in this document and used normatively throughout.
 
@@ -606,22 +606,22 @@ The default is `"false"`.
 Each template record is an entry that contains a type and several
 other values depending on the type.
 
-Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <<variables>>). Variables are replaced with values when the template is applied.
+Many of these values can contain variables, which are expressed as strings surrounded with `"%"` or special variable `"@"` (See: <<variables>>). Variables are replaced with values when the template is applied.
 
 
 Each record MUST contain the following elements unless otherwise specified.
 
-[cols=",,,",options="header",title="properties of the template record definition"]
-|=======================================================================
-|Data Element
-|Type
-|Key
-|Description
+Properties of the template record definition:
 
-|*Type*
-|enum
-|type
-|(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
+[newline=true]
+`"Type"`::
++
+--
+[horizontal]
+JSON key::: `"type"`
+Type::: `"enum"`
+
+(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
 
 Record types fall into three classes (see <<terminology>>): +
 
@@ -636,21 +636,31 @@ The DNS Provider SHOULD support the `"SPFM"` Computed Record Type for high inter
 Support for NS, for Generic Record Types, and for any Fully Specified Record Type registered by another specification is OPTIONAL. +
 
 The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
+--
 
+[newline=true]
+`"Group ID"`::
++
+--
+[horizontal]
+JSON key::: `"groupId"`
+Type::: `"String"`
 
-|*Group ID*
-|String
-|groupId
-|(OPTIONAL)
+(OPTIONAL)
 This parameter identifies the group the record belongs to when applying changes.
 
 The value MUST conform to the `dc-id` syntax (see <<terminology>>) and MUST NOT contain variable expressions.
+--
 
+[newline=true]
+`"Essential"`::
++
+--
+[horizontal]
+JSON key::: `"essential"`
+Type::: `"enum"`
 
-|*Essential*
-|enum
-|essential
-|(OPTIONAL)
+(OPTIONAL)
 This parameter indicates how the record is treated during conflict detection with
 existing templates. +
 
@@ -664,11 +674,16 @@ template +
 The value MUST conform to the `dc-essential` syntax (see <<terminology>>). +
 
 If omitted, the value MUST be assumed to be `"Always"`.
+--
 
-|*Host*
-|String
-|host
-|
+[newline=true]
+`"Host"`::
++
+--
+[horizontal]
+JSON key::: `"host"`
+Type::: `"String"`
+
 (REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic Record Type values. +
 
 This value is relative to the applied host and domain, unless trailed by a ".". +
@@ -678,32 +693,49 @@ A value of empty or `"@"` indicates the root of the applied host and domain. In 
 When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+--
 
-|*Name*
-|String
-|name
-|The name for the SRV record. +
+[newline=true]
+`"Name"`::
++
+--
+[horizontal]
+JSON key::: `"name"`
+Type::: `"String"`
+
+The name for the SRV record. +
 
 This value is relative to the applied host and domain. A value of empty or `"@"` indicates the root of the applied host and domain. +
 
 When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+--
 
-|[[pointsto-record]]*Points To*
-|String
-|pointsTo
-|
+[newline=true]
+[[pointsto-record]]`"Points To"`::
++
+--
+[horizontal]
+JSON key::: `"pointsTo"`
+Type::: `"String"`
+
 The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 
 When used in a template definition, the value MUST conform to the `"dc-pointsto-tmpl"` syntax for `"CNAME"`/`"MX"` and to the `"dc-pointsto-nat-tmpl"` syntax for A/AAAA/NS (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.
+--
 
-|*TTL*
-|Int or string repr. of Int
-|ttl
-|The time-to-live for the record in DNS. Valid
+[newline=true]
+`"TTL"`::
++
+--
+[horizontal]
+JSON key::: `"ttl"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The time-to-live for the record in DNS. Valid
 for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
 This SHOULD NOT contain variables unless absolutely necessary. +
 
@@ -714,101 +746,159 @@ After variable substitution, the resolved value MUST conform to the `dc-ttl-valu
 This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Data*
-|String
-|data
-|
+[newline=true]
+`"Data"`::
++
+--
+[horizontal]
+JSON key::: `"data"`
+Type::: `"String"`
+
 For TXT record `"data"` contains TXT-DATA <<RFC1035>> in presentation format. For a single `"<character-string>"` the heading and trailing `"` character MAY be omitted even if space character is present in the value.
 
 `"data"` MUST NOT be present in a template record for any Fully Specified or Computed Record Type, which use type-specific data fields defined in this specification.
 
 For a Generic Record Type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding.
+--
 
-|*TXT Conflict Matching Mode*
-|String
-|txtConflictMatchingMode
-|Describes how conflicts on the TXT record are detected. Possible values are
+[newline=true]
+`"TXT Conflict Matching Mode"`::
++
+--
+[horizontal]
+JSON key::: `"txtConflictMatchingMode"`
+Type::: `"String"`
+
+Describes how conflicts on the TXT record are detected. Possible values are
 None, All, or Prefix. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
 
 If omitted, the value MUST be assumed to be `"None"`.
+--
 
-|*TXT Conflict Matching Prefix*
-|String
-|txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<conflict-detection, See below>>. +
+[newline=true]
+`"TXT Conflict Matching Prefix"`::
++
+--
+[horizontal]
+JSON key::: `"txtConflictMatchingPrefix"`
+Type::: `"String"`
+
+The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
+--
 
-|*Priority*
-|Int or string repr. of Int
-|priority
-|The priority for an MX or SRV record. +
+[newline=true]
+`"Priority"`::
++
+--
+[horizontal]
+JSON key::: `"priority"`
+Type::: `"Int"` or string representation of `"Int"`
 
-When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Weight*
-|Int or string repr. of Int
-|weight
-|The weight for the SRV record. +
+The priority for an MX or SRV record. +
 
 When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Port*
-|Int or string repr. of Int
-|port
-|The port for the SRV record. +
+[newline=true]
+`"Weight"`::
++
+--
+[horizontal]
+JSON key::: `"weight"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The weight for the SRV record. +
 
 When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
-The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>. +
+Support of variables in this field is OPTIONAL for DNS Provider.
+--
+
+[newline=true]
+`"Port"`::
++
+--
+[horizontal]
+JSON key::: `"port"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The port for the SRV record.
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>).
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax.
+
+The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>.
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Protocol*
-|String
-|protocol
-|The protocol for the SRV record. +
+[newline=true]
+`"Protocol"`::
++
+--
+[horizontal]
+JSON key::: `"protocol"`
+Type::: `"String"`
+
+The protocol for the SRV record. +
 
 The value MUST conform to the `dc-srv-protocol` syntax (see <<terminology>>).
+--
 
-|*Service*
-|String
-|service
-|The symbolic service name for the SRV record. +
+[newline=true]
+`"Service"`::
++
+--
+[horizontal]
+JSON key::: `"service"`
+Type::: `"String"`
+
+The symbolic service name for the SRV record. +
 
 The value MUST conform to the `dc-srv-service` syntax (see <<terminology>>).
+--
 
-|*Target*
-|String
-|target
-|The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
+[newline=true]
+`"Target"`::
++
+--
+[horizontal]
+JSON key::: `"target"`
+Type::: `"String"`
+
+The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
 
 When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
+--
 
-|[[spf-rules]]*SPF Rules*
-|String
-|spfRules
-|These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
+[newline=true]
+[[spf-rules]]`"SPF Rules"`::
++
+--
+[horizontal]
+JSON key::: `"spfRules"`
+Type::: `"String"`
+
+These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
 The value MUST contain only mechanism and modifier terms as defined in <<RFC7208>> Section 5,
 excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
 The DNS Provider MUST validate the syntax before merging.
-
-|=======================================================================
+--
 
 The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
 

@@ -964,403 +964,288 @@ Table of Contents
    Each record MUST contain the following elements unless otherwise
    specified.
 
-   +===========+======+=========================+======================+
-   |Data       |Type  |Key                      |Description           |
-   |Element    |      |                         |                      |
-   +===========+======+=========================+======================+
-   |*Type*     |enum  |type                     |(REQUIRED) Describes  |
-   |           |      |                         |the type of record in |
-   |           |      |                         |DNS, or the operation |
-   |           |      |                         |impacting DNS.        |
-   |           |      |                         |Record types fall into|
-   |           |      |                         |three classes (see    |
-   |           |      |                         |Section 3):           |
-   |           |      |                         |_Fully Specified      |
-   |           |      |                         |Record Types_ - A,    |
-   |           |      |                         |AAAA, CNAME, MX, TXT, |
-   |           |      |                         |SRV, NS - whose RDATA |
-   |           |      |                         |is broken into        |
-   |           |      |                         |dedicated template    |
-   |           |      |                         |fields.  The complete |
-   |           |      |                         |set is managed by the |
-   |           |      |                         |IANA "Domain Connect  |
-   |           |      |                         |Fully Specified Record|
-   |           |      |                         |Types" registry (see  |
-   |           |      |                         |Section 12.3).        |
-   |           |      |                         |_Computed Record      |
-   |           |      |                         |Types_ - which        |
-   |           |      |                         |instruct the DNS      |
-   |           |      |                         |Provider to derive DNS|
-   |           |      |                         |records by a defined  |
-   |           |      |                         |computation rather    |
-   |           |      |                         |than write a verbatim |
-   |           |      |                         |record.  "SPFM" is the|
-   |           |      |                         |Computed Record Type  |
-   |           |      |                         |defined in this       |
-   |           |      |                         |document.             |
-   |           |      |                         |_Generic Record Types_|
-   |           |      |                         |- any other IANA-     |
-   |           |      |                         |registered RR TYPE    |
-   |           |      |                         |mnemonic, or the      |
-   |           |      |                         |"TYPE" form of        |
-   |           |      |                         |[RFC3597], whose RDATA|
-   |           |      |                         |is carried opaquely in|
-   |           |      |                         |the "data" field.     |
-   |           |      |                         |The DNS Provider MUST |
-   |           |      |                         |support the core Fully|
-   |           |      |                         |Specified Record Types|
-   |           |      |                         |A, AAAA, CNAME, MX,   |
-   |           |      |                         |TXT, SRV.             |
-   |           |      |                         |The DNS Provider      |
-   |           |      |                         |SHOULD support the    |
-   |           |      |                         |"SPFM" Computed Record|
-   |           |      |                         |Type for high         |
-   |           |      |                         |interoperability with |
-   |           |      |                         |existing templates.   |
-   |           |      |                         |Support for NS, for   |
-   |           |      |                         |Generic Record Types, |
-   |           |      |                         |and for any Fully     |
-   |           |      |                         |Specified Record Type |
-   |           |      |                         |registered by another |
-   |           |      |                         |specification is      |
-   |           |      |                         |OPTIONAL.             |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-record-type |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Group ID* |String|groupId                  |(OPTIONAL) This       |
-   |           |      |                         |parameter identifies  |
-   |           |      |                         |the group the record  |
-   |           |      |                         |belongs to when       |
-   |           |      |                         |applying changes.  The|
-   |           |      |                         |value MUST conform to |
-   |           |      |                         |the dc-id syntax (see |
-   |           |      |                         |Section 3) and MUST   |
-   |           |      |                         |NOT contain variable  |
-   |           |      |                         |expressions.          |
-   +-----------+------+-------------------------+----------------------+
-   |*Essential*|enum  |essential                |(OPTIONAL) This       |
-   |           |      |                         |parameter indicates   |
-   |           |      |                         |how the record is     |
-   |           |      |                         |treated during        |
-   |           |      |                         |conflict detection    |
-   |           |      |                         |with existing         |
-   |           |      |                         |templates.            |
-   |           |      |                         |If the DNS Provider is|
-   |           |      |                         |not implementing      |
-   |           |      |                         |applied template state|
-   |           |      |                         |in DNS this is        |
-   |           |      |                         |ignored.              |
-   |           |      |                         |Always (default) -    |
-   |           |      |                         |record MUST be applied|
-   |           |      |                         |and kept with the     |
-   |           |      |                         |template              |
-   |           |      |                         |OnApply - record MUST |
-   |           |      |                         |be applied but can be |
-   |           |      |                         |later removed without |
-   |           |      |                         |dropping the whole    |
-   |           |      |                         |template              |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-essential   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |If omitted, the value |
-   |           |      |                         |MUST be assumed to be |
-   |           |      |                         |"Always".             |
-   +-----------+------+-------------------------+----------------------+
-   |*Host*     |String|host                     |(REQUIRED) The host   |
-   |           |      |                         |for A, AAAA, CNAME,   |
-   |           |      |                         |NS, TXT, MX and       |
-   |           |      |                         |Generic Record Type   |
-   |           |      |                         |values.               |
-   |           |      |                         |This value is relative|
-   |           |      |                         |to the applied host   |
-   |           |      |                         |and domain, unless    |
-   |           |      |                         |trailed by a ".".     |
-   |           |      |                         |A value of empty or   |
-   |           |      |                         |"@" indicates the root|
-   |           |      |                         |of the applied host   |
-   |           |      |                         |and domain.  In other |
-   |           |      |                         |words                 |
-   |           |      |                         |"[host.]example.com.".|
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-host-tmpl   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Name*     |String|name                     |The name for the SRV  |
-   |           |      |                         |record.               |
-   |           |      |                         |This value is relative|
-   |           |      |                         |to the applied host   |
-   |           |      |                         |and domain.  A value  |
-   |           |      |                         |of empty or "@"       |
-   |           |      |                         |indicates the root of |
-   |           |      |                         |the applied host and  |
-   |           |      |                         |domain.               |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-host-tmpl   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Points To*|String|pointsTo                 |The pointsTo location |
-   |           |      |                         |for A, AAAA, CNAME, NS|
-   |           |      |                         |and MX records.       |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the "dc-pointsto-  |
-   |           |      |                         |tmpl" syntax for      |
-   |           |      |                         |"CNAME"/"MX" and to   |
-   |           |      |                         |the "dc-pointsto-nat- |
-   |           |      |                         |tmpl" syntax for      |
-   |           |      |                         |A/AAAA/NS (see        |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the        |
-   |           |      |                         |presentation format of|
-   |           |      |                         |the corresponding     |
-   |           |      |                         |resource record type. |
-   +-----------+------+-------------------------+----------------------+
-   |*TTL*      |Int or|ttl                      |The time-to-live for  |
-   |           |string|                         |the record in DNS.    |
-   |           |repr. |                         |Valid for A, AAAA,    |
-   |           |of Int|                         |CNAME, NS, TXT, MX,   |
-   |           |      |                         |and SRV records.  This|
-   |           |      |                         |SHOULD NOT contain    |
-   |           |      |                         |variables unless      |
-   |           |      |                         |absolutely necessary. |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-ttl-tmpl    |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-ttl-|
-   |           |      |                         |value syntax.  This   |
-   |           |      |                         |value, no matter if   |
-   |           |      |                         |variable or constant, |
-   |           |      |                         |is understood as "best|
-   |           |      |                         |effort" by DNS        |
-   |           |      |                         |Provider and MAY be   |
-   |           |      |                         |limited or adjusted by|
-   |           |      |                         |local policy at       |
-   |           |      |                         |runtime or during     |
-   |           |      |                         |template onboarding,  |
-   |           |      |                         |like applying a       |
-   |           |      |                         |certain minimum or    |
-   |           |      |                         |maximum value of TTL  |
-   |           |      |                         |or an enumeration of  |
-   |           |      |                         |TTL values supported  |
-   |           |      |                         |by the DNS Provider.  |
-   |           |      |                         |The DNS Provider      |
-   |           |      |                         |SHOULD NOT reject     |
-   |           |      |                         |template application  |
-   |           |      |                         |because of invalid    |
-   |           |      |                         |value, rather pick the|
-   |           |      |                         |nearest supported     |
-   |           |      |                         |value or a default, in|
-   |           |      |                         |order to avoid        |
-   |           |      |                         |necessity of per      |
-   |           |      |                         |provider adjustment to|
-   |           |      |                         |the application flow. |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Data*     |String|data                     |For TXT record "data" |
-   |           |      |                         |contains TXT-DATA     |
-   |           |      |                         |[RFC1035] in          |
-   |           |      |                         |presentation format.  |
-   |           |      |                         |For a single          |
-   |           |      |                         |"<character-string>"  |
-   |           |      |                         |the heading and       |
-   |           |      |                         |trailing " character  |
-   |           |      |                         |MAY be omitted even if|
-   |           |      |                         |space character is    |
-   |           |      |                         |present in the value. |
-   |           |      |                         |"data" MUST NOT be    |
-   |           |      |                         |present in a template |
-   |           |      |                         |record for any Fully  |
-   |           |      |                         |Specified or Computed |
-   |           |      |                         |Record Type, which use|
-   |           |      |                         |type-specific data    |
-   |           |      |                         |fields defined in this|
-   |           |      |                         |specification.  For a |
-   |           |      |                         |Generic Record Type,  |
-   |           |      |                         |this field contains   |
-   |           |      |                         |the canonical         |
-   |           |      |                         |presentation format of|
-   |           |      |                         |the record, following |
-   |           |      |                         |[RFC3597] generic or  |
-   |           |      |                         |type-specific         |
-   |           |      |                         |encoding.             |
-   +-----------+------+-------------------------+----------------------+
-   |*TXT       |String|txtConflictMatchingMode  |Describes how         |
-   |Conflict   |      |                         |conflicts on the TXT  |
-   |Matching   |      |                         |record are detected.  |
-   |Mode*      |      |                         |Possible values are   |
-   |           |      |                         |None, All, or Prefix. |
-   |           |      |                         |See below             |
-   |           |      |                         |(Section 10.4).       |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-txt-        |
-   |           |      |                         |conflict-mode syntax  |
-   |           |      |                         |(see Section 3).      |
-   |           |      |                         |If omitted, the value |
-   |           |      |                         |MUST be assumed to be |
-   |           |      |                         |"None".               |
-   +-----------+------+-------------------------+----------------------+
-   |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
-   |Conflict   |      |                         |conflicts when        |
-   |Matching   |      |                         |txtConflict-          |
-   |Prefix*    |      |                         |MatchingMode is       |
-   |           |      |                         |"Prefix".  See below  |
-   |           |      |                         |(Section 10.4).       |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-conflict-   |
-   |           |      |                         |prefix syntax (see    |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Priority* |Int or|priority                 |The priority for an MX|
-   |           |string|                         |or SRV record.        |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Weight*   |Int or|weight                   |The weight for the SRV|
-   |           |string|                         |record.               |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Port*     |Int or|port                     |The port for the SRV  |
-   |           |string|                         |record.               |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |The resolved value is |
-   |           |      |                         |further constrained to|
-   |           |      |                         |the range 0-65535 as  |
-   |           |      |                         |defined by [RFC6335]. |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Protocol* |String|protocol                 |The protocol for the  |
-   |           |      |                         |SRV record.           |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-srv-protocol|
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Service*  |String|service                  |The symbolic service  |
-   |           |      |                         |name for the SRV      |
-   |           |      |                         |record.               |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-srv-service |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Target*   |String|target                   |The target hostname   |
-   |           |      |                         |for the SRV record as |
-   |           |      |                         |defined in Section 3.1|
-   |           |      |                         |of [RFC2782].         |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-pointsto-   |
-   |           |      |                         |tmpl syntax (see      |
-   |           |      |                         |Section 3), or be the |
-   |           |      |                         |single label "." to   |
-   |           |      |                         |indicate that the     |
-   |           |      |                         |service is not        |
-   |           |      |                         |available.            |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3), or be ".".|
-   +-----------+------+-------------------------+----------------------+
-   |*SPF Rules*|String|spfRules                 |These are desired     |
-   |           |      |                         |rules for the SPF TXT |
-   |           |      |                         |record.  These rules  |
-   |           |      |                         |SHOULD be merged with |
-   |           |      |                         |other SPFM records    |
-   |           |      |                         |into final SPF TXT    |
-   |           |      |                         |record.  See          |
-   |           |      |                         |Section 9.4.  The     |
-   |           |      |                         |value MUST contain    |
-   |           |      |                         |only mechanism and    |
-   |           |      |                         |modifier terms as     |
-   |           |      |                         |defined in [RFC7208]  |
-   |           |      |                         |Section 5, excluding  |
-   |           |      |                         |the version prefix    |
-   |           |      |                         |("v=spf1") and the    |
-   |           |      |                         |terminating "all"     |
-   |           |      |                         |qualifier.  The DNS   |
-   |           |      |                         |Provider MUST validate|
-   |           |      |                         |the syntax before     |
-   |           |      |                         |merging.              |
-   +-----------+------+-------------------------+----------------------+
+   Properties of the template record definition:
 
-           Table 2: properties of the template record definition
+   "Type":
+      JSON key:  "type"
+
+      Type:  "enum"
+
+      (REQUIRED) Describes the type of record in DNS, or the operation
+      impacting DNS.
+
+      Record types fall into three classes (see Section 3):
+
+      _Fully Specified Record Types_ - A, AAAA, CNAME, MX, TXT, SRV, NS
+      - whose RDATA is broken into dedicated template fields.  The
+      complete set is managed by the IANA "Domain Connect Fully
+      Specified Record Types" registry (see Section 12.3).
+
+      _Computed Record Types_ - which instruct the DNS Provider to
+      derive DNS records by a defined computation rather than write a
+      verbatim record.  "SPFM" is the Computed Record Type defined in
+      this document.
+
+      _Generic Record Types_ - any other IANA-registered RR TYPE
+      mnemonic, or the "TYPE" form of [RFC3597], whose RDATA is carried
+      opaquely in the "data" field.
+
+      The DNS Provider MUST support the core Fully Specified Record
+      Types A, AAAA, CNAME, MX, TXT, SRV.
+      The DNS Provider SHOULD support the "SPFM" Computed Record Type
+      for high interoperability with existing templates.
+      Support for NS, for Generic Record Types, and for any Fully
+      Specified Record Type registered by another specification is
+      OPTIONAL.
+
+      The value MUST conform to the dc-record-type syntax (see
+      Section 3).
+
+   "Group ID":
+      JSON key:  "groupId"
+
+      Type:  "String"
+
+      (OPTIONAL) This parameter identifies the group the record belongs
+      to when applying changes.
+
+      The value MUST conform to the dc-id syntax (see Section 3) and
+      MUST NOT contain variable expressions.
+
+   "Essential":
+      JSON key:  "essential"
+
+      Type:  "enum"
+
+      (OPTIONAL) This parameter indicates how the record is treated
+      during conflict detection with existing templates.
+
+      If the DNS Provider is not implementing applied template state in
+      DNS this is ignored.
+
+      Always (default) - record MUST be applied and kept with the
+      template
+
+      OnApply - record MUST be applied but can be later removed without
+      dropping the whole template
+
+      The value MUST conform to the dc-essential syntax (see Section 3).
+
+      If omitted, the value MUST be assumed to be "Always".
+
+   "Host":
+      JSON key:  "host"
+
+      Type:  "String"
+
+      (REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic
+      Record Type values.
+
+      This value is relative to the applied host and domain, unless
+      trailed by a ".".
+
+      A value of empty or "@" indicates the root of the applied host and
+      domain.  In other words "[host.]example.com.".
+
+      When used in a template definition, the value MUST conform to the
+      dc-host-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3).
+
+   "Name":
+      JSON key:  "name"
+
+      Type:  "String"
+
+      The name for the SRV record.
+
+      This value is relative to the applied host and domain.  A value of
+      empty or "@" indicates the root of the applied host and domain.
+
+      When used in a template definition, the value MUST conform to the
+      dc-host-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3).
+
+   "Points To":
+      JSON key:  "pointsTo"
+
+      Type:  "String"
+
+      The pointsTo location for A, AAAA, CNAME, NS and MX records.
+
+      When used in a template definition, the value MUST conform to the
+      "dc-pointsto-tmpl" syntax for "CNAME"/"MX" and to the "dc-
+      pointsto-nat-tmpl" syntax for A/AAAA/NS (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the presentation format of the corresponding resource record type.
+
+   "TTL":
+      JSON key:  "ttl"
+
+      Type:  "Int" or string representation of "Int"
+
+      The time-to-live for the record in DNS.  Valid for A, AAAA, CNAME,
+      NS, TXT, MX, and SRV records.  This SHOULD NOT contain variables
+      unless absolutely necessary.
+
+      When used in a template definition, the value MUST conform to the
+      dc-ttl-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-ttl-value syntax.
+
+      This value, no matter if variable or constant, is understood as
+      "best effort" by DNS Provider and MAY be limited or adjusted by
+      local policy at runtime or during template onboarding, like
+      applying a certain minimum or maximum value of TTL or an
+      enumeration of TTL values supported by the DNS Provider.  The DNS
+      Provider SHOULD NOT reject template application because of invalid
+      value, rather pick the nearest supported value or a default, in
+      order to avoid necessity of per provider adjustment to the
+      application flow.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Data":
+      JSON key:  "data"
+
+      Type:  "String"
+
+      For TXT record "data" contains TXT-DATA [RFC1035] in presentation
+      format.  For a single "<character-string>" the heading and
+      trailing " character MAY be omitted even if space character is
+      present in the value.
+
+      "data" MUST NOT be present in a template record for any Fully
+      Specified or Computed Record Type, which use type-specific data
+      fields defined in this specification.
+
+      For a Generic Record Type, this field contains the canonical
+      presentation format of the record, following [RFC3597] generic or
+      type-specific encoding.
+
+   "TXT Conflict Matching Mode":
+      JSON key:  "txtConflictMatchingMode"
+
+      Type:  "String"
+
+      Describes how conflicts on the TXT record are detected.  Possible
+      values are None, All, or Prefix.  See below (Section 10.4).
+
+      The value MUST conform to the dc-txt-conflict-mode syntax (see
+      Section 3).
+
+      If omitted, the value MUST be assumed to be "None".
+
+   "TXT Conflict Matching Prefix":
+      JSON key:  "txtConflictMatchingPrefix"
+
+      Type:  "String"
+
+      The prefix to detect conflicts when txtConflict-MatchingMode is
+      "Prefix".  See below (Section 10.4).
+
+      The value MUST conform to the dc-conflict-prefix syntax (see
+      Section 3).
+
+   "Priority":
+      JSON key:  "priority"
+
+      Type:  "Int" or string representation of "Int"
+
+      The priority for an MX or SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Weight":
+      JSON key:  "weight"
+
+      Type:  "Int" or string representation of "Int"
+
+      The weight for the SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Port":
+      JSON key:  "port"
+
+      Type:  "Int" or string representation of "Int"
+
+      The port for the SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      The resolved value is further constrained to the range 0-65535 as
+      defined by [RFC6335].
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Protocol":
+      JSON key:  "protocol"
+
+      Type:  "String"
+
+      The protocol for the SRV record.
+
+      The value MUST conform to the dc-srv-protocol syntax (see
+      Section 3).
+
+   "Service":
+      JSON key:  "service"
+
+      Type:  "String"
+
+      The symbolic service name for the SRV record.
+
+      The value MUST conform to the dc-srv-service syntax (see
+      Section 3).
+
+   "Target":
+      JSON key:  "target"
+
+      Type:  "String"
+
+      The target hostname for the SRV record as defined in Section 3.1
+      of [RFC2782].
+
+      When used in a template definition, the value MUST conform to the
+      dc-pointsto-tmpl syntax (see Section 3), or be the single label
+      "." to indicate that the service is not available.
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3), or be ".".
+
+   "SPF Rules":
+      JSON key:  "spfRules"
+
+      Type:  "String"
+
+      These are desired rules for the SPF TXT record.  These rules
+      SHOULD be merged with other SPFM records into final SPF TXT
+      record.  See Section 9.4.  The value MUST contain only mechanism
+      and modifier terms as defined in [RFC7208] Section 5, excluding
+      the version prefix ("v=spf1") and the terminating "all" qualifier.
+      The DNS Provider MUST validate the syntax before merging.
 
    The following table lists the fields that MAY be defined for each
    record type.  Other fields MUST NOT be used.
@@ -1391,7 +1276,7 @@ Table of Contents
    | types   |                                                        |
    +---------+--------------------------------------------------------+
 
-                     Table 3: Fields per record type
+                     Table 2: Fields per record type
 
 6.3.  Template Considerations
 
@@ -1506,7 +1391,7 @@ Table of Contents
    |            |     | If omitted, MUST be assumed to be "x509".      |
    +------------+-----+------------------------------------------------+
 
-              Table 4: Properties of the public key TXT record
+              Table 3: Properties of the public key TXT record
 
    To allow for key rotation or use of multiple keys, the Service
    Provider MAY publish key records at multiple hosts within
@@ -1755,7 +1640,7 @@ Table of Contents
    |              |                     |        | Section 3).         |
    +--------------+---------------------+--------+---------------------+
 
-             Table 5: properties of the settings data structure
+             Table 4: properties of the settings data structure
 
    Clients MUST ignore any JSON properties in the settings response that
    are not defined in this specification or not recognized from an
@@ -1818,7 +1703,7 @@ Table of Contents
    | Found*    |          | DNS Provider does not have the zone.      |
    +-----------+----------+-------------------------------------------+
 
-          Table 6: HTTP status codes for the settings end-point
+          Table 5: HTTP status codes for the settings end-point
 
 8.  Applying Domain Connect
 
@@ -1881,7 +1766,7 @@ Table of Contents
       |          |            | id syntax (see Section 3).         |
       +----------+------------+------------------------------------+
 
-         Table 7: URI template parameters for the query supported
+         Table 6: URI template parameters for the query supported
                             template end-point
 
    Returning a status of 200 without a body indicates the template is
@@ -1903,7 +1788,7 @@ Table of Contents
       | Found*    |          | the template is not supported        |
       +-----------+----------+--------------------------------------+
 
-            Table 8: https status codes for the Query Supported
+            Table 7: https status codes for the Query Supported
                              Template end-point
 
 8.3.  Synchronous Flow
@@ -2047,7 +1932,7 @@ Table of Contents
     |             |              | See the Section 8.3.2.1 below.    |
     +-------------+--------------+-----------------------------------+
 
-      Table 9: URI template parameters of the apply call in the sync
+      Table 8: URI template parameters of the apply call in the sync
                                    flow
 
    An example query string:
@@ -2860,8 +2745,7 @@ Table of Contents
                | TXT     | _domainconnect | This document. |
                +---------+----------------+----------------+
 
-                      Table 10: IANA Registration for
-                               _domainconnect
+               Table 9: IANA Registration for _domainconnect
 
 12.3.  Domain Connect Fully Specified Record Types Registry
 
@@ -2984,7 +2868,7 @@ Table of Contents
     |             |        |           |       |Standard| document    |
     +-------------+--------+-----------+-------+--------+-------------+
 
-       Table 11: Initial Domain Connect Fully Specified Record Types
+       Table 10: Initial Domain Connect Fully Specified Record Types
 
 12.4.  Guidance to the DNS Resource Record (RR) TYPEs Registry
 
@@ -3092,7 +2976,7 @@ Table of Contents
    | "nameServers"         | Active   | IETF Standard | This document |
    +-----------------------+----------+---------------+---------------+
 
-           Table 12: Initial Domain Connect Settings Properties
+           Table 11: Initial Domain Connect Settings Properties
 
 Implementation Status
 

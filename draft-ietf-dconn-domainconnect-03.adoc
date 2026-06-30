@@ -950,6 +950,8 @@ p=3,a=RS256,d=weDjXrJwIDAQAB
 [[dns-provider-discovery]]
 == DNS Provider Discovery
 
+=== `"_domainconnect"` Resource Record
+
 To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for `"_domainconnect"` in the zone.
 
 The record content represents an authority and path part of the settings REST API URL. 
@@ -966,13 +968,19 @@ domainconnect.virtucondomains.example
 `"_domainconnect"` TXT record MUST contain the authority part of the URL and MAY contain a path part.
 `"_domainconnect"` MUST not contain schema, query or fragment part of an URL.
 
+The DNS query for the `"_domainconnect"` TXT record MAY return more than one TXT record. The Service Provider MUST reject any returned record whose content does not satisfy the validity rules above. If, after this filtering, at least one valid record remains, the Service Provider MUST process at least one of them. The Service Provider MAY iterate over the remaining valid records, attempting discovery with each in turn, until a valid Settings End-Point response is obtained.
+
+==== Deployment considerations
+
 As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the `"_domainconnect"` TXT record with the appropriate data.
 
 How this is implemented is up to the DNS Provider.
 
 For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having  the data in each zone.
 
-The URL prefix returned MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.
+=== Settings End-Point
+
+The URL prefix returned in `"_domainconnect"` Resource Record MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.
 
 Normative URI template of the Settings End-Point per <<RFC6570>>:
 [source]
@@ -1779,6 +1787,23 @@ Templates that accept variable parameters introduce a phishing risk. The more st
 
 Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), using an alternative flow not prone to this risk and disabling the synchronous flow via `"syncBlock"`, and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
 
+[[sec-discovery-record]]
+=== Untrusted DNS Provider Discovery Records
+
+DNS Provider Discovery (see <<dns-provider-discovery>>) requires the Service Provider to read the `"_domainconnect"` TXT record from the target zone and to fetch the Settings End-Point at the URL derived from it. The content of this record is controlled by whoever controls the zone, which is not necessarily a party the Service Provider trusts. 
+
+A malicious or compromised zone can therefore direct the Service Provider's HTTP client at an arbitrary endpoint. Two classes of attack arise:
+
+* Denial of Service - The record may point at a resource that is malformed, never terminates, responds very slowly, or returns an oversized or unbounded body, with the goal of exhausting the Service Provider's connections, memory, or processing capacity.
+
+* Server-Side Request Forgery (SSRF) - The derived authority may resolve to an address inside the Service Provider's own infrastructure (for example a loopback, link-local, or private-use address, or an internal-only hostname), causing the Service Provider to issue requests against internal services on the attacker's behalf.
+
+Service Providers MUST treat the `"_domainconnect"` TXT record content, and the Settings End-Point response derived from it, as untrusted input. In particular, Service Providers:
+
+* SHOULD reject derived authorities that resolve to loopback, link-local, private-use, or otherwise internal addresses, unless the Service Provider has a specific reason to permit them
+
+* MUST bound the discovery request, including connection and total-request timeouts, a maximum response size, and a limit on the number of redirects followed
+
 [#iana]
 == IANA Considerations
 
@@ -1922,6 +1947,11 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [removeInRFC=true,toc=include,numbered=false]
 == Change History
+
+[toc=exclude,numbered=false]
+=== Change from draft-ietf-dconn-domainconnect-02 to -03
+- Added <<sec-discovery-record,format=title>> to <<security-considerations,format=title>>.
+- Clarified handling of multiple `"_domainconnect"` TXT records in <<dns-provider-discovery,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02

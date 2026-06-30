@@ -84,9 +84,12 @@ Table of Contents
        6.3.3.  Variable Scope Minimisation . . . . . . . . . . . . .  29
      6.4.  Public Key Publication  . . . . . . . . . . . . . . . . .  30
    7.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .  32
+     7.1.  "_domainconnect" Resource Record  . . . . . . . . . . . .  32
+       7.1.1.  Deployment considerations . . . . . . . . . . . . . .  33
+     7.2.  Settings End-Point  . . . . . . . . . . . . . . . . . . .  33
    8.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  38
      8.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  38
-     8.2.  Query Supported Template  . . . . . . . . . . . . . . . .  38
+     8.2.  Query Supported Template  . . . . . . . . . . . . . . . .  39
      8.3.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  40
        8.3.1.  Apply Template URL  . . . . . . . . . . . . . . . . .  40
        8.3.2.  Parameters/properties . . . . . . . . . . . . . . . .  40
@@ -103,9 +106,6 @@ Table of Contents
        9.2.1.  Input Values  . . . . . . . . . . . . . . . . . . . .  48
        9.2.2.  Processing  . . . . . . . . . . . . . . . . . . . . .  49
      9.3.  Host Name Rendering . . . . . . . . . . . . . . . . . . .  49
-       9.3.1.  Input Values  . . . . . . . . . . . . . . . . . . . .  49
-       9.3.2.  Processing  . . . . . . . . . . . . . . . . . . . . .  50
-       9.3.3.  Examples of host processing . . . . . . . . . . . . .  50
 
 
 
@@ -114,6 +114,9 @@ Kowalik, et al.          Expires 7 December 2026                [Page 2]
 Internet-Draft               Domain Connect                    June 2026
 
 
+       9.3.1.  Input Values  . . . . . . . . . . . . . . . . . . . .  49
+       9.3.2.  Processing  . . . . . . . . . . . . . . . . . . . . .  50
+       9.3.3.  Examples of host processing . . . . . . . . . . . . .  50
      9.4.  SPF Record Merging  . . . . . . . . . . . . . . . . . . .  51
    10. Template Application  . . . . . . . . . . . . . . . . . . . .  52
      10.1.  Template State in DNS Providers system . . . . . . . . .  52
@@ -128,17 +131,18 @@ Internet-Draft               Domain Connect                    June 2026
      10.8.  Examples . . . . . . . . . . . . . . . . . . . . . . . .  58
    11. Security Considerations . . . . . . . . . . . . . . . . . . .  59
      11.1.  Template Variable Phishing . . . . . . . . . . . . . . .  59
-   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  59
-     12.1.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  59
-     12.2.  Domain Connect Settings Properties Registry  . . . . . .  59
-   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  61
+     11.2.  Untrusted DNS Provider Discovery Records . . . . . . . .  59
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  60
+     12.1.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  60
+     12.2.  Domain Connect Settings Properties Registry  . . . . . .  60
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  62
    Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  62
-   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  62
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  63
    Normative References  . . . . . . . . . . . . . . . . . . . . . .  65
    Informative References  . . . . . . . . . . . . . . . . . . . . .  67
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  67
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  67
-     A.2.  Example Records: Single static host record  . . . . . . .  68
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  68
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  68
+     A.2.  Example Records: Single static host record  . . . . . . .  69
      A.3.  Example Records: Single variable host record for A  . . .  69
      A.4.  Example Records: Unspecified record type CAA  . . . . . .  69
      A.5.  Example: Template application to DNS Zone and Conflict
@@ -155,10 +159,6 @@ Internet-Draft               Domain Connect                    June 2026
    technical knowledge of DNS, and result in outdated and confusing
    instructions from Service Providers.  This leads to user frustration,
    support overhead, and abandoned setups.
-
-
-
-
 
 
 
@@ -1764,6 +1764,8 @@ Internet-Draft               Domain Connect                    June 2026
 
 7.  DNS Provider Discovery
 
+7.1.  "_domainconnect" Resource Record
+
    To facilitate discovery of the DNS Provider from a domain name DNS is
    utilized.  This is done by returning a TXT record for
    "_domainconnect" in the zone.
@@ -1771,7 +1773,7 @@ Internet-Draft               Domain Connect                    June 2026
    The record content represents an authority and path part of the
    settings REST API URL.
 
-   EXAMPLE 1: An example of the contents of this record:
+   EXAMPLE: An example of the contents of this record:
 
    domainconnect.virtucondomains.example
 
@@ -1781,11 +1783,9 @@ Internet-Draft               Domain Connect                    June 2026
    part of the URL and MAY contain a path part. "_domainconnect" MUST
    not contain schema, query or fragment part of an URL.
 
-   As a practical matter of implementation, the DNS Provider may or may
-   not contain a copy of this data in each and every zone.  Instead, the
-   DNS Provider MUST simply respond to the DNS query for the
-   "_domainconnect" TXT record with the appropriate data.
-
+   The DNS query for the "_domainconnect" TXT record MAY return more
+   than one TXT record.  The Service Provider MUST reject any returned
+   record whose content does not satisfy the validity rules above.  If,
 
 
 
@@ -1793,6 +1793,18 @@ Kowalik, et al.          Expires 7 December 2026               [Page 32]
 
 Internet-Draft               Domain Connect                    June 2026
 
+
+   after this filtering, at least one valid record remains, the Service
+   Provider MUST process at least one of them.  The Service Provider MAY
+   iterate over the remaining valid records, attempting discovery with
+   each in turn, until a valid Settings End-Point response is obtained.
+
+7.1.1.  Deployment considerations
+
+   As a practical matter of implementation, the DNS Provider may or may
+   not contain a copy of this data in each and every zone.  Instead, the
+   DNS Provider MUST simply respond to the DNS query for the
+   "_domainconnect" TXT record with the appropriate data.
 
    How this is implemented is up to the DNS Provider.
 
@@ -1802,10 +1814,12 @@ Internet-Draft               Domain Connect                    June 2026
    may simply respond with the appropriate records at the DNS layer
    without having the data in each zone.
 
-   The URL prefix returned MUST be subsequently used by the Service
-   Provider to determine the additional settings for using Domain
-   Connect on this domain at the DNS Provider.  This is done by calling
-   a REST API.
+7.2.  Settings End-Point
+
+   The URL prefix returned in "_domainconnect" Resource Record MUST be
+   subsequently used by the Service Provider to determine the additional
+   settings for using Domain Connect on this domain at the DNS Provider.
+   This is done by calling a REST API.
 
    Normative URI template of the Settings End-Point per [RFC6570]:
 
@@ -1828,6 +1842,14 @@ Internet-Draft               Domain Connect                    June 2026
    | Id*          |                     |        | identifier for the  |
    |              |                     |        | DNS Provider.       |
    |              |                     |        | The value MUST      |
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 33]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    |              |                     |        | conform to the dc-  |
    |              |                     |        | id syntax (see      |
    |              |                     |        | Section 3).         |
@@ -1842,14 +1864,6 @@ Internet-Draft               Domain Connect                    June 2026
    | *Provider    | providerName        | String | (REQUIRED) The      |
    | Name*        |                     |        | name of the DNS     |
    |              |                     |        | Provider.           |
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 33]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    |              |                     |        | The value MUST      |
    |              |                     |        | conform to the dc-  |
    |              |                     |        | display-name        |
@@ -1884,6 +1898,14 @@ Internet-Draft               Domain Connect                    June 2026
    |              |                     |        | Provider is not     |
    |              |                     |        | supporting the      |
    |              |                     |        | synchronous flow    |
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 34]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    |              |                     |        | on this domain.     |
    |              |                     |        | This MUST be a      |
    |              |                     |        | valid URI           |
@@ -1898,14 +1920,6 @@ Internet-Draft               Domain Connect                    June 2026
    |              |                     |        | component.          |
    |              |                     |        | The URI MAY         |
    |              |                     |        | include a path      |
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 34]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    |              |                     |        | component.          |
    +--------------+---------------------+--------+---------------------+
    | *UX URL      | urlAsyncUX          | String | (Reserved.  See     |
@@ -1940,6 +1954,14 @@ Internet-Draft               Domain Connect                    June 2026
    |              |                     |        | the default MUST    |
    |              |                     |        | be assumed to be    |
    |              |                     |        | 750.                |
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 35]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    +--------------+---------------------+--------+---------------------+
    | *Height of   | height              | Number | (OPTIONAL) The      |
    | Window*      |                     |        | desired height in   |
@@ -1954,14 +1976,6 @@ Internet-Draft               Domain Connect                    June 2026
    | *UX URL      | urlControlPanel     | String | (OPTIONAL) A URL    |
    | Control      |                     |        | to the DNS          |
    | Panel*       |                     |        | Provider's control  |
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 35]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    |              |                     |        | panel for manual    |
    |              |                     |        | DNS editing.  This  |
    |              |                     |        | field allows a      |
@@ -1996,6 +2010,14 @@ Internet-Draft               Domain Connect                    June 2026
    |              |                     |        | zone held by this   |
    |              |                     |        | DNS Provider        |
    |              |                     |        | (typically derived  |
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 36]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    |              |                     |        | from the zone's NS  |
    |              |                     |        | records).           |
    |              |                     |        | Each entry MUST     |
@@ -2010,20 +2032,12 @@ Internet-Draft               Domain Connect                    June 2026
    Clients MUST ignore any JSON properties in the settings response that
    are not defined in this specification or not recognized from an
    applicable extension.  DNS Providers MAY include additional JSON
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 36]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    properties in the settings response beyond those defined in this
    specification, however it is RECOMMENDED that those properties are
    registered in the "Domain Connect Settings Properties" registry
    defined in Section 12.2 in order to avoid name conflicts.
 
-   EXAMPLE 2: Example Settings End-Point response
+   EXAMPLE: Example Settings End-Point response
 
    {
        "providerId": "virtucondomains.example",
@@ -2052,6 +2066,14 @@ Internet-Draft               Domain Connect                    June 2026
    "_domainconnect" TXT record, or a deliberate administrative change
    such as pre-provisioning with a new DNS provider.
 
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 37]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    Discovery MUST work on the Zone Apex only.  Bear in mind that zones
    can be delegated to other users, making this information valuable to
    Service Providers since DNS changes may be different for a Zone Apex
@@ -2064,15 +2086,6 @@ Internet-Draft               Domain Connect                    June 2026
 
    The DNS Provider MUST return a 404 HTTP error code if they do not
    contain the zone.
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 37]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    +===========+==========+===========================================+
    | Status    | Response | Description                               |
@@ -2109,6 +2122,14 @@ Internet-Draft               Domain Connect                    June 2026
 
    https://connect.dnsprovider.example/api
 
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 38]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    The root URLs for the UX endpoints and the API endpoints are returned
    in the JSON payload during DNS Provider discovery.
 
@@ -2120,15 +2141,6 @@ Internet-Draft               Domain Connect                    June 2026
 
    {+urlAPI}/v2/domainTemplates/providers/{providerId}/services
    /{serviceId}
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 38]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    This URL is be used by the Service Provider to determine if the DNS
    Provider supports a specific template.
@@ -2166,18 +2178,6 @@ Internet-Draft               Domain Connect                    June 2026
    (Section 6.1) or the full JSON object of deployed template.
 
    Returning a status of 404 indicates the template is not supported.
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3272,6 +3272,52 @@ Internet-Draft               Domain Connect                    June 2026
    "syncBlock", and setting the "warnPhishing" flag to prompt the DNS
    Provider to display additional warnings to the user.
 
+11.2.  Untrusted DNS Provider Discovery Records
+
+   DNS Provider Discovery (see Section 7) requires the Service Provider
+   to read the "_domainconnect" TXT record from the target zone and to
+   fetch the Settings End-Point at the URL derived from it.  The content
+   of this record is controlled by whoever controls the zone, which is
+   not necessarily a party the Service Provider trusts.
+
+   A malicious or compromised zone can therefore direct the Service
+   Provider's HTTP client at an arbitrary endpoint.  Two classes of
+   attack arise:
+
+   *  Denial of Service - The record may point at a resource that is
+      malformed, never terminates, responds very slowly, or returns an
+      oversized or unbounded body, with the goal of exhausting the
+      Service Provider's connections, memory, or processing capacity.
+
+   *  Server-Side Request Forgery (SSRF) - The derived authority may
+      resolve to an address inside the Service Provider's own
+      infrastructure (for example a loopback, link-local, or private-use
+      address, or an internal-only hostname), causing the Service
+      Provider to issue requests against internal services on the
+      attacker's behalf.
+
+
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 59]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
+   Service Providers MUST treat the "_domainconnect" TXT record content,
+   and the Settings End-Point response derived from it, as untrusted
+   input.  In particular, Service Providers:
+
+   *  SHOULD reject derived authorities that resolve to loopback, link-
+      local, private-use, or otherwise internal addresses, unless the
+      Service Provider has a specific reason to permit them
+
+   *  MUST bound the discovery request, including connection and total-
+      request timeouts, a maximum response size, and a limit on the
+      number of redirects followed
+
 12.  IANA Considerations
 
 12.1.  Underscore "_domainconnect" DNS Node Name
@@ -3298,14 +3344,6 @@ Internet-Draft               Domain Connect                    June 2026
 
    Each entry in the registry MUST include:
 
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 59]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    *  *Property name*: the JSON key as it appears in the settings
       response.
 
@@ -3314,6 +3352,15 @@ Internet-Draft               Domain Connect                    June 2026
 
       -  "Active": the property is currently in use and its definition
          is normative.
+
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 60]
+
+Internet-Draft               Domain Connect                    June 2026
+
 
       -  "Deprecated": the property SHOULD NOT be used in new
          implementations; it MAY appear in existing deployments for
@@ -3333,34 +3380,6 @@ Internet-Draft               Domain Connect                    June 2026
 
    The following properties from this specification constitute the
    initial contents of the registry:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 60]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    +=======================+==========+===============+===============+
    | *Property Name*       | *Status* | *Kind*        | *Reference*   |
@@ -3388,6 +3407,17 @@ Internet-Draft               Domain Connect                    June 2026
 
            Table 11: Initial Domain Connect Settings Properties
 
+
+
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 61]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
 Implementation Status
 
    This section is to be removed before publishing as an RFC.
@@ -3409,14 +3439,6 @@ Proprietary implementations
 Service Providers
 
 Open Source
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 61]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    *  Example service:
       https://exampleservice.domainconnect.org/https://github.com/
@@ -3445,6 +3467,13 @@ Acknowledgements
 
    *  Peter Thomassen
 
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 62]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    *  Paul Hoffmann
 
    *  Arnt Gulbrandsen
@@ -3452,6 +3481,14 @@ Acknowledgements
 Change History
 
    This section is to be removed before publishing as an RFC.
+
+Change from draft-ietf-dconn-domainconnect-02 to -03
+
+   *  Added Untrusted DNS Provider Discovery Records to Security
+      Considerations.
+
+   *  Clarified handling of multiple "_domainconnect" TXT records in DNS
+      Provider Discovery.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 
@@ -3461,18 +3498,6 @@ Change from draft-ietf-dconn-domainconnect-01 to -02
       specification.
 
 Change from draft-ietf-dconn-domainconnect-00 to -01
-
-
-
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 62]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    *  Added comprehensive ABNF grammar to the Terminology section
       covering all protocol identifiers, domain name forms (including
@@ -3496,6 +3521,14 @@ Internet-Draft               Domain Connect                    June 2026
 
    *  Restructured Security Considerations: moved phishing threat into
       new Template Variable Phishing subsection; editorial cleanup.
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 63]
+
+Internet-Draft               Domain Connect                    June 2026
+
 
    *  Defined extensibility model for DNS Provider Discovery settings
       response and added IANA "Domain Connect Settings Properties"
@@ -3523,13 +3556,6 @@ Change from -00 to -01
    *  Removed example provider names from Service Providers and DNS
       Providers terminology
 
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 63]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    *  Added Use Cases
 
    *  Added Trust Model
@@ -3552,6 +3578,13 @@ domainconnect-00
       manner.
 
    *  Added possibility to define variables for numeric fields.
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 64]
+
+Internet-Draft               Domain Connect                    June 2026
+
 
    *  Added IANA registration for _domainconnect record as per [RFC8552]
 
@@ -3578,14 +3611,6 @@ Change from -01 to -02
       Provider supports a specific template.  Some other minor edits for
       clarification.
 
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 64]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
 Change from draft-carney-regext-domainconnect-00 to -01
 
    *  Minor edits and clarifications found during implementation.
@@ -3606,6 +3631,16 @@ Normative References
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
               RFC 2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
+
+
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 65]
+
+Internet-Draft               Domain Connect                    June 2026
+
 
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", IETF, DOI 10.17487/RFC8174, BCP 14,
@@ -3635,13 +3670,6 @@ Normative References
               IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
               <https://www.rfc-editor.org/info/rfc8552>.
 
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 65]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    [RFC3986]  Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform
               Resource Identifier (URI): Generic Syntax", IETF, STD 66,
               DOI 10.17487/RFC3986, BCP 66, RFC 3986, January 2005,
@@ -3662,6 +3690,13 @@ Internet-Draft               Domain Connect                    June 2026
               and D. Orchard, "URI Template", IETF,
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
               <https://www.rfc-editor.org/info/rfc6570>.
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 66]
+
+Internet-Draft               Domain Connect                    June 2026
+
 
    [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
               Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
@@ -3691,13 +3726,6 @@ Internet-Draft               Domain Connect                    June 2026
               DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017,
               <https://www.rfc-editor.org/info/rfc8126>.
 
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 66]
-
-Internet-Draft               Domain Connect                    June 2026
-
-
    [RFC9499]  Hoffman, P. and K. Fujiwara, "DNS Terminology", IETF,
               DOI 10.17487/RFC9499, BCP 219, RFC 9499, March 2024,
               <https://www.rfc-editor.org/info/rfc9499>.
@@ -3717,34 +3745,6 @@ Informative References
               <https://github.com/Domain-Connect/spec/blob/rev.67/
               Domain%20Connect%20Spec%20Draft.adoc>.
 
-Appendix A.  Examples
-
-A.1.  Example Template
-
-   EXAMPLE: Full template example
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3753,6 +3753,12 @@ Kowalik, et al.          Expires 7 December 2026               [Page 67]
 
 Internet-Draft               Domain Connect                    June 2026
 
+
+Appendix A.  Examples
+
+A.1.  Example Template
+
+   EXAMPLE: Full template example
 
    {
        "providerId": "example.com",
@@ -3794,13 +3800,7 @@ Internet-Draft               Domain Connect                    June 2026
        ]
    }
 
-A.2.  Example Records: Single static host record
 
-   Consider a template for setting a single host record.  The records
-   section of the template would have a single record of type "A" and
-   could have a value of:
-
-   EXAMPLE: Single static host record example
 
 
 
@@ -3809,6 +3809,14 @@ Kowalik, et al.          Expires 7 December 2026               [Page 68]
 
 Internet-Draft               Domain Connect                    June 2026
 
+
+A.2.  Example Records: Single static host record
+
+   Consider a template for setting a single host record.  The records
+   section of the template would have a single record of type "A" and
+   could have a value of:
+
+   EXAMPLE: Single static host record example
 
    [{
        "type": "A",
@@ -3850,14 +3858,6 @@ A.4.  Example Records: Unspecified record type CAA
    on an example of CAA records:
 
    EXAMPLE: Unspecified record type CAA example
-
-
-
-
-
-
-
-
 
 
 

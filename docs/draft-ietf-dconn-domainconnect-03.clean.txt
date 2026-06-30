@@ -887,14 +887,24 @@ Table of Contents
    |             |        |                   |and host.               |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
-   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When "true", |
-   |Phishing*    |        |                   |signals that the        |
-   |             |        |                   |template contains       |
-   |             |        |                   |variables that cannot be|
-   |             |        |                   |constrained by digital  |
-   |             |        |                   |signing and may be      |
+   |*Warn        |Boolean |warnPhishing       |(DEPRECATED) This flag  |
+   |Phishing*    |        |                   |is deprecated and its   |
+   |             |        |                   |code point is reserved  |
+   |             |        |                   |(see Section 3,         |
+   |             |        |                   |Paragraph 13).  Phishing|
+   |             |        |                   |warnings are now the    |
+   |             |        |                   |default behavior in the |
+   |             |        |                   |absence of other        |
+   |             |        |                   |security mechanisms (see|
+   |             |        |                   |Section 11.1).  This    |
+   |             |        |                   |flag MUST NOT be relied |
+   |             |        |                   |upon and MUST NOT be set|
+   |             |        |                   |in new templates.  A DNS|
+   |             |        |                   |Provider MUST NOT treat |
+   |             |        |                   |the absence of this flag|
+   |             |        |                   |as a signal that a      |
+   |             |        |                   |template is not         |
    |             |        |                   |susceptible to phishing.|
-   |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
    |*Host        |Boolean |hostRequired       |(OPTIONAL) When "true", |
    |Required*    |        |                   |indicates that the      |
@@ -2703,10 +2713,13 @@ Table of Contents
    the displayed name.  It is RECOMMENDED however to also display the
    original "providerName" and "serviceName" defined in the template.
 
-   When the template's "warnPhishing" field is "true", the DNS Provider
-   SHOULD display additional warnings prompting the user to verify the
-   source of the request before proceeding, and SHOULD provide a more
-   verbose description of the changes about to be applied.
+   Unless the apply request is digitally signed (see Section 8.3.2.1),
+   the DNS Provider MUST treat the template as susceptible to phishing:
+   it SHOULD display additional warnings prompting the user to verify
+   the source of the request before proceeding, and SHOULD provide a
+   more verbose description of the changes about to be applied.  Failure
+   to do so may expose the end user to the risk of malicious changes
+   being applied to the DNS zone.
 
 10.7.  Template Application
 
@@ -2741,13 +2754,14 @@ Table of Contents
    being pointed at infrastructure under the attacker's control.
 
    Not all templates are susceptible; the risk is proportional to how
-   much of a record's content is controlled by variables.  Three
+   much of a record's content is controlled by variables.  Two
    mitigations are available to template authors and Service Providers:
    digitally signing apply requests (see the
-   Section <<Section 8.3.2.1,format=title>>), using an alternative flow
-   not prone to this risk and disabling the synchronous flow via
-   "syncBlock", and setting the "warnPhishing" flag to prompt the DNS
-   Provider to display additional warnings to the user.
+   Section <<Section 8.3.2.1,format=title>>), and using an alternative
+   flow not prone to this risk by disabling the synchronous flow via
+   "syncBlock".  In the absence of such a mitigation a template is
+   treated as susceptible to phishing by default, and DNS Providers
+   display the additional warnings described in Section 10.6.
 
 12.  IANA Considerations
 
@@ -2885,6 +2899,12 @@ Acknowledgements
 Change History
 
    This section is to be removed before publishing as an RFC.
+
+Change from draft-ietf-dconn-domainconnect-02 to -03
+
+   *  Deprecated and reserved the "warnPhishing" template flag in
+      Template Definition; phishing warnings are now default behavior,
+      see Template Variable Phishing.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 

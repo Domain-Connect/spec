@@ -564,9 +564,7 @@ The default is `"false"`.
 |*Warn Phishing*
 |Boolean
 |warnPhishing
-|(OPTIONAL) When `"true"`, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing. +
-
-The default is `"false"`.
+|(DEPRECATED) This flag is deprecated and its code point is reserved (see <<reserved-for-extensions>>). Phishing warnings are now the default behavior in the absence of other security mechanisms (see <<sec-variable-phishing>>). This flag MUST NOT be relied upon and MUST NOT be set in new templates. A DNS Provider MUST NOT treat the absence of this flag as a signal that a template is not susceptible to phishing.
 
 |*Host Required*
 |Boolean
@@ -1752,7 +1750,7 @@ The DNS Provider MUST allow the user to override a detected conflict and proceed
 
 When presenting the authorization request to the user, the DNS Provider SHOULD display the template's `"providerName"` and `"serviceName"` fields. When a caller supplies `"providerName"` or `"serviceName"` request parameters (permitted only when the template's `"sharedProviderName"` or `"sharedServiceName"` flags are set, respectively), the DNS Provider SHOULD use those values to augment the displayed name. It is RECOMMENDED however to also display the original `"providerName"` and `"serviceName"` defined in the template.
 
-When the template's `"warnPhishing"` field is `"true"`, the DNS Provider SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied.
+Unless the apply request is digitally signed (see <<signing-procedure>>), the DNS Provider MUST treat the template as susceptible to phishing: it SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied. Failure to do so may expose the end user to the risk of malicious changes being applied to the DNS zone.
 
 === Template Application
 
@@ -1777,7 +1775,7 @@ Examples of template processing are in <<examples>>.
 
 Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value — for example, a hijacked IP address — and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.
 
-Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), using an alternative flow not prone to this risk and disabling the synchronous flow via `"syncBlock"`, and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
+Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Two mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and using an alternative flow not prone to this risk by disabling the synchronous flow via `"syncBlock"`. In the absence of such a mitigation a template is treated as susceptible to phishing by default, and DNS Providers display the additional warnings described in <<user_authorization_of_changes>>.
 
 [#iana]
 == IANA Considerations
@@ -1922,6 +1920,10 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [removeInRFC=true,toc=include,numbered=false]
 == Change History
+
+[toc=exclude,numbered=false]
+=== Change from draft-ietf-dconn-domainconnect-02 to -03
+- Deprecated and reserved the `"warnPhishing"` template flag in <<template-definition,format=title>>; phishing warnings are now default behavior, see <<sec-variable-phishing,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02

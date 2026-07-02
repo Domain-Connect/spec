@@ -1732,12 +1732,19 @@ A DNS Provider that maintains applied template state MUST treat an attempt of re
 
 Records with `"essential=OnApply"` MUST be applied when the template is first applied, but MAY be subsequently removed or altered — by the user or through the application of another template — without triggering conflict or removal of the owning template.
 
+[[identical-records]]
+===== Identical Records
+
+A resolved template record that is byte-identical to a resource record already present in the target zone — same owner name, type, class and RDATA — MUST NOT be treated as a conflict, regardless of the conflict-detection rules above. Instead of removing the existing record or the whole template, the DNS Provider applies the new template on top of it, so that the record is now shared between the existing configuration and the newly applied template.
+
+Whether a second, byte-identical copy of the record is stored in DNS Provider's system, or the duplicate is skipped so that a single record remains, is left to the DNS Provider and the capabilities of its underlying DNS software. Both behaviours are conformant - the observable DNS response MUST be equivalent in either case and contain only single resource record.
+
 [[calc-conflict-resolution]]
 === Calculating Conflict Resolution
 
 A DNS Provider not maintaining applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.
 
-When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied.
+When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied. Where such a provider shares a single record between more than one applied template instance (see <<identical-records>>), it MUST retain that record until the last instance referencing it is removed, and MUST remove it only when no remaining instance still requires it.
 
 [[user_authorization_of_changes]]
 === User Authorization of Changes
@@ -1922,6 +1929,10 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [removeInRFC=true,toc=include,numbered=false]
 == Change History
+
+[toc=exclude,numbered=false]
+=== Change from draft-ietf-dconn-domainconnect-02 to -03
+- Added <<identical-records,format=title>> to <<conflict-detection,format=title>> and shared-record retention to <<calc-conflict-resolution,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02

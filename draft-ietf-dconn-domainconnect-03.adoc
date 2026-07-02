@@ -1779,6 +1779,13 @@ Templates that accept variable parameters introduce a phishing risk. The more st
 
 Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), using an alternative flow not prone to this risk and disabling the synchronous flow via `"syncBlock"`, and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
 
+[[sec-underscore-host]]
+=== Underscored Host Names
+
+The `"host"` apply parameter is supplied by the requesting party and prepended to the template record owner names during <<host-name-rendering,format=title>>. When its value is an underscore-prefixed label per <<RFC8552>>, the applied records land under a name with special protocol meaning — for example `"_acme-challenge"`, `"_domainkey"`, or `"_dmarc"`. A template that places a `"CNAME"` on the apex (`"@"`) host could then be applied with such a `"host"` value to redirect one of these underscored names to infrastructure under an attacker's control, causing the user to authorize what appears to be an ordinary change while in fact delegating certificate issuance, DKIM key publication, or DMARC policy.
+
+Legitimate uses of an underscored `"host"` value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the `"host"` apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <<user_authorization_of_changes,format=title>> so that the special-meaning target is not obscured.
+
 [#iana]
 == IANA Considerations
 
@@ -1922,6 +1929,10 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [removeInRFC=true,toc=include,numbered=false]
 == Change History
+
+[toc=exclude,numbered=false]
+=== Change from draft-ietf-dconn-domainconnect-02 to -03
+- Added <<sec-underscore-host,format=title>> to <<security-considerations,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02

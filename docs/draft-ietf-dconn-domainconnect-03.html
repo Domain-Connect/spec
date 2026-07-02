@@ -1510,6 +1510,9 @@ li > p:last-of-type:only-child {
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
                 <p id="section-toc.1-1.10.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-template-variable-phishing" class="internal xref">Template Variable Phishing</a></p>
 </li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-underscored-host-names" class="internal xref">Underscored Host Names</a></p>
+</li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
@@ -4137,11 +4140,24 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
         <h3 id="name-template-variable-phishing">
 <a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-template-variable-phishing" class="section-name selfRef">Template Variable Phishing</a>
         </h3>
-<div id="_d115a58e-6c93-b233-25e7-21e5fb9f85fc">
+<div id="_00445e98-771e-eb13-824a-5e75babd3cd8">
 <p id="section-11.1-1">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_bfb63bbd-7557-040d-8bb4-d6eb19c35a26">
+<div id="_a8b77f98-2326-a3fc-cf5d-84d235fa25bc">
 <p id="section-11.1-2">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &lt;&lt;<a href="#signing-procedure" class="auto internal xref">Section 8.3.2.1</a>,format=title&gt;&gt;), using an alternative flow not prone to this risk and disabling the synchronous flow via <code>"syncBlock"</code>, and setting the <code>"warnPhishing"</code> flag to prompt the DNS Provider to display additional warnings to the user.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
+</div>
+</section>
+</div>
+<div id="sec-underscore-host">
+<section id="section-11.2">
+        <h3 id="name-underscored-host-names">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-underscored-host-names" class="section-name selfRef">Underscored Host Names</a>
+        </h3>
+<div id="_797267a6-46ba-4a04-254b-db16a3c0b0de">
+<p id="section-11.2-1">The <code>"host"</code> apply parameter is supplied by the requesting party and prepended to the template record owner names during <a href="#host-name-rendering" class="internal xref">Host Name Rendering</a>. When its value is an underscore-prefixed label per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>, the applied records land under a name with special protocol meaning - for example <code>"_acme-challenge"</code>, <code>"_domainkey"</code>, or <code>"_dmarc"</code>. A template that places a <code>"CNAME"</code> on the apex (<code>"@"</code>) host could then be applied with such a <code>"host"</code> value to redirect one of these underscored names to infrastructure under an attacker's control, causing the user to authorize what appears to be an ordinary change while in fact delegating certificate issuance, DKIM key publication, or DMARC policy.<a href="#section-11.2-1" class="pilcrow">¶</a></p>
+</div>
+<div id="_87f3991b-84e3-bc88-2c2c-76deb1c61b7a">
+<p id="section-11.2-2">Legitimate uses of an underscored <code>"host"</code> value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the <code>"host"</code> apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> so that the special-meaning target is not obscured.<a href="#section-11.2-2" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -4438,156 +4454,167 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_f945cc02-5025-68a9-3f8b-bf5aca765f11">
+<div id="_619ed8ea-25a7-b068-1bdd-c1d616e0c7f1">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_5a56b794-3bda-cffa-89cd-b24fc0d592a2">
+<div id="_8795d5a8-b07a-29c5-4f8e-b188af963e48">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
-<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
+<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.1-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.1-1.1">Added <a href="#sec-underscore-host" class="internal xref">Underscored Host Names</a> to <a href="#security-considerations" class="internal xref">Security Considerations</a>.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_02925ca8-4482-a926-e023-0a6d4ec7b5ee">
+<div id="_e13bed84-21e2-6cba-ec5a-c2d8d8875627">
 <section id="section-15.2">
         <h3 id="name-change-from-draft-ietf-dconn">
-<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.2-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.2-1.2" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.2-1.3" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.2-1.4" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.2-1.5" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.2-1.6" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.2-1.7" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.2-1.8" class="pilcrow">¶</a>
+<li class="normal" id="section-15.2-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2">
+<div id="_3017fa67-1f90-3b84-f30f-61ad0588ca47">
 <section id="section-15.3">
+        <h3 id="name-change-from-draft-ietf-dconn-">
+<a href="#name-change-from-draft-ietf-dconn-" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+        </h3>
+<ul class="normal">
+<li class="normal" id="section-15.3-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.3-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.3-1.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.3-1.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.3-1.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.3-1.6" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.3-1.7" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.3-1.8" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="_185d452b-d175-d533-06c0-20658b0a5627">
+<section id="section-15.4">
         <h3 id="name-change-from-draft-kowalik-d">
 <a href="#name-change-from-draft-kowalik-d" class="section-name selfRef">Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.3-1.1">DCONN WG adoption. No other changes.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.4-1.1">DCONN WG adoption. No other changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_4d4c4c9f-351a-10a3-d04e-76a1553f2315">
-<section id="section-15.4">
+<div id="_290ff768-7fd5-69ce-582f-82c092c27a44">
+<section id="section-15.5">
         <h3 id="name-change-from-01-to-02">
 <a href="#name-change-from-01-to-02" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.4-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.5-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_def9df4f-c596-7360-362c-4ae0274c386e">
-<section id="section-15.5">
+<div id="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd">
+<section id="section-15.6">
         <h3 id="name-change-from-00-to-01">
 <a href="#name-change-from-00-to-01" class="section-name selfRef">Change from -00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.5-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.6-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.5-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.6-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.3">Added Use Cases<a href="#section-15.5-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.3">Added Use Cases<a href="#section-15.6-1.3" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.4">Added Trust Model<a href="#section-15.5-1.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.4">Added Trust Model<a href="#section-15.6-1.4" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.5-1.5" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.6-1.5" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.6">Reviewed use of normative language<a href="#section-15.5-1.6" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.6">Reviewed use of normative language<a href="#section-15.6-1.6" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.7">Cleaned up usage of terminology<a href="#section-15.5-1.7" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.7">Cleaned up usage of terminology<a href="#section-15.6-1.7" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.8">Variable substitution description updated<a href="#section-15.5-1.8" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.8">Variable substitution description updated<a href="#section-15.6-1.8" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.5-1.9" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.6-1.9" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe">
-<section id="section-15.6">
+<div id="_50ddde01-05e4-e309-ec7f-b2427fe96bab">
+<section id="section-15.7">
         <h3 id="name-change-from-draft-kowalik-r">
 <a href="#name-change-from-draft-kowalik-r" class="section-name selfRef">Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.6-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.7-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.6-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.7-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.6-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.7-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_850b1957-8cbb-7471-842d-647d078aa2eb">
-<section id="section-15.7">
+<div id="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa">
+<section id="section-15.8">
         <h3 id="name-change-from-draft-carney-re">
 <a href="#name-change-from-draft-carney-re" class="section-name selfRef">Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.7-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.8-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_8ebbb1e9-101a-1f50-ec97-c29881817d3f">
-<section id="section-15.8">
+<div id="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81">
+<section id="section-15.9">
         <h3 id="name-change-from-02-to-03">
 <a href="#name-change-from-02-to-03" class="section-name selfRef">Change from -02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.8-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.9-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.8-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.9-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.8-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.9-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_21346331-a4e8-ef23-2b3f-8a87a2165141">
-<section id="section-15.9">
+<div id="_18413bea-2fa8-bfff-6311-b992ae783e6d">
+<section id="section-15.10">
         <h3 id="name-change-from-01-to-02-2">
 <a href="#name-change-from-01-to-02-2" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.9-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.10-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_537a2365-e463-7813-b108-67d216fb18e6">
-<section id="section-15.10">
+<div id="_de573b06-ed44-1c01-72a6-7cb201ea5059">
+<section id="section-15.11">
         <h3 id="name-change-from-draft-carney-reg">
 <a href="#name-change-from-draft-carney-reg" class="section-name selfRef">Change from draft-carney-regext-domainconnect-00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.10-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.11-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.11-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

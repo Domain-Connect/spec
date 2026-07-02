@@ -1071,9 +1071,16 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <section anchor="sec-variable-phishing"><name>Template Variable Phishing</name>
 
-<t anchor="_d115a58e-6c93-b233-25e7-21e5fb9f85fc">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.</t>
+<t anchor="_00445e98-771e-eb13-824a-5e75babd3cd8">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.</t>
 
-<t anchor="_bfb63bbd-7557-040d-8bb4-d6eb19c35a26">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &#x3c;&#x3c;<xref target="signing-procedure"></xref>,format=title&#x3e;&#x3e;), using an alternative flow not prone to this risk and disabling the synchronous flow via <tt>"syncBlock"</tt>, and setting the <tt>"warnPhishing"</tt> flag to prompt the DNS Provider to display additional warnings to the user.</t>
+<t anchor="_a8b77f98-2326-a3fc-cf5d-84d235fa25bc">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &#x3c;&#x3c;<xref target="signing-procedure"></xref>,format=title&#x3e;&#x3e;), using an alternative flow not prone to this risk and disabling the synchronous flow via <tt>"syncBlock"</tt>, and setting the <tt>"warnPhishing"</tt> flag to prompt the DNS Provider to display additional warnings to the user.</t>
+</section>
+
+<section anchor="sec-underscore-host"><name>Underscored Host Names</name>
+
+<t anchor="_797267a6-46ba-4a04-254b-db16a3c0b0de">The <tt>"host"</tt> apply parameter is supplied by the requesting party and prepended to the template record owner names during <xref target="host-name-rendering" format="title"></xref>. When its value is an underscore-prefixed label per <xref target="RFC8552" section="" relative=""></xref>, the applied records land under a name with special protocol meaning - for example <tt>"_acme-challenge"</tt>, <tt>"_domainkey"</tt>, or <tt>"_dmarc"</tt>. A template that places a <tt>"CNAME"</tt> on the apex (<tt>"@"</tt>) host could then be applied with such a <tt>"host"</tt> value to redirect one of these underscored names to infrastructure under an attacker's control, causing the user to authorize what appears to be an ordinary change while in fact delegating certificate issuance, DKIM key publication, or DMARC policy.</t>
+
+<t anchor="_87f3991b-84e3-bc88-2c2c-76deb1c61b7a">Legitimate uses of an underscored <tt>"host"</tt> value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the <tt>"host"</tt> apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <xref target="user_authorization_of_changes" format="title"></xref> so that the special-meaning target is not obscured.</t>
 </section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
@@ -1157,17 +1164,23 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_f945cc02-5025-68a9-3f8b-bf5aca765f11" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_619ed8ea-25a7-b068-1bdd-c1d616e0c7f1" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_5a56b794-3bda-cffa-89cd-b24fc0d592a2" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
+<section anchor="_8795d5a8-b07a-29c5-4f8e-b188af963e48" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_34cb18da-5bca-e4aa-276a-ffc099a28fa4"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+<ul anchor="_62953959-0373-a5aa-0de7-799b5b1ee60c"><li>Added <xref target="sec-underscore-host" format="title"></xref> to <xref target="security-considerations" format="title"></xref>.</li>
 </ul>
 </section>
 
-<section anchor="_02925ca8-4482-a926-e023-0a6d4ec7b5ee" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_e13bed84-21e2-6cba-ec5a-c2d8d8875627" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
 
-<ul anchor="_497ddcd5-497c-2705-47fa-d581fdca4849"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
+<ul anchor="_624ff6cc-ea27-8701-d616-48f0df134e34"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+</ul>
+</section>
+
+<section anchor="_3017fa67-1f90-3b84-f30f-61ad0588ca47" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+
+<ul anchor="_ccdf06f7-4a51-5999-642b-a8d29e72bd06"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
 <li>Restructured <xref target="template-application" format="title"></xref>: added <xref target="group-filtering" format="title"></xref>, Essential Records, Steps to Apply a Template, and focused <xref target="conflict-detection" format="title"></xref>, <xref target="user_authorization_of_changes" format="title"></xref> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <xref target="domain-connect-objects-and-templates" format="title"></xref> before <xref target="applying-domain-connect" format="title"></xref> in the document structure.</li>
 <li>Restructured request signing into <xref target="signing-procedure" format="title"></xref>, <xref target="sig-verification" format="title"></xref>, and <xref target="pubkey-publication" format="title"></xref></li>
 <li>Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <xref target="verification-of-changes" format="title"></xref> as normative text.</li>
@@ -1178,21 +1191,21 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
+<section anchor="_185d452b-d175-d533-06c0-20658b0a5627" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
 
-<ul anchor="_d275d464-7196-1d1e-dcd2-9edae61a1980"><li>DCONN WG adoption. No other changes.</li>
+<ul anchor="_cbf8f338-af87-e2cb-e478-ff737828348c"><li>DCONN WG adoption. No other changes.</li>
 </ul>
 </section>
 
-<section anchor="_4d4c4c9f-351a-10a3-d04e-76a1553f2315" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_290ff768-7fd5-69ce-582f-82c092c27a44" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_15690646-ce2e-06ab-bea0-92e01530434a"><li>Draft refresh from expire.  No content changes.</li>
+<ul anchor="_eb097273-b7f2-de8f-6b0e-75a2cd48e3a7"><li>Draft refresh from expire.  No content changes.</li>
 </ul>
 </section>
 
-<section anchor="_def9df4f-c596-7360-362c-4ae0274c386e" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
+<section anchor="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
 
-<ul anchor="_d3bb035c-8758-f713-7701-852c601e8342"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
+<ul anchor="_740fbea1-17f2-3b29-6281-158440690827"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
 <li>Removed example provider names from Service Providers and DNS Providers terminology</li>
 <li>Added Use Cases</li>
 <li>Added Trust Model</li>
@@ -1204,37 +1217,37 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
+<section anchor="_50ddde01-05e4-e309-ec7f-b2427fe96bab" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
 
-<ul anchor="_dbc80a36-d04b-a7dd-6eab-8b8df3392a0c"><li>Added possibility to specify any DNS record type in a generic manner.</li>
+<ul anchor="_491128d4-06e4-4ab1-2e1d-7d1849cf4eb2"><li>Added possibility to specify any DNS record type in a generic manner.</li>
 <li>Added possibility to define variables for numeric fields.</li>
 <li>Added IANA registration for _domainconnect record as per <xref target="RFC8552" section="" relative=""></xref></li>
 </ul>
 </section>
 
-<section anchor="_850b1957-8cbb-7471-842d-647d078aa2eb" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
+<section anchor="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
 
-<ul anchor="_e5497fbe-a7b1-0ffb-82a4-cacc6a455279"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
+<ul anchor="_11358408-16a4-939a-c247-8715f2cd39cc"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
 </ul>
 </section>
 
-<section anchor="_8ebbb1e9-101a-1f50-ec97-c29881817d3f" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
+<section anchor="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
 
-<ul anchor="_230bd19b-82f8-b9b9-eea1-34af1f7c8540"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
+<ul anchor="_8ba7bbbb-c86c-8b30-7a9e-50a0a922300d"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
 <li>Corrected text of GET method for getting the authorization token.</li>
 <li>Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.</li>
 </ul>
 </section>
 
-<section anchor="_21346331-a4e8-ef23-2b3f-8a87a2165141" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_18413bea-2fa8-bfff-6311-b992ae783e6d" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_06b5e857-b656-90ea-b10a-02ffa020512b"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
+<ul anchor="_ddc465ed-d02d-c357-f08b-46ee553f1710"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
 </ul>
 </section>
 
-<section anchor="_537a2365-e463-7813-b108-67d216fb18e6" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
+<section anchor="_de573b06-ed44-1c01-72a6-7cb201ea5059" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
 
-<ul anchor="_2c09b589-ccaf-a9e1-a671-3289374d8152"><li>Minor edits and clarifications found during implementation.</li>
+<ul anchor="_47d129bf-3175-207e-04b6-5d9a6c250a68"><li>Minor edits and clarifications found during implementation.</li>
 </ul>
 </section>
 </section>

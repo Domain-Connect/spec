@@ -126,7 +126,7 @@
 
 <t anchor="_0b56576e-a987-a78d-9d33-6c1e875899b9">The following additional ABNF rules are defined in this document and used normatively throughout.</t>
 
-<sourcecode anchor="_35e36f40-a56a-b84d-1c0b-8b7e42caaf45" type="abnf"><![CDATA[; ---- Identifier rules ----
+<sourcecode anchor="_b46173a3-8a4f-7a2d-00f5-4dbc0207ad6b" type="abnf"><![CDATA[; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
                 ; non-empty token, max 63 octets;
@@ -139,6 +139,24 @@ dc-id-list     =  dc-id *( "," dc-id )
 
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
+
+dc-apply-param =  dc-predefined-param / dc-dot-param / dc-vnd-param
+                ; any apply-parameter name
+
+dc-predefined-param =
+                   "providerId" / "serviceId" / "domain" / "host"
+                 / "redirect_uri" / "state" / "providerName"
+                 / "serviceName" / "groupId" / "sig" / "key"
+                 / "client_id" / "response_type" / "scope"
+                ; parameter names defined by this specification or
+                ; carried over from the client-request calls of the
+                ; asynchronous flow of [DC-SPEC]
+
+dc-dot-param   =  "dc." 1*ALPHA
+                ; "dc." tree, reserved for standards-track extensions
+
+dc-vnd-param   =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                ; "vnd." tree, reserved for vendor/private use
 
 ; ---- Other parameter rules ----
 
@@ -673,12 +691,12 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 
 <section anchor="signing-procedure"><name>Signing Procedure</name>
 
-<t anchor="_50f27c3c-c37c-d343-1660-db04f9f02293">Signing the query string is OPTIONAL for templates that do not specify <tt>"syncPubKeyDomain"</tt>. When <tt>"syncPubKeyDomain"</tt> is present in the template, the Service Provider MUST sign the request and the DNS Provider MUST reject any unsigned apply request (see <xref target="sig-verification"></xref>).</t>
+<t anchor="_ebea4b21-5e28-2ea9-7dbe-e6d348146f5c">Signing the query string is OPTIONAL for templates that do not specify <tt>"syncPubKeyDomain"</tt>. When <tt>"syncPubKeyDomain"</tt> is present in the template, the Service Provider MUST sign the request and the DNS Provider MUST reject any unsigned apply request (see <xref target="sig-verification"></xref>).</t>
 
-<t anchor="_6a39b0a6-a83e-122a-93c8-1cc8ba1097bb">The Service Provider MUST generate the digital signature as follows:</t>
+<t anchor="_bf2a59a8-78e2-05ea-2d20-542a32ec8d60">The Service Provider MUST generate the digital signature as follows:</t>
 
-<ol anchor="_c18fcd90-dc19-f860-537a-68eb7d6f61c2" type="1"><li><t anchor="_22c9b8f2-6c89-bb91-53f7-c9ccd829c580">Construct the canonical input string:</t>
-<ol anchor="_a6ece73d-1490-1a73-0fe0-612c5957b7d8" type="a"><li>Take all apply parameters except <tt>"sig"</tt> and <tt>"key"</tt>.</li>
+<ol anchor="_775d6e28-cc2b-311a-cbae-b0eecf42dd3a" type="1"><li><t anchor="_daa6939d-e523-d0cc-f16c-3a653c389dd4">Construct the canonical input string:</t>
+<ol anchor="_491111ab-c2bc-cb0e-178d-530861604db0" type="a"><li>Take all apply parameters except <tt>"sig"</tt> and <tt>"key"</tt>.</li>
 <li>URL-encode each parameter name and value per <xref target="RFC3986" section="" relative=""></xref>.</li>
 <li>Sort the parameters in ascending lexicographic order of the URL-encoded parameter name.</li>
 <li>Concatenate them as <tt>name=value</tt> pairs joined by <tt>"&#x26;"</tt>.</li>
@@ -689,14 +707,26 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 <li>Append the URL-encoded <tt>"sig"</tt> value and the <tt>"key"</tt> identifier to the canonical input string to form a signed query string.</li>
 </ol>
 
-<t anchor="_5181ddd9-9828-471a-f1ea-947b1556b0f2">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.</t>
+<t anchor="_a1447524-7a3a-3db3-8b56-e8db1dae66c1">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.</t>
 
-<t anchor="_425021c2-1d7e-b109-5e9e-bbfe81631097" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_bd26df97-8cfa-589b-39bd-f7c64a9d28b0">Example canonical input:</t><sourcecode anchor="_634d3cd4-f315-5a7c-98fe-8860d20fecd8"><![CDATA[a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb]]></sourcecode><t anchor="_6e01ac1c-9e2f-93e8-f3fd-e767cc4c94cd">Example signature:</t><sourcecode anchor="_9fd1b34c-f4da-6e2d-7598-08d28107442a"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+<t anchor="_842006ba-7338-618b-6df6-8f0cce315181" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_31059352-2716-0978-4d45-4ef27a68cef0">Example canonical input:</t><sourcecode anchor="_76ab3a5a-2075-ce5c-4990-b4d664519059"><![CDATA[a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb]]></sourcecode><t anchor="_3cdcf826-d474-9efa-7974-c7e490caea88">Example signature:</t><sourcecode anchor="_11d9171c-faf2-dba1-4299-9561516698bb"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
 HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
 SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
+</section>
+
+<section anchor="apply-parameter-extensibility"><name>Apply Parameter Extensibility</name>
+
+<t anchor="_1663d89d-b0c9-690e-b7a3-121cd5984dac">The set of apply parameters MAY be extended. To avoid name collisions between this specification, future extensions, and vendor-specific parameters, apply parameter names are governed by the following reservation rules:</t>
+
+<ul anchor="_96f8866d-ae3a-87e8-1a05-002be0799727"><li>Parameter names beginning with <tt>"dc."</tt> are reserved for parameters defined by future standards-track extensions that normatively require this document as their base. Implementations MUST NOT use the <tt>"dc."</tt> prefix for private parameters.</li>
+<li>Parameter names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private-use parameters. A vendor SHOULD further namespace such parameters with a vendor identifier (e.g. <tt>"vnd.example.foo"</tt>). Parameters using this prefix MUST NOT be assumed to be interoperable across DNS Providers.</li>
+<li>Parameter names without any dot-prefix are reserved for this specification and for specifications extending this document that carry over functionality of <xref target="DC-SPEC" section="" relative=""></xref> (see <xref target="reserved-for-extensions"></xref>), such as the client-request query parameters of the OAuth-based asynchronous flow. Implementations MUST NOT define private or vendor-specific parameters using unprefixed names.</li>
+</ul>
+
+<t anchor="_bf0599a4-aec7-3bea-088c-9238e9906e36">The name of every apply parameter MUST conform to the <tt>dc-apply-param</tt> syntax (see <xref target="terminology"></xref>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the <tt>dc-dot-param</tt> (for <tt>"dc."</tt>) or <tt>dc-vnd-param</tt> (for <tt>"vnd."</tt>) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <xref target="signing-procedure"></xref>).</t>
 </section>
 </section>
 
@@ -792,6 +822,8 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 <t anchor="_61223692-8f1f-4bac-01d2-9fc7615d7332">For example, with the query string "domain=example.com&#x26;host=", <tt>"%fqdn%"</tt> in a template would be "example.com", and with "domain=example.com&#x26;host=sub1", <tt>"%fqdn%"</tt> in a template would be "sub1.example.com".</t>
 
 <t anchor="_c1f756d4-6eba-77bb-8eea-f1cc036f16df">The <tt>"@"</tt> variable has special meaning, and can be used in the <tt>"host"</tt>/<tt>"name"</tt> field or in the <tt>"pointsTo"</tt> field in isolation. For the <tt>"host"</tt>/<tt>"name"</tt> and <tt>"pointsTo"</tt> fields it is a shortcut for the value <tt>"%fqdn%."</tt>. The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value is absolute. For some record types, like  <tt>"A"</tt> or <tt>"AAAA"</tt> usage of <tt>"@"</tt> in pointsTo would not render a valid IP address, therefore MUST NOT be used. Likewise in <tt>"NS"</tt> record types it would render a circular delegation therefore MUST NOT be used.</t>
+
+<t anchor="_891db170-beee-73c0-a141-a93572bdd745">Aside from the built-in variables above and <tt>"@"</tt>, a template <tt>variable-name</tt> MUST NOT collide with any reserved apply parameter name - the <tt>dc-predefined-param</tt> names or names beginning with a reserved extension prefix (<tt>"dc."</tt>, <tt>"vnd."</tt>) (see <xref target="terminology"></xref>). These names are reserved for protocol use.</t>
 </section>
 </section>
 
@@ -1157,17 +1189,25 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_f945cc02-5025-68a9-3f8b-bf5aca765f11" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_cb224513-4c5f-3127-e836-f6eb3a394d1c" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_5a56b794-3bda-cffa-89cd-b24fc0d592a2" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
+<section anchor="_fa6ad747-3b2d-7217-654d-2d1252907e05" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_34cb18da-5bca-e4aa-276a-ffc099a28fa4"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+<ul anchor="_3df8adc4-c896-2569-b17e-cd167e88855a"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
+<li>Reserved built-in and grandfathered apply parameter names as forbidden <tt>variable-name</tt> identifiers in <xref target="special-variables" format="title"></xref>.</li>
+<li>Added <tt>dc-apply-param</tt>, <tt>dc-predefined-param</tt>, <tt>dc-dot-param</tt>, and <tt>dc-vnd-param</tt> to <xref target="terminology" format="title"></xref>.</li>
 </ul>
 </section>
 
-<section anchor="_02925ca8-4482-a926-e023-0a6d4ec7b5ee" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_e13bed84-21e2-6cba-ec5a-c2d8d8875627" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
 
-<ul anchor="_497ddcd5-497c-2705-47fa-d581fdca4849"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
+<ul anchor="_624ff6cc-ea27-8701-d616-48f0df134e34"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+</ul>
+</section>
+
+<section anchor="_3017fa67-1f90-3b84-f30f-61ad0588ca47" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+
+<ul anchor="_ccdf06f7-4a51-5999-642b-a8d29e72bd06"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
 <li>Restructured <xref target="template-application" format="title"></xref>: added <xref target="group-filtering" format="title"></xref>, Essential Records, Steps to Apply a Template, and focused <xref target="conflict-detection" format="title"></xref>, <xref target="user_authorization_of_changes" format="title"></xref> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <xref target="domain-connect-objects-and-templates" format="title"></xref> before <xref target="applying-domain-connect" format="title"></xref> in the document structure.</li>
 <li>Restructured request signing into <xref target="signing-procedure" format="title"></xref>, <xref target="sig-verification" format="title"></xref>, and <xref target="pubkey-publication" format="title"></xref></li>
 <li>Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <xref target="verification-of-changes" format="title"></xref> as normative text.</li>
@@ -1178,21 +1218,21 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
+<section anchor="_185d452b-d175-d533-06c0-20658b0a5627" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
 
-<ul anchor="_d275d464-7196-1d1e-dcd2-9edae61a1980"><li>DCONN WG adoption. No other changes.</li>
+<ul anchor="_cbf8f338-af87-e2cb-e478-ff737828348c"><li>DCONN WG adoption. No other changes.</li>
 </ul>
 </section>
 
-<section anchor="_4d4c4c9f-351a-10a3-d04e-76a1553f2315" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_290ff768-7fd5-69ce-582f-82c092c27a44" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_15690646-ce2e-06ab-bea0-92e01530434a"><li>Draft refresh from expire.  No content changes.</li>
+<ul anchor="_eb097273-b7f2-de8f-6b0e-75a2cd48e3a7"><li>Draft refresh from expire.  No content changes.</li>
 </ul>
 </section>
 
-<section anchor="_def9df4f-c596-7360-362c-4ae0274c386e" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
+<section anchor="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
 
-<ul anchor="_d3bb035c-8758-f713-7701-852c601e8342"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
+<ul anchor="_740fbea1-17f2-3b29-6281-158440690827"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
 <li>Removed example provider names from Service Providers and DNS Providers terminology</li>
 <li>Added Use Cases</li>
 <li>Added Trust Model</li>
@@ -1204,37 +1244,37 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
+<section anchor="_50ddde01-05e4-e309-ec7f-b2427fe96bab" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
 
-<ul anchor="_dbc80a36-d04b-a7dd-6eab-8b8df3392a0c"><li>Added possibility to specify any DNS record type in a generic manner.</li>
+<ul anchor="_491128d4-06e4-4ab1-2e1d-7d1849cf4eb2"><li>Added possibility to specify any DNS record type in a generic manner.</li>
 <li>Added possibility to define variables for numeric fields.</li>
 <li>Added IANA registration for _domainconnect record as per <xref target="RFC8552" section="" relative=""></xref></li>
 </ul>
 </section>
 
-<section anchor="_850b1957-8cbb-7471-842d-647d078aa2eb" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
+<section anchor="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
 
-<ul anchor="_e5497fbe-a7b1-0ffb-82a4-cacc6a455279"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
+<ul anchor="_11358408-16a4-939a-c247-8715f2cd39cc"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
 </ul>
 </section>
 
-<section anchor="_8ebbb1e9-101a-1f50-ec97-c29881817d3f" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
+<section anchor="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
 
-<ul anchor="_230bd19b-82f8-b9b9-eea1-34af1f7c8540"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
+<ul anchor="_8ba7bbbb-c86c-8b30-7a9e-50a0a922300d"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
 <li>Corrected text of GET method for getting the authorization token.</li>
 <li>Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.</li>
 </ul>
 </section>
 
-<section anchor="_21346331-a4e8-ef23-2b3f-8a87a2165141" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_18413bea-2fa8-bfff-6311-b992ae783e6d" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_06b5e857-b656-90ea-b10a-02ffa020512b"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
+<ul anchor="_ddc465ed-d02d-c357-f08b-46ee553f1710"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
 </ul>
 </section>
 
-<section anchor="_537a2365-e463-7813-b108-67d216fb18e6" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
+<section anchor="_de573b06-ed44-1c01-72a6-7cb201ea5059" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
 
-<ul anchor="_2c09b589-ccaf-a9e1-a671-3289374d8152"><li>Minor edits and clarifications found during implementation.</li>
+<ul anchor="_47d129bf-3175-207e-04b6-5d9a6c250a68"><li>Minor edits and clarifications found during implementation.</li>
 </ul>
 </section>
 </section>

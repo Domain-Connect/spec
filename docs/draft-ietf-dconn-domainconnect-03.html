@@ -1358,6 +1358,11 @@ li > p:last-of-type:only-child {
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
                 <p id="section-toc.1-1.5.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-template-definition" class="internal xref">Template Definition</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1.2.1">
+                    <p id="section-toc.1-1.5.2.1.2.1.1"><a href="#section-6.1.1" class="auto internal xref">6.1.1</a>.  <a href="#name-template-property-extensibi" class="internal xref">Template Property Extensibility</a></p>
+</li>
+                </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
                 <p id="section-toc.1-1.5.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-template-record" class="internal xref">Template Record</a></p>
@@ -1520,6 +1525,9 @@ li > p:last-of-type:only-child {
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
                 <p id="section-toc.1-1.11.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-domain-connect-settings-pro" class="internal xref">Domain Connect Settings Properties Registry</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#section-12.3" class="auto internal xref">12.3</a>.  <a href="#name-domain-connect-template-pro" class="internal xref">Domain Connect Template Properties Registry</a></p>
 </li>
             </ul>
 </li>
@@ -1790,7 +1798,7 @@ li > p:last-of-type:only-child {
 <div id="_0b56576e-a987-a78d-9d33-6c1e875899b9">
 <p id="section-3-9">The following additional ABNF rules are defined in this document and used normatively throughout.<a href="#section-3-9" class="pilcrow">¶</a></p>
 </div>
-<div id="_35e36f40-a56a-b84d-1c0b-8b7e42caaf45">
+<div id="_67ddb329-6577-2aa9-fb2e-58c966f30cee">
 <div class="breakable lang-abnf sourcecode" id="section-3-10">
 <pre>; ---- Identifier rules ----
 
@@ -1805,6 +1813,18 @@ dc-id-list     =  dc-id *( "," dc-id )
 
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
+
+dc-template-property =  dc-unprefixed-property / dc-vnd-property
+                ; any template-definition property name
+
+dc-unprefixed-property =  ( ALPHA / DIGIT ) *( ALPHA / DIGIT )
+                ; reserved for this specification and for
+                ; standards-track extensions; managed by the
+                ; IANA Domain Connect Template Properties registry
+
+dc-vnd-property =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                ; "vnd." tree for vendor/private template
+                ; properties
 
 ; ---- Other parameter rules ----
 
@@ -2231,7 +2251,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_f8fd66dd-471d-2e03-3bbf-25b7594350a0">
 <p id="section-6.1-1">A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
 </div>
-<span id="name-properties-of-the-template-"></span><div id="_19bef60a-974d-d049-a63b-9212064481ed">
+<span id="name-properties-of-the-template-"></span><div id="_61f98e0a-024e-1f21-5235-b6300daf9de1">
 <table class="center" id="table-1">
           <caption>
 <a href="#table-1" class="selfRef">Table 1</a>:
@@ -2384,6 +2404,14 @@ dc-srv-service  =  dc-underscore-label
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
+                <strong>Critical Properties</strong>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Array of String</td>
+              <td class="text-left" rowspan="1" colspan="1">crit</td>
+              <td class="text-left" rowspan="1" colspan="1">(OPTIONAL) A list of the names of template properties that an implementation is required to understand and process for the template to be applied correctly.<br>  Each entry MUST conform to the  <code>dc-template-property</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<br>  When present, the  <code>"crit"</code> property MUST NOT be empty.</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
                 <strong>Template Records</strong>
 </td>
               <td class="text-left" rowspan="1" colspan="1">Array of Template Records</td>
@@ -2392,6 +2420,28 @@ dc-srv-service  =  dc-underscore-label
             </tr>
           </tbody>
         </table>
+</div>
+<div id="template-property-extensibility">
+<section id="section-6.1.1">
+          <h4 id="name-template-property-extensibi">
+<a href="#section-6.1.1" class="section-number selfRef">6.1.1. </a><a href="#name-template-property-extensibi" class="section-name selfRef">Template Property Extensibility</a>
+          </h4>
+<div id="_49e15c56-2bb6-d31e-af56-43e9c76f641d">
+<p id="section-6.1.1-1">The set of template-definition properties defined above MAY be extended. To keep template definitions forward-compatible and to avoid name collisions between this specification, future standards-track extensions, and vendor-specific additions, the property name space is partitioned as follows:<a href="#section-6.1.1-1" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-6.1.1-2.1">Property names without any prefix are reserved for this specification and for future standards-track extensions that normatively require this document as their base. Such names are managed through the IANA "Domain Connect Template Properties" registry (see <a href="#iana-template-properties" class="auto internal xref">Section 12.3</a>). Implementations MUST NOT introduce private or vendor-specific properties using unprefixed names.<a href="#section-6.1.1-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-6.1.1-2.2">Property names beginning with <code>"vnd."</code> are reserved for vendor-specific and private use. A vendor SHOULD further namespace such properties with a vendor identifier (e.g. <code>"vnd.example.fooBar"</code>), and such names MAY be registered in the IANA "Domain Connect Template Properties" registry (see <a href="#iana-template-properties" class="auto internal xref">Section 12.3</a>). Properties using this prefix MUST NOT be assumed to be interoperable across implementations, and the property name MUST conform to the <code>dc-vnd-property</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<a href="#section-6.1.1-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div id="_9cd0906f-9201-fa3b-c08e-b0dd781d8294">
+<p id="section-6.1.1-3">Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to <code>"vnd."</code> properties. An implementation MUST NOT rely on the semantics of a <code>"vnd."</code> property.<a href="#section-6.1.1-3" class="pilcrow">¶</a></p>
+</div>
+<div id="_c9f8149b-5810-3657-72b6-04fdd67cbefc">
+<p id="section-6.1.1-4">The <code>"crit"</code> property (see <a href="#template-definition" class="auto internal xref">Section 6.1</a>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.<a href="#section-6.1.1-4" class="pilcrow">¶</a></p>
+</div>
+</section>
 </div>
 </section>
 </div>
@@ -4192,8 +4242,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_14530192-1794-59f7-7cdb-c3e432ddc65e">
 <p id="section-12.2-1">IANA is requested to create a new registry named "Domain Connect Settings Properties" under a new registry group "Domain Connect Protocol".<a href="#section-12.2-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_b7366f70-dc18-e7db-e818-efd6e97a2673">
-<p id="section-12.2-2">Registration policy: Specification Needed (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-12.2-2" class="pilcrow">¶</a></p>
+<div id="_b57cc922-41c6-0b79-0e29-3595b3a7e3ce">
+<p id="section-12.2-2">Registration policy: Specification Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-12.2-2" class="pilcrow">¶</a></p>
 </div>
 <div id="_234aff10-d622-01bd-6d65-dc963726ebe2">
 <p id="section-12.2-3">Each entry in the registry MUST include:<a href="#section-12.2-3" class="pilcrow">¶</a></p>
@@ -4336,6 +4386,236 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </div>
 </section>
 </div>
+<div id="iana-template-properties">
+<section id="section-12.3">
+        <h3 id="name-domain-connect-template-pro">
+<a href="#section-12.3" class="section-number selfRef">12.3. </a><a href="#name-domain-connect-template-pro" class="section-name selfRef">Domain Connect Template Properties Registry</a>
+        </h3>
+<div id="_004a8904-d0eb-01ff-57fd-61e500ef0ed2">
+<p id="section-12.3-1">IANA is requested to create a new registry named "Domain Connect Template Properties" under the "Domain Connect Protocol" registry group (see <a href="#iana-settings-properties" class="auto internal xref">Section 12.2</a>).<a href="#section-12.3-1" class="pilcrow">¶</a></p>
+</div>
+<div id="_cfb8ffff-df5b-993e-9ee3-d8c979beeea1">
+<p id="section-12.3-2">Registration policy:<a href="#section-12.3-2" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.3-3.1">For property names without any prefix: RFC Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-12.3-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.3-3.2">For property names beginning with <code>"vnd."</code>: Specification Required (see <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>).<a href="#section-12.3-3.2" class="pilcrow">¶</a>
+</li>
+        </ul>
+<div id="_4acfb74b-ef81-5e69-a919-a9062f68504d">
+<p id="section-12.3-4">Each entry in the registry MUST include:<a href="#section-12.3-4" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.3-5.1">
+            <strong>Property name</strong>: the JSON key of the property as it appears in the template definition. The value MUST conform to the <code>dc-template-property</code> syntax (see <a href="#terminology" class="auto internal xref">Section 3</a>).<a href="#section-12.3-5.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.3-5.2">
+            <div id="_dd7b6a44-e351-6750-8658-dc8e4fc9eb02">
+<p id="section-12.3-5.2.1"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:<a href="#section-12.3-5.2.1" class="pilcrow">¶</a></p>
+</div>
+<ul class="normal">
+<li class="normal" id="section-12.3-5.2.2.1">
+                <code>"Active"</code>: the property is currently in use and its definition is normative.<a href="#section-12.3-5.2.2.1" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-12.3-5.2.2.2">
+                <code>"Deprecated"</code>: the property SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.<a href="#section-12.3-5.2.2.2" class="pilcrow">¶</a>
+</li>
+              <li class="normal" id="section-12.3-5.2.2.3">
+                <code>"Reserved"</code>: the property appears in earlier versions of the Domain Connect specification (see <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <span>[<a href="#DC-SPEC" class="cite xref">DC-SPEC</a>]</span>. See <a href="#reserved-for-extensions" class="auto internal xref">Section 3, Paragraph 13</a>.<a href="#section-12.3-5.2.2.3" class="pilcrow">¶</a>
+</li>
+            </ul>
+</li>
+          <li class="normal" id="section-12.3-5.3">
+            <strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <code>"IETF Standard"</code> for properties defined in a standards-track RFC, <code>"Informational"</code> for properties defined in an Informational RFC, or <code>"Other"</code> for any other specification.<a href="#section-12.3-5.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.3-5.4">
+            <strong>Reference</strong>: the document that defines the property.<a href="#section-12.3-5.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<div id="_841849c3-1a65-89c7-42bd-3bb94a499ebc">
+<p id="section-12.3-6">The following properties from this specification constitute the initial contents of the registry:<a href="#section-12.3-6" class="pilcrow">¶</a></p>
+</div>
+<span id="name-initial-domain-connect-temp"></span><div id="_2a0fc1c1-a05a-739e-98fe-1ebee31faad7">
+<table class="center" id="table-12">
+          <caption>
+<a href="#table-12" class="selfRef">Table 12</a>:
+<a href="#name-initial-domain-connect-temp" class="selfRef">Initial Domain Connect Template Properties</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Property Name</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Status</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Kind</strong>
+</th>
+              <th class="text-left" rowspan="1" colspan="1">
+                <strong>Reference</strong>
+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"providerId"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"providerName"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"serviceId"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"serviceName"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"version"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"logoUrl"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"description"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"variableDescription"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"syncBlock"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"shared"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Deprecated</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"sharedProviderName"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"sharedServiceName"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"syncPubKeyDomain"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"syncRedirectDomain"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"multiInstance"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"warnPhishing"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Deprecated</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"hostRequired"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"crit"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">
+                <code>"records"</code>
+</td>
+              <td class="text-left" rowspan="1" colspan="1">Active</td>
+              <td class="text-left" rowspan="1" colspan="1">IETF Standard</td>
+              <td class="text-left" rowspan="1" colspan="1">This document</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+</section>
+</div>
 </section>
 </div>
 <div id="_c4209395-659b-0eea-9d9d-e4c7c55d32bd">
@@ -4438,156 +4718,171 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_f945cc02-5025-68a9-3f8b-bf5aca765f11">
+<div id="_af81f8bf-b327-f4a1-7559-7341ed22d32a">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_5a56b794-3bda-cffa-89cd-b24fc0d592a2">
+<div id="_af6ab7b1-9eec-5e6d-212f-ab562a9d3293">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
-<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
+<a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.1-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.1-1.1">Added <a href="#template-property-extensibility" class="internal xref">Template Property Extensibility</a> and the <code>"crit"</code> property to <a href="#template-definition" class="internal xref">Template Definition</a>.<a href="#section-15.1-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.2">Added the IANA "Domain Connect Template Properties" registry in <a href="#iana-template-properties" class="internal xref">Domain Connect Template Properties Registry</a>.<a href="#section-15.1-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.3">Added <code>dc-template-property</code>, <code>dc-unprefixed-property</code>, and <code>dc-vnd-property</code> to <a href="#terminology" class="internal xref">Terminology</a>.<a href="#section-15.1-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_02925ca8-4482-a926-e023-0a6d4ec7b5ee">
+<div id="_e13bed84-21e2-6cba-ec5a-c2d8d8875627">
 <section id="section-15.2">
         <h3 id="name-change-from-draft-ietf-dconn">
-<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+<a href="#name-change-from-draft-ietf-dconn" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.2-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.2-1.2" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.2-1.3" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.2-1.4" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.2-1.5" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.2-1.6" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.2-1.7" class="pilcrow">¶</a>
-</li>
-          <li class="normal" id="section-15.2-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.2-1.8" class="pilcrow">¶</a>
+<li class="normal" id="section-15.2-1.1">Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.<a href="#section-15.2-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2">
+<div id="_3017fa67-1f90-3b84-f30f-61ad0588ca47">
 <section id="section-15.3">
+        <h3 id="name-change-from-draft-ietf-dconn-">
+<a href="#name-change-from-draft-ietf-dconn-" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-00 to -01</a>
+        </h3>
+<ul class="normal">
+<li class="normal" id="section-15.3-1.1">Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.2">Restructured <a href="#template-application" class="internal xref">Template Application</a>: added <a href="#group-filtering" class="internal xref">Group Filtering</a>, Essential Records, Steps to Apply a Template, and focused <a href="#conflict-detection" class="internal xref">Conflict Detection</a>, <a href="#user_authorization_of_changes" class="internal xref">User Authorization of Changes</a> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <a href="#domain-connect-objects-and-templates" class="internal xref">Domain Connect Objects and Templates</a> before <a href="#applying-domain-connect" class="internal xref">Applying Domain Connect</a> in the document structure.<a href="#section-15.3-1.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.3">Restructured request signing into <a href="#signing-procedure" class="internal xref">Signing Procedure</a>, <a href="#sig-verification" class="internal xref">Signature Verification</a>, and <a href="#pubkey-publication" class="internal xref">Public Key Publication</a><a href="#section-15.3-1.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.4">Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <a href="#verification-of-changes" class="internal xref">Verification of Changes</a> as normative text.<a href="#section-15.3-1.4" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.5">Restructured <a href="#security-considerations" class="internal xref">Security Considerations</a>: moved phishing threat into new <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a> subsection; editorial cleanup.<a href="#section-15.3-1.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.6">Defined extensibility model for <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a> settings response and added IANA "Domain Connect Settings Properties" registry.<a href="#section-15.3-1.6" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.7">Removed non-normative sections (Public Template Repository, General Considerations, Extensions/Exclusions); replaced all occurrences of "browser" with "user agent".<a href="#section-15.3-1.7" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.3-1.8">Shortened <a href="#trust-model" class="internal xref">Trust Model</a> section.<a href="#section-15.3-1.8" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="_185d452b-d175-d533-06c0-20658b0a5627">
+<section id="section-15.4">
         <h3 id="name-change-from-draft-kowalik-d">
 <a href="#name-change-from-draft-kowalik-d" class="section-name selfRef">Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.3-1.1">DCONN WG adoption. No other changes.<a href="#section-15.3-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.4-1.1">DCONN WG adoption. No other changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_4d4c4c9f-351a-10a3-d04e-76a1553f2315">
-<section id="section-15.4">
+<div id="_290ff768-7fd5-69ce-582f-82c092c27a44">
+<section id="section-15.5">
         <h3 id="name-change-from-01-to-02">
 <a href="#name-change-from-01-to-02" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.4-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.4-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.5-1.1">Draft refresh from expire.  No content changes.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_def9df4f-c596-7360-362c-4ae0274c386e">
-<section id="section-15.5">
+<div id="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd">
+<section id="section-15.6">
         <h3 id="name-change-from-00-to-01">
 <a href="#name-change-from-00-to-01" class="section-name selfRef">Change from -00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.5-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.5-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.6-1.1">Changed term Root Domain to Zone Apex to align with <span>[<a href="#RFC8499" class="cite xref">RFC8499</a>]</span>.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.5-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.2">Removed example provider names from Service Providers and DNS Providers terminology<a href="#section-15.6-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.3">Added Use Cases<a href="#section-15.5-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.3">Added Use Cases<a href="#section-15.6-1.3" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.4">Added Trust Model<a href="#section-15.5-1.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.4">Added Trust Model<a href="#section-15.6-1.4" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.5-1.5" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.5">Added sequence diagrams for synchronous and asynchronous flows instead of UX mocks<a href="#section-15.6-1.5" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.6">Reviewed use of normative language<a href="#section-15.5-1.6" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.6">Reviewed use of normative language<a href="#section-15.6-1.6" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.7">Cleaned up usage of terminology<a href="#section-15.5-1.7" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.7">Cleaned up usage of terminology<a href="#section-15.6-1.7" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.8">Variable substitution description updated<a href="#section-15.5-1.8" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.8">Variable substitution description updated<a href="#section-15.6-1.8" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.5-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.5-1.9" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.6-1.9">All URLs are now normatively defined with URI templates<a href="#section-15.6-1.9" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe">
-<section id="section-15.6">
+<div id="_50ddde01-05e4-e309-ec7f-b2427fe96bab">
+<section id="section-15.7">
         <h3 id="name-change-from-draft-kowalik-r">
 <a href="#name-change-from-draft-kowalik-r" class="section-name selfRef">Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.6-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.6-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.7-1.1">Added possibility to specify any DNS record type in a generic manner.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.6-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.2">Added possibility to define variables for numeric fields.<a href="#section-15.7-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.6-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.6-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.7-1.3">Added IANA registration for _domainconnect record as per <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span><a href="#section-15.7-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_850b1957-8cbb-7471-842d-647d078aa2eb">
-<section id="section-15.7">
+<div id="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa">
+<section id="section-15.8">
         <h3 id="name-change-from-draft-carney-re">
 <a href="#name-change-from-draft-carney-re" class="section-name selfRef">Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.7-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.7-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.8-1.1">Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_8ebbb1e9-101a-1f50-ec97-c29881817d3f">
-<section id="section-15.8">
+<div id="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81">
+<section id="section-15.9">
         <h3 id="name-change-from-02-to-03">
 <a href="#name-change-from-02-to-03" class="section-name selfRef">Change from -02 to -03</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.8-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.8-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.9-1.1">Added width/height JSON values returned by DNS Provider Discovery.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.8-1.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.2">Corrected text of GET method for getting the authorization token.<a href="#section-15.9-1.2" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-15.8-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.8-1.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-15.9-1.3">Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.<a href="#section-15.9-1.3" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_21346331-a4e8-ef23-2b3f-8a87a2165141">
-<section id="section-15.9">
+<div id="_18413bea-2fa8-bfff-6311-b992ae783e6d">
+<section id="section-15.10">
         <h3 id="name-change-from-01-to-02-2">
 <a href="#name-change-from-01-to-02-2" class="section-name selfRef">Change from -01 to -02</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.9-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.9-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.10-1.1">Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>
 </div>
-<div id="_537a2365-e463-7813-b108-67d216fb18e6">
-<section id="section-15.10">
+<div id="_de573b06-ed44-1c01-72a6-7cb201ea5059">
+<section id="section-15.11">
         <h3 id="name-change-from-draft-carney-reg">
 <a href="#name-change-from-draft-carney-reg" class="section-name selfRef">Change from draft-carney-regext-domainconnect-00 to -01</a>
         </h3>
 <ul class="normal">
-<li class="normal" id="section-15.10-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.10-1.1" class="pilcrow">¶</a>
+<li class="normal" id="section-15.11-1.1">Minor edits and clarifications found during implementation.<a href="#section-15.11-1.1" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

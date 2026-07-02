@@ -69,6 +69,7 @@ Table of Contents
      5.2.  The Synchronous Flow
    6.  Domain Connect Objects and Templates
      6.1.  Template Definition
+       6.1.1.  Template Property Extensibility
      6.2.  Template Record
      6.3.  Template Considerations
        6.3.1.  Template Scope
@@ -115,6 +116,7 @@ Table of Contents
    12. IANA Considerations
      12.1.  Underscore "_domainconnect" DNS Node Name
      12.2.  Domain Connect Settings Properties Registry
+     12.3.  Domain Connect Template Properties Registry
    Implementation Status
    Acknowledgements
    Change History
@@ -288,6 +290,18 @@ Table of Contents
 
    dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                    ; comma-separated list of domain names
+
+   dc-template-property =  dc-unprefixed-property / dc-vnd-property
+                   ; any template-definition property name
+
+   dc-unprefixed-property =  ( ALPHA / DIGIT ) *( ALPHA / DIGIT )
+                   ; reserved for this specification and for
+                   ; standards-track extensions; managed by the
+                   ; IANA Domain Connect Template Properties registry
+
+   dc-vnd-property =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                   ; "vnd." tree for vendor/private template
+                   ; properties
 
    ; ---- Other parameter rules ----
 
@@ -909,12 +923,67 @@ Table of Contents
    |             |        |                   |qualified domain name.  |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
+   |*Critical    |Array of|crit               |(OPTIONAL) A list of the|
+   |Properties*  |String  |                   |names of template       |
+   |             |        |                   |properties that an      |
+   |             |        |                   |implementation is       |
+   |             |        |                   |required to understand  |
+   |             |        |                   |and process for the     |
+   |             |        |                   |template to be applied  |
+   |             |        |                   |correctly.              |
+   |             |        |                   |Each entry MUST conform |
+   |             |        |                   |to the dc-template-     |
+   |             |        |                   |property syntax (see    |
+   |             |        |                   |Section 3).             |
+   |             |        |                   |When present, the "crit"|
+   |             |        |                   |property MUST NOT be    |
+   |             |        |                   |empty.                  |
+   +-------------+--------+-------------------+------------------------+
    |*Template    |Array of|records            |(REQUIRED) A list of    |
    |Records*     |Template|                   |records for the         |
    |             |Records |                   |template.               |
    +-------------+--------+-------------------+------------------------+
 
                Table 1: properties of the template definition
+
+6.1.1.  Template Property Extensibility
+
+   The set of template-definition properties defined above MAY be
+   extended.  To keep template definitions forward-compatible and to
+   avoid name collisions between this specification, future standards-
+   track extensions, and vendor-specific additions, the property name
+   space is partitioned as follows:
+
+   *  Property names without any prefix are reserved for this
+      specification and for future standards-track extensions that
+      normatively require this document as their base.  Such names are
+      managed through the IANA "Domain Connect Template Properties"
+      registry (see Section 12.3).  Implementations MUST NOT introduce
+      private or vendor-specific properties using unprefixed names.
+
+   *  Property names beginning with "vnd." are reserved for vendor-
+      specific and private use.  A vendor SHOULD further namespace such
+      properties with a vendor identifier (e.g. "vnd.example.fooBar"),
+      and such names MAY be registered in the IANA "Domain Connect
+      Template Properties" registry (see Section 12.3).  Properties
+      using this prefix MUST NOT be assumed to be interoperable across
+      implementations, and the property name MUST conform to the dc-vnd-
+      property syntax (see Section 3).
+
+   Both DNS Providers and Service Providers process template
+   definitions.  An implementation of either role MUST ignore any
+   template property it does not recognise; the mere presence of an
+   unrecognised property MUST NOT cause the template to be rejected.
+   This applies equally to unprefixed properties added by later
+   revisions of this specification and to "vnd." properties.  An
+   implementation MUST NOT rely on the semantics of a "vnd." property.
+
+   The "crit" property (see Section 6.1) overrides this default for the
+   properties it lists: if an implementation does not understand and
+   cannot process one or more of those properties, it MUST reject the
+   template and MUST NOT apply it.  A listed name that does not
+   correspond to a property present in the template definition, is by
+   definition understood.
 
 6.2.  Template Record
 
@@ -2771,7 +2840,7 @@ Table of Contents
    Settings Properties" under a new registry group "Domain Connect
    Protocol".
 
-   Registration policy: Specification Needed (see [RFC8126]).
+   Registration policy: Specification Required (see [RFC8126]).
 
    Each entry in the registry MUST include:
 
@@ -2829,6 +2898,114 @@ Table of Contents
 
            Table 11: Initial Domain Connect Settings Properties
 
+12.3.  Domain Connect Template Properties Registry
+
+   IANA is requested to create a new registry named "Domain Connect
+   Template Properties" under the "Domain Connect Protocol" registry
+   group (see Section 12.2).
+
+   Registration policy:
+
+   *  For property names without any prefix: RFC Required (see
+      [RFC8126]).
+
+   *  For property names beginning with "vnd.": Specification Required
+      (see [RFC8126]).
+
+   Each entry in the registry MUST include:
+
+   *  *Property name*: the JSON key of the property as it appears in the
+      template definition.  The value MUST conform to the dc-template-
+      property syntax (see Section 3).
+
+   *  *Status*: the lifecycle state of the registration.  The following
+      values are defined; IANA MAY define additional values as needed:
+
+      -  "Active": the property is currently in use and its definition
+         is normative.
+
+      -  "Deprecated": the property SHOULD NOT be used in new templates;
+         it MAY appear in existing templates for backwards
+         compatibility.
+
+      -  "Reserved": the property appears in earlier versions of the
+         Domain Connect specification (see [DC-SPEC]) and is reserved
+         for back-compatibility.  It MUST NOT be redefined in a manner
+         incompatible with [DC-SPEC].  See Section 3, Paragraph 13.
+
+   *  *Kind*: the nature of the defining document.  The value MUST be
+      one of: "IETF Standard" for properties defined in a standards-
+      track RFC, "Informational" for properties defined in an
+      Informational RFC, or "Other" for any other specification.
+
+   *  *Reference*: the document that defines the property.
+
+   The following properties from this specification constitute the
+   initial contents of the registry:
+
+   +=======================+============+===============+=============+
+   | *Property Name*       | *Status*   | *Kind*        | *Reference* |
+   +=======================+============+===============+=============+
+   | "providerId"          | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "providerName"        | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "serviceId"           | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "serviceName"         | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "version"             | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "logoUrl"             | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "description"         | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "variableDescription" | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "syncBlock"           | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "shared"              | Deprecated | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "sharedProviderName"  | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "sharedServiceName"   | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "syncPubKeyDomain"    | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "syncRedirectDomain"  | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "multiInstance"       | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "warnPhishing"        | Deprecated | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "hostRequired"        | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "crit"                | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+   | "records"             | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
+
+           Table 12: Initial Domain Connect Template Properties
+
 Implementation Status
 
    This section is to be removed before publishing as an RFC.
@@ -2885,6 +3062,17 @@ Acknowledgements
 Change History
 
    This section is to be removed before publishing as an RFC.
+
+Change from draft-ietf-dconn-domainconnect-02 to -03
+
+   *  Added Template Property Extensibility and the "crit" property to
+      Template Definition.
+
+   *  Added the IANA "Domain Connect Template Properties" registry in
+      Domain Connect Template Properties Registry.
+
+   *  Added dc-template-property, dc-unprefixed-property, and dc-vnd-
+      property to Terminology.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 

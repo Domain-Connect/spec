@@ -126,7 +126,7 @@
 
 <t anchor="_0b56576e-a987-a78d-9d33-6c1e875899b9">The following additional ABNF rules are defined in this document and used normatively throughout.</t>
 
-<sourcecode anchor="_35e36f40-a56a-b84d-1c0b-8b7e42caaf45" type="abnf"><![CDATA[; ---- Identifier rules ----
+<sourcecode anchor="_67ddb329-6577-2aa9-fb2e-58c966f30cee" type="abnf"><![CDATA[; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
                 ; non-empty token, max 63 octets;
@@ -139,6 +139,18 @@ dc-id-list     =  dc-id *( "," dc-id )
 
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
+
+dc-template-property =  dc-unprefixed-property / dc-vnd-property
+                ; any template-definition property name
+
+dc-unprefixed-property =  ( ALPHA / DIGIT ) *( ALPHA / DIGIT )
+                ; reserved for this specification and for
+                ; standards-track extensions; managed by the
+                ; IANA Domain Connect Template Properties registry
+
+dc-vnd-property =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                ; "vnd." tree for vendor/private template
+                ; properties
 
 ; ---- Other parameter rules ----
 
@@ -431,7 +443,20 @@ dc-srv-service  =  dc-underscore-label
 
 <t anchor="_f8fd66dd-471d-2e03-3bbf-25b7594350a0">A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.</t>
 
-<table anchor="_19bef60a-974d-d049-a63b-9212064481ed"><name>properties of the template definition</name><thead><tr><th align="left">Data Element</th><th align="left">Type</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">String</td><td align="left">providerId</td><td align="left">(REQUIRED) The unique identifier of the Service Provider that created this template. This is used in the URLs to identify the Service Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To ensure non-coordinated uniqueness, this SHOULD be the domain name of the Service Provider (e.g. exampleservice.example).</td></tr><tr><td align="left"><strong>Service Provider Name</strong></td><td align="left">String</td><td align="left">providerName</td><td align="left">(REQUIRED) The name of the Service Provider, suitable for display to the user.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">String</td><td align="left">serviceId</td><td align="left">(REQUIRED) The name or identifier of the template. This is used in URLs to identify the template.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">String</td><td align="left">serviceName</td><td align="left">(REQUIRED) The name of the service, suitable for display to the user.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Version</strong></td><td align="left">Integer</td><td align="left">version</td><td align="left">(OPTIONAL) If present this represents a version of the template and SHOULD be changed with each update of the template content. This opaque value is mainly informational to improve communication and transparency between providers.<br />  The value MUST conform to the  <tt>dc-version</tt> syntax (see <xref target="terminology"></xref>).<br />  This is a strict subset of the  <tt>"JSON number"</tt>: a positive integer with no leading zeros, no fractional part, and no exponent part.</td></tr><tr><td align="left"><strong>Logo</strong></td><td align="left">String</td><td align="left">logoUrl</td><td align="left">(OPTIONAL) A graphical logo representing the Service Provider and/or Service for use in any web-based flow. If present this MAY be displayed to the user on the DNS Provider consent UX.<br />  When present, the value MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>.</td></tr><tr><td align="left"><strong>Description</strong></td><td align="left">String</td><td align="left">description</td><td align="left">(OPTIONAL) A textual description of what this template does, intended for developer reference. This value is not intended for display to the end user.<br />  The value MUST conform to the  <tt>dc-description-text</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Variable Description</strong></td><td align="left">String</td><td align="left">variableDescription</td><td align="left">(OPTIONAL) A textual description of the template variables, intended for developer reference. This value is not intended for display to the end user.<br />  The value MUST conform to the  <tt>dc-description-text</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Synchronous Block</strong></td><td align="left">Boolean</td><td align="left">syncBlock</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that this template does not support the synchronous flow. The DNS Provider MUST refuse a synchronous apply request for this template and MUST return an appropriate error to the user.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Shared</strong></td><td align="left">Boolean</td><td align="left">shared</td><td align="left">(OPTIONAL) This flag has been deprecated. It used to indicate that the template allowed a dynamic  <tt>"providerName"</tt> on the query string. It is replaced with the <tt>"sharedProviderName"</tt> flag in v2.2 of the spec.</td></tr><tr><td align="left"><strong>Shared Provider Name</strong></td><td align="left">Boolean</td><td align="left">sharedProviderName</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the caller MAY supply an additional <tt>"providerName"</tt> parameter at apply time.<br />  The default is  <tt>"false"</tt>.<br />  For backward compatibility with DNS Providers prior to v2.2, it is RECOMMENDED that the deprecated  <tt>"shared"</tt> flag also be set.</td></tr><tr><td align="left"><strong>Shared Service Name</strong></td><td align="left">Boolean</td><td align="left">sharedServiceName</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the caller MAY supply an additional <tt>"serviceName"</tt> parameter at apply time.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Synchronous Public Key Domain</strong></td><td align="left">String</td><td align="left">syncPubKeyDomain</td><td align="left">(OPTIONAL) The domain name under which the Service Provider's public signing key TXT record is published. When present, this field signals that digital signing is required for synchronous apply requests.<br />  The value MUST conform to the  <tt>dc-pubkey-domain</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Synchronous Redirect Domains</strong></td><td align="left">String</td><td align="left">syncRedirectDomain</td><td align="left">(OPTIONAL) A comma-separated list of domain names to which the DNS Provider is permitted to send the post-apply redirect in the synchronous flow.<br />  The value MUST conform to the  <tt>"dc-host-list"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Multiple Instance</strong></td><td align="left">Boolean</td><td align="left">multiInstance</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the template is designed to be applied multiple times to the same domain and host.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Warn Phishing</strong></td><td align="left">Boolean</td><td align="left">warnPhishing</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Host Required</strong></td><td align="left">Boolean</td><td align="left">hostRequired</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the template is designed to work only when both <tt>"domain"</tt> and <tt>"host"</tt> apply parameters are provided, for example when the template contains a CNAME record targeted at the fully qualified domain name.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Template Records</strong></td><td align="left">Array of Template Records</td><td align="left">records</td><td align="left">(REQUIRED) A list of records for the template.</td></tr></tbody></table>
+<table anchor="_61f98e0a-024e-1f21-5235-b6300daf9de1"><name>properties of the template definition</name><thead><tr><th align="left">Data Element</th><th align="left">Type</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">String</td><td align="left">providerId</td><td align="left">(REQUIRED) The unique identifier of the Service Provider that created this template. This is used in the URLs to identify the Service Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To ensure non-coordinated uniqueness, this SHOULD be the domain name of the Service Provider (e.g. exampleservice.example).</td></tr><tr><td align="left"><strong>Service Provider Name</strong></td><td align="left">String</td><td align="left">providerName</td><td align="left">(REQUIRED) The name of the Service Provider, suitable for display to the user.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">String</td><td align="left">serviceId</td><td align="left">(REQUIRED) The name or identifier of the template. This is used in URLs to identify the template.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">String</td><td align="left">serviceName</td><td align="left">(REQUIRED) The name of the service, suitable for display to the user.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Version</strong></td><td align="left">Integer</td><td align="left">version</td><td align="left">(OPTIONAL) If present this represents a version of the template and SHOULD be changed with each update of the template content. This opaque value is mainly informational to improve communication and transparency between providers.<br />  The value MUST conform to the  <tt>dc-version</tt> syntax (see <xref target="terminology"></xref>).<br />  This is a strict subset of the  <tt>"JSON number"</tt>: a positive integer with no leading zeros, no fractional part, and no exponent part.</td></tr><tr><td align="left"><strong>Logo</strong></td><td align="left">String</td><td align="left">logoUrl</td><td align="left">(OPTIONAL) A graphical logo representing the Service Provider and/or Service for use in any web-based flow. If present this MAY be displayed to the user on the DNS Provider consent UX.<br />  When present, the value MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>.</td></tr><tr><td align="left"><strong>Description</strong></td><td align="left">String</td><td align="left">description</td><td align="left">(OPTIONAL) A textual description of what this template does, intended for developer reference. This value is not intended for display to the end user.<br />  The value MUST conform to the  <tt>dc-description-text</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Variable Description</strong></td><td align="left">String</td><td align="left">variableDescription</td><td align="left">(OPTIONAL) A textual description of the template variables, intended for developer reference. This value is not intended for display to the end user.<br />  The value MUST conform to the  <tt>dc-description-text</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Synchronous Block</strong></td><td align="left">Boolean</td><td align="left">syncBlock</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that this template does not support the synchronous flow. The DNS Provider MUST refuse a synchronous apply request for this template and MUST return an appropriate error to the user.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Shared</strong></td><td align="left">Boolean</td><td align="left">shared</td><td align="left">(OPTIONAL) This flag has been deprecated. It used to indicate that the template allowed a dynamic  <tt>"providerName"</tt> on the query string. It is replaced with the <tt>"sharedProviderName"</tt> flag in v2.2 of the spec.</td></tr><tr><td align="left"><strong>Shared Provider Name</strong></td><td align="left">Boolean</td><td align="left">sharedProviderName</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the caller MAY supply an additional <tt>"providerName"</tt> parameter at apply time.<br />  The default is  <tt>"false"</tt>.<br />  For backward compatibility with DNS Providers prior to v2.2, it is RECOMMENDED that the deprecated  <tt>"shared"</tt> flag also be set.</td></tr><tr><td align="left"><strong>Shared Service Name</strong></td><td align="left">Boolean</td><td align="left">sharedServiceName</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the caller MAY supply an additional <tt>"serviceName"</tt> parameter at apply time.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Synchronous Public Key Domain</strong></td><td align="left">String</td><td align="left">syncPubKeyDomain</td><td align="left">(OPTIONAL) The domain name under which the Service Provider's public signing key TXT record is published. When present, this field signals that digital signing is required for synchronous apply requests.<br />  The value MUST conform to the  <tt>dc-pubkey-domain</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Synchronous Redirect Domains</strong></td><td align="left">String</td><td align="left">syncRedirectDomain</td><td align="left">(OPTIONAL) A comma-separated list of domain names to which the DNS Provider is permitted to send the post-apply redirect in the synchronous flow.<br />  The value MUST conform to the  <tt>"dc-host-list"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Multiple Instance</strong></td><td align="left">Boolean</td><td align="left">multiInstance</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the template is designed to be applied multiple times to the same domain and host.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Warn Phishing</strong></td><td align="left">Boolean</td><td align="left">warnPhishing</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Host Required</strong></td><td align="left">Boolean</td><td align="left">hostRequired</td><td align="left">(OPTIONAL) When <tt>"true"</tt>, indicates that the template is designed to work only when both <tt>"domain"</tt> and <tt>"host"</tt> apply parameters are provided, for example when the template contains a CNAME record targeted at the fully qualified domain name.<br />  The default is  <tt>"false"</tt>.</td></tr><tr><td align="left"><strong>Critical Properties</strong></td><td align="left">Array of String</td><td align="left">crit</td><td align="left">(OPTIONAL) A list of the names of template properties that an implementation is required to understand and process for the template to be applied correctly.<br />  Each entry MUST conform to the  <tt>dc-template-property</tt> syntax (see <xref target="terminology"></xref>).<br />  When present, the  <tt>"crit"</tt> property MUST NOT be empty.</td></tr><tr><td align="left"><strong>Template Records</strong></td><td align="left">Array of Template Records</td><td align="left">records</td><td align="left">(REQUIRED) A list of records for the template.</td></tr></tbody></table>
+
+<section anchor="template-property-extensibility"><name>Template Property Extensibility</name>
+
+<t anchor="_49e15c56-2bb6-d31e-af56-43e9c76f641d">The set of template-definition properties defined above MAY be extended. To keep template definitions forward-compatible and to avoid name collisions between this specification, future standards-track extensions, and vendor-specific additions, the property name space is partitioned as follows:</t>
+
+<ul anchor="_e5731ec5-aa5e-515a-c981-e3cbd6de4325"><li>Property names without any prefix are reserved for this specification and for future standards-track extensions that normatively require this document as their base. Such names are managed through the IANA "Domain Connect Template Properties" registry (see <xref target="iana-template-properties"></xref>). Implementations MUST NOT introduce private or vendor-specific properties using unprefixed names.</li>
+<li>Property names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private use. A vendor SHOULD further namespace such properties with a vendor identifier (e.g. <tt>"vnd.example.fooBar"</tt>), and such names MAY be registered in the IANA "Domain Connect Template Properties" registry (see <xref target="iana-template-properties"></xref>). Properties using this prefix MUST NOT be assumed to be interoperable across implementations, and the property name MUST conform to the <tt>dc-vnd-property</tt> syntax (see <xref target="terminology"></xref>).</li>
+</ul>
+
+<t anchor="_9cd0906f-9201-fa3b-c08e-b0dd781d8294">Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to <tt>"vnd."</tt> properties. An implementation MUST NOT rely on the semantics of a <tt>"vnd."</tt> property.</t>
+
+<t anchor="_c9f8149b-5810-3657-72b6-04fdd67cbefc">The <tt>"crit"</tt> property (see <xref target="template-definition"></xref>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.</t>
+</section>
 </section>
 
 <section anchor="template-record"><name>Template Record</name>
@@ -1089,7 +1114,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_14530192-1794-59f7-7cdb-c3e432ddc65e">IANA is requested to create a new registry named "Domain Connect Settings Properties" under a new registry group "Domain Connect Protocol".</t>
 
-<t anchor="_b7366f70-dc18-e7db-e818-efd6e97a2673">Registration policy: Specification Needed (see <xref target="RFC8126" section="" relative=""></xref>).</t>
+<t anchor="_b57cc922-41c6-0b79-0e29-3595b3a7e3ce">Registration policy: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>).</t>
 
 <t anchor="_234aff10-d622-01bd-6d65-dc963726ebe2">Each entry in the registry MUST include:</t>
 
@@ -1107,6 +1132,34 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_9ca5288e-2973-7ca5-e8fd-72eb13a9538d">The following properties from this specification constitute the initial contents of the registry:</t>
 
 <table anchor="_e74606b0-cae2-37b3-0a26-ba6abfcde356"><name>Initial Domain Connect Settings Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerDisplayName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlSyncUX"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAsyncUX"</tt></td><td align="left">Reserved</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAPI"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"width"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"height"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlControlPanel"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"nameServers"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
+</section>
+
+<section anchor="iana-template-properties"><name>Domain Connect Template Properties Registry</name>
+
+<t anchor="_004a8904-d0eb-01ff-57fd-61e500ef0ed2">IANA is requested to create a new registry named "Domain Connect Template Properties" under the "Domain Connect Protocol" registry group (see <xref target="iana-settings-properties"></xref>).</t>
+
+<t anchor="_cfb8ffff-df5b-993e-9ee3-d8c979beeea1">Registration policy:</t>
+
+<ul anchor="_5cfebc1a-29b5-bddf-68f2-b946417fdc28"><li>For property names without any prefix: RFC Required (see <xref target="RFC8126" section="" relative=""></xref>).</li>
+<li>For property names beginning with <tt>"vnd."</tt>: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>).</li>
+</ul>
+
+<t anchor="_4acfb74b-ef81-5e69-a919-a9062f68504d">Each entry in the registry MUST include:</t>
+
+<ul anchor="_c96d1c8b-0685-eca4-f57a-d38bdad670a2"><li><strong>Property name</strong>: the JSON key of the property as it appears in the template definition. The value MUST conform to the <tt>dc-template-property</tt> syntax (see <xref target="terminology"></xref>).</li>
+<li><t anchor="_dd7b6a44-e351-6750-8658-dc8e4fc9eb02"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
+<ul anchor="_b59393ac-3d02-c8da-bbd1-adf789979530"><li><tt>"Active"</tt>: the property is currently in use and its definition is normative.</li>
+<li><tt>"Deprecated"</tt>: the property SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.</li>
+<li><tt>"Reserved"</tt>: the property appears in earlier versions of the Domain Connect specification (see <xref target="DC-SPEC" section="" relative=""></xref>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <xref target="DC-SPEC" section="" relative=""></xref>. See <xref target="reserved-for-extensions"></xref>.</li>
+</ul>
+</li>
+<li><strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <tt>"IETF Standard"</tt> for properties defined in a standards-track RFC, <tt>"Informational"</tt> for properties defined in an Informational RFC, or <tt>"Other"</tt> for any other specification.</li>
+<li><strong>Reference</strong>: the document that defines the property.</li>
+</ul>
+
+<t anchor="_841849c3-1a65-89c7-42bd-3bb94a499ebc">The following properties from this specification constitute the initial contents of the registry:</t>
+
+<table anchor="_2a0fc1c1-a05a-739e-98fe-1ebee31faad7"><name>Initial Domain Connect Template Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"serviceId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"serviceName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"version"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"logoUrl"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"description"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"variableDescription"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncBlock"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"shared"</tt></td><td align="left">Deprecated</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"sharedProviderName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"sharedServiceName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncPubKeyDomain"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncRedirectDomain"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"multiInstance"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"warnPhishing"</tt></td><td align="left">Deprecated</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"hostRequired"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"crit"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"records"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
 </section>
 </section>
     <section anchor="_c4209395-659b-0eea-9d9d-e4c7c55d32bd" numbered="false" removeInRFC="true" toc="include"><name>Implementation Status</name>
@@ -1157,17 +1210,25 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_f945cc02-5025-68a9-3f8b-bf5aca765f11" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_af81f8bf-b327-f4a1-7559-7341ed22d32a" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_5a56b794-3bda-cffa-89cd-b24fc0d592a2" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
+<section anchor="_af6ab7b1-9eec-5e6d-212f-ab562a9d3293" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_34cb18da-5bca-e4aa-276a-ffc099a28fa4"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+<ul anchor="_94e8fa98-bedc-343d-cd47-f35687bfd038"><li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
+<li>Added the IANA "Domain Connect Template Properties" registry in <xref target="iana-template-properties" format="title"></xref>.</li>
+<li>Added <tt>dc-template-property</tt>, <tt>dc-unprefixed-property</tt>, and <tt>dc-vnd-property</tt> to <xref target="terminology" format="title"></xref>.</li>
 </ul>
 </section>
 
-<section anchor="_02925ca8-4482-a926-e023-0a6d4ec7b5ee" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_e13bed84-21e2-6cba-ec5a-c2d8d8875627" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
 
-<ul anchor="_497ddcd5-497c-2705-47fa-d581fdca4849"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
+<ul anchor="_624ff6cc-ea27-8701-d616-48f0df134e34"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+</ul>
+</section>
+
+<section anchor="_3017fa67-1f90-3b84-f30f-61ad0588ca47" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+
+<ul anchor="_ccdf06f7-4a51-5999-642b-a8d29e72bd06"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
 <li>Restructured <xref target="template-application" format="title"></xref>: added <xref target="group-filtering" format="title"></xref>, Essential Records, Steps to Apply a Template, and focused <xref target="conflict-detection" format="title"></xref>, <xref target="user_authorization_of_changes" format="title"></xref> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <xref target="domain-connect-objects-and-templates" format="title"></xref> before <xref target="applying-domain-connect" format="title"></xref> in the document structure.</li>
 <li>Restructured request signing into <xref target="signing-procedure" format="title"></xref>, <xref target="sig-verification" format="title"></xref>, and <xref target="pubkey-publication" format="title"></xref></li>
 <li>Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <xref target="verification-of-changes" format="title"></xref> as normative text.</li>
@@ -1178,21 +1239,21 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
+<section anchor="_185d452b-d175-d533-06c0-20658b0a5627" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
 
-<ul anchor="_d275d464-7196-1d1e-dcd2-9edae61a1980"><li>DCONN WG adoption. No other changes.</li>
+<ul anchor="_cbf8f338-af87-e2cb-e478-ff737828348c"><li>DCONN WG adoption. No other changes.</li>
 </ul>
 </section>
 
-<section anchor="_4d4c4c9f-351a-10a3-d04e-76a1553f2315" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_290ff768-7fd5-69ce-582f-82c092c27a44" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_15690646-ce2e-06ab-bea0-92e01530434a"><li>Draft refresh from expire.  No content changes.</li>
+<ul anchor="_eb097273-b7f2-de8f-6b0e-75a2cd48e3a7"><li>Draft refresh from expire.  No content changes.</li>
 </ul>
 </section>
 
-<section anchor="_def9df4f-c596-7360-362c-4ae0274c386e" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
+<section anchor="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
 
-<ul anchor="_d3bb035c-8758-f713-7701-852c601e8342"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
+<ul anchor="_740fbea1-17f2-3b29-6281-158440690827"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
 <li>Removed example provider names from Service Providers and DNS Providers terminology</li>
 <li>Added Use Cases</li>
 <li>Added Trust Model</li>
@@ -1204,37 +1265,37 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
+<section anchor="_50ddde01-05e4-e309-ec7f-b2427fe96bab" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
 
-<ul anchor="_dbc80a36-d04b-a7dd-6eab-8b8df3392a0c"><li>Added possibility to specify any DNS record type in a generic manner.</li>
+<ul anchor="_491128d4-06e4-4ab1-2e1d-7d1849cf4eb2"><li>Added possibility to specify any DNS record type in a generic manner.</li>
 <li>Added possibility to define variables for numeric fields.</li>
 <li>Added IANA registration for _domainconnect record as per <xref target="RFC8552" section="" relative=""></xref></li>
 </ul>
 </section>
 
-<section anchor="_850b1957-8cbb-7471-842d-647d078aa2eb" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
+<section anchor="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
 
-<ul anchor="_e5497fbe-a7b1-0ffb-82a4-cacc6a455279"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
+<ul anchor="_11358408-16a4-939a-c247-8715f2cd39cc"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
 </ul>
 </section>
 
-<section anchor="_8ebbb1e9-101a-1f50-ec97-c29881817d3f" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
+<section anchor="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
 
-<ul anchor="_230bd19b-82f8-b9b9-eea1-34af1f7c8540"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
+<ul anchor="_8ba7bbbb-c86c-8b30-7a9e-50a0a922300d"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
 <li>Corrected text of GET method for getting the authorization token.</li>
 <li>Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.</li>
 </ul>
 </section>
 
-<section anchor="_21346331-a4e8-ef23-2b3f-8a87a2165141" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_18413bea-2fa8-bfff-6311-b992ae783e6d" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_06b5e857-b656-90ea-b10a-02ffa020512b"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
+<ul anchor="_ddc465ed-d02d-c357-f08b-46ee553f1710"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
 </ul>
 </section>
 
-<section anchor="_537a2365-e463-7813-b108-67d216fb18e6" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
+<section anchor="_de573b06-ed44-1c01-72a6-7cb201ea5059" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
 
-<ul anchor="_2c09b589-ccaf-a9e1-a671-3289374d8152"><li>Minor edits and clarifications found during implementation.</li>
+<ul anchor="_47d129bf-3175-207e-04b6-5d9a6c250a68"><li>Minor edits and clarifications found during implementation.</li>
 </ul>
 </section>
 </section>

@@ -132,30 +132,30 @@ Internet-Draft               Domain Connect                    June 2026
    11. Security Considerations . . . . . . . . . . . . . . . . . . .  59
      11.1.  Template Variable Phishing . . . . . . . . . . . . . . .  59
      11.2.  Untrusted DNS Provider Discovery Records . . . . . . . .  60
-   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  60
+     11.3.  Underscored Host Names . . . . . . . . . . . . . . . . .  61
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  61
      12.1.  Registration Procedure for Domain Connect Registries . .  61
-     12.2.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  61
+     12.2.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  62
      12.3.  Domain Connect Fully Specified Record Types Registry . .  62
      12.4.  Guidance to the DNS Resource Record (RR) TYPEs
-            Registry . . . . . . . . . . . . . . . . . . . . . . . .  64
+            Registry . . . . . . . . . . . . . . . . . . . . . . . .  65
      12.5.  Media Type Registration for application/
-            domainconnect-template+json  . . . . . . . . . . . . . .  65
-     12.6.  Domain Connect Settings Properties Registry  . . . . . .  66
-   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  68
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  69
-   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  69
-   Normative References  . . . . . . . . . . . . . . . . . . . . . .  73
-   Informative References  . . . . . . . . . . . . . . . . . . . . .  75
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  75
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  75
-     A.2.  Example Records: Single static host record  . . . . . . .  76
-     A.3.  Example Records: Single variable host record for A  . . .  77
-     A.4.  Example Records: Generic Record Type CAA  . . . . . . . .  77
+            domainconnect-template+json  . . . . . . . . . . . . . .  66
+     12.6.  Domain Connect Settings Properties Registry  . . . . . .  67
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  69
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  70
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  70
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  74
+   Informative References  . . . . . . . . . . . . . . . . . . . . .  76
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  76
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  76
+     A.2.  Example Records: Single static host record  . . . . . . .  77
+     A.3.  Example Records: Single variable host record for A  . . .  78
+     A.4.  Example Records: Generic Record Type CAA  . . . . . . . .  78
      A.5.  Example: Template application to DNS Zone and Conflict
-           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  78
-     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  80
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  81
-
+           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  79
+     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  81
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  82
 
 
 
@@ -3352,7 +3352,7 @@ Internet-Draft               Domain Connect                    June 2026
       request timeouts, a maximum response size, and a limit on the
       number of redirects followed
 
-12.  IANA Considerations
+
 
 
 
@@ -3361,6 +3361,29 @@ Kowalik, et al.          Expires 7 December 2026               [Page 60]
 
 Internet-Draft               Domain Connect                    June 2026
 
+
+11.3.  Underscored Host Names
+
+   The "host" apply parameter is supplied by the requesting party and
+   prepended to the template record owner names during Host Name
+   Rendering.  When its value is an underscore-prefixed label per
+   [RFC8552], the applied records land under a name with special
+   protocol meaning - for example "_acme-challenge", "_domainkey", or
+   "_dmarc".  A template that places a "CNAME" on the apex ("@") host
+   could then be applied with such a "host" value to redirect one of
+   these underscored names to infrastructure under an attacker's
+   control, causing the user to authorize what appears to be an ordinary
+   change while in fact delegating certificate issuance, DKIM key
+   publication, or DMARC policy.
+
+   Legitimate uses of an underscored "host" value exist but are rare.
+   DNS Providers SHOULD therefore apply additional measures when the
+   "host" apply parameter contains an underscore-prefixed label, such as
+   presenting the affected owner names to the user in a more explicit
+   and verbose manner during User Authorization of Changes so that the
+   special-meaning target is not obscured.
+
+12.  IANA Considerations
 
 12.1.  Registration Procedure for Domain Connect Registries
 
@@ -3387,6 +3410,14 @@ Internet-Draft               Domain Connect                    June 2026
    The designated experts SHOULD determine whether a registration
    request contains enough information for the registry to be populated
    and whether the proposed new functionality already exists.  In the
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 61]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    case of an incomplete registration, or an attempt to register already
    existing functionality, the designated experts SHOULD ask for
    corrections or reject the registration.
@@ -3405,18 +3436,6 @@ Internet-Draft               Domain Connect                    June 2026
 
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:
-
-
-
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 61]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
                +=========+================+================+
                | RR Type | _NODE NAME     | Reference      |
@@ -3447,6 +3466,14 @@ Internet-Draft               Domain Connect                    June 2026
       -  "Active": the type is currently in use and its definition is
          normative.
 
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 62]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
       -  "Deprecated": the type SHOULD NOT be used in new templates; it
          MAY appear in existing deployments for backwards compatibility.
          If the corresponding DNS RR TYPE is marked deprecated or
@@ -3464,15 +3491,6 @@ Internet-Draft               Domain Connect                    June 2026
       "Fully Specified" (RDATA broken into dedicated template fields) or
       "Computed" (records derived by a defined computation).  A
       "Reserved" entry MAY leave this field unassigned.
-
-
-
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 62]
-
-Internet-Draft               Domain Connect                    June 2026
-
 
    *  *DNS RR TYPE*: the name of the corresponding entry in the IANA
       "Resource Record (RR) TYPEs" registry within the "Domain Name
@@ -3504,6 +3522,14 @@ Internet-Draft               Domain Connect                    June 2026
 
    Status:  One of "Active", "Deprecated", or "Reserved".
 
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 63]
+
+Internet-Draft               Domain Connect                    June 2026
+
+
    Class:  "Fully Specified" or "Computed"; omitted for a "Reserved"
       entry.
 
@@ -3525,7 +3551,37 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 63]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 7 December 2026               [Page 64]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3581,7 +3637,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 64]
+Kowalik, et al.          Expires 7 December 2026               [Page 65]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3637,7 +3693,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 65]
+Kowalik, et al.          Expires 7 December 2026               [Page 66]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3693,7 +3749,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 66]
+Kowalik, et al.          Expires 7 December 2026               [Page 67]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3749,7 +3805,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 67]
+Kowalik, et al.          Expires 7 December 2026               [Page 68]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3805,7 +3861,7 @@ Open Source
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 68]
+Kowalik, et al.          Expires 7 December 2026               [Page 69]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3861,7 +3917,7 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 69]
+Kowalik, et al.          Expires 7 December 2026               [Page 70]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3893,6 +3949,8 @@ Internet-Draft               Domain Connect                    June 2026
       "_domainconnect" TXT record content and in the settings-response
       URL prefixes in DNS Provider Discovery.
 
+   *  Added Underscored Host Names to Security Considerations.
+
 Change from draft-ietf-dconn-domainconnect-01 to -02
 
    *  Removed the Asynchronous OAuth Flow from this document; the
@@ -3915,9 +3973,7 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
 
 
 
-
-
-Kowalik, et al.          Expires 7 December 2026               [Page 70]
+Kowalik, et al.          Expires 7 December 2026               [Page 71]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -3973,7 +4029,7 @@ Change from -00 to -01
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 71]
+Kowalik, et al.          Expires 7 December 2026               [Page 72]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4029,7 +4085,7 @@ Change from draft-carney-regext-domainconnect-00 to -01
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 72]
+Kowalik, et al.          Expires 7 December 2026               [Page 73]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4085,7 +4141,7 @@ Normative References
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 73]
+Kowalik, et al.          Expires 7 December 2026               [Page 74]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4141,7 +4197,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 74]
+Kowalik, et al.          Expires 7 December 2026               [Page 75]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4197,7 +4253,7 @@ A.1.  Example Template
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 75]
+Kowalik, et al.          Expires 7 December 2026               [Page 76]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4253,7 +4309,7 @@ A.2.  Example Records: Single static host record
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 76]
+Kowalik, et al.          Expires 7 December 2026               [Page 77]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4309,7 +4365,7 @@ A.4.  Example Records: Generic Record Type CAA
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 77]
+Kowalik, et al.          Expires 7 December 2026               [Page 78]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4365,7 +4421,7 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 78]
+Kowalik, et al.          Expires 7 December 2026               [Page 79]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4421,7 +4477,7 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 79]
+Kowalik, et al.          Expires 7 December 2026               [Page 80]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4477,7 +4533,7 @@ A.6.  Example: SPF Record Merging
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 80]
+Kowalik, et al.          Expires 7 December 2026               [Page 81]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4533,7 +4589,7 @@ Authors' Addresses
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 81]
+Kowalik, et al.          Expires 7 December 2026               [Page 82]
 
 Internet-Draft               Domain Connect                    June 2026
 
@@ -4589,4 +4645,4 @@ Internet-Draft               Domain Connect                    June 2026
 
 
 
-Kowalik, et al.          Expires 7 December 2026               [Page 82]
+Kowalik, et al.          Expires 7 December 2026               [Page 83]

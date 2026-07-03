@@ -116,6 +116,7 @@ Table of Contents
    11. Security Considerations
      11.1.  Template Variable Phishing
      11.2.  Untrusted DNS Provider Discovery Records
+     11.3.  Underscored Host Names
    12. IANA Considerations
      12.1.  Registration Procedure for Domain Connect Registries
      12.2.  Underscore "_domainconnect" DNS Node Name
@@ -2754,6 +2755,27 @@ Table of Contents
       request timeouts, a maximum response size, and a limit on the
       number of redirects followed
 
+11.3.  Underscored Host Names
+
+   The "host" apply parameter is supplied by the requesting party and
+   prepended to the template record owner names during Host Name
+   Rendering.  When its value is an underscore-prefixed label per
+   [RFC8552], the applied records land under a name with special
+   protocol meaning - for example "_acme-challenge", "_domainkey", or
+   "_dmarc".  A template that places a "CNAME" on the apex ("@") host
+   could then be applied with such a "host" value to redirect one of
+   these underscored names to infrastructure under an attacker's
+   control, causing the user to authorize what appears to be an ordinary
+   change while in fact delegating certificate issuance, DKIM key
+   publication, or DMARC policy.
+
+   Legitimate uses of an underscored "host" value exist but are rare.
+   DNS Providers SHOULD therefore apply additional measures when the
+   "host" apply parameter contains an underscore-prefixed label, such as
+   presenting the affected owner names to the user in a more explicit
+   and verbose manner during User Authorization of Changes so that the
+   special-meaning target is not obscured.
+
 12.  IANA Considerations
 
 12.1.  Registration Procedure for Domain Connect Registries
@@ -3181,6 +3203,8 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
    *  Added examples illustrating an optional path segment in the
       "_domainconnect" TXT record content and in the settings-response
       URL prefixes in DNS Provider Discovery.
+
+   *  Added Underscored Host Names to Security Considerations.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 

@@ -728,9 +728,9 @@ dc-key-type       =  1*( ALPHA / DIGIT / "-" )
 
 <table anchor="_72454fd4-a96f-8725-bede-1f46439d70af"><name>Properties of the public key TXT record</name><thead><tr><th align="left">Property</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Fragment Index</strong></td><td align="left">p</td><td align="left">(REQUIRED) The sequence number of this key fragment.<br />  The value MUST conform to the  <tt>dc-frag-index</tt> rule above: a positive decimal integer.<br />  Fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt>.</td></tr><tr><td align="left"><strong>Fragment Payload</strong></td><td align="left">d</td><td align="left">(REQUIRED) A Fragment of base64-encoded key material.<br />  The value MUST conform to the  <tt>dc-frag-data</tt> rule above: standard base64 encoding per <xref target="RFC4648" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>Signing Algorithm</strong></td><td align="left">a</td><td align="left">(OPTIONAL) The JWS algorithm identifier for the signing algorithm.<br />  The value MUST conform to the  <tt>dc-alg-id</tt> rule above and MUST be registered in the IANA "JSON Web Signature and Encryption Algorithms" registry established by <xref target="RFC7518" section="" relative=""></xref>.<br />  If omitted, MUST be assumed to be  <tt>"RS256"</tt>.<br />  Support for  <tt>"RS256"</tt> is MANDATORY for both DNS Providers and Service Providers.</td></tr><tr><td align="left"><strong>Public Key Format</strong></td><td align="left">t</td><td align="left">(OPTIONAL) The format of the public key.<br />  The value MUST conform to the  <tt>dc-key-type</tt> rule above.<br />  If omitted, MUST be assumed to be  <tt>"x509"</tt>.</td></tr></tbody></table>
 
-<t anchor="_f2b75231-9a72-ce1a-0870-afb0c276b080">To allow for key rotation or use of multiple keys, the Service Provider MAY publish key records at multiple hosts within  <tt>"syncPubKeyDomain"</tt>. The  <tt>"key"</tt> apply parameter identifies which host to query for each request and MUST be included in the signed apply request.</t>
+<t anchor="_7ffdc72b-9878-1266-bd5d-32db74ee82c1">A Service Provider MUST publish exactly one public key on any given host name. To use multiple keys, e.g. for key rotation, the Service Provider MUST publish each key on a different host name within <tt>"syncPubKeyDomain"</tt>. The <tt>"key"</tt> apply parameter identifies which host to query for each request and MUST be included in the signed apply request.</t>
 
-<t anchor="_460c182d-e089-ec7e-b8fa-74bf0b7ef97f">To account for DNS record size limits, a public key MAY be split across multiple TXT records at the same host. All fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt> before use. The values  <tt>"a"</tt> and '"d"' MUST be equal for all such TXT records on the same host.</t>
+<t anchor="_06517db2-74c0-ff02-39a2-847c0dc66060">To account for DNS record size limits, a public key MAY be split across multiple TXT records at the same host. All fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt> before use. All such TXT records at the same host therefore belong to the same key: the values  <tt>"a"</tt> and <tt>"t"</tt> MUST be equal across them, and their <tt>"d"</tt> fragments MUST have distinct  <tt>"p"</tt> indices.</t>
 
 <t anchor="_0772612f-d69c-f784-188b-25cbbfe23729">Given the public key (line breaks for brevity):</t>
 
@@ -1479,16 +1479,17 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_78741531-9966-ecd2-0d64-20bbf5590a2b" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_e47e7631-6b50-4621-c900-2807c3e91ad9" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_347d1fc6-232c-c7ff-fc8c-64fe01b453fe" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
+<section anchor="_11fe4e40-0d9d-1091-90a1-94c4f8df21ae" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_cd126cb1-d624-98dd-ffec-23ba18d2363c"><li>Classified template record types as Fully Specified, Computed, or Generic.</li>
+<ul anchor="_8f74a365-992a-350e-2b0c-42a9bc2ae4f0"><li>Classified template record types as Fully Specified, Computed, or Generic.</li>
 <li>Added a shared <xref target="iana-registration-procedure" format="title"></xref> section (designated-expert assignment and review process) governing all Domain Connect registries.</li>
 <li>Coupled the "Domain Connect Fully Specified Record Types" registry to the IANA DNS Resource Record (RR) TYPEs registry as a bidirectional maintenance contract (following the pattern set by RFC 9108 for that registry).</li>
 <li>Added <xref target="sec-discovery-record" format="title"></xref> to <xref target="security-considerations" format="title"></xref>.</li>
 <li>Clarified handling of multiple <tt>"_domainconnect"</tt> TXT records in <xref target="dns-provider-discovery" format="title"></xref>.</li>
 <li>Deprecated and reserved the <tt>"warnPhishing"</tt> template flag in <xref target="template-definition" format="title"></xref>; phishing warnings are now default behavior, see <xref target="sec-variable-phishing" format="title"></xref>.</li>
+<li>Clarified one-host-one-key rule in <xref target="pubkey-publication" format="title"></xref>.</li>
 </ul>
 </section>
 

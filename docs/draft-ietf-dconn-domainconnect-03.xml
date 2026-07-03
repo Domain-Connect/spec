@@ -121,12 +121,12 @@
 
 <t anchor="_786af4f8-fbb2-c9c3-7438-4f4cdaab092a">The following additional syntax rules are defined in this document and used normatively throughout.</t>
 
-<dl anchor="_8f2fedd9-7844-930f-34a0-f39844847628"><dt><tt>"dc-name-char"</tt>:</dt><dd anchor="_187cb9c0-aa24-4def-d05b-49be3287102d"><t anchor="_ab78b5a5-7a3d-e539-ecc6-8542f54d82b9">any Unicode Assignable code point allowed in <tt>"domain-name"</tt> except "%" and "@"</t>
+<dl anchor="_8f2fedd9-7844-930f-34a0-f39844847628"><dt><tt>"dc-name-char"</tt>:</dt><dd anchor="_187cb9c0-aa24-4def-d05b-49be3287102d"><t anchor="_ab78b5a5-7a3d-e539-ecc6-8542f54d82b9">any Unicode Assignable code point allowed in <tt>"domain-name"</tt> except <tt>"%"</tt> and <tt>"@"</tt></t>
 </dd></dl>
 
 <t anchor="_0b56576e-a987-a78d-9d33-6c1e875899b9">The following additional ABNF rules are defined in this document and used normatively throughout.</t>
 
-<sourcecode anchor="_35e36f40-a56a-b84d-1c0b-8b7e42caaf45" type="abnf"><![CDATA[; ---- Identifier rules ----
+<sourcecode anchor="_0d4d2b06-878e-9392-e9ea-17897f6473e8" type="abnf"><![CDATA[; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
                 ; non-empty token, max 63 octets;
@@ -191,13 +191,26 @@ variable-name   =  1*( ALPHA / DIGIT / "-" / "_" )
 
 ; ---- Template record field rules ----
 
-dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
-                  / "SRV" / "SPFM" / "NS" )
-                ; named core and pseudo record types
-                /  "TYPE" 1*DIGIT
+dc-record-type =  dc-type-name / dc-rfc3597-type
+                ; a registered RR TYPE mnemonic (covering
+                ; Fully Specified, Computed, and Generic types
+                ; alike), or the RFC 3597 unknown-type form.
+
+dc-type-name   =  "A"
+                /  ( UALPHA *( UALPHA / DIGIT / "-" )
+                     ( UALPHA / DIGIT ) )
+                ; RR TYPE mnemonic per RFC 6895:
+                ; [A-Z][A-Z0-9-]*[A-Z0-9], i.e. starts with an
+                ; uppercase letter and ends with a letter or
+                ; digit; "A" is grandfathered as a single-letter
+                ; mnemonic. MUST NOT be of the reserved forms
+                ; "TYPE"<n> or "CLASS"<n> (<<RFC3597>>, <<RFC6895>>).
+
+dc-rfc3597-type =  "TYPE" 1*DIGIT
                 ; unknown type per RFC 3597
-                /  1*(ALPHA / DIGIT / "-")
-                ; any other IANA-registered RR type name
+
+UALPHA         =  %x41-5A
+                ; A-Z (uppercase letter)
 
 dc-essential   =  "Always" / "OnApply"
                 ; default is "Always"
@@ -264,13 +277,16 @@ dc-srv-service  =  dc-underscore-label
 
 <t anchor="_5c27fd53-bd19-d175-5684-807399297ec8">Internationalized domain names (IDN) are handled in accordance with <xref target="RFC5891" section="" relative=""></xref>. Where a parameter description specifies  <tt>"domain-name"</tt>, both the ACE (<tt>"A-label"</tt>) and the Unicode (<tt>"U-label"</tt>) forms are accepted.</t>
 
-<dl anchor="_fbdabfe8-d168-c0d3-4db4-a81cb269406b"><dt>Service Provider:</dt><dd anchor="_c5f2bf61-2083-0b85-0aac-86efbacd1ab5"><t anchor="_4e321ecd-bb84-54f3-f1c7-a4556b708d1d">An entity that offers products and services that are configured or accessed using domain names. These services typically rely on DNS for setup, discovery and/or operation. Examples include web hosting, email services, cloud platforms, and other online applications.</t>
+<dl anchor="_fd96102b-bf09-a2f5-e11c-4541c583b52d"><dt>Service Provider:</dt><dd anchor="_c5f2bf61-2083-0b85-0aac-86efbacd1ab5"><t anchor="_4e321ecd-bb84-54f3-f1c7-a4556b708d1d">An entity that offers products and services that are configured or accessed using domain names. These services typically rely on DNS for setup, discovery and/or operation. Examples include web hosting, email services, cloud platforms, and other online applications.</t>
 </dd><dt>DNS Provider:</dt><dd anchor="_71ba7536-6a8a-b516-646b-1a3b1f25469f"><t anchor="_f3b5bfe8-6947-616f-3490-98a74701169f">An entity that offers DNS zone hosting services. DNS Providers are responsible for hosting the DNS zone for a domain name and providing the necessary tools to manage the DNS records. DNS Provider would be an Authoritative server operator for the hosted zones, or would have a contractual relationship with the operator to manage zone distribution over DNS.</t>
 </dd><dt>User:</dt><dd anchor="_0f018ac7-d713-9dd4-71b2-49720f5d5fbf"><t anchor="_279eaa62-6f2c-1daa-c6ad-524590606935">Refers to the end-user who has means to control domain name's DNS configuration at DNS Provider and wishes to configure it to work with a service provided by a Service Provider.</t>
 </dd><dt>Service Template/Template:</dt><dd anchor="_971fe7d8-33e3-bb13-cfc1-29123c77e8ba"><t anchor="_46ca1fa7-d548-982c-556c-ffc1bc707165">A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a means of communication between Service Provider and DNS Provider.</t>
+</dd><dt>Fully Specified Record Type:</dt><dd anchor="_e987cf10-949c-b41a-1785-227c291f2207"><t anchor="_fbd48458-d917-cc18-5adb-ee7aa5b5cfdd">A DNS resource record type for which this document, or a specification registered in the IANA "Domain Connect Fully Specified Record Types" registry (see <xref target="iana-fully-specified-types"></xref>), defines a breakdown of the record's RDATA into individual, normatively-typed template fields rather than carrying the RDATA opaquely.</t>
+</dd><dt>Computed Record Type:</dt><dd anchor="_726b1206-3685-3adf-e404-d372d7095d12"><t anchor="_ed37ef32-c743-33ae-01d5-04f1796ee71e">A template record type that does not correspond to a single DNS resource record placed verbatim into the zone. Instead, it instructs the DNS Provider to derive one or more DNS resource records by a computation defined for that type. The resulting record types and RDATA need not match the Computed Record Type's own name.</t>
+</dd><dt>Generic Record Type:</dt><dd anchor="_34c3b922-fb0a-2d60-efa9-f5881a6769c3"><t anchor="_02b7c85d-4c93-02dd-e350-8209d03b2b12">Any DNS resource record type, identified by its IANA RR TYPE mnemonic or by the <tt>"TYPE"</tt> form of <xref target="RFC3597" section="" relative=""></xref>, whose RDATA is carried opaquely in the <tt>"data"</tt> field in DNS presentation format.</t>
 </dd></dl>
 
-<t anchor="reserved-for-extensions">Certain labels, parameters, endpoints, and registry entries are present in this specification with <em>Reserved</em> status. These items appear in the original Domain Connect community specification <xref target="DC-SPEC" section="" relative=""></xref> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <xref target="DC-SPEC" section="" relative=""></xref>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <xref target="DC-SPEC" section="" relative=""></xref>.</t>
+<t anchor="reserved-for-extensions">Certain labels, parameters, endpoints, and registry entries are present in this specification with "Reserved" status. These items appear in the original Domain Connect community specification <xref target="DC-SPEC" section="" relative=""></xref> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <xref target="DC-SPEC" section="" relative=""></xref>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <xref target="DC-SPEC" section="" relative=""></xref>.</t>
 </section>
     <section anchor="_6ec51cd3-7c65-a2d5-f181-85872018f191"><name>Protocol design</name>
 
@@ -438,15 +454,222 @@ dc-srv-service  =  dc-underscore-label
 
 <t anchor="_0626a7a3-bf03-e558-d414-2a07da1f7f57">Each template record is an entry that contains a type and several other values depending on the type.</t>
 
-<t anchor="_dae0a9c8-a25d-45f2-f33f-b895c8d273ee">Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <xref target="variables"></xref>). Variables are replaced with values when the template is applied.</t>
+<t anchor="_dae0a9c8-a25d-45f2-f33f-b895c8d273ee">Many of these values can contain variables, which are expressed as strings surrounded with <tt>"%"</tt> or special variable <tt>"@"</tt> (See: <xref target="variables"></xref>). Variables are replaced with values when the template is applied.</t>
 
 <t anchor="_105fd4aa-73cf-da31-ab18-d99f9b9070b3">Each record MUST contain the following elements unless otherwise specified.</t>
 
-<table anchor="_b8e0a42d-3bc2-3d4e-4231-6f912a9c6f3c"><name>properties of the template record definition</name><thead><tr><th align="left">Data Element</th><th align="left">Type</th><th align="left">Key</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Type</strong></td><td align="left">enum</td><td align="left">type</td><td align="left">(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.<br />  Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM.<br /> The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV.<br /> The DNS Provider SHOULD support SPFM record for high interoperability with existing templates<br /> <br /> All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per  <xref target="RFC3597" section="" relative=""></xref> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL.<br />  The value MUST conform to the  <tt>dc-record-type</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Group ID</strong></td><td align="left">String</td><td align="left">groupId</td><td align="left">(OPTIONAL) This parameter identifies the group the record belongs to when applying changes.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>) and MUST NOT contain variable expressions.</td></tr><tr><td align="left"><strong>Essential</strong></td><td align="left">enum</td><td align="left">essential</td><td align="left">(OPTIONAL) This parameter indicates how the record is treated during conflict detection with existing templates.<br />  If the DNS Provider is not implementing applied template state in DNS this is ignored.<br />  Always (default) - record MUST be applied and kept with the template<br />  OnApply - record MUST be applied but can be later removed without dropping the whole template<br />  The value MUST conform to the  <tt>dc-essential</tt> syntax (see <xref target="terminology"></xref>).<br />  If omitted, the value MUST be assumed to be  <tt>"Always"</tt>.</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">String</td><td align="left">host</td><td align="left">(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values.<br />  This value is relative to the applied host and domain, unless trailed by a ".".<br />  A value of empty or  <tt>"@"</tt> indicates the root of the applied host and domain. In other words <tt>"[host.]example.com."</tt>.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-host-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Name</strong></td><td align="left">String</td><td align="left">name</td><td align="left">The name for the SRV record.<br />  This value is relative to the applied host and domain. A value of empty or  <tt>"@"</tt> indicates the root of the applied host and domain.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-host-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Points To</strong></td><td align="left">String</td><td align="left">pointsTo</td><td align="left">The pointsTo location for A, AAAA, CNAME, NS and MX records.<br />  When used in a template definition, the value MUST conform to the  <tt>"dc-pointsto-tmpl"</tt> syntax for <tt>"CNAME"</tt>/<tt>"MX"</tt> and to the <tt>"dc-pointsto-nat-tmpl"</tt> syntax for A/AAAA/NS (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.</td></tr><tr><td align="left"><strong>TTL</strong></td><td align="left">Int or string repr. of Int</td><td align="left">ttl</td><td align="left">The time-to-live for the record in DNS. Valid for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This SHOULD NOT contain variables unless absolutely necessary.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-ttl-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>dc-ttl-value</tt> syntax.  This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.  Support of variables in this field is OPTIONAL for DNS Provider.</td></tr><tr><td align="left"><strong>Data</strong></td><td align="left">String</td><td align="left">data</td><td align="left">For TXT record <tt>"data"</tt> contains TXT-DATA <xref target="RFC1035" section="" relative=""></xref> in presentation format. For a single <tt>"&#x3c;character-string&#x3e;"</tt> the heading and trailing <tt>"</tt> character MAY be omitted even if space character is present in the value.  <tt>"data"</tt> MUST NOT be present in a template record for any other record type that has type-specific data fields defined in this specification.  For any unspecified record type, this field contains the canonical presentation format of the record, following  <xref target="RFC3597" section="" relative=""></xref> generic or type-specific encoding.</td></tr><tr><td align="left"><strong>TXT Conflict Matching Mode</strong></td><td align="left">String</td><td align="left">txtConflictMatchingMode</td><td align="left">Describes how conflicts on the TXT record are detected. Possible values are None, All, or Prefix.  <xref target="conflict-detection">See below</xref>.<br />  The value MUST conform to the  <tt>dc-txt-conflict-mode</tt> syntax (see <xref target="terminology"></xref>).<br />  If omitted, the value MUST be assumed to be  <tt>"None"</tt>.</td></tr><tr><td align="left"><strong>TXT Conflict Matching Prefix</strong></td><td align="left">String</td><td align="left">txtConflictMatchingPrefix</td><td align="left">The prefix to detect conflicts when txtConflict-MatchingMode is <tt>"Prefix"</tt>. <xref target="conflict-detection">See below</xref>.<br />  The value MUST conform to the  <tt>dc-conflict-prefix</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Priority</strong></td><td align="left">Int or string repr. of Int</td><td align="left">priority</td><td align="left">The priority for an MX or SRV record.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>dc-uint16-value</tt> syntax.<br />  Support of variables in this field is OPTIONAL for DNS Provider.</td></tr><tr><td align="left"><strong>Weight</strong></td><td align="left">Int or string repr. of Int</td><td align="left">weight</td><td align="left">The weight for the SRV record.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>dc-uint16-value</tt> syntax.<br />  Support of variables in this field is OPTIONAL for DNS Provider.</td></tr><tr><td align="left"><strong>Port</strong></td><td align="left">Int or string repr. of Int</td><td align="left">port</td><td align="left">The port for the SRV record.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br />  After variable substitution, the resolved value MUST conform to the  <tt>dc-uint16-value</tt> syntax.<br />  The resolved value is further constrained to the range 0-65535 as defined by  <xref target="RFC6335" section="" relative=""></xref>.<br />  Support of variables in this field is OPTIONAL for DNS Provider.</td></tr><tr><td align="left"><strong>Protocol</strong></td><td align="left">String</td><td align="left">protocol</td><td align="left">The protocol for the SRV record.<br />  The value MUST conform to the  <tt>dc-srv-protocol</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service</strong></td><td align="left">String</td><td align="left">service</td><td align="left">The symbolic service name for the SRV record.<br />  The value MUST conform to the  <tt>dc-srv-service</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Target</strong></td><td align="left">String</td><td align="left">target</td><td align="left">The target hostname for the SRV record as defined in Section 3.1 of <xref target="RFC2782" section="" relative=""></xref>.<br />  When used in a template definition, the value MUST conform to the  <tt>dc-pointsto-tmpl</tt> syntax (see <xref target="terminology"></xref>), or be the single label <tt>"."</tt> to indicate that the service is not available.<br />  After variable substitution, the resolved value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>), or be <tt>"."</tt>.</td></tr><tr><td align="left"><strong>SPF Rules</strong></td><td align="left">String</td><td align="left">spfRules</td><td align="left">These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <xref target="spf-record-merging"></xref>. The value MUST contain only mechanism and modifier terms as defined in  <xref target="RFC7208" section="" relative=""></xref> Section 5, excluding the version prefix (<tt>"v=spf1"</tt>) and the terminating <tt>"all"</tt> qualifier. The DNS Provider MUST validate the syntax before merging.</td></tr></tbody></table>
+<t anchor="_d14e11ab-42c7-c125-f9fc-e682e95e6e6c">Properties of the template record definition:</t>
 
-<t anchor="_994811e9-01bd-b42d-6658-19766396d284">The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.</t>
+<dl anchor="_080cb500-632f-6c00-17d3-cf9faf2583bb" newline="true"><dt><tt>"Type"</tt>:</dt><dd anchor="_2058ed45-3787-ecf4-3a7e-feee465cf8b3"><dl anchor="_9c9938e3-44b4-93fe-3c6b-ffa02d5401ef"><dt>JSON key:</dt><dd anchor="_e79438ea-6607-d33a-3cad-95fd14f52d27"><t anchor="_3441b5bc-9b34-35a0-0857-058d5d62ced5"><tt>"type"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_9b8bc24d-61ee-a738-6ad2-ee415ad10494"><t anchor="_1a10a562-ca73-3b91-4385-0c6b9f7695f4"><tt>"enum"</tt></t>
+</dd></dl>
 
-<table anchor="_c2da8504-568e-931c-177f-f5f0a663c6f0"><name>Fields per record type</name><thead><tr><th align="left">Type</th><th align="left">Required fields</th></tr></thead><tbody><tr><td align="left"><tt>"A"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"AAAA"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"CNAME"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt> (<tt>"host"</tt> MUST NOT be <tt>"@"</tt> or empty unless <tt>"hostRequired"</tt> is <tt>"true"</tt> in the template)</td></tr><tr><td align="left"><tt>"NS"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"TXT"</tt></td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt>, <tt>"txtConflictMatchingMode"</tt>, <tt>"txtConflictMatchingPrefix"</tt></td></tr><tr><td align="left"><tt>"MX"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt></td></tr><tr><td align="left"><tt>"SRV"</tt></td><td align="left"><tt>"name"</tt>, <tt>"target"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt>, <tt>"protocol"</tt>, <tt>"service"</tt>, <tt>"weight"</tt>, <tt>"port"</tt></td></tr><tr><td align="left"><tt>"SPFM"</tt></td><td align="left"><tt>"host"</tt>, <tt>"spfRules"</tt></td></tr><tr><td align="left">other types</td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt></td></tr></tbody></table>
+<t anchor="_5502c876-a83f-f5e9-7b12-b885af0cb901">(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS.<br /></t>
+
+<t anchor="_532fc421-e272-c49e-9efa-476449991754">Record types fall into three classes (see <xref target="terminology"></xref>):<br /></t>
+
+<t anchor="_e96f33ad-0018-aae0-a435-db46e6dbf343">Fully Specified Record Types - A, AAAA, CNAME, MX, TXT, SRV, NS - whose RDATA is broken into dedicated template fields. The complete set is managed by the IANA "Domain Connect Fully Specified Record Types" registry (see <xref target="iana-fully-specified-types"></xref>).<br /></t>
+
+<t anchor="_e9fd3d6e-6b0d-e8a6-624a-dd6528977fc2">Computed Record Types - which instruct the DNS Provider to derive DNS records by a defined computation rather than write a verbatim record. <tt>"SPFM"</tt> is the Computed Record Type defined in this document.<br /></t>
+
+<t anchor="_c0d86bbd-e611-ee93-8953-82ddd40b291e">Generic Record Types - any other IANA-registered RR TYPE mnemonic, or the <tt>"TYPE"</tt> form of <xref target="RFC3597" section="" relative=""></xref>, whose RDATA is carried opaquely in the <tt>"data"</tt> field.<br /></t>
+
+<t anchor="_712f85c9-fcd0-bfc3-a053-2863cbd0c5bf">The DNS Provider MUST support the core Fully Specified Record Types A, AAAA, CNAME, MX, TXT, SRV.<br /> The DNS Provider SHOULD support the  <tt>"SPFM"</tt> Computed Record Type for high interoperability with existing templates.<br /> Support for NS, for Generic Record Types, and for any Fully Specified Record Type registered by another specification is OPTIONAL.<br /></t>
+
+<t anchor="_1cf49758-2011-361e-35be-7825230b7f76">The value MUST conform to the <tt>dc-record-type</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_59dd0a67-a3b0-8f22-6e39-5f459d254b79" newline="true"><dt><tt>"Group ID"</tt>:</dt><dd anchor="_ee925b66-4b44-f9c6-4b1d-689f23de101a"><dl anchor="_3c321921-887d-953f-5d42-2db585d3d45e"><dt>JSON key:</dt><dd anchor="_2a419d82-89d4-8e7d-fe97-111fe1b1d29f"><t anchor="_5cca5a30-6d38-66d0-4400-93576a8f494b"><tt>"groupId"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_cb608f45-736a-12bf-2a83-5db191f9f3ef"><t anchor="_a1eb1c5e-91ef-be5d-d772-b5677440094f"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_dd366ce7-6507-c5d7-5908-dc948f59b18b">(OPTIONAL) This parameter identifies the group the record belongs to when applying changes.</t>
+
+<t anchor="_08b814a2-67ec-a78d-d410-c960efcddc41">The value MUST conform to the <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>) and MUST NOT contain variable expressions.</t>
+</dd></dl>
+
+<dl anchor="_dc14a870-9dc1-7799-8e44-c3bd15b7062f" newline="true"><dt><tt>"Essential"</tt>:</dt><dd anchor="_c9d08037-be1d-46fc-d797-c74323936bc2"><dl anchor="_0be0f08e-0eb9-f2f2-7de5-788e32d8e465"><dt>JSON key:</dt><dd anchor="_f2f105c4-0924-b207-4c71-f24daf564371"><t anchor="_e01e1aa9-d048-05a5-d8c7-c870ab0b2b04"><tt>"essential"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_6aff8843-45c6-27b0-af16-33b5e798a0ad"><t anchor="_fb698535-4e3f-e4eb-7f02-05b80cfa685d"><tt>"enum"</tt></t>
+</dd></dl>
+
+<t anchor="_f86c98d0-1246-1667-fbbc-53092fe24742">(OPTIONAL) This parameter indicates how the record is treated during conflict detection with existing templates.<br /></t>
+
+<t anchor="_3329e803-671a-cf64-dbd8-821da327ee1c">If the DNS Provider is not implementing applied template state in DNS this is ignored.<br /></t>
+
+<t anchor="_b6156864-5e16-3d28-b2ae-edd6e2f0a039">Always (default) - record MUST be applied and kept with the template<br /></t>
+
+<t anchor="_d39fb6b1-3e1b-c425-53a2-dd37a17ea268">OnApply - record MUST be applied but can be later removed without dropping the whole template<br /></t>
+
+<t anchor="_1466b2c4-4514-eee1-de4c-94a450f0f4d5">The value MUST conform to the <tt>dc-essential</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_d019308e-8750-74d4-1bbb-3fa69584e350">If omitted, the value MUST be assumed to be <tt>"Always"</tt>.</t>
+</dd></dl>
+
+<dl anchor="_d5e733eb-9638-81b2-8e7d-aa3eb69524d4" newline="true"><dt><tt>"Host"</tt>:</dt><dd anchor="_82af8a12-34b5-32be-c6c5-c946ba4f95e0"><dl anchor="_89652f99-2cdf-152a-0f4a-d626afd5d126"><dt>JSON key:</dt><dd anchor="_1e459680-5d9a-7319-5175-14d996862e72"><t anchor="_da00e552-8b61-e866-45d9-0460bd044c9d"><tt>"host"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_3979bb59-0b4c-a6a4-684c-26089facfb3a"><t anchor="_325ef2ae-8a42-98a2-0488-73e246866431"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_64b82b69-36aa-b7dc-6728-34de81ab2e71">(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic Record Type values.<br /></t>
+
+<t anchor="_df69a102-9476-1e02-827a-c84960ee66f7">This value is relative to the applied host and domain, unless trailed by a ".".<br /></t>
+
+<t anchor="_4a41d575-1d25-f006-e4a3-73020b6c819b">A value of empty or <tt>"@"</tt> indicates the root of the applied host and domain. In other words <tt>"[host.]example.com."</tt>.<br /></t>
+
+<t anchor="_e4921fc2-82ab-ddc6-5f07-0f6f6b5d730e">When used in a template definition, the value MUST conform to the <tt>dc-host-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_85d4a988-1856-7cdf-f07e-301ea7f49982">After variable substitution, the resolved value MUST conform to the <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_c0a64012-12e6-feec-93d9-94278427f3c6" newline="true"><dt><tt>"Name"</tt>:</dt><dd anchor="_72d2832f-aace-ba42-a50b-fc8791e44629"><dl anchor="_4c17fea1-c311-3a05-f1e4-bac7e171b8d0"><dt>JSON key:</dt><dd anchor="_146d0fa5-5b3a-a4d2-de7d-1483d5d9511b"><t anchor="_12f0b37c-50e8-5a24-c60a-8a2d322ce480"><tt>"name"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_1be0933c-9e74-4d6f-9826-68fd64860416"><t anchor="_5dc4b553-2e4a-0992-b17e-b972dd2cbfdb"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_b382c609-81be-a256-9f7d-b574d256be10">The name for the SRV record.<br /></t>
+
+<t anchor="_87e6d7e3-2e0a-fd12-3eb1-5d3a2310f5e1">This value is relative to the applied host and domain. A value of empty or <tt>"@"</tt> indicates the root of the applied host and domain.<br /></t>
+
+<t anchor="_03a105aa-8070-f5aa-cb79-97909c86f85b">When used in a template definition, the value MUST conform to the <tt>dc-host-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_dd3a829e-5e62-9390-5078-33517f77f320">After variable substitution, the resolved value MUST conform to the <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_08609b49-fdd9-b86a-6411-ce98f44b9637" newline="true"><dt anchor="pointsto-record"><tt>"Points To"</tt>:</dt><dd anchor="_f0ad4baf-875d-3b81-a34a-17634f330442"><dl anchor="_9c418d43-ab57-a65c-03a2-31caed79c9ef"><dt>JSON key:</dt><dd anchor="_3ffbb8a7-9d61-c725-92b0-1269cffc21b7"><t anchor="_a4dd9ea6-c767-4c31-0409-65ee437ad87f"><tt>"pointsTo"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_77b1fee5-f2eb-3c96-2993-99d483cc4270"><t anchor="_e6f07ae3-45fc-539d-645b-d026511d90b7"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_05561384-b669-113f-efee-aaa82f3fe7ec">The pointsTo location for A, AAAA, CNAME, NS and MX records.<br /></t>
+
+<t anchor="_3e86d8b5-042d-0860-bd6a-f7014676ec88">When used in a template definition, the value MUST conform to the <tt>"dc-pointsto-tmpl"</tt> syntax for <tt>"CNAME"</tt>/<tt>"MX"</tt> and to the <tt>"dc-pointsto-nat-tmpl"</tt> syntax for A/AAAA/NS (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_1e8631bc-dfc8-6621-01b7-ca6fff564c47">After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.</t>
+</dd></dl>
+
+<dl anchor="_9a456dbb-f3f2-931a-4075-15bfacdce469" newline="true"><dt><tt>"TTL"</tt>:</dt><dd anchor="_6390e58c-2652-7469-fc54-2ccaea5d5aaf"><dl anchor="_e361aabb-e339-50e6-fdfe-607c0e0b8615"><dt>JSON key:</dt><dd anchor="_e59880f7-4129-fa1d-e739-67d53a9692ab"><t anchor="_87949d08-e1e6-bde5-7a0d-b122ad73dfec"><tt>"ttl"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_0c0cc765-f42a-40a4-6c9c-e8f096c859b4"><t anchor="_9aff9cd4-e10f-e9ad-863b-1c0312e4fd6c"><tt>"Int"</tt> or string representation of <tt>"Int"</tt></t>
+</dd></dl>
+
+<t anchor="_ab2e780c-62cf-3d50-e42d-932844bd8942">The time-to-live for the record in DNS. Valid for A, AAAA, CNAME, NS, TXT, MX, and SRV records. This SHOULD NOT contain variables unless absolutely necessary.<br /></t>
+
+<t anchor="_bd79ffde-4285-ed9f-c531-62ebb9abdd91">When used in a template definition, the value MUST conform to the <tt>dc-ttl-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_12f2052b-b6d4-a454-e296-053a62e6b437">After variable substitution, the resolved value MUST conform to the <tt>dc-ttl-value</tt> syntax.</t>
+
+<t anchor="_6e355df1-ffa0-8265-f17c-df67a62b4a30">This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.</t>
+
+<t anchor="_10462322-e85f-a31b-938c-4fe992f7615c">Support of variables in this field is OPTIONAL for DNS Provider.</t>
+</dd></dl>
+
+<dl anchor="_089af146-d6ed-48c4-e373-6e0755fdaa8f" newline="true"><dt><tt>"Data"</tt>:</dt><dd anchor="_8a0805fc-53b0-4b8d-ad26-442901134904"><dl anchor="_1d794926-17c1-d3a8-9bdd-fdc83476591d"><dt>JSON key:</dt><dd anchor="_07776428-c698-7e85-4012-bd6003a0aa8e"><t anchor="_5f9ce89e-a2fa-33c9-b7ff-7d1d3ffb03f7"><tt>"data"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_40f7bc9d-61b8-6d11-4e58-bb4e5093a289"><t anchor="_5b895770-b292-6638-cd26-8fb76ebb839b"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_5bb6c59b-b829-d51a-9054-1a608ccae1c6">For TXT record <tt>"data"</tt> contains TXT-DATA <xref target="RFC1035" section="" relative=""></xref> in presentation format. For a single <tt>"&#x3c;character-string&#x3e;"</tt> the heading and trailing <tt>"</tt> character MAY be omitted even if space character is present in the value.</t>
+
+<t anchor="_99c0fe89-b59e-6963-66fb-0209ad94aa9d"><tt>"data"</tt> MUST NOT be present in a template record for any Fully Specified or Computed Record Type, which use type-specific data fields defined in this specification.</t>
+
+<t anchor="_25900b19-609b-12e9-9726-68bf65148042">For a Generic Record Type, this field contains the canonical presentation format of the record, following <xref target="RFC3597" section="" relative=""></xref> generic or type-specific encoding.</t>
+</dd></dl>
+
+<dl anchor="_b0828109-52e6-2b65-a6cf-17de3d693d35" newline="true"><dt><tt>"TXT Conflict Matching Mode"</tt>:</dt><dd anchor="_063d9143-6b7a-7b1c-1ac2-3eeeb45e3c1a"><dl anchor="_e1304bc2-71d6-d1c9-5e96-5b37457f5b88"><dt>JSON key:</dt><dd anchor="_f92ae202-b106-46a7-e50a-3f5f5b585774"><t anchor="_dcc292a1-a82b-2f42-d83a-8c84022496cf"><tt>"txtConflictMatchingMode"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_04251260-9fc2-46d5-39cc-97afeb6452c4"><t anchor="_bd5eddcb-7e96-cc4a-69b8-3a07401ceb93"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_7f2eea6b-4143-db14-4d48-140b9fdbb3ff">Describes how conflicts on the TXT record are detected. Possible values are None, All, or Prefix.  <xref target="conflict-detection">See below</xref>.<br /></t>
+
+<t anchor="_f704d280-b689-1de7-c7b8-573bc62d89cc">The value MUST conform to the <tt>dc-txt-conflict-mode</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_2e9604c3-5470-d85e-b2fa-ad7a401ce71d">If omitted, the value MUST be assumed to be <tt>"None"</tt>.</t>
+</dd></dl>
+
+<dl anchor="_1a201efa-81d2-ed1a-faa2-3955fb03f711" newline="true"><dt><tt>"TXT Conflict Matching Prefix"</tt>:</dt><dd anchor="_4296fdff-1fef-52c8-f3af-33c344701d83"><dl anchor="_a163b575-39b9-31f5-e4b9-d0f9b193754e"><dt>JSON key:</dt><dd anchor="_884ea896-026f-8725-c1d5-ab86a097960a"><t anchor="_c4c5bac0-1b09-04d6-1a9e-caf82bf3321d"><tt>"txtConflictMatchingPrefix"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_28af87cc-6e7a-ce40-91d2-9d11454e7ba0"><t anchor="_230f9a0a-b5d9-fbfe-71a3-8d8a0966e807"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_e15c5ff9-c87d-031b-d2d2-2c325b294799">The prefix to detect conflicts when txtConflict-MatchingMode is <tt>"Prefix"</tt>. <xref target="conflict-detection">See below</xref>.<br /></t>
+
+<t anchor="_75a42391-d272-2b0d-3b07-3746343ad6bb">The value MUST conform to the <tt>dc-conflict-prefix</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_0f271d8f-7420-7567-3071-361815ba44bd" newline="true"><dt><tt>"Priority"</tt>:</dt><dd anchor="_8c42b34a-bd64-f9bf-c84b-8c9d94f8c48c"><dl anchor="_8ef6ff52-b588-7312-f910-65ff41ce6a21"><dt>JSON key:</dt><dd anchor="_0e4e2dd7-bc5a-cfb0-5a99-a6714f7ab2d9"><t anchor="_cb222bf4-2df1-73fb-997b-db1517a29023"><tt>"priority"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_abbce8d7-b0a6-6f4c-3dfc-ce833b293b22"><t anchor="_96fc4fd9-f44c-0106-6ee0-a46890a19c40"><tt>"Int"</tt> or string representation of <tt>"Int"</tt></t>
+</dd></dl>
+
+<t anchor="_8358817f-8b69-b683-c2c4-731b106bd03c">The priority for an MX or SRV record.<br /></t>
+
+<t anchor="_f3d93c1d-0b97-6f5d-cf59-bef388bea051">When used in a template definition, the value MUST conform to the <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_ce12df8b-855f-0d1d-e473-da68796df861">After variable substitution, the resolved value MUST conform to the <tt>dc-uint16-value</tt> syntax.<br /></t>
+
+<t anchor="_ad5d0c8a-ff6e-583a-64b8-8d5e6149eb8f">Support of variables in this field is OPTIONAL for DNS Provider.</t>
+</dd></dl>
+
+<dl anchor="_3190374c-311b-d799-952f-4a772f30b9c5" newline="true"><dt><tt>"Weight"</tt>:</dt><dd anchor="_63521748-8444-9118-313b-0739b3326d72"><dl anchor="_d4edbead-16e9-b251-4c5f-6f901ad4fc5e"><dt>JSON key:</dt><dd anchor="_f40b760c-63ad-fdbc-6cd9-17e6d953b1dd"><t anchor="_d2749b53-4762-c123-51aa-daaad0b2f625"><tt>"weight"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_a470e2b7-cb56-56d2-b94b-b2927b8d147b"><t anchor="_68b984c1-e113-4dd2-bcad-7a00b4829ab4"><tt>"Int"</tt> or string representation of <tt>"Int"</tt></t>
+</dd></dl>
+
+<t anchor="_d04081e1-907b-72a0-9adc-b684c1db9ed9">The weight for the SRV record.<br /></t>
+
+<t anchor="_172d1658-2b87-39d5-2bf0-1777ee9ed8b6">When used in a template definition, the value MUST conform to the <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_9cbb5c35-5ff7-0672-fe21-be63199eec32">After variable substitution, the resolved value MUST conform to the <tt>dc-uint16-value</tt> syntax.<br /></t>
+
+<t anchor="_a0995457-9b06-8cc3-74c2-accddf3ce1bb">Support of variables in this field is OPTIONAL for DNS Provider.</t>
+</dd></dl>
+
+<dl anchor="_c2c9236a-3af3-f8eb-5b8f-4f9c10269423" newline="true"><dt><tt>"Port"</tt>:</dt><dd anchor="_4501518d-c8be-3790-94b9-757135dbb9d9"><dl anchor="_529291f5-514c-93a6-0abc-6c682bdfc0cf"><dt>JSON key:</dt><dd anchor="_3246a927-7651-f56c-a969-6a33def89e55"><t anchor="_ef92a91b-2d85-bde5-679c-97594f53657a"><tt>"port"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_e21ca0dd-1601-c661-599e-5fa050c60f67"><t anchor="_be00bfe6-af4f-9a68-ef21-3a909145fada"><tt>"Int"</tt> or string representation of <tt>"Int"</tt></t>
+</dd></dl>
+
+<t anchor="_c3692e6d-ca70-d447-8703-20514e17ce24">The port for the SRV record.</t>
+
+<t anchor="_888cff12-ae84-170f-69e3-87ab8c2c2fa1">When used in a template definition, the value MUST conform to the <tt>dc-uint16-tmpl</tt> syntax (see <xref target="terminology"></xref>).</t>
+
+<t anchor="_71082f99-bfd5-c745-f17d-3f90a853ca50">After variable substitution, the resolved value MUST conform to the <tt>dc-uint16-value</tt> syntax.</t>
+
+<t anchor="_91772487-cc8f-a454-864f-f9982bf4f25a">The resolved value is further constrained to the range 0-65535 as defined by <xref target="RFC6335" section="" relative=""></xref>.</t>
+
+<t anchor="_0c44f205-ed6b-3f33-ee71-aa5df6a7d673">Support of variables in this field is OPTIONAL for DNS Provider.</t>
+</dd></dl>
+
+<dl anchor="_98ad13a2-1636-2fe9-ff07-00015c415e74" newline="true"><dt><tt>"Protocol"</tt>:</dt><dd anchor="_287b2c30-4109-6933-66d9-97f7ac019c6a"><dl anchor="_f1cf4085-536c-864e-c447-d512d6038767"><dt>JSON key:</dt><dd anchor="_c66d3601-28bd-11ef-bb01-65c66e11de1a"><t anchor="_a3f7c185-7a2f-4e66-7566-2b96f4fbf17f"><tt>"protocol"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_4b04b1dc-13de-6be1-8531-e1dbf6e86956"><t anchor="_cdf9a3f5-2536-24b6-d809-4d688f79a0f5"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_2d2868f4-6772-0c57-15fb-881f82cb8e7e">The protocol for the SRV record.<br /></t>
+
+<t anchor="_3a37d1eb-da59-378f-847e-9c6361f8ce44">The value MUST conform to the <tt>dc-srv-protocol</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_30b66037-8af4-ca1a-9e3e-21e1f89f8e39" newline="true"><dt><tt>"Service"</tt>:</dt><dd anchor="_a1434605-11b2-e6b5-f618-1184fc650df8"><dl anchor="_90ba0edd-97a2-3f48-aae2-eaf0745e39a5"><dt>JSON key:</dt><dd anchor="_4d5bd37f-7f4f-f3f2-cf27-af54016a120d"><t anchor="_956631df-8338-0c9b-6dc2-9395a1b9fb81"><tt>"service"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_7920f22f-7203-565e-a2c8-ba963ec911f1"><t anchor="_c64c85cc-5c94-e877-9db7-6a7c109c0c7e"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_c6807ba2-a117-5544-528e-90b33173d39f">The symbolic service name for the SRV record.<br /></t>
+
+<t anchor="_4304aeab-ed12-e65b-84d9-eb79fa2382a3">The value MUST conform to the <tt>dc-srv-service</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd></dl>
+
+<dl anchor="_9fe04b59-fe62-47a1-908c-a422441f9681" newline="true"><dt><tt>"Target"</tt>:</dt><dd anchor="_a379da6d-27cd-410a-ff21-6a88dd6d4a8c"><dl anchor="_6925e474-a4df-cafe-0360-b1f19eb42af1"><dt>JSON key:</dt><dd anchor="_798f7f79-5081-f2f4-1fce-a96fc183d9c2"><t anchor="_6846846d-0899-8254-6d3c-1ab9e1d6de12"><tt>"target"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_6b6a0538-4503-b585-4445-b53c30be279d"><t anchor="_11f05362-e50d-3169-4ec6-035d3fae3d20"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_2ca0265a-7f48-3e22-6d26-d2fb39e7c501">The target hostname for the SRV record as defined in Section 3.1 of <xref target="RFC2782" section="" relative=""></xref>.<br /></t>
+
+<t anchor="_5ddf62be-b76a-4d34-cd87-6781efa5b45c">When used in a template definition, the value MUST conform to the <tt>dc-pointsto-tmpl</tt> syntax (see <xref target="terminology"></xref>), or be the single label <tt>"."</tt> to indicate that the service is not available.<br /></t>
+
+<t anchor="_30254990-b695-7023-62cf-9b52bdda605d">After variable substitution, the resolved value MUST conform to the <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>), or be <tt>"."</tt>.</t>
+</dd></dl>
+
+<dl anchor="_594040cc-8276-ea75-691d-f56822007581" newline="true"><dt anchor="spf-rules"><tt>"SPF Rules"</tt>:</dt><dd anchor="_d87b9e22-fa20-11d9-4b9b-2cdfff003798"><dl anchor="_90fbb5cb-9c02-9b79-57dc-7cdf84fcadeb"><dt>JSON key:</dt><dd anchor="_9f499055-61e3-42a6-0326-c6d690f4aac7"><t anchor="_a60dbf6f-3ab7-b6c5-54e3-1b60ce417996"><tt>"spfRules"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_90a8ab71-1845-570a-cedb-beba8e9ad107"><t anchor="_2e5fecf3-813f-18fe-3c5e-51dd4e40bf94"><tt>"String"</tt></t>
+</dd></dl>
+
+<t anchor="_3b87b317-3e80-94f3-0db6-b7f115c8d913">These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <xref target="spf-record-merging"></xref>. The value MUST contain only mechanism and modifier terms as defined in  <xref target="RFC7208" section="" relative=""></xref> Section 5, excluding the version prefix (<tt>"v=spf1"</tt>) and the terminating <tt>"all"</tt> qualifier. The DNS Provider MUST validate the syntax before merging.</t>
+</dd></dl>
+
+<t anchor="_99c8f0e5-26e8-40a1-5278-bd1d32702456">The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.</t>
+
+<table anchor="_82354231-f10a-c8a2-0e64-0b7d60e3988c"><name>Fields per record type</name><thead><tr><th align="left">Type</th><th align="left">Required fields</th></tr></thead><tbody><tr><td align="left"><tt>"A"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"AAAA"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"CNAME"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt> (<tt>"host"</tt> MUST NOT be <tt>"@"</tt> or empty unless <tt>"hostRequired"</tt> is <tt>"true"</tt> in the template)</td></tr><tr><td align="left"><tt>"NS"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"TXT"</tt></td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt>, <tt>"txtConflictMatchingMode"</tt>, <tt>"txtConflictMatchingPrefix"</tt></td></tr><tr><td align="left"><tt>"MX"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt></td></tr><tr><td align="left"><tt>"SRV"</tt></td><td align="left"><tt>"name"</tt>, <tt>"target"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt>, <tt>"protocol"</tt>, <tt>"service"</tt>, <tt>"weight"</tt>, <tt>"port"</tt></td></tr><tr><td align="left"><tt>"SPFM"</tt></td><td align="left"><tt>"host"</tt>, <tt>"spfRules"</tt></td></tr><tr><td align="left">Generic types</td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt></td></tr></tbody></table>
 </section>
 
 <section anchor="_a0085508-ca4c-8d9c-fc1e-3995764d090d"><name>Template Considerations</name>
@@ -901,7 +1124,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_8a23b49f-08bc-3084-5f2a-ec73f10d542e">There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.</t>
 
-<t anchor="_d45f751b-0288-e46b-8ebc-8a8a10d39f8c">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called <tt>"SPFM"</tt>. This has the following attribute:</t>
+<t anchor="_4898ec71-9bea-2958-5655-54e51ca138e6">The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a Computed Record Type (see <xref target="terminology"></xref>) is introduced in the template called <tt>"SPFM"</tt>. This has the following attribute:</t>
 
 <dl anchor="_35eeb2bc-8dcd-77b1-ef60-8f013d34c082"><dt><tt>"spfRules"</tt>:</dt><dd anchor="_aeeaa7f0-727e-1cc7-09a9-162de78e237b"><t anchor="_2f402de4-b975-1c88-2e28-9aff2ca89698">Determines the desired rules, basically everything but leading "v=spf1" and trailing <tt>"all"</tt> rule -  see: <xref target="template-record">SPF Rules</xref></t>
 </dd></dl>
@@ -1075,24 +1298,90 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
 
+<section anchor="iana-registration-procedure"><name>Registration Procedure for Domain Connect Registries</name>
+
+<t anchor="_e2744165-b803-3a52-bbc9-cc5c424df2ca">IANA is requested to create a new registry group named "Domain Connect Protocol". The registration procedure described in this section applies to all registries established by this document under that registry group.</t>
+
+<t anchor="_17c77f46-abca-ac89-4928-f22630f55f17">Values are registered on a Specification Required (see <xref target="RFC8126" section="" relative=""></xref>) basis after a three-week review period on the &#x3c;<eref target="mailto:dconn@ietf.org"></eref>&#x3e; mailing list or its successor, on the advice of one or more designated experts. To allow for the allocation of values prior to publication, the designated experts MAY approve registration once they are satisfied that the corresponding specification will be published.</t>
+
+<t anchor="_9c096ae3-b770-4a56-8593-05388f6b90ea">Registration requests sent to the review mailing list SHOULD use an appropriate subject line (e.g., "Request to register Domain Connect record type: example"). Registration requests that remain undetermined for a period longer than 21 days MAY be brought to IANA's attention (using the &#x3c;<eref target="mailto:iana@iana.org"></eref>&#x3e; mailing list) for resolution.</t>
+
+<t anchor="_493f8d2f-ea2f-781f-8bbe-69ae2d251aff">The designated experts SHOULD determine whether a registration request contains enough information for the registry to be populated and whether the proposed new functionality already exists. In the case of an incomplete registration, or an attempt to register already existing functionality, the designated experts SHOULD ask for corrections or reject the registration.</t>
+
+<t anchor="_4955e1e2-5a0b-e963-5d29-d04134d7cf45">IANA is requested to appoint one or more designated experts for the registries in the "Domain Connect Protocol" registry group. It is RECOMMENDED that multiple designated experts be appointed who are able to represent the perspectives of different Service Providers and DNS Providers, in order to enable broadly informed review of registration decisions. In cases where a registration decision could be perceived as creating a conflict of interest for a particular expert, that expert SHOULD defer to the judgment of the other experts.</t>
+</section>
+
 <section anchor="iana-underscore"><name>Underscore <tt>"_domainconnect"</tt> DNS Node Name</name>
 
-<t anchor="_4a861a3b-a5d1-88a7-2e8a-3f0176fffed3">Per <xref target="RFC8552" section="" relative=""></xref>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:</t>
+<t anchor="_3483f641-4404-0788-e70d-0791a5da06de">Per <xref target="RFC8552" section="" relative=""></xref>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:</t>
 
-<table anchor="_25cb6e1e-a8bf-f787-bf36-87b0f1ab2b25"><name>IANA Registration for _domainconnect</name><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
+<table anchor="_73198c8c-9ac1-a4be-4eb8-2d298492f480"><name>IANA Registration for _domainconnect</name><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
+</section>
+
+<section anchor="iana-fully-specified-types"><name>Domain Connect Fully Specified Record Types Registry</name>
+
+<t anchor="_993f3c05-b681-eced-8291-b6a501bac2f3">IANA is requested to create a new registry named "Domain Connect Fully Specified Record Types" under the "Domain Connect Protocol" registry group.</t>
+
+<t anchor="_c524a923-4cf8-c05f-ccee-f8d7e1e21376">Registration policy: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>), following the procedure in <xref target="iana-registration-procedure"></xref>.</t>
+
+<t anchor="_4acfb74b-ef81-5e69-a919-a9062f68504d">Each entry in the registry MUST include:</t>
+
+<ul anchor="_547784d9-570f-8397-25be-d717d6584189"><li><strong>RR Type</strong>: the record type name as it appears in a template record <tt>"type"</tt> field. The value MUST conform to the <tt>dc-type-name</tt> syntax (see <xref target="terminology"></xref>).</li>
+<li><t anchor="_626e7308-89e7-a75a-a613-ae4fa9bbcb15"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
+<ul anchor="_02dbba3c-0c20-0335-cf63-565af6b0341e"><li><tt>"Active"</tt>: the type is currently in use and its definition is normative.</li>
+<li><tt>"Deprecated"</tt>: the type SHOULD NOT be used in new templates; it MAY appear in existing deployments for backwards compatibility. If the corresponding DNS RR TYPE is marked deprecated or obsolete in the IANA "Resource Record (RR) TYPEs" registry, the entry here SHOULD be set to <tt>"Deprecated"</tt>.</li>
+<li><tt>"Reserved"</tt>: the type appears in earlier versions of the Domain Connect specification (see <xref target="DC-SPEC" section="" relative=""></xref>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <xref target="DC-SPEC" section="" relative=""></xref>, and MAY only be defined by a specification that extends this document. See <xref target="reserved-for-extensions"></xref>.</li>
+</ul>
+</li>
+<li><strong>Class</strong>: the handling class of the type. The value MUST be one of <tt>"Fully Specified"</tt> (RDATA broken into dedicated template fields) or <tt>"Computed"</tt> (records derived by a defined computation). A <tt>"Reserved"</tt> entry MAY leave this field unassigned.</li>
+<li><strong>DNS RR TYPE</strong>: the name of the corresponding entry in the IANA "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group. A <tt>"Fully Specified"</tt> type SHOULD correspond to a registered DNS RR TYPE of the same name; before registering such a type, the designated experts MUST verify that the named DNS RR TYPE exists in that registry. For a <tt>"Computed"</tt> type, a <tt>"Reserved"</tt> type, or any other type for which no corresponding DNS RR TYPE exists or would be meaningful, the value MUST be <tt>"N/A"</tt>. Where a <tt>"Fully Specified"</tt> type would use a name that is not yet a registered DNS RR TYPE, or where an entry is registered with a <tt>"DNS RR TYPE"</tt> of <tt>"N/A"</tt> (such as a <tt>"Computed"</tt> type), the designated experts SHOULD coordinate with the designated experts of the "Resource Record (RR) TYPEs" registry before completing the registration, to confirm that the chosen name does not collide with an existing or anticipated DNS RR TYPE.</li>
+<li><strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <tt>"IETF Standard"</tt> for types defined in a standards-track RFC, <tt>"Informational"</tt> for types defined in an Informational RFC, or <tt>"Other"</tt> for any other specification.</li>
+<li><strong>Reference</strong>: the document that defines the type.</li>
+</ul>
+
+<t anchor="_5ff712f3-1e72-751f-1ab3-dee4e8cba936">A registration request MUST provide the following:</t>
+
+<dl anchor="_82c9e4bc-f724-d4a3-9415-6b549ac870f3"><dt>RR Type:</dt><dd anchor="_df5dcc19-9a87-0904-1991-65b45337f427"><t anchor="_7cb94364-e1fc-94ae-5b32-b401612af1fa">The record type name (the <tt>"type"</tt> value), conforming to the <tt>dc-type-name</tt> syntax (see <xref target="terminology"></xref>).</t>
+</dd><dt>Status:</dt><dd anchor="_dac50577-d9c3-7d8e-7458-3c8df31193b9"><t anchor="_bac6ad8d-ef63-6c82-126b-c4812d3e66aa">One of <tt>"Active"</tt>, <tt>"Deprecated"</tt>, or <tt>"Reserved"</tt>.</t>
+</dd><dt>Class:</dt><dd anchor="_74163013-9929-bdd2-46a1-14f92f1aa1cb"><t anchor="_04d3e15b-558d-f40b-cefc-4841af180a49"><tt>"Fully Specified"</tt> or <tt>"Computed"</tt>; omitted for a <tt>"Reserved"</tt> entry.</t>
+</dd><dt>DNS RR TYPE:</dt><dd anchor="_438acb2b-f0d4-4c77-cb24-0f80b349376c"><t anchor="_0dc52a04-3c7a-b092-0c17-89848d1df991">The name of the corresponding IANA DNS RR TYPE, or <tt>"N/A"</tt>.</t>
+</dd><dt>Kind:</dt><dd anchor="_897df591-94b3-f542-77f7-ab4d3d0d01a2"><t anchor="_a71401b8-b6d3-b166-fab5-cc7b85fb851b"><tt>"IETF Standard"</tt>, <tt>"Informational"</tt>, or <tt>"Other"</tt>.</t>
+</dd><dt>Reference:</dt><dd anchor="_1eaaa876-84b7-0428-e4d2-802b0fe11335"><t anchor="_3f3c52f7-4e7c-2bd2-1a07-cfd75764b7c8">The document that defines the type, preferably including a URI from which a copy can be retrieved.</t>
+</dd></dl>
+
+<t anchor="_02657c2c-1c87-ff0c-da07-f2b74b4a3e9a">The following types from this specification constitute the initial contents of the registry:</t>
+
+<table anchor="_f92aeff0-2b8f-7ff3-7017-f51a4c0bfbd9"><name>Initial Domain Connect Fully Specified Record Types</name><thead><tr><th align="left"><strong>RR Type</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Class</strong></th><th align="left"><strong>DNS RR TYPE</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"A"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"A"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"AAAA"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"AAAA"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"CNAME"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"CNAME"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"MX"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"MX"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"TXT"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"TXT"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"SRV"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"SRV"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"NS"</tt></td><td align="left">Active</td><td align="left">Fully Specified</td><td align="left"><tt>"NS"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"SPFM"</tt></td><td align="left">Active</td><td align="left">Computed</td><td align="left"><tt>"N/A"</tt></td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"APEXCNAME"</tt></td><td align="left">Active</td><td align="left">Computed</td><td align="left"><tt>"N/A"</tt></td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"REDIR301"</tt></td><td align="left">Active</td><td align="left">Computed</td><td align="left"><tt>"N/A"</tt></td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"REDIR302"</tt></td><td align="left">Active</td><td align="left">Computed</td><td align="left"><tt>"N/A"</tt></td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr></tbody></table>
+</section>
+
+<section anchor="iana-rrtype-guidance"><name>Guidance to the DNS Resource Record (RR) TYPEs Registry</name>
+
+<t anchor="_25b5cc87-6c45-01ac-54cb-d301120ac087">To avoid collisions between newly assigned DNS RR TYPE mnemonics and the record type names used by Domain Connect, IANA is requested to add the following note to the registration procedure of the "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group (see <xref target="RFC6895" section="" relative=""></xref>):</t>
+
+<blockquote><t anchor="_f3b0e3ea-3955-c000-e0b8-2f4b19802ce0">When evaluating a request to assign a new RR TYPE mnemonic, the designated experts SHOULD consult the "Domain Connect Fully Specified Record Types" registry. If the requested mnemonic matches the name of an entry in that registry whose <strong>DNS RR TYPE</strong> field is <tt>"N/A"</tt>, the designated experts SHOULD flag the potential conflict and consult the designated experts of the "Domain Connect Fully Specified Record Types" registry before completing the assignment.</t>
+</blockquote>
+
+<t anchor="_f4f514de-b52f-05c8-4a73-a1e53e846841">This coupling ensures that a Domain Connect record type name that does not (yet) correspond to a DNS RR TYPE - such as a <tt>"Computed"</tt> type - is not inadvertently assigned a conflicting meaning in the DNS RR TYPEs registry.</t>
+
+<t anchor="_ab4a8d18-dc2d-aeed-4570-b5cbb0d7d8c4">In addition, IANA is requested to update the "Reference" of the "Resource Record (RR) TYPEs" registry to cite this document alongside the existing references:</t>
+
+<blockquote><t anchor="_cc6b8b87-0646-5e6e-65c6-faeec8eaa95e">OLD: [RFC6895][RFC1035]<br /> NEW: [RFC6895][RFC1035][This document]</t>
+</blockquote>
+
+<t anchor="_90b1c11e-05b8-6eea-0428-e783e68298b1">This records, on the DNS side, the obligation to consult the "Domain Connect Fully Specified Record Types" registry described above.</t>
 </section>
 
 <section anchor="iana-settings-properties"><name>Domain Connect Settings Properties Registry</name>
 
-<t anchor="_14530192-1794-59f7-7cdb-c3e432ddc65e">IANA is requested to create a new registry named "Domain Connect Settings Properties" under a new registry group "Domain Connect Protocol".</t>
+<t anchor="_7524ccbf-559c-8d7f-b45e-9027f0cbed28">IANA is requested to create a new registry named "Domain Connect Settings Properties" under the "Domain Connect Protocol" registry group.</t>
 
-<t anchor="_b7366f70-dc18-e7db-e818-efd6e97a2673">Registration policy: Specification Needed (see <xref target="RFC8126" section="" relative=""></xref>).</t>
+<t anchor="_59850843-295a-b3c5-a56b-ec312ec3b09f">Registration policy: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>), following the procedure in <xref target="iana-registration-procedure"></xref>.</t>
 
-<t anchor="_234aff10-d622-01bd-6d65-dc963726ebe2">Each entry in the registry MUST include:</t>
+<t anchor="_ec639534-08ff-9ff3-b823-9dfe9c96718c">Each entry in the registry MUST include:</t>
 
-<ul anchor="_6f6faddb-6157-f1cc-8c55-43ffed0b9d9c"><li><strong>Property name</strong>: the JSON key as it appears in the settings response.</li>
-<li><t anchor="_2e1c43d1-9102-fe79-f5cc-c84d6a278a6c"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
-<ul anchor="_9cf96c54-406c-aaba-b181-4d5341a7a516"><li><tt>"Active"</tt>: the property is currently in use and its definition is normative.</li>
+<ul anchor="_4466c06b-5a2c-2333-5d86-4a8a419e20c0"><li><strong>Property name</strong>: the JSON key as it appears in the settings response.</li>
+<li><t anchor="_806bc1ff-68bf-91c3-024f-16876eef8fbb"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
+<ul anchor="_d899ba5b-c2e2-9db7-e33d-ad77e4ae5f03"><li><tt>"Active"</tt>: the property is currently in use and its definition is normative.</li>
 <li><tt>"Deprecated"</tt>: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.</li>
 <li><tt>"Reserved"</tt>: the property appears in earlier versions of the Domain Connect specification (see <xref target="DC-SPEC" section="" relative=""></xref>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <xref target="DC-SPEC" section="" relative=""></xref>. See <xref target="reserved-for-extensions"></xref>.</li>
 </ul>
@@ -1101,9 +1390,17 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li><strong>Reference</strong>: the document that defines the property.</li>
 </ul>
 
-<t anchor="_9ca5288e-2973-7ca5-e8fd-72eb13a9538d">The following properties from this specification constitute the initial contents of the registry:</t>
+<t anchor="_26c71660-4650-0df1-9d58-9dff4a72038c">A registration request MUST provide the following:</t>
 
-<table anchor="_c4e8cf13-1a78-80d7-68c6-26c650650656"><name>Initial Domain Connect Settings Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerDisplayName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlSyncUX"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAsyncUX"</tt></td><td align="left">Reserved</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAPI"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"width"</tt></td><td align="left">Reserved</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"height"</tt></td><td align="left">Reserved</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlControlPanel"</tt></td><td align="left">Reserved</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"nameServers"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
+<dl anchor="_b1b544cd-198b-a2eb-2aac-04f9407563ce"><dt>Property name:</dt><dd anchor="_61a5ea10-1bc9-3cd9-b3af-4095d97b9f2e"><t anchor="_c5d3b392-d50e-cdff-17a1-a6e65d589d0a">The JSON key as it appears in the settings response.</t>
+</dd><dt>Status:</dt><dd anchor="_8c9d8437-5918-ad38-a4f5-1ba7af0ffa9d"><t anchor="_cc7c8478-4cd8-3c20-6745-c4d24ab9707a">One of <tt>"Active"</tt>, <tt>"Deprecated"</tt>, or <tt>"Reserved"</tt>.</t>
+</dd><dt>Kind:</dt><dd anchor="_ec096480-c029-6995-2324-01611da68498"><t anchor="_756c8a11-7163-72e3-b991-49d6c6819524"><tt>"IETF Standard"</tt>, <tt>"Informational"</tt>, or <tt>"Other"</tt>.</t>
+</dd><dt>Reference:</dt><dd anchor="_72ec9629-fe0e-492a-ac0c-e694273576f7"><t anchor="_96622552-8be4-c623-9e84-8809732293bf">The document that defines the property, preferably including a URI from which a copy can be retrieved.</t>
+</dd></dl>
+
+<t anchor="_2a98aca1-5764-9859-d165-c81cfd91e8f6">The following properties from this specification constitute the initial contents of the registry:</t>
+
+<table anchor="_5cb963b7-22d7-501c-8b50-3c57accd7cb0"><name>Initial Domain Connect Settings Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerDisplayName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlSyncUX"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAsyncUX"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlAPI"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"width"</tt></td><td align="left">Active</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"height"</tt></td><td align="left">Active</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlControlPanel"</tt></td><td align="left">Active</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"nameServers"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
 </section>
 </section>
     <section anchor="_c4209395-659b-0eea-9d9d-e4c7c55d32bd" numbered="false" removeInRFC="true" toc="include"><name>Implementation Status</name>
@@ -1154,18 +1451,26 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_144a1ece-38f1-67e3-45b6-3b674adef4aa" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_4bf32e80-898f-125d-b2c4-1b0bde1dc210" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_f3c35fb3-0ccd-5bbe-aaa6-26d0e7a4a078" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
+<section anchor="_7cda4012-1806-e0ac-4982-e005233ecbc0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_f4e7c2a4-1e4c-3fa7-db37-98b1f736fcf3"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
+<ul anchor="_1422087f-3be3-d056-db2c-6fb2d571b52e"><li>Classified template record types as Fully Specified, Computed, or Generic.</li>
+<li>Added a shared <xref target="iana-registration-procedure" format="title"></xref> section (designated-expert assignment and review process) governing all Domain Connect registries.</li>
+<li>Coupled the "Domain Connect Fully Specified Record Types" registry to the IANA DNS Resource Record (RR) TYPEs registry as a bidirectional maintenance contract (following the pattern set by RFC 9108 for that registry).</li>
+</ul>
+</section>
+
+<section anchor="_6cc0dcfb-d928-d322-8c21-42d4122c10bc" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-01 to -02</name>
+
+<ul anchor="_1122b592-629e-b00a-3f3b-cd0fe0fea7e7"><li>Removed the Asynchronous OAuth Flow from this document; the synchronous flow is now the sole protocol flow defined here. The asynchronous flow is reserved for a companion extension specification.</li>
 <li>Marked the <tt>"width"</tt>, <tt>"height"</tt> and <tt>"urlControlPanel"</tt> <xref target="dns-provider-discovery" format="title"></xref> settings properties as Reserved, deferring their definition to <xref target="DC-SPEC" section="" relative=""></xref>; removed reserved properties from the example settings response.</li>
 </ul>
 </section>
 
-<section anchor="_02925ca8-4482-a926-e023-0a6d4ec7b5ee" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
+<section anchor="_3017fa67-1f90-3b84-f30f-61ad0588ca47" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-00 to -01</name>
 
-<ul anchor="_497ddcd5-497c-2705-47fa-d581fdca4849"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
+<ul anchor="_ccdf06f7-4a51-5999-642b-a8d29e72bd06"><li>Added comprehensive ABNF grammar to the Terminology section covering all protocol identifiers, domain name forms (including IDN), template fields, OAuth parameters, and signing artifacts; replaced informal prose constraints throughout parameter tables and field definitions with normative ABNF references.</li>
 <li>Restructured <xref target="template-application" format="title"></xref>: added <xref target="group-filtering" format="title"></xref>, Essential Records, Steps to Apply a Template, and focused <xref target="conflict-detection" format="title"></xref>, <xref target="user_authorization_of_changes" format="title"></xref> subsections; moved UX and runtime-processing rules into their appropriate sections; moved <xref target="domain-connect-objects-and-templates" format="title"></xref> before <xref target="applying-domain-connect" format="title"></xref> in the document structure.</li>
 <li>Restructured request signing into <xref target="signing-procedure" format="title"></xref>, <xref target="sig-verification" format="title"></xref>, and <xref target="pubkey-publication" format="title"></xref></li>
 <li>Replaced Sync Apply Interaction with a normative Request/Response/Error structure; rewrote <xref target="verification-of-changes" format="title"></xref> as normative text.</li>
@@ -1176,21 +1481,21 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_b5735a7e-2d8f-ef7b-c951-b9443bce39b2" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
+<section anchor="_185d452b-d175-d533-06c0-20658b0a5627" numbered="false" toc="exclude"><name>Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-domainconnect-00</name>
 
-<ul anchor="_d275d464-7196-1d1e-dcd2-9edae61a1980"><li>DCONN WG adoption. No other changes.</li>
+<ul anchor="_cbf8f338-af87-e2cb-e478-ff737828348c"><li>DCONN WG adoption. No other changes.</li>
 </ul>
 </section>
 
-<section anchor="_4d4c4c9f-351a-10a3-d04e-76a1553f2315" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_290ff768-7fd5-69ce-582f-82c092c27a44" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_15690646-ce2e-06ab-bea0-92e01530434a"><li>Draft refresh from expire.  No content changes.</li>
+<ul anchor="_eb097273-b7f2-de8f-6b0e-75a2cd48e3a7"><li>Draft refresh from expire.  No content changes.</li>
 </ul>
 </section>
 
-<section anchor="_def9df4f-c596-7360-362c-4ae0274c386e" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
+<section anchor="_b9ff3f69-13fc-4fc3-fec0-024e324c54bd" numbered="false" toc="exclude"><name>Change from -00 to -01</name>
 
-<ul anchor="_d3bb035c-8758-f713-7701-852c601e8342"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
+<ul anchor="_740fbea1-17f2-3b29-6281-158440690827"><li>Changed term Root Domain to Zone Apex to align with <xref target="RFC8499" section="" relative=""></xref>.</li>
 <li>Removed example provider names from Service Providers and DNS Providers terminology</li>
 <li>Added Use Cases</li>
 <li>Added Trust Model</li>
@@ -1202,43 +1507,43 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </ul>
 </section>
 
-<section anchor="_9d4ba9cb-95b5-71e4-7b24-ddf2277a0afe" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
+<section anchor="_50ddde01-05e4-e309-ec7f-b2427fe96bab" numbered="false" toc="exclude"><name>Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-domainconnect-00</name>
 
-<ul anchor="_dbc80a36-d04b-a7dd-6eab-8b8df3392a0c"><li>Added possibility to specify any DNS record type in a generic manner.</li>
+<ul anchor="_491128d4-06e4-4ab1-2e1d-7d1849cf4eb2"><li>Added possibility to specify any DNS record type in a generic manner.</li>
 <li>Added possibility to define variables for numeric fields.</li>
 <li>Added IANA registration for _domainconnect record as per <xref target="RFC8552" section="" relative=""></xref></li>
 </ul>
 </section>
 
-<section anchor="_850b1957-8cbb-7471-842d-647d078aa2eb" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
+<section anchor="_51ff1602-64b3-f8aa-ea33-a5b4b34969aa" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-03 to draft-kowalik-regext-domainconnect-00</name>
 
-<ul anchor="_e5497fbe-a7b1-0ffb-82a4-cacc6a455279"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
+<ul anchor="_11358408-16a4-939a-c247-8715f2cd39cc"><li>Version synchronized with 2.2 version rev. 66 of the public Domain Connect specification.</li>
 </ul>
 </section>
 
-<section anchor="_8ebbb1e9-101a-1f50-ec97-c29881817d3f" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
+<section anchor="_e1d95c3c-2e4a-e9d7-a13d-19390e43bc81" numbered="false" toc="exclude"><name>Change from -02 to -03</name>
 
-<ul anchor="_230bd19b-82f8-b9b9-eea1-34af1f7c8540"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
+<ul anchor="_8ba7bbbb-c86c-8b30-7a9e-50a0a922300d"><li>Added width/height JSON values returned by DNS Provider Discovery.</li>
 <li>Corrected text of GET method for getting the authorization token.</li>
 <li>Added clarifying text to Group ID description parameter of the apply template POST method.  Quite a few minor edits and clarifications that were found during implementation, especially in the Implementation Considerations section.</li>
 </ul>
 </section>
 
-<section anchor="_21346331-a4e8-ef23-2b3f-8a87a2165141" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
+<section anchor="_18413bea-2fa8-bfff-6311-b992ae783e6d" numbered="false" toc="exclude"><name>Change from -01 to -02</name>
 
-<ul anchor="_06b5e857-b656-90ea-b10a-02ffa020512b"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
+<ul anchor="_ddc465ed-d02d-c357-f08b-46ee553f1710"><li>Added new GET method for Service Providers to determine if the DNS Provider supports a specific template.  Some other minor edits for clarification.</li>
 </ul>
 </section>
 
-<section anchor="_537a2365-e463-7813-b108-67d216fb18e6" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
+<section anchor="_de573b06-ed44-1c01-72a6-7cb201ea5059" numbered="false" toc="exclude"><name>Change from draft-carney-regext-domainconnect-00 to -01</name>
 
-<ul anchor="_2c09b589-ccaf-a9e1-a671-3289374d8152"><li>Minor edits and clarifications found during implementation.</li>
+<ul anchor="_47d129bf-3175-207e-04b6-5d9a6c250a68"><li>Minor edits and clarifications found during implementation.</li>
 </ul>
 </section>
 </section>
   </middle>
   <back>
-    <references anchor="_0ff85693-2f9a-753f-865f-450005656560">
+    <references anchor="_3ba40d82-f4a7-39f5-7759-10f9dca87801">
       <name>Normative References</name>
       <reference target="https://www.rfc-editor.org/info/rfc1035" anchor="RFC1035"><front> <title>Domain names - implementation and specification</title> <author fullname="P. Mockapetris" asciiFullname="P. Mockapetris"></author> <date month="November" year="1987"></date> <keyword>DOMAIN</keyword><keyword>DNS</keyword> <abstract>  <t anchor="_aa3804f6-cf5f-52d9-e4c5-bc354524dec1">This RFC is the revised specification of the protocol and format used in the implementation of the Domain Name System. It obsoletes RFC-883. This memo documents the details of the domain name client - server communication.</t></abstract> </front> <seriesInfo name="STD" value="13"></seriesInfo> <seriesInfo value="10.17487/RFC1035" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="1035" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc2782" anchor="RFC2782"><stream>IETF</stream> <front> <title>A DNS RR for specifying the location of services (DNS SRV)</title> <author fullname="A. Gulbrandsen" asciiFullname="A. Gulbrandsen"></author> <author fullname="P. Vixie" asciiFullname="P. Vixie"></author> <author fullname="L. Esibov" asciiFullname="L. Esibov"></author> <date month="February" year="2000"></date> <keyword>DNS-SRV</keyword><keyword>domain name system</keyword><keyword>service</keyword><keyword>RR</keyword><keyword>resource record</keyword> <abstract>  <t anchor="_a2cd0d08-6829-dc0f-c808-dfc9938246a5">This document describes a DNS RR which specifies the location of the server(s) for a specific protocol and domain. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC2782" name="DOI"></seriesInfo> <seriesInfo value="2782" name="RFC"></seriesInfo></reference>
@@ -1252,14 +1557,15 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <reference target="https://www.rfc-editor.org/info/rfc3986" anchor="RFC3986"><stream>IETF</stream> <front> <title>Uniform Resource Identifier (URI): Generic Syntax</title> <author fullname="T. Berners-Lee" asciiFullname="T. Berners-Lee"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="L. Masinter" asciiFullname="L. Masinter"></author> <date month="January" year="2005"></date> <keyword>Internet protocol</keyword><keyword>IP</keyword><keyword>uniform resource identifier</keyword><keyword>URI</keyword><keyword>www</keyword><keyword>world wide web</keyword> <abstract>  <t anchor="_d63dcf47-6d5f-087f-deea-6934041b93f2">A Uniform Resource Identifier (URI) is a compact sequence of characters that identifies an abstract or physical resource. This specification defines the generic URI syntax and a process for resolving URI references that might be in relative form, along with guidelines and security considerations for the use of URIs on the Internet. The URI syntax defines a grammar that is a superset of all valid URIs, allowing an implementation to parse the common components of a URI reference without knowing the scheme-specific requirements of every possible identifier. This specification does not define a generative grammar for URIs; that task is performed by the individual specifications of each URI scheme. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo name="STD" value="66"></seriesInfo> <seriesInfo value="10.17487/RFC3986" name="DOI"></seriesInfo> <seriesInfo value="66" name="BCP"></seriesInfo> <seriesInfo value="3986" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc7518" anchor="RFC7518"><stream>IETF</stream> <front> <title>JSON Web Algorithms (JWA)</title> <author fullname="M. Jones" asciiFullname="M. Jones"></author> <date month="May" year="2015"></date> <abstract>  <t anchor="_d5c04fe3-3eb1-5784-5ce5-f3b5a948b3e3">This specification registers cryptographic algorithms and identifiers to be used with the JSON Web Signature (JWS), JSON Web Encryption (JWE), and JSON Web Key (JWK) specifications. It defines several IANA registries for these identifiers.</t></abstract> </front> <seriesInfo value="10.17487/RFC7518" name="DOI"></seriesInfo> <seriesInfo value="7518" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc6335" anchor="RFC6335"><stream>IETF</stream> <front> <title>Internet Assigned Numbers Authority (IANA) Procedures for the Management of the Service Name and Transport Protocol Port Number Registry</title> <author fullname="M. Cotton" asciiFullname="M. Cotton"></author> <author fullname="L. Eggert" asciiFullname="L. Eggert"></author> <author fullname="J. Touch" asciiFullname="J. Touch"></author> <author fullname="M. Westerlund" asciiFullname="M. Westerlund"></author> <author fullname="S. Cheshire" asciiFullname="S. Cheshire"></author> <date month="August" year="2011"></date> <keyword>IANA</keyword><keyword>transport</keyword><keyword>ports</keyword><keyword>port numbers</keyword><keyword>allocation</keyword><keyword>assignment</keyword><keyword>procedures</keyword> <abstract>  <t anchor="_5ef20a1c-a075-20b8-e89d-68c4f3016fb6">This document defines the procedures that the Internet Assigned Numbers Authority (IANA) uses when handling assignment and other requests related to the Service Name and Transport Protocol Port Number registry. It also discusses the rationale and principles behind these procedures and how they facilitate the long-term sustainability of the registry.</t>  <t anchor="_ce8d3d17-e5b5-c7ad-9cb7-bc17e0eb9385">This document updates IANA's procedures by obsoleting the previous UDP and TCP port assignment procedures defined in Sections 8 and 9.1 of the IANA Allocation Guidelines, and it updates the IANA service name and port assignment procedures for UDP-Lite, the Datagram Congestion Control Protocol (DCCP), and the Stream Control Transmission Protocol (SCTP). It also updates the DNS SRV specification to clarify what a service name is and how it is registered. This memo documents an Internet Best Current Practice.</t></abstract> </front> <seriesInfo value="10.17487/RFC6335" name="DOI"></seriesInfo> <seriesInfo value="165" name="BCP"></seriesInfo> <seriesInfo value="6335" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc6570" anchor="RFC6570"><stream>IETF</stream> <front> <title>URI Template</title> <author fullname="J. Gregorio" asciiFullname="J. Gregorio"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Hadley" asciiFullname="M. Hadley"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="D. Orchard" asciiFullname="D. Orchard"></author> <date month="March" year="2012"></date> <keyword>template</keyword><keyword>Uniform Resource Identifier</keyword><keyword>URI</keyword><keyword>URI Template</keyword><keyword>Internationalized Resource Identifier</keyword><keyword>IRI</keyword><keyword>IRI Template</keyword> <abstract>  <t anchor="_f93f69a5-d4e4-e99a-a673-5fe9342cb4e7">A URI Template is a compact sequence of characters for describing a range of Uniform Resource Identifiers through variable expansion. This specification defines the URI Template syntax and the process for expanding a URI Template into a URI reference, along with guidelines for the use of URI Templates on the Internet. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC6570" name="DOI"></seriesInfo> <seriesInfo value="6570" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc5234" anchor="RFC5234"><stream>IETF</stream> <front> <title>Augmented BNF for Syntax Specifications: ABNF</title> <author fullname="P. Overell" asciiFullname="P. Overell"></author> <author fullname="D. Crocker" asciiFullname="D. Crocker"></author> <date month="January" year="2008"></date> <keyword>ABNF</keyword><keyword>backus-naur form</keyword><keyword>augmented backus-naur form</keyword><keyword>rule definitions</keyword><keyword>encoding</keyword><keyword>core lexical analyzer</keyword> <abstract>  <t anchor="_3ab3ceab-5e0b-b553-eaf7-c3d14656dae4">Internet technical specifications often need to define a formal syntax. Over the years, a modified version of Backus-Naur Form (BNF), called Augmented BNF (ABNF), has been popular among many Internet specifications. The current specification documents ABNF. It balances compactness and simplicity with reasonable representational power. The differences between standard BNF and ABNF involve naming rules, repetition, alternatives, order-independence, and value ranges. This specification also supplies additional rule definitions and encoding for a core lexical analyzer of the type common to several Internet specifications. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo name="STD" value="68"></seriesInfo> <seriesInfo value="10.17487/RFC5234" name="DOI"></seriesInfo> <seriesInfo value="68" name="BCP"></seriesInfo> <seriesInfo value="5234" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc4648" anchor="RFC4648"><stream>IETF</stream> <front> <title>The Base16, Base32, and Base64 Data Encodings</title> <author fullname="S. Josefsson" asciiFullname="S. Josefsson"></author> <date month="October" year="2006"></date> <keyword>schemes</keyword><keyword>data</keyword><keyword>line-feeds</keyword><keyword>alphabets</keyword><keyword>base encoding</keyword><keyword>hex</keyword> <abstract>  <t anchor="_5d314fbe-be93-ff4f-1e4b-9063002ab795">This document describes the commonly used base 64, base 32, and base 16 encoding schemes. It also discusses the use of line-feeds in encoded data, use of padding in encoded data, use of non-alphabet characters in encoded data, use of different encoding alphabets, and canonical encodings. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC4648" name="DOI"></seriesInfo> <seriesInfo value="4648" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc5891" anchor="RFC5891"><stream>IETF</stream> <front> <title>Internationalized Domain Names in Applications (IDNA): Protocol</title> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <date month="August" year="2010"></date> <keyword>IDNA2008</keyword><keyword>idn</keyword><keyword>ascii</keyword><keyword>characters</keyword><keyword>idna applications</keyword> <abstract>  <t anchor="_54464522-1535-c477-9998-25f8e9688283">This document is the revised protocol definition for Internationalized Domain Names (IDNs). The rationale for changes, the relationship to the older specification, and important terminology are provided in other documents. This document specifies the protocol mechanism, called Internationalized Domain Names in Applications (IDNA), for registering and looking up IDNs in a way that does not require changes to the DNS itself. IDNA is only meant for processing domain names, not free text. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC5891" name="DOI"></seriesInfo> <seriesInfo value="5891" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc5890" anchor="RFC5890"><stream>IETF</stream> <front> <title>Internationalized Domain Names for Applications (IDNA): Definitions and Document Framework</title> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <date month="August" year="2010"></date> <keyword>IDNA2008</keyword><keyword>idn</keyword><keyword>ascii</keyword><keyword>characters</keyword> <abstract>  <t anchor="_6517a0ad-fde3-e633-48b7-40463f70c181">This document is one of a collection that, together, describe the protocol and usage context for a revision of Internationalized Domain Names for Applications (IDNA), superseding the earlier version. It describes the document collection and provides definitions and other material that are common to the set. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC5890" name="DOI"></seriesInfo> <seriesInfo value="5890" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc9839" anchor="RFC9839"><stream>IETF</stream> <front> <title>Unicode Character Repertoire Subsets</title> <author fullname="T. Bray" asciiFullname="T. Bray"></author> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <date month="August" year="2025"></date> <keyword>Unicode</keyword><keyword>UTF-8</keyword><keyword>Surrogates</keyword><keyword>Noncharacters</keyword><keyword>Control characters</keyword> <abstract>  <t anchor="_2bd4f454-649c-25fe-40af-1b2028b0014c">This document discusses subsets of the Unicode character repertoire for use in protocols and data formats and specifies three subsets recommended for use in IETF specifications.</t></abstract> </front> <seriesInfo value="10.17487/RFC9839" name="DOI"></seriesInfo> <seriesInfo value="9839" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc8126" anchor="RFC8126"><stream>IETF</stream> <front> <title>Guidelines for Writing an IANA Considerations Section in RFCs</title> <author fullname="M. Cotton" asciiFullname="M. Cotton"></author> <author fullname="B. Leiba" asciiFullname="B. Leiba"></author> <author fullname="T. Narten" asciiFullname="T. Narten"></author> <date month="June" year="2017"></date> <keyword>internet assigned numbers authority</keyword><keyword>values</keyword><keyword>implementations</keyword><keyword>code point</keyword><keyword>protocol constant</keyword><keyword>protocol parameter</keyword><keyword>codepoint</keyword> <abstract>  <t anchor="_cce894af-17c9-7800-9750-0546ebc84945">Many protocols make use of points of extensibility that use constants to identify various protocol parameters. To ensure that the values in these fields do not have conflicting uses and to promote interoperability, their allocations are often coordinated by a central record keeper. For IETF protocols, that role is filled by the Internet Assigned Numbers Authority (IANA).</t>  <t anchor="_6db43c70-4037-9b98-a6b8-df7be88c454f">To make assignments in a given registry prudently, guidance describing the conditions under which new values should be assigned, as well as when and how modifications to existing values can be made, is needed. This document defines a framework for the documentation of these guidelines by specification authors, in order to assure that the provided guidance for the IANA Considerations is clear and addresses the various issues that are likely in the operation of a registry.</t>  <t anchor="_42f37886-5e8a-c421-5455-3acb6eea3cf9">This is the third edition of this document; it obsoletes RFC 5226.</t></abstract> </front> <seriesInfo value="10.17487/RFC8126" name="DOI"></seriesInfo> <seriesInfo value="26" name="BCP"></seriesInfo> <seriesInfo value="8126" name="RFC"></seriesInfo></reference>
-      <reference target="https://www.rfc-editor.org/info/rfc9499" anchor="RFC9499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="March" year="2024"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_4da0a787-786a-cbfb-4175-b91d8064d580">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_15176a8c-0e77-741d-3011-894ebf91ad28">This document updates RFC 2308 by clarifying the definitions of "forwarder" and "QNAME". It obsoletes RFC 8499 by adding multiple terms and clarifications. Comprehensive lists of changed and new definitions can be found in Appendices A and B.</t></abstract> </front> <seriesInfo value="10.17487/RFC9499" name="DOI"></seriesInfo> <seriesInfo value="219" name="BCP"></seriesInfo> <seriesInfo value="9499" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc6895" anchor="RFC6895"><stream>IETF</stream> <front> <title>Domain Name System (DNS) IANA Considerations</title> <author fullname="D. Eastlake 3rd" asciiFullname="D. Eastlake 3rd"></author> <date month="April" year="2013"></date> <keyword>RRTYPE</keyword><keyword>RCODE</keyword><keyword>AFSDB</keyword> <abstract>  <t anchor="_6268ec34-4471-dc55-4855-8efe72a82d4e">This document specifies Internet Assigned Numbers Authority (IANA) parameter assignment considerations for the allocation of Domain Name System (DNS) resource record types, CLASSes, operation codes, error codes, DNS protocol message header bits, and AFSDB resource record subtypes. It obsoletes RFC 6195 and updates RFCs 1183, 2845, 2930, and 3597.</t></abstract> </front> <seriesInfo value="10.17487/RFC6895" name="DOI"></seriesInfo> <seriesInfo value="42" name="BCP"></seriesInfo> <seriesInfo value="6895" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc6570" anchor="RFC6570"><stream>IETF</stream> <front> <title>URI Template</title> <author fullname="J. Gregorio" asciiFullname="J. Gregorio"></author> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Hadley" asciiFullname="M. Hadley"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="D. Orchard" asciiFullname="D. Orchard"></author> <date month="March" year="2012"></date> <keyword>template</keyword><keyword>Uniform Resource Identifier</keyword><keyword>URI</keyword><keyword>URI Template</keyword><keyword>Internationalized Resource Identifier</keyword><keyword>IRI</keyword><keyword>IRI Template</keyword> <abstract>  <t anchor="_6367a82c-ae57-2f1b-b3c7-b107cce3c4ad">A URI Template is a compact sequence of characters for describing a range of Uniform Resource Identifiers through variable expansion. This specification defines the URI Template syntax and the process for expanding a URI Template into a URI reference, along with guidelines for the use of URI Templates on the Internet. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC6570" name="DOI"></seriesInfo> <seriesInfo value="6570" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc5234" anchor="RFC5234"><stream>IETF</stream> <front> <title>Augmented BNF for Syntax Specifications: ABNF</title> <author fullname="P. Overell" asciiFullname="P. Overell"></author> <author fullname="D. Crocker" asciiFullname="D. Crocker"></author> <date month="January" year="2008"></date> <keyword>ABNF</keyword><keyword>backus-naur form</keyword><keyword>augmented backus-naur form</keyword><keyword>rule definitions</keyword><keyword>encoding</keyword><keyword>core lexical analyzer</keyword> <abstract>  <t anchor="_2b1a3cd4-1667-c98c-27e8-b0942b40f744">Internet technical specifications often need to define a formal syntax. Over the years, a modified version of Backus-Naur Form (BNF), called Augmented BNF (ABNF), has been popular among many Internet specifications. The current specification documents ABNF. It balances compactness and simplicity with reasonable representational power. The differences between standard BNF and ABNF involve naming rules, repetition, alternatives, order-independence, and value ranges. This specification also supplies additional rule definitions and encoding for a core lexical analyzer of the type common to several Internet specifications. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo name="STD" value="68"></seriesInfo> <seriesInfo value="10.17487/RFC5234" name="DOI"></seriesInfo> <seriesInfo value="68" name="BCP"></seriesInfo> <seriesInfo value="5234" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc4648" anchor="RFC4648"><stream>IETF</stream> <front> <title>The Base16, Base32, and Base64 Data Encodings</title> <author fullname="S. Josefsson" asciiFullname="S. Josefsson"></author> <date month="October" year="2006"></date> <keyword>schemes</keyword><keyword>data</keyword><keyword>line-feeds</keyword><keyword>alphabets</keyword><keyword>base encoding</keyword><keyword>hex</keyword> <abstract>  <t anchor="_65e5271d-a979-b3f6-caff-ff81bf8c0ceb">This document describes the commonly used base 64, base 32, and base 16 encoding schemes. It also discusses the use of line-feeds in encoded data, use of padding in encoded data, use of non-alphabet characters in encoded data, use of different encoding alphabets, and canonical encodings. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC4648" name="DOI"></seriesInfo> <seriesInfo value="4648" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc5891" anchor="RFC5891"><stream>IETF</stream> <front> <title>Internationalized Domain Names in Applications (IDNA): Protocol</title> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <date month="August" year="2010"></date> <keyword>IDNA2008</keyword><keyword>idn</keyword><keyword>ascii</keyword><keyword>characters</keyword><keyword>idna applications</keyword> <abstract>  <t anchor="_3f245faa-1c3b-7d65-5843-6013c15cb773">This document is the revised protocol definition for Internationalized Domain Names (IDNs). The rationale for changes, the relationship to the older specification, and important terminology are provided in other documents. This document specifies the protocol mechanism, called Internationalized Domain Names in Applications (IDNA), for registering and looking up IDNs in a way that does not require changes to the DNS itself. IDNA is only meant for processing domain names, not free text. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC5891" name="DOI"></seriesInfo> <seriesInfo value="5891" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc5890" anchor="RFC5890"><stream>IETF</stream> <front> <title>Internationalized Domain Names for Applications (IDNA): Definitions and Document Framework</title> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <date month="August" year="2010"></date> <keyword>IDNA2008</keyword><keyword>idn</keyword><keyword>ascii</keyword><keyword>characters</keyword> <abstract>  <t anchor="_06a206b9-00ec-7487-bcc8-20d0cf06fe5d">This document is one of a collection that, together, describe the protocol and usage context for a revision of Internationalized Domain Names for Applications (IDNA), superseding the earlier version. It describes the document collection and provides definitions and other material that are common to the set. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC5890" name="DOI"></seriesInfo> <seriesInfo value="5890" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc9839" anchor="RFC9839"><stream>IETF</stream> <front> <title>Unicode Character Repertoire Subsets</title> <author fullname="T. Bray" asciiFullname="T. Bray"></author> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <date month="August" year="2025"></date> <keyword>Unicode</keyword><keyword>UTF-8</keyword><keyword>Surrogates</keyword><keyword>Noncharacters</keyword><keyword>Control characters</keyword> <abstract>  <t anchor="_7c1d1953-3bdb-09c6-d579-9bca99e680ec">This document discusses subsets of the Unicode character repertoire for use in protocols and data formats and specifies three subsets recommended for use in IETF specifications.</t></abstract> </front> <seriesInfo value="10.17487/RFC9839" name="DOI"></seriesInfo> <seriesInfo value="9839" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc8126" anchor="RFC8126"><stream>IETF</stream> <front> <title>Guidelines for Writing an IANA Considerations Section in RFCs</title> <author fullname="M. Cotton" asciiFullname="M. Cotton"></author> <author fullname="B. Leiba" asciiFullname="B. Leiba"></author> <author fullname="T. Narten" asciiFullname="T. Narten"></author> <date month="June" year="2017"></date> <keyword>internet assigned numbers authority</keyword><keyword>values</keyword><keyword>implementations</keyword><keyword>code point</keyword><keyword>protocol constant</keyword><keyword>protocol parameter</keyword><keyword>codepoint</keyword> <abstract>  <t anchor="_343cb599-0174-3337-7b7c-e1c38d7526e9">Many protocols make use of points of extensibility that use constants to identify various protocol parameters. To ensure that the values in these fields do not have conflicting uses and to promote interoperability, their allocations are often coordinated by a central record keeper. For IETF protocols, that role is filled by the Internet Assigned Numbers Authority (IANA).</t>  <t anchor="_28999971-83ee-aae2-c937-486850a9e826">To make assignments in a given registry prudently, guidance describing the conditions under which new values should be assigned, as well as when and how modifications to existing values can be made, is needed. This document defines a framework for the documentation of these guidelines by specification authors, in order to assure that the provided guidance for the IANA Considerations is clear and addresses the various issues that are likely in the operation of a registry.</t>  <t anchor="_21330a34-c4b2-8b83-9b4a-dcb4bcda2f1c">This is the third edition of this document; it obsoletes RFC 5226.</t></abstract> </front> <seriesInfo value="10.17487/RFC8126" name="DOI"></seriesInfo> <seriesInfo value="26" name="BCP"></seriesInfo> <seriesInfo value="8126" name="RFC"></seriesInfo></reference>
+      <reference target="https://www.rfc-editor.org/info/rfc9499" anchor="RFC9499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="March" year="2024"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_a678d6ff-e315-3075-05a1-ecec5583ef02">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_28e220d3-5457-5eb5-a2b9-8c8faae8499d">This document updates RFC 2308 by clarifying the definitions of "forwarder" and "QNAME". It obsoletes RFC 8499 by adding multiple terms and clarifications. Comprehensive lists of changed and new definitions can be found in Appendices A and B.</t></abstract> </front> <seriesInfo value="10.17487/RFC9499" name="DOI"></seriesInfo> <seriesInfo value="219" name="BCP"></seriesInfo> <seriesInfo value="9499" name="RFC"></seriesInfo></reference>
     </references>
     <references anchor="_83f8c5d2-b425-4619-3385-1b2fe2f651ea">
       <name>Informative References</name>
@@ -1347,11 +1653,11 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_aa9c3f63-3a57-4d08-0cdf-37d12f07b06c">would cause the application of this template to a domain to set the host name for the apex A record to the IP address "198.51.100.2" with a TTL of 600</t>
 </section>
 
-<section anchor="_2058f3d5-562e-7847-a0c4-8d6cad2d43f8"><name>Example Records: Unspecified record type CAA</name>
+<section anchor="_0cccb592-44d5-73c1-4882-0f6557a536aa"><name>Example Records: Generic Record Type CAA</name>
 
-<t anchor="_c9782a55-c8ef-a117-6f64-1fbb3c9104ab">This example shows how to include a set of unspecified record types on an example of CAA records:</t>
+<t anchor="_46efdba6-4332-a8e2-bca5-bc95631a4015">This example shows how to include a set of Generic Record Types on an example of CAA records:</t>
 
-<t anchor="_d4310efd-f480-3035-e32e-b52a0ddf5889" keepWithNext="true">EXAMPLE: Unspecified record type CAA example</t><sourcecode anchor="_ebe67f4d-bd73-a4f6-9ee6-38e79930dd4b" type="json"><![CDATA[[
+<t anchor="_32999057-22ec-1e5c-8189-5236ab166606" keepWithNext="true">EXAMPLE: Generic Record Type CAA example</t><sourcecode anchor="_ebe67f4d-bd73-a4f6-9ee6-38e79930dd4b" type="json"><![CDATA[[
     {
         "type": "CAA",
         "host": "@",

@@ -1020,16 +1020,19 @@ The value MUST conform to the `dc-key-type` rule above. +
 If omitted, MUST be assumed to be `"x509"`.
 |=======================================================================
 
-To allow for key rotation or use of multiple keys, the Service Provider
-MAY publish key records at multiple hosts within `"syncPubKeyDomain"`.
-The `"key"` apply parameter identifies which host to query for each
-request and MUST be included in the signed apply request.
+A Service Provider MUST publish exactly one public key on any given host
+name. To use multiple keys, e.g. for key rotation, the Service Provider
+MUST publish each key on a different host name within
+`"syncPubKeyDomain"`. The `"key"` apply parameter identifies which host
+to query for each request and MUST be included in the signed apply
+request.
 
 To account for DNS record size limits, a public key MAY be split across
 multiple TXT records at the same host. All fragments MUST be reassembled
-in ascending numeric order of `"p"` before use.
-The values `"a"` and '"d"' MUST be equal for all such TXT records on the
-same host. 
+in ascending numeric order of `"p"` before use. All such TXT records at
+the same host therefore belong to the same key: the values `"a"` and
+`"t"` MUST be equal across them, and their `"d"` fragments MUST have
+distinct `"p"` indices.
 
 Given the public key (line breaks for brevity):
 [source]
@@ -2217,6 +2220,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Added <<sec-discovery-record,format=title>> to <<security-considerations,format=title>>.
 - Clarified handling of multiple `"_domainconnect"` TXT records in <<dns-provider-discovery,format=title>>.
 - Deprecated and reserved the `"warnPhishing"` template flag in <<template-definition,format=title>>; phishing warnings are now default behavior, see <<sec-variable-phishing,format=title>>.
+- Clarified one-host-one-key rule in <<pubkey-publication,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02

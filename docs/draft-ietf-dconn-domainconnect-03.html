@@ -2296,7 +2296,7 @@ dc-srv-service  =  dc-underscore-label
 <div id="_f8fd66dd-471d-2e03-3bbf-25b7594350a0">
 <p id="section-6.1-1">A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
 </div>
-<span id="name-properties-of-the-template-"></span><div id="_19bef60a-974d-d049-a63b-9212064481ed">
+<span id="name-properties-of-the-template-"></span><div id="_566540b7-180b-92c0-f59f-ac13002b97d9">
 <table class="center" id="table-1">
           <caption>
 <a href="#table-1" class="selfRef">Table 1</a>:
@@ -2437,7 +2437,7 @@ dc-srv-service  =  dc-underscore-label
 </td>
               <td class="text-left" rowspan="1" colspan="1">Boolean</td>
               <td class="text-left" rowspan="1" colspan="1">warnPhishing</td>
-              <td class="text-left" rowspan="1" colspan="1">(OPTIONAL) When <code>"true"</code>, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing.<br>  The default is  <code>"false"</code>.</td>
+              <td class="text-left" rowspan="1" colspan="1">(DEPRECATED) This flag is deprecated and its code point is reserved (see <a href="#reserved-for-extensions" class="auto internal xref">Section 3, Paragraph 13</a>). Phishing warnings are now the default behavior in the absence of other security mechanisms (see <a href="#sec-variable-phishing" class="auto internal xref">Section 11.1</a>). This flag MUST NOT be relied upon and MUST NOT be set in new templates. A DNS Provider MUST NOT treat the absence of this flag as a signal that a template is not susceptible to phishing.</td>
             </tr>
             <tr>
               <td class="text-left" rowspan="1" colspan="1">
@@ -4774,8 +4774,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_148a1c60-9739-f44e-4135-ca6f2ef469a2">
 <p id="section-10.6-5">When presenting the authorization request to the user, the DNS Provider SHOULD display the template's <code>"providerName"</code> and <code>"serviceName"</code> fields. When a caller supplies <code>"providerName"</code> or <code>"serviceName"</code> request parameters (permitted only when the template's <code>"sharedProviderName"</code> or <code>"sharedServiceName"</code> flags are set, respectively), the DNS Provider SHOULD use those values to augment the displayed name. It is RECOMMENDED however to also display the original <code>"providerName"</code> and <code>"serviceName"</code> defined in the template.<a href="#section-10.6-5" class="pilcrow">¶</a></p>
 </div>
-<div id="_91e81e81-3caa-4a36-1d45-a5b15ffd8c1c">
-<p id="section-10.6-6">When the template's <code>"warnPhishing"</code> field is <code>"true"</code>, the DNS Provider SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied.<a href="#section-10.6-6" class="pilcrow">¶</a></p>
+<div id="_9373cb9e-4bd2-8bb9-bae6-78f5f8870c1b">
+<p id="section-10.6-6">Unless the apply request is digitally signed (see <a href="#signing-procedure" class="auto internal xref">Section 8.3.2.1</a>), the DNS Provider MUST treat the template as susceptible to phishing: it SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied. Failure to do so may expose the end user to the risk of malicious changes being applied to the DNS zone.<a href="#section-10.6-6" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -4823,8 +4823,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_00445e98-771e-eb13-824a-5e75babd3cd8">
 <p id="section-11.1-1">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_a8b77f98-2326-a3fc-cf5d-84d235fa25bc">
-<p id="section-11.1-2">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &lt;&lt;<a href="#signing-procedure" class="auto internal xref">Section 8.3.2.1</a>,format=title&gt;&gt;), using an alternative flow not prone to this risk and disabling the synchronous flow via <code>"syncBlock"</code>, and setting the <code>"warnPhishing"</code> flag to prompt the DNS Provider to display additional warnings to the user.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
+<div id="_9a1b8ea5-f2fa-9557-2428-c7f6864d256c">
+<p id="section-11.1-2">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Two mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &lt;&lt;<a href="#signing-procedure" class="auto internal xref">Section 8.3.2.1</a>,format=title&gt;&gt;), and using an alternative flow not prone to this risk by disabling the synchronous flow via <code>"syncBlock"</code>. In the absence of such a mitigation a template is treated as susceptible to phishing by default, and DNS Providers display the additional warnings described in <a href="#user_authorization_of_changes" class="auto internal xref">Section 10.6</a>.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -5534,13 +5534,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_764f301d-395b-6a89-7885-7e17bfab7d93">
+<div id="_78741531-9966-ecd2-0d64-20bbf5590a2b">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_244c25ab-95b8-5839-56eb-e0ef519aa6ba">
+<div id="_347d1fc6-232c-c7ff-fc8c-64fe01b453fe">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
 <a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-02 to -03</a>
@@ -5555,6 +5555,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
           <li class="normal" id="section-15.1-1.4">Added <a href="#sec-discovery-record" class="internal xref">Untrusted DNS Provider Discovery Records</a> to <a href="#security-considerations" class="internal xref">Security Considerations</a>.<a href="#section-15.1-1.4" class="pilcrow">¶</a>
 </li>
           <li class="normal" id="section-15.1-1.5">Clarified handling of multiple <code>"_domainconnect"</code> TXT records in <a href="#dns-provider-discovery" class="internal xref">DNS Provider Discovery</a>.<a href="#section-15.1-1.5" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.6">Deprecated and reserved the <code>"warnPhishing"</code> template flag in <a href="#template-definition" class="internal xref">Template Definition</a>; phishing warnings are now default behavior, see <a href="#sec-variable-phishing" class="internal xref">Template Variable Phishing</a>.<a href="#section-15.1-1.6" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

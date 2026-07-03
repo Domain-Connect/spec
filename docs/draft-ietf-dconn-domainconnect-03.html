@@ -4706,7 +4706,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_74ccc8aa-4e51-f067-ecb5-7c302db34a7b">
 <p id="section-10.4-3">Note: DNS Provider MUST also check applicability of all generated records to the target DNS zone in its own system. For example it is very common for DNS provider not to allow CNAME records to be at the zone apex.<a href="#section-10.4-3" class="pilcrow">¶</a></p>
 </div>
-<div id="_628dca40-ba11-e3a4-5fc7-11a07217f805">
+<div id="_808cb695-e0af-459b-e715-73886cf99a15">
 <section id="section-10.4.1">
           <h4 id="name-conflict-detection-special-">
 <a href="#section-10.4.1" class="section-number selfRef">10.4.1. </a><a href="#name-conflict-detection-special-" class="section-name selfRef">Conflict Detection Special Handling</a>
@@ -4746,6 +4746,19 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </div>
 </section>
 </div>
+<div id="identical-records">
+<section id="section-10.4.1.3">
+            <h5 id="name-identical-records">
+<a href="#section-10.4.1.3" class="section-number selfRef">10.4.1.3. </a><a href="#name-identical-records" class="section-name selfRef">Identical Records</a>
+            </h5>
+<div id="_77dc7506-0520-5267-5ccc-38c17f5b7d98">
+<p id="section-10.4.1.3-1">A resolved template record that is byte-identical to a resource record already present in the target zone - same owner name, type, class and RDATA - MUST NOT be treated as a conflict, regardless of the conflict-detection rules above. Instead of removing the existing record or the whole template, the DNS Provider applies the new template on top of it, so that the record is now shared between the existing configuration and the newly applied template.<a href="#section-10.4.1.3-1" class="pilcrow">¶</a></p>
+</div>
+<div id="_0571bada-f62c-9c98-5e0b-79272c582d06">
+<p id="section-10.4.1.3-2">Whether a second, byte-identical copy of the record is stored in DNS Provider's system, or the duplicate is skipped so that a single record remains, is left to the DNS Provider and the capabilities of its underlying DNS software. Both behaviours are conformant - the observable DNS response MUST be equivalent in either case and contain only single resource record.<a href="#section-10.4.1.3-2" class="pilcrow">¶</a></p>
+</div>
+</section>
+</div>
 </section>
 </div>
 </section>
@@ -4758,8 +4771,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <div id="_fe741ad1-b35f-e7b5-221b-32da76221841">
 <p id="section-10.5-1">A DNS Provider not maintaining applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.<a href="#section-10.5-1" class="pilcrow">¶</a></p>
 </div>
-<div id="_4e71b1ae-3460-1573-0a66-124923520212">
-<p id="section-10.5-2">When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied.<a href="#section-10.5-2" class="pilcrow">¶</a></p>
+<div id="_c05f6307-46fe-0dc2-c5f6-765b9202d453">
+<p id="section-10.5-2">When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied. Where such a provider shares a single record between more than one applied template instance (see <a href="#identical-records" class="auto internal xref">Section 10.4.1.3</a>), it MUST retain that record until the last instance referencing it is removed, and MUST remove it only when no remaining instance still requires it.<a href="#section-10.5-2" class="pilcrow">¶</a></p>
 </div>
 </section>
 </div>
@@ -5738,13 +5751,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       </ul>
 </section>
 </div>
-<div id="_4a2152d5-cc68-db10-38da-4560e7ce9300">
+<div id="_655e4194-e20b-79f9-5581-19cb8003f8b1">
 <section id="section-15">
       <h2 id="name-change-history">
 <a href="#name-change-history" class="section-name selfRef">Change History</a>
       </h2>
 <p id="section-15-1">This section is to be removed before publishing as an RFC.<a href="#section-15-1" class="pilcrow">¶</a></p>
-<div id="_7a07749f-6a3c-07bc-ddc2-bd409a1ac7cf">
+<div id="_157ec6d4-4751-7112-ce57-c874f4e8744b">
 <section id="section-15.1">
         <h3 id="name-change-from-draft-ietf-dcon">
 <a href="#name-change-from-draft-ietf-dcon" class="section-name selfRef">Change from draft-ietf-dconn-domainconnect-02 to -03</a>
@@ -5769,6 +5782,8 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
           <li class="normal" id="section-15.1-1.9">Added media type identification to <a href="#template-definition" class="internal xref">Template Definition</a>.<a href="#section-15.1-1.9" class="pilcrow">¶</a>
 </li>
           <li class="normal" id="section-15.1-1.10">Added HTTP content negotiation guidance to the Query Supported Template end-point.<a href="#section-15.1-1.10" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-15.1-1.11">Added <a href="#identical-records" class="internal xref">Identical Records</a> to <a href="#conflict-detection" class="internal xref">Conflict Detection</a> and shared-record retention to <a href="#calc-conflict-resolution" class="internal xref">Calculating Conflict Resolution</a>.<a href="#section-15.1-1.11" class="pilcrow">¶</a>
 </li>
         </ul>
 </section>

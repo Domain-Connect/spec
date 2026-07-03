@@ -2598,6 +2598,23 @@ Table of Contents
    user or through the application of another template - without
    triggering conflict or removal of the owning template.
 
+10.4.1.3.  Identical Records
+
+   A resolved template record that is byte-identical to a resource
+   record already present in the target zone - same owner name, type,
+   class and RDATA - MUST NOT be treated as a conflict, regardless of
+   the conflict-detection rules above.  Instead of removing the existing
+   record or the whole template, the DNS Provider applies the new
+   template on top of it, so that the record is now shared between the
+   existing configuration and the newly applied template.
+
+   Whether a second, byte-identical copy of the record is stored in DNS
+   Provider's system, or the duplicate is skipped so that a single
+   record remains, is left to the DNS Provider and the capabilities of
+   its underlying DNS software.  Both behaviours are conformant - the
+   observable DNS response MUST be equivalent in either case and contain
+   only single resource record.
+
 10.5.  Calculating Conflict Resolution
 
    A DNS Provider not maintaining applied template state, applying a
@@ -2611,7 +2628,11 @@ Table of Contents
    marked as non essential and eligible for removal.  As an example: if
    template T1 wrote records A and B, and template T2 is applied with
    records B and C, record B conflicts, and T1 is removed together with
-   all its records before T2 is applied.
+   all its records before T2 is applied.  Where such a provider shares a
+   single record between more than one applied template instance (see
+   Section 10.4.1.3), it MUST retain that record until the last instance
+   referencing it is removed, and MUST remove it only when no remaining
+   instance still requires it.
 
 10.6.  User Authorization of Changes
 
@@ -3148,6 +3169,9 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
 
    *  Added HTTP content negotiation guidance to the Query Supported
       Template end-point.
+
+   *  Added Identical Records to Conflict Detection and shared-record
+      retention to Calculating Conflict Resolution.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 

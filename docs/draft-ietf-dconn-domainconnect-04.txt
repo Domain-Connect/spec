@@ -5,17 +5,17 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 7 December 2026                                                
+Expires: 4 January 2027                                                 
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                             5 June 2026
+                                                             3 July 2026
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
                                Providers
-            draft-ietf-dconn-domainconnect-03 (editor copy)
+             draft-ietf-dconn-domainconnect-04 (editorial)
 
 Abstract
 
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 7 December 2026.
+   This Internet-Draft will expire on 4 January 2027.
 
 Copyright Notice
 
@@ -50,6 +50,14 @@ Copyright Notice
    Provisions Relating to IETF Documents (https://trustee.ietf.org/
    license-info) in effect on the date of publication of this document.
    Please review these documents carefully, as they describe your rights
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 1]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    and restrictions with respect to this document.  Code Components
    extracted from this document must include Revised BSD License text as
    described in Section 4.e of the Trust Legal Provisions and are
@@ -57,80 +65,110 @@ Copyright Notice
 
 Table of Contents
 
-   1.  Introduction
-   2.  Use Cases
-     2.1.  Primary Use Cases
-     2.2.  Use Cases out of scope
-   4.  Protocol design
-     4.1.  Templates
-     4.2.  Trust Model
-   5.  Protocol Flows Overview
-     5.1.  General information
-     5.2.  The Synchronous Flow
-   6.  Domain Connect Objects and Templates
-     6.1.  Template Definition
-       6.1.1.  Template Property Extensibility
-     6.2.  Template Record
-     6.3.  Template Considerations
-       6.3.1.  Template Scope
-       6.3.2.  Sub Domains
-       6.3.3.  Variable Scope Minimisation
-     6.4.  Public Key Publication
-   7.  DNS Provider Discovery
-   8.  Applying Domain Connect
-     8.1.  Endpoints
-     8.2.  Query Supported Template
-     8.3.  Synchronous Flow
-       8.3.1.  Apply Template URL
-       8.3.2.  Parameters/properties
-       8.3.3.  Template Apply Request
-       8.3.4.  Signature Verification
-       8.3.5.  Template Apply Response
-       8.3.6.  Template Apply Error Response
-     8.4.  Verification of Changes
-   9.  Resolving Template Variables
-     9.1.  Variables
-       9.1.1.  Variable Syntax
-       9.1.2.  Special and Built-In Variables
-     9.2.  Variable substitution
-       9.2.1.  Input Values
-       9.2.2.  Processing
-     9.3.  Host Name Rendering
-       9.3.1.  Input Values
-       9.3.2.  Processing
-       9.3.3.  Examples of host processing
-     9.4.  SPF Record Merging
-   10. Template Application
-     10.1.  Template State in DNS Providers system
-     10.2.  Steps to Apply a Template
-     10.3.  Group Filtering
-       10.3.1.  Group Filtering and Template State
-     10.4.  Conflict Detection
-       10.4.1.  Conflict Detection Special Handling
-     10.5.  Calculating Conflict Resolution
-     10.6.  User Authorization of Changes
-     10.7.  Template Application
-     10.8.  Examples
-   11. Security Considerations
-     11.1.  Template Variable Phishing
-   12. IANA Considerations
-     12.1.  Underscore "_domainconnect" DNS Node Name
-     12.2.  Domain Connect Settings Properties Registry
-     12.3.  Domain Connect Template Properties Registry
-   Implementation Status
-   Acknowledgements
-   Change History
-   Normative References
-   Informative References
-   Appendix A.  Examples
-     A.1.  Example Template
-     A.2.  Example Records: Single static host record
-     A.3.  Example Records: Single variable host record for A
-     A.4.  Example Records: Unspecified record type CAA
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   4
+   2.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+     2.1.  Primary Use Cases . . . . . . . . . . . . . . . . . . . .   4
+     2.2.  Use Cases out of scope  . . . . . . . . . . . . . . . . .   5
+   4.  Protocol design . . . . . . . . . . . . . . . . . . . . . . .  11
+     4.1.  Templates . . . . . . . . . . . . . . . . . . . . . . . .  11
+     4.2.  Trust Model . . . . . . . . . . . . . . . . . . . . . . .  12
+   5.  Protocol Flows Overview . . . . . . . . . . . . . . . . . . .  12
+     5.1.  General information . . . . . . . . . . . . . . . . . . .  12
+     5.2.  The Synchronous Flow  . . . . . . . . . . . . . . . . . .  13
+   6.  Domain Connect Objects and Templates  . . . . . . . . . . . .  16
+     6.1.  Template Definition . . . . . . . . . . . . . . . . . . .  17
+       6.1.1.  Template Property Extensibility . . . . . . . . . . .  22
+     6.2.  Template Record . . . . . . . . . . . . . . . . . . . . .  23
+     6.3.  Template Considerations . . . . . . . . . . . . . . . . .  30
+       6.3.1.  Template Scope  . . . . . . . . . . . . . . . . . . .  30
+       6.3.2.  Sub Domains . . . . . . . . . . . . . . . . . . . . .  30
+       6.3.3.  Variable Scope Minimisation . . . . . . . . . . . . .  31
+     6.4.  Public Key Publication  . . . . . . . . . . . . . . . . .  31
+   7.  DNS Provider Discovery  . . . . . . . . . . . . . . . . . . .  34
+     7.1.  "_domainconnect" Resource Record  . . . . . . . . . . . .  34
+       7.1.1.  Deployment considerations . . . . . . . . . . . . . .  35
+     7.2.  Settings End-Point  . . . . . . . . . . . . . . . . . . .  35
+   8.  Applying Domain Connect . . . . . . . . . . . . . . . . . . .  39
+     8.1.  Endpoints . . . . . . . . . . . . . . . . . . . . . . . .  39
+     8.2.  Query Supported Template  . . . . . . . . . . . . . . . .  40
+     8.3.  Synchronous Flow  . . . . . . . . . . . . . . . . . . . .  42
+       8.3.1.  Apply Template URL  . . . . . . . . . . . . . . . . .  42
+       8.3.2.  Parameters/properties . . . . . . . . . . . . . . . .  42
+       8.3.3.  Template Apply Request  . . . . . . . . . . . . . . .  46
+       8.3.4.  Signature Verification  . . . . . . . . . . . . . . .  47
+       8.3.5.  Template Apply Response . . . . . . . . . . . . . . .  47
+       8.3.6.  Template Apply Error Response . . . . . . . . . . . .  48
+     8.4.  Verification of Changes . . . . . . . . . . . . . . . . .  49
+   9.  Resolving Template Variables  . . . . . . . . . . . . . . . .  49
+     9.1.  Variables . . . . . . . . . . . . . . . . . . . . . . . .  49
+       9.1.1.  Variable Syntax . . . . . . . . . . . . . . . . . . .  50
+       9.1.2.  Special and Built-In Variables  . . . . . . . . . . .  50
+     9.2.  Variable substitution . . . . . . . . . . . . . . . . . .  50
+       9.2.1.  Input Values  . . . . . . . . . . . . . . . . . . . .  50
+       9.2.2.  Processing  . . . . . . . . . . . . . . . . . . . . .  51
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 2]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+     9.3.  Host Name Rendering . . . . . . . . . . . . . . . . . . .  51
+       9.3.1.  Input Values  . . . . . . . . . . . . . . . . . . . .  51
+       9.3.2.  Processing  . . . . . . . . . . . . . . . . . . . . .  52
+       9.3.3.  Examples of host processing . . . . . . . . . . . . .  52
+     9.4.  SPF Record Merging  . . . . . . . . . . . . . . . . . . .  53
+   10. Template Application  . . . . . . . . . . . . . . . . . . . .  54
+     10.1.  Template State in DNS Providers system . . . . . . . . .  54
+     10.2.  Steps to Apply a Template  . . . . . . . . . . . . . . .  55
+     10.3.  Group Filtering  . . . . . . . . . . . . . . . . . . . .  56
+       10.3.1.  Group Filtering and Template State . . . . . . . . .  57
+     10.4.  Conflict Detection . . . . . . . . . . . . . . . . . . .  57
+       10.4.1.  Conflict Detection Special Handling  . . . . . . . .  58
+     10.5.  Calculating Conflict Resolution  . . . . . . . . . . . .  59
+     10.6.  User Authorization of Changes  . . . . . . . . . . . . .  60
+     10.7.  Template Application . . . . . . . . . . . . . . . . . .  61
+     10.8.  Examples . . . . . . . . . . . . . . . . . . . . . . . .  61
+   11. Security Considerations . . . . . . . . . . . . . . . . . . .  61
+     11.1.  Template Variable Phishing . . . . . . . . . . . . . . .  61
+     11.2.  Untrusted DNS Provider Discovery Records . . . . . . . .  62
+     11.3.  Underscored Host Names . . . . . . . . . . . . . . . . .  63
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  63
+     12.1.  Registration Procedure for Domain Connect Registries . .  63
+     12.2.  Domain Connect Fully Specified Record Types Registry . .  64
+     12.3.  Domain Connect Settings Properties Registry  . . . . . .  67
+     12.4.  Domain Connect Template Properties Registry  . . . . . .  68
+     12.5.  Guidance to the DNS Resource Record (RR) TYPEs
+            Registry . . . . . . . . . . . . . . . . . . . . . . . .  70
+     12.6.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  71
+     12.7.  Media Type Registration for application/
+            domainconnect-template+json  . . . . . . . . . . . . . .  71
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  72
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  73
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  73
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  77
+   Informative References  . . . . . . . . . . . . . . . . . . . . .  79
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  80
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  80
+     A.2.  Example Records: Single static host record  . . . . . . .  81
+     A.3.  Example Records: Single variable host record for A  . . .  82
+     A.4.  Example Records: Generic Record Type CAA  . . . . . . . .  82
      A.5.  Example: Template application to DNS Zone and Conflict
-           Resolution
-     A.6.  Example: SPF Record Merging
-   Authors' Addresses
+           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  83
+     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  85
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  86
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 3]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
 1.  Introduction
 
@@ -180,6 +218,14 @@ Table of Contents
    *  *On-Premise Service with Publicly Accessible DNS Service:* An on-
       premise service, such as a local network device or server, can
       also benefit from Domain Connect if it utilizes a publicly
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 4]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       accessible DNS service.  By leveraging Domain Connect, the service
       can automatically update DNS records as needed, ensuring that the
       service remains accessible through its domain name.
@@ -229,6 +275,13 @@ Table of Contents
    The Terms like "*Registrar*", "*Authoritative server*", "*Zone*",
    "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC8499].
 
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 5]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    This specification uses the Augmented Backus-Naur Form (ABNF)
    notation of [RFC5234].  The following ABNF rules are imported from
    the normative references [RFC5234].
@@ -276,6 +329,14 @@ Table of Contents
 
    The following additional ABNF rules are defined in this document and
    used normatively throughout.
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 6]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    ; ---- Identifier rules ----
 
@@ -326,6 +387,13 @@ Table of Contents
                    ; Assignable code points per RFC 9839 Section 4.3;
                    ; used for providerName and serviceName
 
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 7]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    dc-description-text =  0*2048unicode-assignable
                    ; a string of at most 2048 Unicode
                    ; Assignable code points per RFC 9839 Section 4.3;
@@ -354,13 +422,33 @@ Table of Contents
 
    ; ---- Template record field rules ----
 
-   dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
-                     / "SRV" / "SPFM" / "NS" )
-                   ; named core and pseudo record types
-                   /  "TYPE" 1*DIGIT
+   dc-record-type =  dc-type-name / dc-rfc3597-type
+                   ; a registered RR TYPE mnemonic (covering
+                   ; Fully Specified, Computed, and Generic types
+                   ; alike), or the RFC 3597 unknown-type form.
+
+   dc-type-name   =  "A"
+                   /  ( UALPHA *( UALPHA / DIGIT / "-" )
+                        ( UALPHA / DIGIT ) )
+                   ; RR TYPE mnemonic per RFC 6895:
+                   ; [A-Z][A-Z0-9-]*[A-Z0-9], i.e. starts with an
+                   ; uppercase letter and ends with a letter or
+                   ; digit; "A" is grandfathered as a single-letter
+                   ; mnemonic. MUST NOT be of the reserved forms
+                   ; "TYPE"<n> or "CLASS"<n> (<<RFC3597>>, <<RFC6895>>).
+
+   dc-rfc3597-type =  "TYPE" 1*DIGIT
                    ; unknown type per RFC 3597
-                   /  1*(ALPHA / DIGIT / "-")
-                   ; any other IANA-registered RR type name
+
+   UALPHA         =  %x41-5A
+                   ; A-Z (uppercase letter)
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 8]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    dc-essential   =  "Always" / "OnApply"
                    ; default is "Always"
@@ -410,6 +498,14 @@ Table of Contents
                    ; non-negative integer seconds, resolved
 
    dc-uint16-tmpl  =  ( %x30-39 *4DIGIT ) / named-variable
+
+
+
+Kowalik, et al.          Expires 4 January 2027                 [Page 9]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
                    ; 0-65535 literal, or a sole %-variable
 
    dc-uint16-value =  %x30-39 *4DIGIT
@@ -453,8 +549,39 @@ Table of Contents
       template is used as a means of communication between Service
       Provider and DNS Provider.
 
+   Fully Specified Record Type:  A DNS resource record type for which
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 10]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      this document, or a specification registered in the IANA "Domain
+      Connect Fully Specified Record Types" registry (see Section 12.2),
+      defines a breakdown of the record's RDATA into individual,
+      normatively-typed template fields rather than carrying the RDATA
+      opaquely.
+
+   Computed Record Type:  A template record type that does not
+      correspond to a single DNS resource record placed verbatim into
+      the zone.  Instead, it instructs the DNS Provider to derive one or
+      more DNS resource records by a computation defined for that type.
+      The resulting record types and RDATA need not match the Computed
+      Record Type's own name.
+
+   Generic Record Type:  Any DNS resource record type, identified by its
+      IANA RR TYPE mnemonic or by the "TYPE" form of [RFC3597], whose
+      RDATA is carried opaquely in the "data" field in DNS presentation
+      format.
+
    Certain labels, parameters, endpoints, and registry entries are
-   present in this specification with _Reserved_ status.  These items
+   present in this specification with "Reserved" status.  These items
    appear in the original Domain Connect community specification
    [DC-SPEC] and are reserved here to ensure back-compatibility with
    that specification.  Reserved items MUST NOT be redefined in any
@@ -483,6 +610,13 @@ Table of Contents
    Templates MAY also contain variable portions, as often values of data
    in DNS change based on the implementation and/or user of the service
    (e.g. the IP address of a service, a user id, etc.).
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 11]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    The template is defined by the Service Provider and manually
    onboarded with the DNS Provider.  This is an out-of-band process
@@ -527,6 +661,18 @@ Table of Contents
    To apply the changes to DNS, this document defines a synchronous web
    flow.  The DNS Provider presents a consent UX to the user and applies
    the template within the same interaction session.
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 12]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    [DC-SPEC] also defines an asynchronous flow based on OAuth.  Other
    flows may be defined in the future.  Therefore, although it is
@@ -576,6 +722,14 @@ Table of Contents
          |              |----------------->|                      |
          |              |                  |                      |
          |              7 Responds template|                      |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 13]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
          |              support status     |                      |
          |              |<-----------------|                      |
          |              |                  |                      |
@@ -624,6 +778,14 @@ Table of Contents
          |              |                  |                      |
          |           18 Redirect/ Close window                    |
          |              |<- - - - - - - - -|                      |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 14]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
          |              |                  |                      |
          |              |          19 Query DNS records           |
          |              |---------------------------------------->|
@@ -670,6 +832,16 @@ Table of Contents
    9.   *User Navigates to DNS Provider*: The user navigates the link
         and user agent is directed to the DNS Provider's website.
 
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 15]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    10.  *DNS Provider Performs URL Lookup and Signature Key Verification
         (if required)*: If the template requires signing, the DNS
         Provider looks up the URL signature keys in DNS.
@@ -714,11 +886,27 @@ Table of Contents
 
 6.  Domain Connect Objects and Templates
 
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 16]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
 6.1.  Template Definition
 
    A template is defined as a standard JSON data structure containing
    the following data.  Field values MUST be defined unless otherwise
    indicated.
+
+   The template JSON structure defined in this section is identified by
+   the media type "application/domainconnect-template+json" (see
+   Section 12.7).
 
    +=============+========+===================+========================+
    |Data Element |Type    |Key                |Description             |
@@ -758,6 +946,14 @@ Table of Contents
    |             |        |                   |Section 3).             |
    +-------------+--------+-------------------+------------------------+
    |*Service     |String  |serviceName        |(REQUIRED) The name of  |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 17]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    |Name*        |        |                   |the service, suitable   |
    |             |        |                   |for display to the user.|
    |             |        |                   |The value MUST conform  |
@@ -806,6 +1002,14 @@ Table of Contents
    |             |        |                   |logo representing the   |
    |             |        |                   |Service Provider and/or |
    |             |        |                   |Service for use in any  |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 18]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    |             |        |                   |web-based flow.  If     |
    |             |        |                   |present this MAY be     |
    |             |        |                   |displayed to the user on|
@@ -854,6 +1058,14 @@ Table of Contents
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
    |*Shared*     |Boolean |shared             |(OPTIONAL) This flag has|
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 19]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    |             |        |                   |been deprecated.  It    |
    |             |        |                   |used to indicate that   |
    |             |        |                   |the template allowed a  |
@@ -902,6 +1114,14 @@ Table of Contents
    |*Synchronous |String  |syncRedirectDomain |(OPTIONAL) A comma-     |
    |Redirect     |        |                   |separated list of domain|
    |Domains*     |        |                   |names to which the DNS  |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 20]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    |             |        |                   |Provider is permitted to|
    |             |        |                   |send the post-apply     |
    |             |        |                   |redirect in the         |
@@ -918,14 +1138,24 @@ Table of Contents
    |             |        |                   |and host.               |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
-   |*Warn        |Boolean |warnPhishing       |(OPTIONAL) When "true", |
-   |Phishing*    |        |                   |signals that the        |
-   |             |        |                   |template contains       |
-   |             |        |                   |variables that cannot be|
-   |             |        |                   |constrained by digital  |
-   |             |        |                   |signing and may be      |
+   |*Warn        |Boolean |warnPhishing       |(DEPRECATED) This flag  |
+   |Phishing*    |        |                   |is deprecated and its   |
+   |             |        |                   |code point is reserved  |
+   |             |        |                   |(see Section 3,         |
+   |             |        |                   |Paragraph 13).  Phishing|
+   |             |        |                   |warnings are now the    |
+   |             |        |                   |default behavior in the |
+   |             |        |                   |absence of other        |
+   |             |        |                   |security mechanisms (see|
+   |             |        |                   |Section 11.1).  This    |
+   |             |        |                   |flag MUST NOT be relied |
+   |             |        |                   |upon and MUST NOT be set|
+   |             |        |                   |in new templates.  A DNS|
+   |             |        |                   |Provider MUST NOT treat |
+   |             |        |                   |the absence of this flag|
+   |             |        |                   |as a signal that a      |
+   |             |        |                   |template is not         |
    |             |        |                   |susceptible to phishing.|
-   |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
    |*Host        |Boolean |hostRequired       |(OPTIONAL) When "true", |
    |Required*    |        |                   |indicates that the      |
@@ -940,6 +1170,14 @@ Table of Contents
    |             |        |                   |qualified domain name.  |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 21]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    |*Critical    |Array of|crit               |(OPTIONAL) A list of the|
    |Properties*  |String  |                   |names of template       |
    |             |        |                   |properties that an      |
@@ -975,17 +1213,26 @@ Table of Contents
       specification and for future standards-track extensions that
       normatively require this document as their base.  Such names are
       managed through the IANA "Domain Connect Template Properties"
-      registry (see Section 12.3).  Implementations MUST NOT introduce
+      registry (see Section 12.4).  Implementations MUST NOT introduce
       private or vendor-specific properties using unprefixed names.
 
    *  Property names beginning with "vnd." are reserved for vendor-
       specific and private use.  A vendor SHOULD further namespace such
       properties with a vendor identifier (e.g. "vnd.example.fooBar"),
       and such names MAY be registered in the IANA "Domain Connect
-      Template Properties" registry (see Section 12.3).  Properties
+      Template Properties" registry (see Section 12.4).  Properties
       using this prefix MUST NOT be assumed to be interoperable across
       implementations, and the property name MUST conform to the dc-vnd-
       property syntax (see Section 3).
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 22]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    Both DNS Providers and Service Providers process template
    definitions.  An implementation of either role MUST ignore any
@@ -1022,382 +1269,362 @@ Table of Contents
    Each record MUST contain the following elements unless otherwise
    specified.
 
-   +===========+======+=========================+======================+
-   |Data       |Type  |Key                      |Description           |
-   |Element    |      |                         |                      |
-   +===========+======+=========================+======================+
-   |*Type*     |enum  |type                     |(REQUIRED) Describes  |
-   |           |      |                         |the type of record in |
-   |           |      |                         |DNS, or the operation |
-   |           |      |                         |impacting DNS.        |
-   |           |      |                         |Valid values include: |
-   |           |      |                         |A, AAAA, CNAME, MX,   |
-   |           |      |                         |TXT, SRV, or SPFM.    |
-   |           |      |                         |The DNS Provider MUST |
-   |           |      |                         |support the core set  |
-   |           |      |                         |of records A, AAAA,   |
-   |           |      |                         |CNAME, MX, TXT, SRV.  |
-   |           |      |                         |The DNS Provider      |
-   |           |      |                         |SHOULD support SPFM   |
-   |           |      |                         |record for high       |
-   |           |      |                         |interoperability with |
-   |           |      |                         |existing templates    |
-   |           |      |                         |                      |
-   |           |      |                         |All other record types|
-   |           |      |                         |MAY be specified by   |
-   |           |      |                         |type name as listed in|
-   |           |      |                         |IANA registry for DNS |
-   |           |      |                         |Resource Record (RR)  |
-   |           |      |                         |TYPEs.  Unknown record|
-   |           |      |                         |types MAY be specified|
-   |           |      |                         |as per [RFC3597] by   |
-   |           |      |                         |the word "TYPE"       |
-   |           |      |                         |immediately followed  |
-   |           |      |                         |by the decimal RR type|
-   |           |      |                         |number, with no       |
-   |           |      |                         |intervening           |
-   |           |      |                         |whitespace.  Support  |
-   |           |      |                         |for other record types|
-   |           |      |                         |is OPTIONAL.          |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-record-type |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Group ID* |String|groupId                  |(OPTIONAL) This       |
-   |           |      |                         |parameter identifies  |
-   |           |      |                         |the group the record  |
-   |           |      |                         |belongs to when       |
-   |           |      |                         |applying changes.  The|
-   |           |      |                         |value MUST conform to |
-   |           |      |                         |the dc-id syntax (see |
-   |           |      |                         |Section 3) and MUST   |
-   |           |      |                         |NOT contain variable  |
-   |           |      |                         |expressions.          |
-   +-----------+------+-------------------------+----------------------+
-   |*Essential*|enum  |essential                |(OPTIONAL) This       |
-   |           |      |                         |parameter indicates   |
-   |           |      |                         |how the record is     |
-   |           |      |                         |treated during        |
-   |           |      |                         |conflict detection    |
-   |           |      |                         |with existing         |
-   |           |      |                         |templates.            |
-   |           |      |                         |If the DNS Provider is|
-   |           |      |                         |not implementing      |
-   |           |      |                         |applied template state|
-   |           |      |                         |in DNS this is        |
-   |           |      |                         |ignored.              |
-   |           |      |                         |Always (default) -    |
-   |           |      |                         |record MUST be applied|
-   |           |      |                         |and kept with the     |
-   |           |      |                         |template              |
-   |           |      |                         |OnApply - record MUST |
-   |           |      |                         |be applied but can be |
-   |           |      |                         |later removed without |
-   |           |      |                         |dropping the whole    |
-   |           |      |                         |template              |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-essential   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |If omitted, the value |
-   |           |      |                         |MUST be assumed to be |
-   |           |      |                         |"Always".             |
-   +-----------+------+-------------------------+----------------------+
-   |*Host*     |String|host                     |(REQUIRED) The host   |
-   |           |      |                         |for A, AAAA, CNAME,   |
-   |           |      |                         |NS, TXT, MX and other |
-   |           |      |                         |unspecified record    |
-   |           |      |                         |type values.          |
-   |           |      |                         |This value is relative|
-   |           |      |                         |to the applied host   |
-   |           |      |                         |and domain, unless    |
-   |           |      |                         |trailed by a ".".     |
-   |           |      |                         |A value of empty or   |
-   |           |      |                         |"@" indicates the root|
-   |           |      |                         |of the applied host   |
-   |           |      |                         |and domain.  In other |
-   |           |      |                         |words                 |
-   |           |      |                         |"[host.]example.com.".|
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-host-tmpl   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Name*     |String|name                     |The name for the SRV  |
-   |           |      |                         |record.               |
-   |           |      |                         |This value is relative|
-   |           |      |                         |to the applied host   |
-   |           |      |                         |and domain.  A value  |
-   |           |      |                         |of empty or "@"       |
-   |           |      |                         |indicates the root of |
-   |           |      |                         |the applied host and  |
-   |           |      |                         |domain.               |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-host-tmpl   |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Points To*|String|pointsTo                 |The pointsTo location |
-   |           |      |                         |for A, AAAA, CNAME, NS|
-   |           |      |                         |and MX records.       |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the "dc-pointsto-  |
-   |           |      |                         |tmpl" syntax for      |
-   |           |      |                         |"CNAME"/"MX" and to   |
-   |           |      |                         |the "dc-pointsto-nat- |
-   |           |      |                         |tmpl" syntax for      |
-   |           |      |                         |A/AAAA/NS (see        |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the        |
-   |           |      |                         |presentation format of|
-   |           |      |                         |the corresponding     |
-   |           |      |                         |resource record type. |
-   +-----------+------+-------------------------+----------------------+
-   |*TTL*      |Int or|ttl                      |The time-to-live for  |
-   |           |string|                         |the record in DNS.    |
-   |           |repr. |                         |Valid for A, AAAA,    |
-   |           |of Int|                         |CNAME, NS, TXT, MX,   |
-   |           |      |                         |and SRV records.  This|
-   |           |      |                         |SHOULD NOT contain    |
-   |           |      |                         |variables unless      |
-   |           |      |                         |absolutely necessary. |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-ttl-tmpl    |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-ttl-|
-   |           |      |                         |value syntax.  This   |
-   |           |      |                         |value, no matter if   |
-   |           |      |                         |variable or constant, |
-   |           |      |                         |is understood as "best|
-   |           |      |                         |effort" by DNS        |
-   |           |      |                         |Provider and MAY be   |
-   |           |      |                         |limited or adjusted by|
-   |           |      |                         |local policy at       |
-   |           |      |                         |runtime or during     |
-   |           |      |                         |template onboarding,  |
-   |           |      |                         |like applying a       |
-   |           |      |                         |certain minimum or    |
-   |           |      |                         |maximum value of TTL  |
-   |           |      |                         |or an enumeration of  |
-   |           |      |                         |TTL values supported  |
-   |           |      |                         |by the DNS Provider.  |
-   |           |      |                         |The DNS Provider      |
-   |           |      |                         |SHOULD NOT reject     |
-   |           |      |                         |template application  |
-   |           |      |                         |because of invalid    |
-   |           |      |                         |value, rather pick the|
-   |           |      |                         |nearest supported     |
-   |           |      |                         |value or a default, in|
-   |           |      |                         |order to avoid        |
-   |           |      |                         |necessity of per      |
-   |           |      |                         |provider adjustment to|
-   |           |      |                         |the application flow. |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Data*     |String|data                     |For TXT record "data" |
-   |           |      |                         |contains TXT-DATA     |
-   |           |      |                         |[RFC1035] in          |
-   |           |      |                         |presentation format.  |
-   |           |      |                         |For a single          |
-   |           |      |                         |"<character-string>"  |
-   |           |      |                         |the heading and       |
-   |           |      |                         |trailing " character  |
-   |           |      |                         |MAY be omitted even if|
-   |           |      |                         |space character is    |
-   |           |      |                         |present in the value. |
-   |           |      |                         |"data" MUST NOT be    |
-   |           |      |                         |present in a template |
-   |           |      |                         |record for any other  |
-   |           |      |                         |record type that has  |
-   |           |      |                         |type-specific data    |
-   |           |      |                         |fields defined in this|
-   |           |      |                         |specification.  For   |
-   |           |      |                         |any unspecified record|
-   |           |      |                         |type, this field      |
-   |           |      |                         |contains the canonical|
-   |           |      |                         |presentation format of|
-   |           |      |                         |the record, following |
-   |           |      |                         |[RFC3597] generic or  |
-   |           |      |                         |type-specific         |
-   |           |      |                         |encoding.             |
-   +-----------+------+-------------------------+----------------------+
-   |*TXT       |String|txtConflictMatchingMode  |Describes how         |
-   |Conflict   |      |                         |conflicts on the TXT  |
-   |Matching   |      |                         |record are detected.  |
-   |Mode*      |      |                         |Possible values are   |
-   |           |      |                         |None, All, or Prefix. |
-   |           |      |                         |See below             |
-   |           |      |                         |(Section 10.4).       |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-txt-        |
-   |           |      |                         |conflict-mode syntax  |
-   |           |      |                         |(see Section 3).      |
-   |           |      |                         |If omitted, the value |
-   |           |      |                         |MUST be assumed to be |
-   |           |      |                         |"None".               |
-   +-----------+------+-------------------------+----------------------+
-   |*TXT       |String|txtConflictMatchingPrefix|The prefix to detect  |
-   |Conflict   |      |                         |conflicts when        |
-   |Matching   |      |                         |txtConflict-          |
-   |Prefix*    |      |                         |MatchingMode is       |
-   |           |      |                         |"Prefix".  See below  |
-   |           |      |                         |(Section 10.4).       |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-conflict-   |
-   |           |      |                         |prefix syntax (see    |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Priority* |Int or|priority                 |The priority for an MX|
-   |           |string|                         |or SRV record.        |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Weight*   |Int or|weight                   |The weight for the SRV|
-   |           |string|                         |record.               |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Port*     |Int or|port                     |The port for the SRV  |
-   |           |string|                         |record.               |
-   |           |repr. |                         |When used in a        |
-   |           |of Int|                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-uint16-tmpl |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the dc-    |
-   |           |      |                         |uint16-value syntax.  |
-   |           |      |                         |The resolved value is |
-   |           |      |                         |further constrained to|
-   |           |      |                         |the range 0-65535 as  |
-   |           |      |                         |defined by [RFC6335]. |
-   |           |      |                         |Support of variables  |
-   |           |      |                         |in this field is      |
-   |           |      |                         |OPTIONAL for DNS      |
-   |           |      |                         |Provider.             |
-   +-----------+------+-------------------------+----------------------+
-   |*Protocol* |String|protocol                 |The protocol for the  |
-   |           |      |                         |SRV record.           |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-srv-protocol|
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Service*  |String|service                  |The symbolic service  |
-   |           |      |                         |name for the SRV      |
-   |           |      |                         |record.               |
-   |           |      |                         |The value MUST conform|
-   |           |      |                         |to the dc-srv-service |
-   |           |      |                         |syntax (see           |
-   |           |      |                         |Section 3).           |
-   +-----------+------+-------------------------+----------------------+
-   |*Target*   |String|target                   |The target hostname   |
-   |           |      |                         |for the SRV record as |
-   |           |      |                         |defined in Section 3.1|
-   |           |      |                         |of [RFC2782].         |
-   |           |      |                         |When used in a        |
-   |           |      |                         |template definition,  |
-   |           |      |                         |the value MUST conform|
-   |           |      |                         |to the dc-pointsto-   |
-   |           |      |                         |tmpl syntax (see      |
-   |           |      |                         |Section 3), or be the |
-   |           |      |                         |single label "." to   |
-   |           |      |                         |indicate that the     |
-   |           |      |                         |service is not        |
-   |           |      |                         |available.            |
-   |           |      |                         |After variable        |
-   |           |      |                         |substitution, the     |
-   |           |      |                         |resolved value MUST   |
-   |           |      |                         |conform to the domain-|
-   |           |      |                         |name syntax (see      |
-   |           |      |                         |Section 3), or be ".".|
-   +-----------+------+-------------------------+----------------------+
-   |*SPF Rules*|String|spfRules                 |These are desired     |
-   |           |      |                         |rules for the SPF TXT |
-   |           |      |                         |record.  These rules  |
-   |           |      |                         |SHOULD be merged with |
-   |           |      |                         |other SPFM records    |
-   |           |      |                         |into final SPF TXT    |
-   |           |      |                         |record.  See          |
-   |           |      |                         |Section 9.4.  The     |
-   |           |      |                         |value MUST contain    |
-   |           |      |                         |only mechanism and    |
-   |           |      |                         |modifier terms as     |
-   |           |      |                         |defined in [RFC7208]  |
-   |           |      |                         |Section 5, excluding  |
-   |           |      |                         |the version prefix    |
-   |           |      |                         |("v=spf1") and the    |
-   |           |      |                         |terminating "all"     |
-   |           |      |                         |qualifier.  The DNS   |
-   |           |      |                         |Provider MUST validate|
-   |           |      |                         |the syntax before     |
-   |           |      |                         |merging.              |
-   +-----------+------+-------------------------+----------------------+
+   Properties of the template record definition:
 
-           Table 2: properties of the template record definition
+   "Type":
+      JSON key:  "type"
+
+      Type:  "enum"
+
+      (REQUIRED) Describes the type of record in DNS, or the operation
+      impacting DNS.
+
+      Record types fall into three classes (see Section 3):
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 23]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      Fully Specified Record Types - A, AAAA, CNAME, MX, TXT, SRV, NS -
+      whose RDATA is broken into dedicated template fields.  The
+      complete set is managed by the IANA "Domain Connect Fully
+      Specified Record Types" registry (see Section 12.2).
+
+      Computed Record Types - which instruct the DNS Provider to derive
+      DNS records by a defined computation rather than write a verbatim
+      record.  "SPFM" is the Computed Record Type defined in this
+      document.
+
+      Generic Record Types - any other IANA-registered RR TYPE mnemonic,
+      or the "TYPE" form of [RFC3597], whose RDATA is carried opaquely
+      in the "data" field.
+
+      The DNS Provider MUST support the core Fully Specified Record
+      Types A, AAAA, CNAME, MX, TXT, SRV.
+      The DNS Provider SHOULD support the "SPFM" Computed Record Type
+      for high interoperability with existing templates.
+      Support for NS, for Generic Record Types, and for any Fully
+      Specified Record Type registered by another specification is
+      OPTIONAL.
+
+      The value MUST conform to the dc-record-type syntax (see
+      Section 3).
+
+   "Group ID":
+      JSON key:  "groupId"
+
+      Type:  "String"
+
+      (OPTIONAL) This parameter identifies the group the record belongs
+      to when applying changes.
+
+      The value MUST conform to the dc-id syntax (see Section 3) and
+      MUST NOT contain variable expressions.
+
+   "Essential":
+      JSON key:  "essential"
+
+      Type:  "enum"
+
+      (OPTIONAL) This parameter indicates how the record is treated
+      during conflict detection with existing templates.
+
+      If the DNS Provider is not implementing applied template state in
+      DNS this is ignored.
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 24]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      Always (default) - record MUST be applied and kept with the
+      template
+
+      OnApply - record MUST be applied but can be later removed without
+      dropping the whole template
+
+      The value MUST conform to the dc-essential syntax (see Section 3).
+
+      If omitted, the value MUST be assumed to be "Always".
+
+   "Host":
+      JSON key:  "host"
+
+      Type:  "String"
+
+      (REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic
+      Record Type values.
+
+      This value is relative to the applied host and domain, unless
+      trailed by a ".".
+
+      A value of empty or "@" indicates the root of the applied host and
+      domain.  In other words "[host.]example.com.".
+
+      When used in a template definition, the value MUST conform to the
+      dc-host-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3).
+
+   "Name":
+      JSON key:  "name"
+
+      Type:  "String"
+
+      The name for the SRV record.
+
+      This value is relative to the applied host and domain.  A value of
+      empty or "@" indicates the root of the applied host and domain.
+
+      When used in a template definition, the value MUST conform to the
+      dc-host-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3).
+
+   "Points To":
+      JSON key:  "pointsTo"
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 25]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      Type:  "String"
+
+      The pointsTo location for A, AAAA, CNAME, NS and MX records.
+
+      When used in a template definition, the value MUST conform to the
+      "dc-pointsto-tmpl" syntax for "CNAME"/"MX" and to the "dc-
+      pointsto-nat-tmpl" syntax for A/AAAA/NS (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the presentation format of the corresponding resource record type.
+
+   "TTL":
+      JSON key:  "ttl"
+
+      Type:  "Int" or string representation of "Int"
+
+      The time-to-live for the record in DNS.  Valid for A, AAAA, CNAME,
+      NS, TXT, MX, and SRV records.  This SHOULD NOT contain variables
+      unless absolutely necessary.
+
+      When used in a template definition, the value MUST conform to the
+      dc-ttl-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-ttl-value syntax.
+
+      This value, no matter if variable or constant, is understood as
+      "best effort" by DNS Provider and MAY be limited or adjusted by
+      local policy at runtime or during template onboarding, like
+      applying a certain minimum or maximum value of TTL or an
+      enumeration of TTL values supported by the DNS Provider.  The DNS
+      Provider SHOULD NOT reject template application because of invalid
+      value, rather pick the nearest supported value or a default, in
+      order to avoid necessity of per provider adjustment to the
+      application flow.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Data":
+      JSON key:  "data"
+
+      Type:  "String"
+
+      For TXT record "data" contains TXT-DATA [RFC1035] in presentation
+      format.  For a single "<character-string>" the heading and
+      trailing " character MAY be omitted even if space character is
+      present in the value.
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 26]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      "data" MUST NOT be present in a template record for any Fully
+      Specified or Computed Record Type, which use type-specific data
+      fields defined in this specification.
+
+      For a Generic Record Type, this field contains the canonical
+      presentation format of the record, following [RFC3597] generic or
+      type-specific encoding.
+
+   "TXT Conflict Matching Mode":
+      JSON key:  "txtConflictMatchingMode"
+
+      Type:  "String"
+
+      Describes how conflicts on the TXT record are detected.  Possible
+      values are None, All, or Prefix.  See below (Section 10.4).
+
+      The value MUST conform to the dc-txt-conflict-mode syntax (see
+      Section 3).
+
+      If omitted, the value MUST be assumed to be "None".
+
+   "TXT Conflict Matching Prefix":
+      JSON key:  "txtConflictMatchingPrefix"
+
+      Type:  "String"
+
+      The prefix to detect conflicts when txtConflict-MatchingMode is
+      "Prefix".  See below (Section 10.4).
+
+      The value MUST conform to the dc-conflict-prefix syntax (see
+      Section 3).
+
+   "Priority":
+      JSON key:  "priority"
+
+      Type:  "Int" or string representation of "Int"
+
+      The priority for an MX or SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Weight":
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 27]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      JSON key:  "weight"
+
+      Type:  "Int" or string representation of "Int"
+
+      The weight for the SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Port":
+      JSON key:  "port"
+
+      Type:  "Int" or string representation of "Int"
+
+      The port for the SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
+
+      After variable substitution, the resolved value MUST conform to
+      the dc-uint16-value syntax.
+
+      The resolved value is further constrained to the range 0-65535 as
+      defined by [RFC6335].
+
+      Support of variables in this field is OPTIONAL for DNS Provider.
+
+   "Protocol":
+      JSON key:  "protocol"
+
+      Type:  "String"
+
+      The protocol for the SRV record.
+
+      The value MUST conform to the dc-srv-protocol syntax (see
+      Section 3).
+
+   "Service":
+      JSON key:  "service"
+
+      Type:  "String"
+
+      The symbolic service name for the SRV record.
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 28]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      The value MUST conform to the dc-srv-service syntax (see
+      Section 3).
+
+   "Target":
+      JSON key:  "target"
+
+      Type:  "String"
+
+      The target hostname for the SRV record as defined in Section 3.1
+      of [RFC2782].
+
+      When used in a template definition, the value MUST conform to the
+      dc-pointsto-tmpl syntax (see Section 3), or be the single label
+      "." to indicate that the service is not available.
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3), or be ".".
+
+   "SPF Rules":
+      JSON key:  "spfRules"
+
+      Type:  "String"
+
+      These are desired rules for the SPF TXT record.  These rules
+      SHOULD be merged with other SPFM records into final SPF TXT
+      record.  See Section 9.4.  The value MUST contain only mechanism
+      and modifier terms as defined in [RFC7208] Section 5, excluding
+      the version prefix ("v=spf1") and the terminating "all" qualifier.
+      The DNS Provider MUST validate the syntax before merging.
 
    The following table lists the fields that MAY be defined for each
    record type.  Other fields MUST NOT be used.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 29]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    +=========+========================================================+
    | Type    | Required fields                                        |
@@ -1421,11 +1648,11 @@ Table of Contents
    +---------+--------------------------------------------------------+
    | "SPFM"  | "host", "spfRules"                                     |
    +---------+--------------------------------------------------------+
-   | other   | "host", "data", "ttl"                                  |
+   | Generic | "host", "data", "ttl"                                  |
    | types   |                                                        |
    +---------+--------------------------------------------------------+
 
-                     Table 3: Fields per record type
+                     Table 2: Fields per record type
 
 6.3.  Template Considerations
 
@@ -1447,6 +1674,14 @@ Table of Contents
    state tracking.  Template "host" field values containing variables
    that resolve to sub-domain labels cause the template scope to be
    indeterminate at consent time, which prevents accurate conflict
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 30]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    detection.
 
    To add a record at the Zone Apex even when a Sub Domain is specified
@@ -1487,6 +1722,22 @@ Table of Contents
 
    Each TXT record MUST conform to the following grammar:
 
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 31]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    dc-pubkey-record  =  dc-pubkey-kv *( "," dc-pubkey-kv )
    dc-pubkey-kv      =  ( "p" "=" dc-frag-index )
                       / ( "d" "=" dc-frag-data )
@@ -1505,6 +1756,43 @@ Table of Contents
    dc-key-type       =  1*( ALPHA / DIGIT / "-" )
                       ; public key format identifier;
                       ; used for t=
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 32]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    +============+=====+================================================+
    | Property   | Key | Description                                    |
@@ -1540,19 +1828,34 @@ Table of Contents
    |            |     | If omitted, MUST be assumed to be "x509".      |
    +------------+-----+------------------------------------------------+
 
-              Table 4: Properties of the public key TXT record
+              Table 3: Properties of the public key TXT record
 
-   To allow for key rotation or use of multiple keys, the Service
-   Provider MAY publish key records at multiple hosts within
+   A Service Provider MUST publish exactly one public key on any given
+   host name.  To use multiple keys, e.g. for key rotation, the Service
+   Provider MUST publish each key on a different host name within
    "syncPubKeyDomain".  The "key" apply parameter identifies which host
    to query for each request and MUST be included in the signed apply
    request.
 
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 33]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    To account for DNS record size limits, a public key MAY be split
    across multiple TXT records at the same host.  All fragments MUST be
-   reassembled in ascending numeric order of "p" before use.  The values
-   "a" and '"d"' MUST be equal for all such TXT records on the same
-   host.
+   reassembled in ascending numeric order of "p" before use.  All such
+   TXT records at the same host therefore belong to the same key: the
+   values "a" and "t" MUST be equal across them, and their "d" fragments
+   MUST have distinct "p" indices.
 
    Given the public key (line breaks for brevity):
 
@@ -1580,6 +1883,8 @@ Table of Contents
 
 7.  DNS Provider Discovery
 
+7.1.  "_domainconnect" Resource Record
+
    To facilitate discovery of the DNS Provider from a domain name DNS is
    utilized.  This is done by returning a TXT record for
    "_domainconnect" in the zone.
@@ -1591,11 +1896,33 @@ Table of Contents
 
    domainconnect.virtucondomains.example
 
+   EXAMPLE 2: An example of the contents of this record including a path
+   segment:
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 34]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   domainconnect.virtucondomains.example/dc
+
    "_domainconnect" TXT record content, when prepended with https://
    schema and appended with /v2 path segment, MUST form a valid URL
    [RFC3986]. "_domainconnect" TXT record MUST contain the authority
    part of the URL and MAY contain a path part. "_domainconnect" MUST
    not contain schema, query or fragment part of an URL.
+
+   The DNS query for the "_domainconnect" TXT record MAY return more
+   than one TXT record.  The Service Provider MUST reject any returned
+   record whose content does not satisfy the validity rules above.  If,
+   after this filtering, at least one valid record remains, the Service
+   Provider MUST process at least one of them.  The Service Provider MAY
+   iterate over the remaining valid records, attempting discovery with
+   each in turn, until a valid Settings End-Point response is obtained.
+
+7.1.1.  Deployment considerations
 
    As a practical matter of implementation, the DNS Provider may or may
    not contain a copy of this data in each and every zone.  Instead, the
@@ -1610,10 +1937,12 @@ Table of Contents
    may simply respond with the appropriate records at the DNS layer
    without having the data in each zone.
 
-   The URL prefix returned MUST be subsequently used by the Service
-   Provider to determine the additional settings for using Domain
-   Connect on this domain at the DNS Provider.  This is done by calling
-   a REST API.
+7.2.  Settings End-Point
+
+   The URL prefix returned in "_domainconnect" Resource Record MUST be
+   subsequently used by the Service Provider to determine the additional
+   settings for using Domain Connect on this domain at the DNS Provider.
+   This is done by calling a REST API.
 
    Normative URI template of the Settings End-Point per [RFC6570]:
 
@@ -1624,172 +1953,150 @@ Table of Contents
    "_domainconnect" parameter is the URL prefix returned in the
    "_domainconnect" TXT record.
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 35]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    This MUST return a JSON structure containing the settings to use for
    Domain Connect on the domain name (passed in on the path) at the DNS
    Provider.  This JSON structure MUST contain the following fields
    unless otherwise specified.
 
-   +==============+=====================+========+=====================+
-   | *Field*      | *Key*               | *Type* | *Description*       |
-   +==============+=====================+========+=====================+
-   | *Provider    | providerId          | String | (REQUIRED) Unique   |
-   | Id*          |                     |        | identifier for the  |
-   |              |                     |        | DNS Provider.       |
-   |              |                     |        | The value MUST      |
-   |              |                     |        | conform to the dc-  |
-   |              |                     |        | id syntax (see      |
-   |              |                     |        | Section 3).         |
-   |              |                     |        | To allow for non-   |
-   |              |                     |        | coordinated         |
-   |              |                     |        | uniqueness, this    |
-   |              |                     |        | SHOULD be the       |
-   |              |                     |        | domain name of the  |
-   |              |                     |        | DNS Provider (e.g.  |
-   |              |                     |        | virtucom.example).  |
-   +--------------+---------------------+--------+---------------------+
-   | *Provider    | providerName        | String | (REQUIRED) The      |
-   | Name*        |                     |        | name of the DNS     |
-   |              |                     |        | Provider.           |
-   |              |                     |        | The value MUST      |
-   |              |                     |        | conform to the dc-  |
-   |              |                     |        | display-name        |
-   |              |                     |        | syntax (see         |
-   |              |                     |        | Section 3).         |
-   +--------------+---------------------+--------+---------------------+
-   | *Provider    | providerDisplayName | String | (OPTIONAL) The      |
-   | Display      |                     |        | name of the DNS     |
-   | Name*        |                     |        | Provider that       |
-   |              |                     |        | SHOULD be           |
-   |              |                     |        | displayed by the    |
-   |              |                     |        | Service Provider.   |
-   |              |                     |        | This MAY change     |
-   |              |                     |        | per domain for      |
-   |              |                     |        | some DNS Providers  |
-   |              |                     |        | that power          |
-   |              |                     |        | multiple brands.    |
-   |              |                     |        | When present, the   |
-   |              |                     |        | value MUST conform  |
-   |              |                     |        | to the dc-display-  |
-   |              |                     |        | name syntax (see    |
-   |              |                     |        | Section 3).         |
-   +--------------+---------------------+--------+---------------------+
-   | *UX URL      | urlSyncUX           | String | (OPTIONAL) The URL  |
-   | Prefix for   |                     |        | Prefix for linking  |
-   | Synchronous  |                     |        | to the UX of        |
-   | Flows*       |                     |        | Domain Connect for  |
-   |              |                     |        | the synchronous     |
-   |              |                     |        | flow at the DNS     |
-   |              |                     |        | Provider.  If not   |
-   |              |                     |        | returned, the DNS   |
-   |              |                     |        | Provider is not     |
-   |              |                     |        | supporting the      |
-   |              |                     |        | synchronous flow    |
-   |              |                     |        | on this domain.     |
-   |              |                     |        | This MUST be a      |
-   |              |                     |        | valid URI           |
-   |              |                     |        | [RFC3986] with      |
-   |              |                     |        | scheme "https",     |
-   |              |                     |        | MUST include an     |
-   |              |                     |        | authority           |
-   |              |                     |        | component, and      |
-   |              |                     |        | MUST NOT contain a  |
-   |              |                     |        | query component or  |
-   |              |                     |        | fragment            |
-   |              |                     |        | component.          |
-   |              |                     |        | The URI MAY         |
-   |              |                     |        | include a path      |
-   |              |                     |        | component.          |
-   +--------------+---------------------+--------+---------------------+
-   | *UX URL      | urlAsyncUX          | String | (Reserved.  See     |
-   | Prefix for   |                     |        | Section 3,          |
-   | Asynchronous |                     |        | Paragraph 13.)      |
-   | Flows*       |                     |        |                     |
-   +--------------+---------------------+--------+---------------------+
-   | *API URL     | urlAPI              | String | (REQUIRED) The URL  |
-   | Prefix*      |                     |        | Prefix for the      |
-   |              |                     |        | REST API.           |
-   |              |                     |        | This MUST be a      |
-   |              |                     |        | valid URI           |
-   |              |                     |        | [RFC3986] with      |
-   |              |                     |        | scheme "https",     |
-   |              |                     |        | MUST include an     |
-   |              |                     |        | authority           |
-   |              |                     |        | component, and      |
-   |              |                     |        | MUST NOT contain a  |
-   |              |                     |        | query component or  |
-   |              |                     |        | fragment            |
-   |              |                     |        | component.          |
-   |              |                     |        | The URI MAY         |
-   |              |                     |        | include a path      |
-   |              |                     |        | component.          |
-   +--------------+---------------------+--------+---------------------+
-   | *Width of    | width               | Number | (OPTIONAL) The      |
-   | Window*      |                     |        | desired width in    |
-   |              |                     |        | pixels of the pop-  |
-   |              |                     |        | up window used for  |
-   |              |                     |        | granting consent.   |
-   |              |                     |        | If not present,     |
-   |              |                     |        | the default MUST    |
-   |              |                     |        | be assumed to be    |
-   |              |                     |        | 750.                |
-   +--------------+---------------------+--------+---------------------+
-   | *Height of   | height              | Number | (OPTIONAL) The      |
-   | Window*      |                     |        | desired height in   |
-   |              |                     |        | pixels of the pop-  |
-   |              |                     |        | up window used for  |
-   |              |                     |        | granting consent.   |
-   |              |                     |        | If not present,     |
-   |              |                     |        | the default MUST    |
-   |              |                     |        | be assumed to be    |
-   |              |                     |        | 750.                |
-   +--------------+---------------------+--------+---------------------+
-   | *UX URL      | urlControlPanel     | String | (OPTIONAL) A URL    |
-   | Control      |                     |        | to the DNS          |
-   | Panel*       |                     |        | Provider's control  |
-   |              |                     |        | panel for manual    |
-   |              |                     |        | DNS editing.  This  |
-   |              |                     |        | field allows a      |
-   |              |                     |        | Service Provider    |
-   |              |                     |        | whose template is   |
-   |              |                     |        | not supported at    |
-   |              |                     |        | the DNS Provider    |
-   |              |                     |        | to provide a        |
-   |              |                     |        | direct link to      |
-   |              |                     |        | perform manual      |
-   |              |                     |        | edits.              |
-   |              |                     |        | The value MAY       |
-   |              |                     |        | contain the         |
-   |              |                     |        | literal token       |
-   |              |                     |        | "%domain%" as a     |
-   |              |                     |        | placeholder for     |
-   |              |                     |        | the domain name,    |
-   |              |                     |        | to allow deep-      |
-   |              |                     |        | linking to a        |
-   |              |                     |        | specific domain.    |
-   |              |                     |        | The value, after    |
-   |              |                     |        | any substitution    |
-   |              |                     |        | of the "%domain%"   |
-   |              |                     |        | token, MUST be a    |
-   |              |                     |        | valid URI per       |
-   |              |                     |        | [RFC3986] with      |
-   |              |                     |        | scheme "https".     |
-   +--------------+---------------------+--------+---------------------+
-   | *Name        | nameServers         | List   | (OPTIONAL) The      |
-   | Servers*     |                     | of     | list of nameserver  |
-   |              |                     | String | hostnames for the   |
-   |              |                     |        | zone held by this   |
-   |              |                     |        | DNS Provider        |
-   |              |                     |        | (typically derived  |
-   |              |                     |        | from the zone's NS  |
-   |              |                     |        | records).           |
-   |              |                     |        | Each entry MUST     |
-   |              |                     |        | conform to the      |
-   |              |                     |        | "domain-name"       |
-   |              |                     |        | syntax (see         |
-   |              |                     |        | Section 3).         |
-   +--------------+---------------------+--------+---------------------+
+   +=============+=====================+========+======================+
+   | *Field*     | *Key*               | *Type* | *Description*        |
+   +=============+=====================+========+======================+
+   | *Provider   | providerId          | String | (REQUIRED) Unique    |
+   | Id*         |                     |        | identifier for the   |
+   |             |                     |        | DNS Provider.        |
+   |             |                     |        | The value MUST       |
+   |             |                     |        | conform to the dc-   |
+   |             |                     |        | id syntax (see       |
+   |             |                     |        | Section 3).          |
+   |             |                     |        | To allow for non-    |
+   |             |                     |        | coordinated          |
+   |             |                     |        | uniqueness, this     |
+   |             |                     |        | SHOULD be the        |
+   |             |                     |        | domain name of the   |
+   |             |                     |        | DNS Provider (e.g.   |
+   |             |                     |        | virtucom.example).   |
+   +-------------+---------------------+--------+----------------------+
+   | *Provider   | providerName        | String | (REQUIRED) The name  |
+   | Name*       |                     |        | of the DNS           |
+   |             |                     |        | Provider.            |
+   |             |                     |        | The value MUST       |
+   |             |                     |        | conform to the dc-   |
+   |             |                     |        | display-name syntax  |
+   |             |                     |        | (see Section 3).     |
+   +-------------+---------------------+--------+----------------------+
+   | *Provider   | providerDisplayName | String | (OPTIONAL) The name  |
+   | Display     |                     |        | of the DNS Provider  |
+   | Name*       |                     |        | that SHOULD be       |
+   |             |                     |        | displayed by the     |
+   |             |                     |        | Service Provider.    |
+   |             |                     |        | This MAY change per  |
+   |             |                     |        | domain for some DNS  |
+   |             |                     |        | Providers that       |
+   |             |                     |        | power multiple       |
+   |             |                     |        | brands.              |
+   |             |                     |        | When present, the    |
+   |             |                     |        | value MUST conform   |
+   |             |                     |        | to the dc-display-   |
+   |             |                     |        | name syntax (see     |
+   |             |                     |        | Section 3).          |
+   +-------------+---------------------+--------+----------------------+
+   | *UX URL     | urlSyncUX           | String | (OPTIONAL) The URL   |
 
-             Table 5: properties of the settings data structure
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 36]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   | Prefix for  |                     |        | Prefix for linking   |
+   | Synchronous |                     |        | to the UX of Domain  |
+   | Flows*      |                     |        | Connect for the      |
+   |             |                     |        | synchronous flow at  |
+   |             |                     |        | the DNS Provider.    |
+   |             |                     |        | If not returned,     |
+   |             |                     |        | the DNS Provider is  |
+   |             |                     |        | not supporting the   |
+   |             |                     |        | synchronous flow on  |
+   |             |                     |        | this domain.         |
+   |             |                     |        | This MUST be a       |
+   |             |                     |        | valid URI [RFC3986]  |
+   |             |                     |        | with scheme          |
+   |             |                     |        | "https", MUST        |
+   |             |                     |        | include an           |
+   |             |                     |        | authority            |
+   |             |                     |        | component, and MUST  |
+   |             |                     |        | NOT contain a query  |
+   |             |                     |        | component or         |
+   |             |                     |        | fragment component.  |
+   |             |                     |        | The URI MAY include  |
+   |             |                     |        | a path component.    |
+   +-------------+---------------------+--------+----------------------+
+   | *API URL    | urlAPI              | String | (REQUIRED) The URL   |
+   | Prefix*     |                     |        | Prefix for the REST  |
+   |             |                     |        | API.                 |
+   |             |                     |        | This MUST be a       |
+   |             |                     |        | valid URI [RFC3986]  |
+   |             |                     |        | with scheme          |
+   |             |                     |        | "https", MUST        |
+   |             |                     |        | include an           |
+   |             |                     |        | authority            |
+   |             |                     |        | component, and MUST  |
+   |             |                     |        | NOT contain a query  |
+   |             |                     |        | component or         |
+   |             |                     |        | fragment component.  |
+   |             |                     |        | The URI MAY include  |
+   |             |                     |        | a path component.    |
+   +-------------+---------------------+--------+----------------------+
+   | *Name       | nameServers         | List   | (OPTIONAL) The list  |
+   | Servers*    |                     | of     | of nameserver        |
+   |             |                     | String | hostnames for the    |
+   |             |                     |        | zone held by this    |
+   |             |                     |        | DNS Provider         |
+   |             |                     |        | (typically derived   |
+   |             |                     |        | from the zone's NS   |
+   |             |                     |        | records).            |
+   |             |                     |        | Each entry MUST      |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 37]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   |             |                     |        | conform to the       |
+   |             |                     |        | "domain-name"        |
+   |             |                     |        | syntax (see          |
+   |             |                     |        | Section 3).          |
+   +-------------+---------------------+--------+----------------------+
+   | *Reserved*  | urlAsyncUX          |        | (Reserved.  See      |
+   |             |                     |        | Section 3,           |
+   |             |                     |        | Paragraph 13.)       |
+   +-------------+---------------------+--------+----------------------+
+   | *Reserved*  | width               |        | (Reserved.  See      |
+   |             |                     |        | Section 3,           |
+   |             |                     |        | Paragraph 13.)       |
+   +-------------+---------------------+--------+----------------------+
+   | *Reserved*  | height              |        | (Reserved.  See      |
+   |             |                     |        | Section 3,           |
+   |             |                     |        | Paragraph 13.)       |
+   +-------------+---------------------+--------+----------------------+
+   | *Reserved*  | urlControlPanel     |        | (Reserved.  See      |
+   |             |                     |        | Section 3,           |
+   |             |                     |        | Paragraph 13.)       |
+   +-------------+---------------------+--------+----------------------+
+
+             Table 4: properties of the settings data structure
 
    Clients MUST ignore any JSON properties in the settings response that
    are not defined in this specification or not recognized from an
@@ -1797,24 +2104,31 @@ Table of Contents
    properties in the settings response beyond those defined in this
    specification, however it is RECOMMENDED that those properties are
    registered in the "Domain Connect Settings Properties" registry
-   defined in Section 12.2 in order to avoid name conflicts.
+   defined in Section 12.3 in order to avoid name conflicts.
 
-   EXAMPLE 2: Example Settings End-Point response
+   EXAMPLE: Example Settings End-Point response
 
    {
        "providerId": "virtucondomains.example",
        "providerName": "Virtucon Domains",
        "providerDisplayName": "Virtucon Domains",
-       "urlSyncUX": "https://domainconnect.virtucondomains.example",
-       "urlAsyncUX": "https://domainconnect.virtucondomains.example",
+       "urlSyncUX": "https://domainconnect.virtucondomains.example/sync",
        "urlAPI": "https://api.domainconnect.virtucondomains.example",
-       "width": 750,
-       "height": 750,
        "urlControlPanel": "https://domaincontrolpanel.virtucondomains.ex
        ample/?domain=%domain%",
        "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucon
        domainsdns.example"]
    }
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 38]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    When constructing a deep link using "urlControlPanel", the Service
    Provider MUST replace any occurrence of the literal token "%domain%"
@@ -1852,7 +2166,7 @@ Table of Contents
    | Found*    |          | DNS Provider does not have the zone.      |
    +-----------+----------+-------------------------------------------+
 
-          Table 6: HTTP status codes for the settings end-point
+          Table 5: HTTP status codes for the settings end-point
 
 8.  Applying Domain Connect
 
@@ -1864,6 +2178,13 @@ Table of Contents
    The first set of endpoints are for the UX that the Service Provider
    links to.  These are for the synchronous flow where the user can
    click to grant consent and have changes applied.
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 39]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    The second set of endpoints are for the REST API.
 
@@ -1893,6 +2214,34 @@ Table of Contents
 
    The following table describes the parameters of the URI template:
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 40]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       +==========+============+====================================+
       | Property | Key        | Description                        |
       +==========+============+====================================+
@@ -1915,7 +2264,7 @@ Table of Contents
       |          |            | id syntax (see Section 3).         |
       +----------+------------+------------------------------------+
 
-         Table 7: URI template parameters for the query supported
+         Table 6: URI template parameters for the query supported
                             template end-point
 
    Returning a status of 200 without a body indicates the template is
@@ -1923,7 +2272,31 @@ Table of Contents
    in a JSON object with field "version" (see: version field
    (Section 6.1) or the full JSON object of deployed template.
 
+   The Service Provider MAY use HTTP content negotiation (see [RFC9110])
+   to request the full template object, for example by sending an
+   "Accept" request header of "application/domainconnect-template+json".
+   When the DNS Provider returns the full template object in the
+   response body, it MUST set the "Content-Type" response header to
+   "application/domainconnect-template+json" (see Section 12.7).  A DNS
+   Provider that does not return the full template object responds as
+   described above.
+
    Returning a status of 404 indicates the template is not supported.
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 41]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
       +===========+==========+======================================+
       | Status    | Response | Description                          |
@@ -1937,7 +2310,7 @@ Table of Contents
       | Found*    |          | the template is not supported        |
       +-----------+----------+--------------------------------------+
 
-            Table 8: https status codes for the Query Supported
+            Table 7: https status codes for the Query Supported
                              Template end-point
 
 8.3.  Synchronous Flow
@@ -1973,6 +2346,14 @@ Table of Contents
     |             |              | "urlSyncUX" field of the settings |
     |             |              | endpoint response (see            |
     |             |              | Section 7).                       |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 42]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
     |             |              | This MUST be a valid URI          |
     |             |              | [RFC3986] with scheme "https"     |
     +-------------+--------------+-----------------------------------+
@@ -2021,6 +2402,14 @@ Table of Contents
     |             |              | defined in the template and MUST  |
     |             |              | conform to the variable-name      |
     |             |              | syntax (see Section 3).           |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 43]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
     |             |              | Each parameter value MUST conform |
     |             |              | to the dc-prop-value syntax (see  |
     |             |              | Section 3), using the DNS         |
@@ -2069,6 +2458,14 @@ Table of Contents
     |             |              | See the Section 8.3.2.1 below for |
     |             |              | the signing procedure.            |
     +-------------+--------------+-----------------------------------+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 44]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
     | *Key*       | key          | (OPTIONAL) The DNS host label     |
     |             |              | within the syncPubKeyDomain at    |
     |             |              | which the public key TXT record   |
@@ -2081,7 +2478,7 @@ Table of Contents
     |             |              | See the Section 8.3.2.1 below.    |
     +-------------+--------------+-----------------------------------+
 
-      Table 9: URI template parameters of the apply call in the sync
+      Table 8: URI template parameters of the apply call in the sync
                                    flow
 
    An example query string:
@@ -2116,6 +2513,14 @@ Table of Contents
 
        c.  Sort the parameters in ascending lexicographic order of the
            URL-encoded parameter name.
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 45]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
        d.  Concatenate them as name=value pairs joined by "&".
 
@@ -2161,6 +2566,17 @@ Table of Contents
    The DNS Provider validates the request to ensure that all required
    parameters are present and valid.  This includes also verification of
    request signature (see Section 8.3.4 below).
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 46]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    If the request is valid, the DNS Provider authenticates the user,
    validates user's authorization to modify the DNS zone, obtains
@@ -2210,6 +2626,14 @@ Table of Contents
    Provider MUST terminate the user flow according to one of the
    following cases:
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 47]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  If "redirect_uri" was present in the request and the template's
       "syncRedirectDomain" field is set, the DNS Provider MUST redirect
       the user agent to the "redirect_uri".
@@ -2256,6 +2680,16 @@ Table of Contents
       descriptions vague where disclosure of internal account or domain
       state would be inappropriate.
 
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 48]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       As a RECOMMENDED convention, when the user explicitly cancels the
       operation and the DNS Provider uses "error=access_denied", the
       "error_description" value MAY carry the prefix "user_cancel" to
@@ -2301,6 +2735,16 @@ Table of Contents
 9.  Resolving Template Variables
 
 9.1.  Variables
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 49]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
 9.1.1.  Variable Syntax
 
@@ -2350,6 +2794,14 @@ Table of Contents
       caller in the apply request (query string parameters or JSON
       body).  Values MUST be treated as strings regardless of how the
       underlying data source represents them; any transport encoding
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 50]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       (e.g., URL percent-encoding) MUST be decoded before substitution.
       The resulting substituted value MUST reflect the exact original
       input value string.
@@ -2397,6 +2849,14 @@ Table of Contents
    to produce the final DNS owner name for the resource record.
 
 9.3.1.  Input Values
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 51]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    *  "domain" - the Zone Apex, as supplied in the apply request.
 
@@ -2446,6 +2906,14 @@ Table of Contents
 
    _alternatively_
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 52]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    www.example.com.    1800 IN CNAME example.com.
    example.com.        1800 IN A 192.0.2.1
 
@@ -2493,10 +2961,19 @@ Table of Contents
    to 255 characters.  So depending on the embedded records both
    approaches might have advantages.
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 53]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    The implementation would be left to the DNS Provider, but to
    facilitate this SPF records SHOULD NOT be included in templates.
-   Instead, a new pseudo-record type is introduced in the template
-   called "SPFM".  This has the following attribute:
+   Instead, a Computed Record Type (see Section 3) is introduced in the
+   template called "SPFM".  This has the following attribute:
 
    "spfRules":  Determines the desired rules, basically everything but
       leading "v=spf1" and trailing "all" rule - see: SPF Rules
@@ -2537,6 +3014,17 @@ Table of Contents
 
    DNS Providers MAY choose to maintain state inside records in DNS
    indicating the templates writing the records.
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 54]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    A DNS Provider that maintains this state may be able to provide an
    improved experience for users, telling them the services enabled.
@@ -2586,6 +3074,14 @@ Table of Contents
        resolved RR set against the existing zone content according to
        the conflict detection rules (see Section 10.4).
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 55]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
        a.  Identify individual zone records that conflict with the
            resolved RR set.
 
@@ -2633,6 +3129,15 @@ Table of Contents
    1.  A record with no "groupId" field is always active, regardless of
        whether a "groupId" parameter was supplied in the apply request.
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 56]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    2.  A record with a "groupId" field is active if and only if its
        "groupId" value appears in the list supplied as the "groupId"
        apply parameter.  Matching is case-sensitive and exact.
@@ -2677,6 +3182,17 @@ Table of Contents
 
    *  A CNAME record conflicts with any other record on the same host,
       and any existing records conflict with a CNAME.
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 57]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    *  An NS record conflicts with all other records on the same host,
       and with any record whose host is subordinate to the NS host.  For
@@ -2726,6 +3242,14 @@ Table of Contents
    A template flag multiInstance (Section 6.1) can be set in order to
    allow for that.  This tells the DNS Provider that the template is
    expected to be written multiple times and that a re-apply MUST NOT
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 58]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    remove previous instances with the same "host".  Regular conflict
    detection rules MUST still be processed between instances, therefore
    such a template MUST be designed so that it does not conflict with
@@ -2752,11 +3276,35 @@ Table of Contents
    user or through the application of another template - without
    triggering conflict or removal of the owning template.
 
+10.4.1.3.  Identical Records
+
+   A resolved template record that is byte-identical to a resource
+   record already present in the target zone - same owner name, type,
+   class and RDATA - MUST NOT be treated as a conflict, regardless of
+   the conflict-detection rules above.  Instead of removing the existing
+   record or the whole template, the DNS Provider applies the new
+   template on top of it, so that the record is now shared between the
+   existing configuration and the newly applied template.
+
+   Whether a second, byte-identical copy of the record is stored in DNS
+   Provider's system, or the duplicate is skipped so that a single
+   record remains, is left to the DNS Provider and the capabilities of
+   its underlying DNS software.  Both behaviours are conformant - the
+   observable DNS response MUST be equivalent in either case and contain
+   only single resource record.
+
 10.5.  Calculating Conflict Resolution
 
    A DNS Provider not maintaining applied template state, applying a
    template whose records conflict with any existing record in the zone
    MUST remove all those conflicting records.
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 59]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    When a DNS Provider maintains applied template state, applying a
    template whose records conflict with records written by a previously
@@ -2765,7 +3313,11 @@ Table of Contents
    marked as non essential and eligible for removal.  As an example: if
    template T1 wrote records A and B, and template T2 is applied with
    records B and C, record B conflicts, and T1 is removed together with
-   all its records before T2 is applied.
+   all its records before T2 is applied.  Where such a provider shares a
+   single record between more than one applied template instance (see
+   Section 10.4.1.3), it MUST retain that record until the last instance
+   referencing it is removed, and MUST remove it only when no remaining
+   instance still requires it.
 
 10.6.  User Authorization of Changes
 
@@ -2796,10 +3348,27 @@ Table of Contents
    the displayed name.  It is RECOMMENDED however to also display the
    original "providerName" and "serviceName" defined in the template.
 
-   When the template's "warnPhishing" field is "true", the DNS Provider
-   SHOULD display additional warnings prompting the user to verify the
-   source of the request before proceeding, and SHOULD provide a more
-   verbose description of the changes about to be applied.
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 60]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   Unless the apply request is digitally signed (see Section 8.3.2.1),
+   the DNS Provider MUST treat the template as susceptible to phishing:
+   it SHOULD display additional warnings prompting the user to verify
+   the source of the request before proceeding, and SHOULD provide a
+   more verbose description of the changes about to be applied.  Failure
+   to do so may expose the end user to the risk of malicious changes
+   being applied to the DNS zone.
 
 10.7.  Template Application
 
@@ -2833,36 +3402,307 @@ Table of Contents
    Provider consent screen that appears valid, but would result in DNS
    being pointed at infrastructure under the attacker's control.
 
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 61]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    Not all templates are susceptible; the risk is proportional to how
-   much of a record's content is controlled by variables.  Three
+   much of a record's content is controlled by variables.  Two
    mitigations are available to template authors and Service Providers:
    digitally signing apply requests (see the
-   Section <<Section 8.3.2.1,format=title>>), using an alternative flow
-   not prone to this risk and disabling the synchronous flow via
-   "syncBlock", and setting the "warnPhishing" flag to prompt the DNS
-   Provider to display additional warnings to the user.
+   Section <<Section 8.3.2.1,format=title>>), and using an alternative
+   flow not prone to this risk by disabling the synchronous flow via
+   "syncBlock".  In the absence of such a mitigation a template is
+   treated as susceptible to phishing by default, and DNS Providers
+   display the additional warnings described in Section 10.6.
+
+11.2.  Untrusted DNS Provider Discovery Records
+
+   DNS Provider Discovery (see Section 7) requires the Service Provider
+   to read the "_domainconnect" TXT record from the target zone and to
+   fetch the Settings End-Point at the URL derived from it.  The content
+   of this record is controlled by whoever controls the zone, which is
+   not necessarily a party the Service Provider trusts.
+
+   A malicious or compromised zone can therefore direct the Service
+   Provider's HTTP client at an arbitrary endpoint.  Two classes of
+   attack arise:
+
+   *  Denial of Service - The record may point at a resource that is
+      malformed, never terminates, responds very slowly, or returns an
+      oversized or unbounded body, with the goal of exhausting the
+      Service Provider's connections, memory, or processing capacity.
+
+   *  Server-Side Request Forgery (SSRF) - The derived authority may
+      resolve to an address inside the Service Provider's own
+      infrastructure (for example a loopback, link-local, or private-use
+      address, or an internal-only hostname), causing the Service
+      Provider to issue requests against internal services on the
+      attacker's behalf.
+
+   Service Providers MUST treat the "_domainconnect" TXT record content,
+   and the Settings End-Point response derived from it, as untrusted
+   input.  In particular, Service Providers:
+
+   *  SHOULD reject derived authorities that resolve to loopback, link-
+      local, private-use, or otherwise internal addresses, unless the
+      Service Provider has a specific reason to permit them
+
+   *  MUST bound the discovery request, including connection and total-
+      request timeouts, a maximum response size, and a limit on the
+      number of redirects followed
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 62]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+11.3.  Underscored Host Names
+
+   The "host" apply parameter is supplied by the requesting party and
+   prepended to the template record owner names during Host Name
+   Rendering.  When its value is an underscore-prefixed label per
+   [RFC8552], the applied records land under a name with special
+   protocol meaning - for example "_acme-challenge", "_domainkey", or
+   "_dmarc".  A template that places a "CNAME" on the apex ("@") host
+   could then be applied with such a "host" value to redirect one of
+   these underscored names to infrastructure under an attacker's
+   control, causing the user to authorize what appears to be an ordinary
+   change while in fact delegating certificate issuance, DKIM key
+   publication, or DMARC policy.
+
+   Legitimate uses of an underscored "host" value exist but are rare.
+   DNS Providers SHOULD therefore apply additional measures when the
+   "host" apply parameter contains an underscore-prefixed label, such as
+   presenting the affected owner names to the user in a more explicit
+   and verbose manner during User Authorization of Changes so that the
+   special-meaning target is not obscured.
 
 12.  IANA Considerations
 
-12.1.  Underscore "_domainconnect" DNS Node Name
+12.1.  Registration Procedure for Domain Connect Registries
 
-   Per [RFC8552], please add the following entry to the "Underscored and
-   Globally Scoped DNS Node Names" registry:
+   IANA is requested to create a new registry group named "Domain
+   Connect Protocol".  The registration procedure described in this
+   section applies to all registries established by this document under
+   that registry group.
 
-               +=========+================+================+
-               | RR Type | _NODE NAME     | Reference      |
-               +=========+================+================+
-               | TXT     | _domainconnect | This document. |
-               +---------+----------------+----------------+
+   Values are registered after a three-week review period on the
+   <mailto:dconn@ietf.org> mailing list or its successor, on the advice
+   of one or more designated experts.  To allow for the allocation of
+   values prior to publication, the designated experts MAY approve
+   registration once they are satisfied that the corresponding
+   specification will be published.
 
-                      Table 10: IANA Registration for
-                               _domainconnect
+   Registration requests sent to the review mailing list SHOULD use an
+   appropriate subject line (e.g., "Request to register Domain Connect
+   record type: example").  Registration requests that remain
+   undetermined for a period longer than 21 days MAY be brought to
+   IANA's attention (using the <mailto:iana@iana.org> mailing list) for
+   resolution.
 
-12.2.  Domain Connect Settings Properties Registry
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 63]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   The designated experts SHOULD determine whether a registration
+   request contains enough information for the registry to be populated
+   and whether the proposed new functionality already exists.  In the
+   case of an incomplete registration, or an attempt to register already
+   existing functionality, the designated experts SHOULD ask for
+   corrections or reject the registration.
+
+   IANA is requested to appoint one or more designated experts for the
+   registries in the "Domain Connect Protocol" registry group.  It is
+   RECOMMENDED that multiple designated experts be appointed who are
+   able to represent the perspectives of different Service Providers and
+   DNS Providers, in order to enable broadly informed review of
+   registration decisions.  In cases where a registration decision could
+   be perceived as creating a conflict of interest for a particular
+   expert, that expert SHOULD defer to the judgment of the other
+   experts.
+
+12.2.  Domain Connect Fully Specified Record Types Registry
 
    IANA is requested to create a new registry named "Domain Connect
-   Settings Properties" under a new registry group "Domain Connect
-   Protocol".
+   Fully Specified Record Types" under the "Domain Connect Protocol"
+   registry group.
+
+   Registration policy: Specification Required (see [RFC8126]),
+   following the procedure in Section 12.1.
+
+   Each entry in the registry MUST include:
+
+   *  *RR Type*: the record type name as it appears in a template record
+      "type" field.  The value MUST conform to the dc-type-name syntax
+      (see Section 3).
+
+   *  *Status*: the lifecycle state of the registration.  The following
+      values are defined; IANA MAY define additional values as needed:
+
+      -  "Active": the type is currently in use and its definition is
+         normative.
+
+      -  "Deprecated": the type SHOULD NOT be used in new templates; it
+         MAY appear in existing deployments for backwards compatibility.
+         If the corresponding DNS RR TYPE is marked deprecated or
+         obsolete in the IANA "Resource Record (RR) TYPEs" registry, the
+         entry here SHOULD be set to "Deprecated".
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 64]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+      -  "Reserved": the type appears in earlier versions of the Domain
+         Connect specification (see [DC-SPEC]) and is reserved for back-
+         compatibility.  It MUST NOT be redefined in a manner
+         incompatible with [DC-SPEC], and MAY only be defined by a
+         specification that extends this document.  See Section 3,
+         Paragraph 13.
+
+   *  *Class*: the handling class of the type.  The value MUST be one of
+      "Fully Specified" (RDATA broken into dedicated template fields) or
+      "Computed" (records derived by a defined computation).  A
+      "Reserved" entry MAY leave this field unassigned.
+
+   *  *DNS RR TYPE*: the name of the corresponding entry in the IANA
+      "Resource Record (RR) TYPEs" registry within the "Domain Name
+      System (DNS) Parameters" registry group.  A "Fully Specified" type
+      SHOULD correspond to a registered DNS RR TYPE of the same name;
+      before registering such a type, the designated experts MUST verify
+      that the named DNS RR TYPE exists in that registry.  For a
+      "Computed" type, a "Reserved" type, or any other type for which no
+      corresponding DNS RR TYPE exists or would be meaningful, the value
+      MUST be "N/A".  Where a "Fully Specified" type would use a name
+      that is not yet a registered DNS RR TYPE, or where an entry is
+      registered with a "DNS RR TYPE" of "N/A" (such as a "Computed"
+      type), the designated experts SHOULD coordinate with the
+      designated experts of the "Resource Record (RR) TYPEs" registry
+      before completing the registration, to confirm that the chosen
+      name does not collide with an existing or anticipated DNS RR TYPE.
+
+   *  *Kind*: the nature of the defining document.  The value MUST be
+      one of: "IETF Standard" for types defined in a standards-track
+      RFC, "Informational" for types defined in an Informational RFC, or
+      "Other" for any other specification.
+
+   *  *Reference*: the document that defines the type.
+
+   A registration request MUST provide the following:
+
+   RR Type:  The record type name (the "type" value), conforming to the
+      dc-type-name syntax (see Section 3).
+
+   Status:  One of "Active", "Deprecated", or "Reserved".
+
+   Class:  "Fully Specified" or "Computed"; omitted for a "Reserved"
+      entry.
+
+   DNS RR TYPE:  The name of the corresponding IANA DNS RR TYPE, or "N/
+      A".
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 65]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   Kind:  "IETF Standard", "Informational", or "Other".
+
+   Reference:  The document that defines the type, preferably including
+      a URI from which a copy can be retrieved.
+
+   The following types from this specification constitute the initial
+   contents of the registry:
+
+    +=============+========+===========+=======+========+=============+
+    | *RR Type*   |*Status*| *Class*   |*DNS RR|*Kind*  | *Reference* |
+    |             |        |           |TYPE*  |        |             |
+    +=============+========+===========+=======+========+=============+
+    | "A"         |Active  | Fully     |"A"    |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "AAAA"      |Active  | Fully     |"AAAA" |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "CNAME"     |Active  | Fully     |"CNAME"|IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "MX"        |Active  | Fully     |"MX"   |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "TXT"       |Active  | Fully     |"TXT"  |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "SRV"       |Active  | Fully     |"SRV"  |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "NS"        |Active  | Fully     |"NS"   |IETF    | This        |
+    |             |        | Specified |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "SPFM"      |Active  | Computed  |"N/A"  |IETF    | This        |
+    |             |        |           |       |Standard| document    |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "APEXCNAME" |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "REDIR301"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
+    +-------------+--------+-----------+-------+--------+-------------+
+    | "REDIR302"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
+    +-------------+--------+-----------+-------+--------+-------------+
+
+        Table 9: Initial Domain Connect Fully Specified Record Types
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 66]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+12.3.  Domain Connect Settings Properties Registry
+
+   IANA is requested to create a new registry named "Domain Connect
+   Settings Properties" under the "Domain Connect Protocol" registry
+   group.
 
    Registration policy: Specification Required (see [RFC8126]).
 
@@ -2893,8 +3733,26 @@ Table of Contents
 
    *  *Reference*: the document that defines the property.
 
+   A registration request MUST provide the following:
+
+   Property name:  The JSON key as it appears in the settings response.
+
+   Status:  One of "Active", "Deprecated", or "Reserved".
+
+   Kind:  "IETF Standard", "Informational", or "Other".
+
+   Reference:  The document that defines the property, preferably
+      including a URI from which a copy can be retrieved.
+
    The following properties from this specification constitute the
    initial contents of the registry:
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 67]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    +=======================+==========+===============+===============+
    | *Property Name*       | *Status* | *Kind*        | *Reference*   |
@@ -2907,26 +3765,26 @@ Table of Contents
    +-----------------------+----------+---------------+---------------+
    | "urlSyncUX"           | Active   | IETF Standard | This document |
    +-----------------------+----------+---------------+---------------+
-   | "urlAsyncUX"          | Reserved | IETF Standard | This document |
+   | "urlAsyncUX"          | Reserved | Other         | [DC-SPEC]     |
    +-----------------------+----------+---------------+---------------+
    | "urlAPI"              | Active   | IETF Standard | This document |
    +-----------------------+----------+---------------+---------------+
-   | "width"               | Active   | IETF Standard | This document |
+   | "width"               | Reserved | Other         | [DC-SPEC]     |
    +-----------------------+----------+---------------+---------------+
-   | "height"              | Active   | IETF Standard | This document |
+   | "height"              | Reserved | Other         | [DC-SPEC]     |
    +-----------------------+----------+---------------+---------------+
-   | "urlControlPanel"     | Active   | IETF Standard | This document |
+   | "urlControlPanel"     | Reserved | Other         | [DC-SPEC]     |
    +-----------------------+----------+---------------+---------------+
    | "nameServers"         | Active   | IETF Standard | This document |
    +-----------------------+----------+---------------+---------------+
 
-           Table 11: Initial Domain Connect Settings Properties
+           Table 10: Initial Domain Connect Settings Properties
 
-12.3.  Domain Connect Template Properties Registry
+12.4.  Domain Connect Template Properties Registry
 
    IANA is requested to create a new registry named "Domain Connect
    Template Properties" under the "Domain Connect Protocol" registry
-   group (see Section 12.2).
+   group (see Section 12.3).
 
    Registration policy:
 
@@ -2944,6 +3802,13 @@ Table of Contents
 
    *  *Status*: the lifecycle state of the registration.  The following
       values are defined; IANA MAY define additional values as needed:
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 68]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
       -  "Active": the property is currently in use and its definition
          is normative.
@@ -2993,6 +3858,14 @@ Table of Contents
    +-----------------------+------------+---------------+-------------+
    | "description"         | Active     | IETF Standard | This        |
    |                       |            |               | document    |
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 69]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    +-----------------------+------------+---------------+-------------+
    | "variableDescription" | Active     | IETF Standard | This        |
    |                       |            |               | document    |
@@ -3031,7 +3904,117 @@ Table of Contents
    |                       |            |               | document    |
    +-----------------------+------------+---------------+-------------+
 
-           Table 12: Initial Domain Connect Template Properties
+           Table 11: Initial Domain Connect Template Properties
+
+12.5.  Guidance to the DNS Resource Record (RR) TYPEs Registry
+
+   To avoid collisions between newly assigned DNS RR TYPE mnemonics and
+   the record type names used by Domain Connect, IANA is requested to
+   add the following note to the registration procedure of the "Resource
+   Record (RR) TYPEs" registry within the "Domain Name System (DNS)
+   Parameters" registry group (see [RFC6895]):
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 70]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   |  When evaluating a request to assign a new RR TYPE mnemonic, the
+   |  designated experts SHOULD consult the "Domain Connect Fully
+   |  Specified Record Types" registry.  If the requested mnemonic
+   |  matches the name of an entry in that registry whose *DNS RR TYPE*
+   |  field is "N/A", the designated experts SHOULD flag the potential
+   |  conflict and consult the designated experts of the "Domain Connect
+   |  Fully Specified Record Types" registry before completing the
+   |  assignment.
+
+   This coupling ensures that a Domain Connect record type name that
+   does not (yet) correspond to a DNS RR TYPE - such as a "Computed"
+   type - is not inadvertently assigned a conflicting meaning in the DNS
+   RR TYPEs registry.
+
+   In addition, IANA is requested to update the "Reference" of the
+   "Resource Record (RR) TYPEs" registry to cite this document alongside
+   the existing references:
+
+   |  OLD: [RFC6895][RFC1035]
+   |  NEW: [RFC6895][RFC1035][This document]
+
+   This records, on the DNS side, the obligation to consult the "Domain
+   Connect Fully Specified Record Types" registry described above.
+
+12.6.  Underscore "_domainconnect" DNS Node Name
+
+   Per [RFC8552], please add the following entry to the "Underscored and
+   Globally Scoped DNS Node Names" registry:
+
+               +=========+================+================+
+               | RR Type | _NODE NAME     | Reference      |
+               +=========+================+================+
+               | TXT     | _domainconnect | This document. |
+               +---------+----------------+----------------+
+
+                      Table 12: IANA Registration for
+                               _domainconnect
+
+12.7.  Media Type Registration for application/domainconnect-
+       template+json
+
+   IANA is requested to register the following media type in the "Media
+   Types" registry, per [RFC6838].
+
+   Type name:  application
+
+   Subtype name:  domainconnect-template+json
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 71]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   Required parameters:  N/A
+
+   Optional parameters:  N/A
+
+   Encoding considerations:  binary; the content is a JSON [RFC8259]
+      document encoded in UTF-8.
+
+   Security considerations:  See Section 11 of this document.
+
+   Interoperability considerations:  See this document.
+
+   Published specification:  This document (see Section 6.1).
+
+   Applications that use this media type:  Domain Connect Service
+      Providers and DNS Providers.
+
+   Fragment identifier considerations:  The "+json" structured syntax
+      suffix is defined in [RFC6839]; see also [RFC8259].
+
+   Additional information:  Deprecated alias names for this type:  N/A
+
+                            Magic number(s):  N/A
+
+                            File extension(s):  N/A
+
+                            Macintosh file type code(s):  N/A
+
+   Person email address to contact for further information:  IETF DCONN
+      Working Group <mailto:dconn@ietf.org>
+
+   Intended usage:  COMMON
+
+   Restrictions on usage:  N/A
+
+   Author:  IETF DCONN Working Group
+
+   Change controller:  IETF
 
 Implementation Status
 
@@ -3043,6 +4026,13 @@ Open Source
 
    *  Server library (Python):https://github.com/Domain-Connect/
       DomainConnectApplyZone
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 72]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
 Proprietary implementations
 
@@ -3090,7 +4080,15 @@ Change History
 
    This section is to be removed before publishing as an RFC.
 
-Change from draft-ietf-dconn-domainconnect-02 to -03
+Change from draft-ietf-dconn-domainconnect-03 to -04
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 73]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    *  Added Template Property Extensibility and the "crit" property to
       Template Definition.
@@ -3102,6 +4100,62 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
 
    *  Added dc-template-property, dc-unprefixed-property, and dc-vnd-
       property to Terminology.
+
+Change from draft-ietf-dconn-domainconnect-02 to -03
+
+   *  Classified template record types as Fully Specified, Computed, or
+      Generic.
+
+   *  Added a shared Registration Procedure for Domain Connect
+      Registries section (designated-expert assignment and review
+      process) governing all Domain Connect registries.
+
+   *  Coupled the "Domain Connect Fully Specified Record Types" registry
+      to the IANA DNS Resource Record (RR) TYPEs registry as a
+      bidirectional maintenance contract (following the pattern set by
+      RFC 9108 for that registry).
+
+   *  Added Untrusted DNS Provider Discovery Records to Security
+      Considerations.
+
+   *  Clarified handling of multiple "_domainconnect" TXT records in DNS
+      Provider Discovery.
+
+   *  Deprecated and reserved the "warnPhishing" template flag in
+      Template Definition; phishing warnings are now default behavior,
+      see Template Variable Phishing.
+
+   *  Clarified one-host-one-key rule in Public Key Publication.
+
+   *  Added Media Type Registration for application/
+      domainconnect-template+json in IANA Considerations.
+
+   *  Added media type identification to Template Definition.
+
+   *  Added HTTP content negotiation guidance to the Query Supported
+      Template end-point.
+
+   *  Added Identical Records to Conflict Detection and shared-record
+      retention to Calculating Conflict Resolution.
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 74]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   *  Added examples illustrating an optional path segment in the
+      "_domainconnect" TXT record content and in the settings-response
+      URL prefixes in DNS Provider Discovery.
+
+   *  Added Underscored Host Names to Security Considerations.
+
+   *  Marked the "width", "height" and "urlControlPanel" DNS Provider
+      Discovery settings properties as Reserved, deferring their
+      definition to [DC-SPEC]; removed reserved properties from the
+      example settings response.
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 
@@ -3138,6 +4192,15 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
    *  Defined extensibility model for DNS Provider Discovery settings
       response and added IANA "Domain Connect Settings Properties"
       registry.
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 75]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    *  Removed non-normative sections (Public Template Repository,
       General Considerations, Extensions/Exclusions); replaced all
@@ -3185,6 +4248,15 @@ domainconnect-00
    *  Added possibility to define variables for numeric fields.
 
    *  Added IANA registration for _domainconnect record as per [RFC8552]
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 76]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
 Change from draft-carney-regext-domainconnect-03 to draft-kowalik-
 regext-domainconnect-00
@@ -3235,6 +4307,13 @@ Normative References
               RFC 8174, May 2017,
               <https://www.rfc-editor.org/info/rfc8174>.
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 77]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [RFC7208]  Kitterman, S., "Sender Policy Framework (SPF) for
               Authorizing Use of Domains in Email, Version 1", IETF,
               DOI 10.17487/RFC7208, RFC 7208, April 2014,
@@ -3274,10 +4353,22 @@ Normative References
               DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
               <https://www.rfc-editor.org/info/rfc6335>.
 
+   [RFC6895]  3rd, D. E., "Domain Name System (DNS) IANA
+              Considerations", IETF, DOI 10.17487/RFC6895, BCP 42,
+              RFC 6895, April 2013,
+              <https://www.rfc-editor.org/info/rfc6895>.
+
    [RFC6570]  Gregorio, J., Fielding, R., Hadley, M., Nottingham, M.,
               and D. Orchard, "URI Template", IETF,
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
               <https://www.rfc-editor.org/info/rfc6570>.
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 78]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
               Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
@@ -3311,15 +4402,34 @@ Normative References
               DOI 10.17487/RFC9499, BCP 219, RFC 9499, March 2024,
               <https://www.rfc-editor.org/info/rfc9499>.
 
-Informative References
+   [RFC6838]  Freed, N., Klensin, J., and T. Hansen, "Media Type
+              Specifications and Registration Procedures", IETF,
+              DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013,
+              <https://www.rfc-editor.org/info/rfc6838>.
 
-   [RFC9364]  Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF,
-              DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023,
-              <https://www.rfc-editor.org/info/rfc9364>.
+   [RFC9110]  Fielding, R., Nottingham, M., and J. Reschke, "HTTP
+              Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97,
+              RFC 9110, June 2022,
+              <https://www.rfc-editor.org/info/rfc9110>.
+
+Informative References
 
    [RFC8499]  Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
               Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499,
               January 2019, <https://www.rfc-editor.org/info/rfc8499>.
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 79]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   [RFC6839]  Hansen, T. and A. Melnikov, "Additional Media Type
+              Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,
+              RFC 6839, January 2013,
+              <https://www.rfc-editor.org/info/rfc6839>.
 
    [DC-SPEC]  Blinn, A., Kerola, S., and P. Kowalik, "Domain Connect
               Specification, Version 2.3 Rev. 67", 2 March 2025,
@@ -3331,6 +4441,46 @@ Appendix A.  Examples
 A.1.  Example Template
 
    EXAMPLE: Full template example
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 80]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    {
        "providerId": "example.com",
@@ -3380,6 +4530,14 @@ A.2.  Example Records: Single static host record
 
    EXAMPLE: Single static host record example
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 81]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [{
        "type": "A",
        "host": "www",
@@ -3414,12 +4572,27 @@ A.3.  Example Records: Single variable host record for A
    host name for the apex A record to the IP address "198.51.100.2" with
    a TTL of 600
 
-A.4.  Example Records: Unspecified record type CAA
+A.4.  Example Records: Generic Record Type CAA
 
-   This example shows how to include a set of unspecified record types
-   on an example of CAA records:
+   This example shows how to include a set of Generic Record Types on an
+   example of CAA records:
 
-   EXAMPLE: Unspecified record type CAA example
+   EXAMPLE: Generic Record Type CAA example
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 82]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    [
        {
@@ -3459,6 +4632,23 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
    www 3600 IN CNAME other.host.example.
 
    Now application of the following template:
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 83]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    [
        {
@@ -3507,6 +4697,15 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
    ample ~all"
    www 1800 IN A 203.0.113.2
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 84]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
 A.6.  Example: SPF Record Merging
 
    Consider a DNS Zone before a template application:
@@ -3553,6 +4752,15 @@ A.6.  Example: SPF Record Merging
    @ 3600 IN MX 10 mx1.example.net.
    @ 3600 IN MX 10 mx2.example.net.
    @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 85]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    In the next step application of the following template of Newsletter
    service:
@@ -3603,6 +4811,13 @@ Authors' Addresses
    URI:   https://www.godaddy.com
 
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 86]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    S Kerola
    Cloudflare, Inc.
    101 Townsend St
@@ -3610,3 +4825,48 @@ Authors' Addresses
    United States of America
    Email: kerolasa@cloudflare.com
    URI:   https://cloudflare.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 87]

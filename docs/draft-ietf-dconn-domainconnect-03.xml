@@ -757,38 +757,48 @@ p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 </section>
     <section anchor="dns-provider-discovery"><name>DNS Provider Discovery</name>
 
-<t anchor="_5beeef04-882e-30af-a004-472d24c4b196">To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for <tt>"_domainconnect"</tt> in the zone.</t>
+<section anchor="_282e64b2-f982-b8f7-4c61-e6b2cc43731e"><name><tt>"_domainconnect"</tt> Resource Record</name>
 
-<t anchor="_58919da9-ed8a-93e7-2c23-d91527262a70">The record content represents an authority and path part of the settings REST API URL.</t>
+<t anchor="_9773a6c8-7cf9-790b-1a1f-c5da689b9ee5">To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for <tt>"_domainconnect"</tt> in the zone.</t>
 
-<t anchor="_7bdf64ee-6f65-d73f-e302-3ee3d2458c5c" keepWithNext="true">EXAMPLE 1: An example of the contents of this record:</t><sourcecode anchor="_34c8c9d9-c484-45ae-8b36-e8b3ba7f93ef"><![CDATA[domainconnect.virtucondomains.example]]></sourcecode>
+<t anchor="_da91f261-ad91-f2b2-72af-82226c60285b">The record content represents an authority and path part of the settings REST API URL.</t>
 
-<t anchor="_0a5d937a-990f-7002-8bc2-a8694991ecac"><tt>"_domainconnect"</tt> TXT record content, when prepended with <tt>https://</tt> schema and appended with <tt>/v2</tt> path segment, MUST form a valid URL <xref target="RFC3986" section="" relative=""></xref>. <tt>"_domainconnect"</tt> TXT record MUST contain the authority part of the URL and MAY contain a path part. <tt>"_domainconnect"</tt> MUST not contain schema, query or fragment part of an URL.</t>
+<t anchor="_34083884-7e96-a906-2016-88fd7e1414e6" keepWithNext="true">EXAMPLE: An example of the contents of this record:</t><sourcecode anchor="_cc77cefa-9f90-f4f3-96ad-cdcc522109b1"><![CDATA[domainconnect.virtucondomains.example]]></sourcecode>
 
-<t anchor="_a51e74a3-a31e-55f0-7171-73070ce5f718">As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the <tt>"_domainconnect"</tt> TXT record with the appropriate data.</t>
+<t anchor="_0c1dab5a-e215-43d3-013e-aab8dc4aeab8"><tt>"_domainconnect"</tt> TXT record content, when prepended with <tt>https://</tt> schema and appended with <tt>/v2</tt> path segment, MUST form a valid URL <xref target="RFC3986" section="" relative=""></xref>. <tt>"_domainconnect"</tt> TXT record MUST contain the authority part of the URL and MAY contain a path part. <tt>"_domainconnect"</tt> MUST not contain schema, query or fragment part of an URL.</t>
 
-<t anchor="_cd1b91cc-e572-069c-adcc-b011e2e5afcb">How this is implemented is up to the DNS Provider.</t>
+<t anchor="_04346c76-c8ab-a6bd-5a3c-439fedfe8d46">The DNS query for the <tt>"_domainconnect"</tt> TXT record MAY return more than one TXT record. The Service Provider MUST reject any returned record whose content does not satisfy the validity rules above. If, after this filtering, at least one valid record remains, the Service Provider MUST process at least one of them. The Service Provider MAY iterate over the remaining valid records, attempting discovery with each in turn, until a valid Settings End-Point response is obtained.</t>
 
-<t anchor="_edb1a08b-11c2-13e5-1978-b551e0a4c94b">For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having  the data in each zone.</t>
+<section anchor="_fa33d3cf-326c-5213-2b80-e5d96ce3554e"><name>Deployment considerations</name>
 
-<t anchor="_9dca02b7-9c47-09fc-e828-65c9201fe612">The URL prefix returned MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
+<t anchor="_eada2e45-262c-2787-30b0-3cf531222cd4">As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the <tt>"_domainconnect"</tt> TXT record with the appropriate data.</t>
 
-<t anchor="_e64300c8-b5f9-20cb-1af3-1b31e2b66687">Normative URI template of the Settings End-Point per <xref target="RFC6570" section="" relative=""></xref>:</t>
+<t anchor="_0137d7b5-445b-e1f3-017c-9ec963981963">How this is implemented is up to the DNS Provider.</t>
 
-<sourcecode anchor="_11c24ae0-b934-c245-769b-36bdbb47f97b"><![CDATA[GET
+<t anchor="_9ed3629c-e1aa-b149-a2f1-0f30913c1ea8">For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having  the data in each zone.</t>
+</section>
+</section>
+
+<section anchor="_235f8919-467b-cef3-6b9d-1f0288269e00"><name>Settings End-Point</name>
+
+<t anchor="_35135da2-d176-f556-716a-c242de7cfe91">The URL prefix returned in <tt>"_domainconnect"</tt> Resource Record MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
+
+<t anchor="_f66f061e-00d0-5162-022b-8883c5917759">Normative URI template of the Settings End-Point per <xref target="RFC6570" section="" relative=""></xref>:</t>
+
+<sourcecode anchor="_853cdd20-a9e0-e6ca-8e68-296e9ae84623"><![CDATA[GET
 
 https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 
-<t anchor="_1d7186b0-81e9-5b05-5bf9-f54b3e8d3f76"><tt>"_domainconnect"</tt> parameter is the URL prefix returned in the <tt>"_domainconnect"</tt> TXT record.</t>
+<t anchor="_784993ba-2123-6613-3b9d-d03bbb19e7e8"><tt>"_domainconnect"</tt> parameter is the URL prefix returned in the <tt>"_domainconnect"</tt> TXT record.</t>
 
-<t anchor="_077b9866-c8ec-5a92-d0ba-ee5d36ddb095">This MUST return a JSON structure containing the settings to use for Domain Connect on the domain name (passed in on the path) at the DNS Provider. This JSON structure MUST contain the following fields unless otherwise specified.</t>
+<t anchor="_169f3af2-86f7-71fc-93cd-a46417999561">This MUST return a JSON structure containing the settings to use for Domain Connect on the domain name (passed in on the path) at the DNS Provider. This JSON structure MUST contain the following fields unless otherwise specified.</t>
 
-<table anchor="_d2669552-159d-0172-bafc-d7dcfa4a3898"><name>properties of the settings data structure</name><thead><tr><th align="left"><strong>Field</strong></th><th align="left"><strong>Key</strong></th><th align="left"><strong>Type</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><strong>Provider Id</strong></td><td align="left">providerId</td><td align="left">String</td><td align="left">(REQUIRED) Unique identifier for the DNS Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To allow for non-coordinated uniqueness, this SHOULD be the domain name of the DNS Provider (e.g. virtucom.example).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">String</td><td align="left">(REQUIRED) The name of the DNS Provider.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Display Name</strong></td><td align="left">providerDisplayName</td><td align="left">String</td><td align="left">(OPTIONAL) The name of the DNS Provider that SHOULD be displayed by the Service Provider.<br />  This MAY change per domain for some DNS Providers that power multiple brands.<br />  When present, the value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>UX URL Prefix for Synchronous Flows</strong></td><td align="left">urlSyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>API URL Prefix</strong></td><td align="left">urlAPI</td><td align="left">String</td><td align="left">(REQUIRED) The URL Prefix for the REST API.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>Name Servers</strong></td><td align="left">nameServers</td><td align="left">List of String</td><td align="left">(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records).<br />   Each entry MUST conform to the  <tt>"domain-name"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlAsyncUX</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">width</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">height</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlControlPanel</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr></tbody></table>
+<table anchor="_fbbd3e05-e96b-5eb9-393c-484c36ed46c1"><name>properties of the settings data structure</name><thead><tr><th align="left"><strong>Field</strong></th><th align="left"><strong>Key</strong></th><th align="left"><strong>Type</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><strong>Provider Id</strong></td><td align="left">providerId</td><td align="left">String</td><td align="left">(REQUIRED) Unique identifier for the DNS Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To allow for non-coordinated uniqueness, this SHOULD be the domain name of the DNS Provider (e.g. virtucom.example).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">String</td><td align="left">(REQUIRED) The name of the DNS Provider.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Display Name</strong></td><td align="left">providerDisplayName</td><td align="left">String</td><td align="left">(OPTIONAL) The name of the DNS Provider that SHOULD be displayed by the Service Provider.<br />  This MAY change per domain for some DNS Providers that power multiple brands.<br />  When present, the value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>UX URL Prefix for Synchronous Flows</strong></td><td align="left">urlSyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>API URL Prefix</strong></td><td align="left">urlAPI</td><td align="left">String</td><td align="left">(REQUIRED) The URL Prefix for the REST API.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>Name Servers</strong></td><td align="left">nameServers</td><td align="left">List of String</td><td align="left">(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records).<br />   Each entry MUST conform to the  <tt>"domain-name"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlAsyncUX</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">width</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">height</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlControlPanel</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr></tbody></table>
 
-<t anchor="_0ccab7a7-92d2-3e53-58c0-028568ed6207">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <xref target="iana-settings-properties"></xref> in order to avoid name conflicts.</t>
+<t anchor="_6dcc69cb-0aa5-c477-8b2f-cc8129d32702">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <xref target="iana-settings-properties"></xref> in order to avoid name conflicts.</t>
 
-<t anchor="_a2b3bcb7-ee32-ac9d-c5b3-eef411e0e715" keepWithNext="true">EXAMPLE 2: Example Settings End-Point response</t><sourcecode anchor="_67602281-1db3-d976-3bcb-1170cdb13709" type="json"><![CDATA[{
+<t anchor="_41adea2d-5f81-6d98-1991-d4576cc73d8d" keepWithNext="true">EXAMPLE: Example Settings End-Point response</t><sourcecode anchor="_c207318c-682e-c7d4-a045-d2017c8096ed" type="json"><![CDATA[{
     "providerId": "virtucondomains.example",
     "providerName": "Virtucon Domains",
     "providerDisplayName": "Virtucon Domains",
@@ -800,17 +810,18 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
     domainsdns.example"]
 }]]></sourcecode>
 
-<t anchor="_d7703f91-9243-8a6c-322c-7f24688ff817">When constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
+<t anchor="_cfa562d8-e356-64d2-654f-4fdaa15f4137">When constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
 
-<t anchor="_d0494775-54b3-d9ff-7086-5989ea379b18">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
+<t anchor="_26a0158a-194f-3b92-3762-e1872f8121ce">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
 
-<t anchor="_eeeee233-1737-4377-4bf1-cc5ea4018e54">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
+<t anchor="_f36c8f2a-3a96-f3a2-b186-943ef47ff96b">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
 
-<t anchor="_5461cf7e-f1ad-5a59-8a10-f8f16e0155f6">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record succeeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
+<t anchor="_bc4b24c3-a2a7-e415-0edc-51eb74ee1ec6">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record succeeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
 
-<t anchor="_caaa6be8-fa85-5a49-a1a6-479810207855">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
+<t anchor="_8e210510-2cd6-fd5a-2c16-bc094891acde">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
 
-<table anchor="_d6d373c4-5d4f-8f2f-284f-4ffd34e91d56"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
+<table anchor="_d1470e36-72b5-6d47-8eab-dc956cb41879"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
+</section>
 </section>
     <section anchor="applying-domain-connect"><name>Applying Domain Connect</name>
 
@@ -1291,9 +1302,26 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <section anchor="sec-variable-phishing"><name>Template Variable Phishing</name>
 
-<t anchor="_d115a58e-6c93-b233-25e7-21e5fb9f85fc">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.</t>
+<t anchor="_00445e98-771e-eb13-824a-5e75babd3cd8">Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value - for example, a hijacked IP address - and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.</t>
 
-<t anchor="_bfb63bbd-7557-040d-8bb4-d6eb19c35a26">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &#x3c;&#x3c;<xref target="signing-procedure"></xref>,format=title&#x3e;&#x3e;), using an alternative flow not prone to this risk and disabling the synchronous flow via <tt>"syncBlock"</tt>, and setting the <tt>"warnPhishing"</tt> flag to prompt the DNS Provider to display additional warnings to the user.</t>
+<t anchor="_a8b77f98-2326-a3fc-cf5d-84d235fa25bc">Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section &#x3c;&#x3c;<xref target="signing-procedure"></xref>,format=title&#x3e;&#x3e;), using an alternative flow not prone to this risk and disabling the synchronous flow via <tt>"syncBlock"</tt>, and setting the <tt>"warnPhishing"</tt> flag to prompt the DNS Provider to display additional warnings to the user.</t>
+</section>
+
+<section anchor="sec-discovery-record"><name>Untrusted DNS Provider Discovery Records</name>
+
+<t anchor="_22947d72-7580-25d9-cc6f-4a4b70c8997c">DNS Provider Discovery (see <xref target="dns-provider-discovery"></xref>) requires the Service Provider to read the <tt>"_domainconnect"</tt> TXT record from the target zone and to fetch the Settings End-Point at the URL derived from it. The content of this record is controlled by whoever controls the zone, which is not necessarily a party the Service Provider trusts.</t>
+
+<t anchor="_d14744db-1572-275b-5a01-76f0abc65ef3">A malicious or compromised zone can therefore direct the Service Provider's HTTP client at an arbitrary endpoint. Two classes of attack arise:</t>
+
+<ul anchor="_f0292842-16fd-8fa0-559e-471b530375eb"><li>Denial of Service - The record may point at a resource that is malformed, never terminates, responds very slowly, or returns an oversized or unbounded body, with the goal of exhausting the Service Provider's connections, memory, or processing capacity.</li>
+<li>Server-Side Request Forgery (SSRF) - The derived authority may resolve to an address inside the Service Provider's own infrastructure (for example a loopback, link-local, or private-use address, or an internal-only hostname), causing the Service Provider to issue requests against internal services on the attacker's behalf.</li>
+</ul>
+
+<t anchor="_513098fa-bc30-17aa-6ee2-90d9059d22bc">Service Providers MUST treat the <tt>"_domainconnect"</tt> TXT record content, and the Settings End-Point response derived from it, as untrusted input. In particular, Service Providers:</t>
+
+<ul anchor="_de57b1ba-b2bb-7543-199e-69ab31ab3cc9"><li>SHOULD reject derived authorities that resolve to loopback, link-local, private-use, or otherwise internal addresses, unless the Service Provider has a specific reason to permit them</li>
+<li>MUST bound the discovery request, including connection and total-request timeouts, a maximum response size, and a limit on the number of redirects followed</li>
+</ul>
 </section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
@@ -1451,13 +1479,15 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_4bf32e80-898f-125d-b2c4-1b0bde1dc210" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_764f301d-395b-6a89-7885-7e17bfab7d93" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_7cda4012-1806-e0ac-4982-e005233ecbc0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
+<section anchor="_244c25ab-95b8-5839-56eb-e0ef519aa6ba" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-02 to -03</name>
 
-<ul anchor="_1422087f-3be3-d056-db2c-6fb2d571b52e"><li>Classified template record types as Fully Specified, Computed, or Generic.</li>
+<ul anchor="_c039792d-020f-2c92-ae86-3a40f2d1ec7e"><li>Classified template record types as Fully Specified, Computed, or Generic.</li>
 <li>Added a shared <xref target="iana-registration-procedure" format="title"></xref> section (designated-expert assignment and review process) governing all Domain Connect registries.</li>
 <li>Coupled the "Domain Connect Fully Specified Record Types" registry to the IANA DNS Resource Record (RR) TYPEs registry as a bidirectional maintenance contract (following the pattern set by RFC 9108 for that registry).</li>
+<li>Added <xref target="sec-discovery-record" format="title"></xref> to <xref target="security-considerations" format="title"></xref>.</li>
+<li>Clarified handling of multiple <tt>"_domainconnect"</tt> TXT records in <xref target="dns-provider-discovery" format="title"></xref>.</li>
 </ul>
 </section>
 

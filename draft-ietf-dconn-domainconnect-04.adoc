@@ -5,8 +5,8 @@
 :abbrev: Domain Connect
 :intended-series: standard
 :submission-type: IETF
-:docnumber: draft-ietf-dconn-domainconnect-03 (editor copy)
-:published-date: 2026-06-05
+:docnumber: draft-ietf-dconn-domainconnect-04 (editorial)
+:published-date: 2026-07-03
 :status: informational
 :ipr: trust200902
 :area: Applications and Real-Time
@@ -120,7 +120,7 @@ The following definitions and rules are imported normatively from other document
 
 The following additional syntax rules are defined in this document and used normatively throughout.
 
-`"dc-name-char"`:: any Unicode Assignable code point allowed in `"domain-name"` except "%" and "@"
+`"dc-name-char"`:: any Unicode Assignable code point allowed in `"domain-name"` except `"%"` and `"@"`
 
 The following additional ABNF rules are defined in this document and used normatively throughout.
 
@@ -209,13 +209,26 @@ variable-name   =  1*( ALPHA / DIGIT / "-" / "_" )
 
 ; ---- Template record field rules ----
 
-dc-record-type =  ( "A" / "AAAA" / "CNAME" / "MX" / "TXT"
-                  / "SRV" / "SPFM" / "NS" )
-                ; named core and pseudo record types
-                /  "TYPE" 1*DIGIT
+dc-record-type =  dc-type-name / dc-rfc3597-type
+                ; a registered RR TYPE mnemonic (covering
+                ; Fully Specified, Computed, and Generic types
+                ; alike), or the RFC 3597 unknown-type form. 
+
+dc-type-name   =  "A"
+                /  ( UALPHA *( UALPHA / DIGIT / "-" )
+                     ( UALPHA / DIGIT ) )
+                ; RR TYPE mnemonic per RFC 6895:
+                ; [A-Z][A-Z0-9-]*[A-Z0-9], i.e. starts with an
+                ; uppercase letter and ends with a letter or
+                ; digit; "A" is grandfathered as a single-letter
+                ; mnemonic. MUST NOT be of the reserved forms
+                ; "TYPE"<n> or "CLASS"<n> (<<RFC3597>>, <<RFC6895>>).
+
+dc-rfc3597-type =  "TYPE" 1*DIGIT
                 ; unknown type per RFC 3597
-                /  1*(ALPHA / DIGIT / "-")
-                ; any other IANA-registered RR type name
+
+UALPHA         =  %x41-5A
+                ; A-Z (uppercase letter)
 
 dc-essential   =  "Always" / "OnApply"
                 ; default is "Always"
@@ -292,8 +305,14 @@ User:: Refers to the end-user who has means to control domain name's DNS configu
 
 Service Template/Template:: A structured data format that describes a set of configurations for DNS records required by a Service Provider to configure a certain service together with metadata related to the control flow of Domain Connect protocol. A template is used as a means of communication between Service Provider and DNS Provider.
 
+Fully Specified Record Type:: A DNS resource record type for which this document, or a specification registered in the IANA "Domain Connect Fully Specified Record Types" registry (see <<iana-fully-specified-types>>), defines a breakdown of the record's RDATA into individual, normatively-typed template fields rather than carrying the RDATA opaquely.
+
+Computed Record Type:: A template record type that does not correspond to a single DNS resource record placed verbatim into the zone. Instead, it instructs the DNS Provider to derive one or more DNS resource records by a computation defined for that type. The resulting record types and RDATA need not match the Computed Record Type's own name.
+
+Generic Record Type:: Any DNS resource record type, identified by its IANA RR TYPE mnemonic or by the `"TYPE"` form of <<RFC3597>>, whose RDATA is carried opaquely in the `"data"` field in DNS presentation format.
+
 [[reserved-for-extensions]]
-Certain labels, parameters, endpoints, and registry entries are present in this specification with _Reserved_ status. These items appear in the original Domain Connect community specification <<DC-SPEC>> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <<DC-SPEC>>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <<DC-SPEC>>.
+Certain labels, parameters, endpoints, and registry entries are present in this specification with "Reserved" status. These items appear in the original Domain Connect community specification <<DC-SPEC>> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <<DC-SPEC>>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <<DC-SPEC>>.
 
 :sectnums:
 
@@ -453,6 +472,8 @@ Steps:
 
 A template is defined as a standard JSON data structure containing the following data. Field values MUST be defined unless otherwise indicated.
 
+The template JSON structure defined in this section is identified by the media type `"application/domainconnect-template+json"` (see <<iana-media-type>>).
+
 [cols=",,,",options="header",title="properties of the template definition"]
 |=======================================================================
 |Data Element
@@ -582,9 +603,7 @@ The default is `"false"`.
 |*Warn Phishing*
 |Boolean
 |warnPhishing
-|(OPTIONAL) When `"true"`, signals that the template contains variables that cannot be constrained by digital signing and may be susceptible to phishing. +
-
-The default is `"false"`.
+|(DEPRECATED) This flag is deprecated and its code point is reserved (see <<reserved-for-extensions>>). Phishing warnings are now the default behavior in the absence of other security mechanisms (see <<sec-variable-phishing>>). This flag MUST NOT be relied upon and MUST NOT be set in new templates. A DNS Provider MUST NOT treat the absence of this flag as a signal that a template is not susceptible to phishing.
 
 |*Host Required*
 |Boolean
@@ -605,45 +624,61 @@ The default is `"false"`.
 Each template record is an entry that contains a type and several
 other values depending on the type.
 
-Many of these values can contain variables, which are expressed as strings surrounded with "%" or special variable "@" (See: <<variables>>). Variables are replaced with values when the template is applied.
+Many of these values can contain variables, which are expressed as strings surrounded with `"%"` or special variable `"@"` (See: <<variables>>). Variables are replaced with values when the template is applied.
 
 
 Each record MUST contain the following elements unless otherwise specified.
 
-[cols=",,,",options="header",title="properties of the template record definition"]
-|=======================================================================
-|Data Element
-|Type
-|Key
-|Description
+Properties of the template record definition:
 
-|*Type*
-|enum
-|type
-|(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
+[newline=true]
+`"Type"`::
++
+--
+[horizontal]
+JSON key::: `"type"`
+Type::: `"enum"`
 
-Valid values include: A, AAAA, CNAME, MX, TXT, SRV, or SPFM. +
-The DNS Provider MUST support the core set of records A, AAAA, CNAME, MX, TXT, SRV. +
-The DNS Provider SHOULD support SPFM record for high interoperability with existing templates +
- +
-All other record types MAY be specified by type name as listed in IANA registry for DNS Resource Record (RR) TYPEs. Unknown record types MAY be specified as per <<RFC3597>> by the word "TYPE" immediately followed by the decimal RR type number, with no intervening whitespace. Support for other record types is OPTIONAL. +
+(REQUIRED) Describes the type of record in DNS, or the operation impacting DNS. +
+
+Record types fall into three classes (see <<terminology>>): +
+
+Fully Specified Record Types — A, AAAA, CNAME, MX, TXT, SRV, NS — whose RDATA is broken into dedicated template fields. The complete set is managed by the IANA "Domain Connect Fully Specified Record Types" registry (see <<iana-fully-specified-types>>). +
+
+Computed Record Types — which instruct the DNS Provider to derive DNS records by a defined computation rather than write a verbatim record. `"SPFM"` is the Computed Record Type defined in this document. +
+
+Generic Record Types — any other IANA-registered RR TYPE mnemonic, or the `"TYPE"` form of <<RFC3597>>, whose RDATA is carried opaquely in the `"data"` field. +
+
+The DNS Provider MUST support the core Fully Specified Record Types A, AAAA, CNAME, MX, TXT, SRV. +
+The DNS Provider SHOULD support the `"SPFM"` Computed Record Type for high interoperability with existing templates. +
+Support for NS, for Generic Record Types, and for any Fully Specified Record Type registered by another specification is OPTIONAL. +
 
 The value MUST conform to the `dc-record-type` syntax (see <<terminology>>).
+--
 
+[newline=true]
+`"Group ID"`::
++
+--
+[horizontal]
+JSON key::: `"groupId"`
+Type::: `"String"`
 
-|*Group ID*
-|String
-|groupId
-|(OPTIONAL)
+(OPTIONAL)
 This parameter identifies the group the record belongs to when applying changes.
 
 The value MUST conform to the `dc-id` syntax (see <<terminology>>) and MUST NOT contain variable expressions.
+--
 
+[newline=true]
+`"Essential"`::
++
+--
+[horizontal]
+JSON key::: `"essential"`
+Type::: `"enum"`
 
-|*Essential*
-|enum
-|essential
-|(OPTIONAL)
+(OPTIONAL)
 This parameter indicates how the record is treated during conflict detection with
 existing templates. +
 
@@ -657,12 +692,17 @@ template +
 The value MUST conform to the `dc-essential` syntax (see <<terminology>>). +
 
 If omitted, the value MUST be assumed to be `"Always"`.
+--
 
-|*Host*
-|String
-|host
-|
-(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and other unspecified record type values. +
+[newline=true]
+`"Host"`::
++
+--
+[horizontal]
+JSON key::: `"host"`
+Type::: `"String"`
+
+(REQUIRED) The host for A, AAAA, CNAME, NS, TXT, MX and Generic Record Type values. +
 
 This value is relative to the applied host and domain, unless trailed by a ".". +
 
@@ -671,32 +711,49 @@ A value of empty or `"@"` indicates the root of the applied host and domain. In 
 When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+--
 
-|*Name*
-|String
-|name
-|The name for the SRV record. +
+[newline=true]
+`"Name"`::
++
+--
+[horizontal]
+JSON key::: `"name"`
+Type::: `"String"`
+
+The name for the SRV record. +
 
 This value is relative to the applied host and domain. A value of empty or `"@"` indicates the root of the applied host and domain. +
 
 When used in a template definition, the value MUST conform to the `dc-host-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>).
+--
 
-|[[pointsto-record]]*Points To*
-|String
-|pointsTo
-|
+[newline=true]
+[[pointsto-record]]`"Points To"`::
++
+--
+[horizontal]
+JSON key::: `"pointsTo"`
+Type::: `"String"`
+
 The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 
 When used in a template definition, the value MUST conform to the `"dc-pointsto-tmpl"` syntax for `"CNAME"`/`"MX"` and to the `"dc-pointsto-nat-tmpl"` syntax for A/AAAA/NS (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.
+--
 
-|*TTL*
-|Int or string repr. of Int
-|ttl
-|The time-to-live for the record in DNS. Valid
+[newline=true]
+`"TTL"`::
++
+--
+[horizontal]
+JSON key::: `"ttl"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The time-to-live for the record in DNS. Valid
 for A, AAAA, CNAME, NS, TXT, MX, and SRV records.
 This SHOULD NOT contain variables unless absolutely necessary. +
 
@@ -707,101 +764,159 @@ After variable substitution, the resolved value MUST conform to the `dc-ttl-valu
 This value, no matter if variable or constant, is understood as "best effort" by DNS Provider and MAY be limited or adjusted by local policy at runtime or during template onboarding, like applying a certain minimum or maximum value of TTL or an enumeration of TTL values supported by the DNS Provider. The DNS Provider SHOULD NOT reject template application because of invalid value, rather pick the nearest supported value or a default, in order to avoid necessity of per provider adjustment to the application flow.
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Data*
-|String
-|data
-|
+[newline=true]
+`"Data"`::
++
+--
+[horizontal]
+JSON key::: `"data"`
+Type::: `"String"`
+
 For TXT record `"data"` contains TXT-DATA <<RFC1035>> in presentation format. For a single `"<character-string>"` the heading and trailing `"` character MAY be omitted even if space character is present in the value.
 
-`"data"` MUST NOT be present in a template record for any other record type that has type-specific data fields defined in this specification.
+`"data"` MUST NOT be present in a template record for any Fully Specified or Computed Record Type, which use type-specific data fields defined in this specification.
 
-For any unspecified record type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding. 
+For a Generic Record Type, this field contains the canonical presentation format of the record, following <<RFC3597>> generic or type-specific encoding.
+--
 
-|*TXT Conflict Matching Mode*
-|String
-|txtConflictMatchingMode
-|Describes how conflicts on the TXT record are detected. Possible values are
+[newline=true]
+`"TXT Conflict Matching Mode"`::
++
+--
+[horizontal]
+JSON key::: `"txtConflictMatchingMode"`
+Type::: `"String"`
+
+Describes how conflicts on the TXT record are detected. Possible values are
 None, All, or Prefix. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-txt-conflict-mode` syntax (see <<terminology>>). +
 
 If omitted, the value MUST be assumed to be `"None"`.
+--
 
-|*TXT Conflict Matching Prefix*
-|String
-|txtConflictMatchingPrefix
-|The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<conflict-detection, See below>>. +
+[newline=true]
+`"TXT Conflict Matching Prefix"`::
++
+--
+[horizontal]
+JSON key::: `"txtConflictMatchingPrefix"`
+Type::: `"String"`
+
+The prefix to detect conflicts when txtConflict-MatchingMode is `"Prefix"`. <<conflict-detection, See below>>. +
 
 The value MUST conform to the `dc-conflict-prefix` syntax (see <<terminology>>).
+--
 
-|*Priority*
-|Int or string repr. of Int
-|priority
-|The priority for an MX or SRV record. +
+[newline=true]
+`"Priority"`::
++
+--
+[horizontal]
+JSON key::: `"priority"`
+Type::: `"Int"` or string representation of `"Int"`
 
-When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
-
-After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
-
-Support of variables in this field is OPTIONAL for DNS Provider.
-
-|*Weight*
-|Int or string repr. of Int
-|weight
-|The weight for the SRV record. +
+The priority for an MX or SRV record. +
 
 When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Port*
-|Int or string repr. of Int
-|port
-|The port for the SRV record. +
+[newline=true]
+`"Weight"`::
++
+--
+[horizontal]
+JSON key::: `"weight"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The weight for the SRV record. +
 
 When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>). +
 
 After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax. +
 
-The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>. +
+Support of variables in this field is OPTIONAL for DNS Provider.
+--
+
+[newline=true]
+`"Port"`::
++
+--
+[horizontal]
+JSON key::: `"port"`
+Type::: `"Int"` or string representation of `"Int"`
+
+The port for the SRV record.
+
+When used in a template definition, the value MUST conform to the `dc-uint16-tmpl` syntax (see <<terminology>>).
+
+After variable substitution, the resolved value MUST conform to the `dc-uint16-value` syntax.
+
+The resolved value is further constrained to the range 0-65535 as defined by <<RFC6335>>.
 
 Support of variables in this field is OPTIONAL for DNS Provider.
+--
 
-|*Protocol*
-|String
-|protocol
-|The protocol for the SRV record. +
+[newline=true]
+`"Protocol"`::
++
+--
+[horizontal]
+JSON key::: `"protocol"`
+Type::: `"String"`
+
+The protocol for the SRV record. +
 
 The value MUST conform to the `dc-srv-protocol` syntax (see <<terminology>>).
+--
 
-|*Service*
-|String
-|service
-|The symbolic service name for the SRV record. +
+[newline=true]
+`"Service"`::
++
+--
+[horizontal]
+JSON key::: `"service"`
+Type::: `"String"`
+
+The symbolic service name for the SRV record. +
 
 The value MUST conform to the `dc-srv-service` syntax (see <<terminology>>).
+--
 
-|*Target*
-|String
-|target
-|The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
+[newline=true]
+`"Target"`::
++
+--
+[horizontal]
+JSON key::: `"target"`
+Type::: `"String"`
+
+The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
 
 When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
+--
 
-|[[spf-rules]]*SPF Rules*
-|String
-|spfRules
-|These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
+[newline=true]
+[[spf-rules]]`"SPF Rules"`::
++
+--
+[horizontal]
+JSON key::: `"spfRules"`
+Type::: `"String"`
+
+These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <<spf-record-merging>>.
 The value MUST contain only mechanism and modifier terms as defined in <<RFC7208>> Section 5,
 excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
 The DNS Provider MUST validate the syntax before merging.
-
-|=======================================================================
+--
 
 The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
 
@@ -825,7 +940,7 @@ The following table lists the fields that MAY be defined for each record type. O
 
 |`"SPFM"`|`"host"`, `"spfRules"`
 
-|other types|`"host"`, `"data"`, `"ttl"`
+|Generic types|`"host"`, `"data"`, `"ttl"`
 
 |=======================================================================
 
@@ -925,16 +1040,19 @@ The value MUST conform to the `dc-key-type` rule above. +
 If omitted, MUST be assumed to be `"x509"`.
 |=======================================================================
 
-To allow for key rotation or use of multiple keys, the Service Provider
-MAY publish key records at multiple hosts within `"syncPubKeyDomain"`.
-The `"key"` apply parameter identifies which host to query for each
-request and MUST be included in the signed apply request.
+A Service Provider MUST publish exactly one public key on any given host
+name. To use multiple keys, e.g. for key rotation, the Service Provider
+MUST publish each key on a different host name within
+`"syncPubKeyDomain"`. The `"key"` apply parameter identifies which host
+to query for each request and MUST be included in the signed apply
+request.
 
 To account for DNS record size limits, a public key MAY be split across
 multiple TXT records at the same host. All fragments MUST be reassembled
-in ascending numeric order of `"p"` before use.
-The values `"a"` and '"d"' MUST be equal for all such TXT records on the
-same host. 
+in ascending numeric order of `"p"` before use. All such TXT records at
+the same host therefore belong to the same key: the values `"a"` and
+`"t"` MUST be equal across them, and their `"d"` fragments MUST have
+distinct `"p"` indices.
 
 Given the public key (line breaks for brevity):
 [source]
@@ -968,6 +1086,8 @@ p=3,a=RS256,d=weDjXrJwIDAQAB
 [[dns-provider-discovery]]
 == DNS Provider Discovery
 
+=== `"_domainconnect"` Resource Record
+
 To facilitate discovery of the DNS Provider from a domain name DNS is utilized. This is done by returning a TXT record for `"_domainconnect"` in the zone.
 
 The record content represents an authority and path part of the settings REST API URL. 
@@ -980,9 +1100,21 @@ domainconnect.virtucondomains.example
 ----
 ====
 
+.An example of the contents of this record including a path segment:
+====
+[source]
+----
+domainconnect.virtucondomains.example/dc
+----
+====
+
 `"_domainconnect"` TXT record content, when prepended with `https://` schema and appended with `/v2` path segment, MUST form a valid URL <<RFC3986>>.
 `"_domainconnect"` TXT record MUST contain the authority part of the URL and MAY contain a path part.
 `"_domainconnect"` MUST not contain schema, query or fragment part of an URL.
+
+The DNS query for the `"_domainconnect"` TXT record MAY return more than one TXT record. The Service Provider MUST reject any returned record whose content does not satisfy the validity rules above. If, after this filtering, at least one valid record remains, the Service Provider MUST process at least one of them. The Service Provider MAY iterate over the remaining valid records, attempting discovery with each in turn, until a valid Settings End-Point response is obtained.
+
+==== Deployment considerations
 
 As a practical matter of implementation, the DNS Provider may or may not contain a copy of this data in each and every zone. Instead, the DNS Provider MUST simply respond to the DNS query for the `"_domainconnect"` TXT record with the appropriate data.
 
@@ -990,7 +1122,9 @@ How this is implemented is up to the DNS Provider.
 
 For example, the DNS Provider may not store the data inside a TXT record for the domain, opting instead to put a CNAME in the zone and have the TXT record in the target of the CNAME. Another DNS Provider may simply respond with the appropriate records at the DNS layer without having  the data in each zone.
 
-The URL prefix returned MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.
+=== Settings End-Point
+
+The URL prefix returned in `"_domainconnect"` Resource Record MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.
 
 Normative URI template of the Settings End-Point per <<RFC6570>>:
 [source]
@@ -1047,11 +1181,6 @@ This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an auth
 
 The URI MAY include a path component.
 
-|*UX URL Prefix for Asynchronous Flows*
-|urlAsyncUX
-|String
-|(Reserved. See <<reserved-for-extensions>>.)
-
 |*API URL Prefix*
 |urlAPI
 |String
@@ -1061,30 +1190,6 @@ This MUST be a valid URI <<RFC3986>> with scheme `"https"`, MUST include an auth
 
 The URI MAY include a path component.
 
-|*Width of Window*
-|width
-|Number
-|(OPTIONAL) The desired width in pixels of the pop-up window used for granting consent. +
-
-If not present, the default MUST be assumed to be 750.
-
-|*Height of Window*
-|height
-|Number
-|(OPTIONAL) The desired height in pixels of the pop-up window used for granting consent. +
-
-If not present, the default MUST be assumed to be 750.
-
-|*UX URL Control Panel*
-|urlControlPanel
-|String
-|(OPTIONAL) A URL to the DNS Provider's control panel for manual DNS editing.
-This field allows a Service Provider whose template is not supported at the DNS Provider to provide a direct link to perform manual edits. +
-
-The value MAY contain the literal token `"%domain%"` as a placeholder for the domain name, to allow deep-linking to a specific domain. +
-
-The value, after any substitution of the `"%domain%"` token, MUST be a valid URI per <<RFC3986>> with scheme `"https"`.
-
 |*Name Servers*
 |nameServers
 |List of String
@@ -1092,6 +1197,27 @@ The value, after any substitution of the `"%domain%"` token, MUST be a valid URI
 
 
 Each entry MUST conform to the `"domain-name"` syntax (see <<terminology>>).
+
+|*Reserved*
+|urlAsyncUX
+|
+|(Reserved. See <<reserved-for-extensions>>.)
+
+|*Reserved*
+|width
+|
+|(Reserved. See <<reserved-for-extensions>>.)
+
+|*Reserved*
+|height
+|
+|(Reserved. See <<reserved-for-extensions>>.)
+
+|*Reserved*
+|urlControlPanel
+|
+|(Reserved. See <<reserved-for-extensions>>.)
+
 |=======================================================================
 
 Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension.
@@ -1105,11 +1231,8 @@ DNS Providers MAY include additional JSON properties in the settings response be
     "providerId": "virtucondomains.example",
     "providerName": "Virtucon Domains",
     "providerDisplayName": "Virtucon Domains",
-    "urlSyncUX": "https://domainconnect.virtucondomains.example",
-    "urlAsyncUX": "https://domainconnect.virtucondomains.example",
+    "urlSyncUX": "https://domainconnect.virtucondomains.example/sync",
     "urlAPI": "https://api.domainconnect.virtucondomains.example",
-    "width": 750,
-    "height": 750,
     "urlControlPanel": "https://domaincontrolpanel.virtucondomains.ex
     ample/?domain=%domain%",
     "nameServers": ["ns01.virtucondomainsdns.example", "ns02.virtucon
@@ -1226,6 +1349,14 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 Returning a status of 200 without a body indicates the template is supported.
 The DNS Provider MAY disclose the version of the template in a JSON object with field `"version"` (see: <<template-definition, version field>> or the full JSON object of deployed template.
+
+The Service Provider MAY use HTTP content negotiation (see <<RFC9110>>) to
+request the full template object, for example by sending an `"Accept"` request
+header of `"application/domainconnect-template+json"`. When the DNS Provider
+returns the full template object in the response body, it MUST set the
+`"Content-Type"` response header to `"application/domainconnect-template+json"`
+(see <<iana-media-type>>). A DNS Provider that does not return the full
+template object responds as described above.
 
 Returning a status of 404 indicates the template is not supported.
 
@@ -1648,7 +1779,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 There are advantages and disadvantages to both approaches.  SPF records have a limit of 10 DNS lookups and record length is limited to 255 characters.  So depending on the embedded records both approaches might have advantages.
 
-The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a new pseudo-record type is introduced in the template called `"SPFM"`. This has the following attribute:
+The implementation would be left to the DNS Provider, but to facilitate this SPF records SHOULD NOT be included in templates.  Instead, a Computed Record Type (see <<terminology>>) is introduced in the template called `"SPFM"`. This has the following attribute:
 
 `"spfRules"`::
 Determines the desired rules, basically everything but leading "v=spf1" and trailing `"all"` rule -  see: <<template-record, SPF Rules>>
@@ -1763,12 +1894,19 @@ A DNS Provider that maintains applied template state MUST treat an attempt of re
 
 Records with `"essential=OnApply"` MUST be applied when the template is first applied, but MAY be subsequently removed or altered — by the user or through the application of another template — without triggering conflict or removal of the owning template.
 
+[[identical-records]]
+===== Identical Records
+
+A resolved template record that is byte-identical to a resource record already present in the target zone — same owner name, type, class and RDATA — MUST NOT be treated as a conflict, regardless of the conflict-detection rules above. Instead of removing the existing record or the whole template, the DNS Provider applies the new template on top of it, so that the record is now shared between the existing configuration and the newly applied template.
+
+Whether a second, byte-identical copy of the record is stored in DNS Provider's system, or the duplicate is skipped so that a single record remains, is left to the DNS Provider and the capabilities of its underlying DNS software. Both behaviours are conformant - the observable DNS response MUST be equivalent in either case and contain only single resource record.
+
 [[calc-conflict-resolution]]
 === Calculating Conflict Resolution
 
 A DNS Provider not maintaining applied template state, applying a template whose records conflict with any existing record in the zone MUST remove all those conflicting records.
 
-When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied.
+When a DNS Provider maintains applied template state, applying a template whose records conflict with records written by a previously applied template MUST cause the conflicting prior template to be removed in its entirety, unless a conflicting record is explicitly marked as non essential and eligible for removal. As an example: if template T1 wrote records A and B, and template T2 is applied with records B and C, record B conflicts, and T1 is removed together with all its records before T2 is applied. Where such a provider shares a single record between more than one applied template instance (see <<identical-records>>), it MUST retain that record until the last instance referencing it is removed, and MUST remove it only when no remaining instance still requires it.
 
 [[user_authorization_of_changes]]
 === User Authorization of Changes
@@ -1783,7 +1921,7 @@ The DNS Provider MUST allow the user to override a detected conflict and proceed
 
 When presenting the authorization request to the user, the DNS Provider SHOULD display the template's `"providerName"` and `"serviceName"` fields. When a caller supplies `"providerName"` or `"serviceName"` request parameters (permitted only when the template's `"sharedProviderName"` or `"sharedServiceName"` flags are set, respectively), the DNS Provider SHOULD use those values to augment the displayed name. It is RECOMMENDED however to also display the original `"providerName"` and `"serviceName"` defined in the template.
 
-When the template's `"warnPhishing"` field is `"true"`, the DNS Provider SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied.
+Unless the apply request is digitally signed (see <<signing-procedure>>), the DNS Provider MUST treat the template as susceptible to phishing: it SHOULD display additional warnings prompting the user to verify the source of the request before proceeding, and SHOULD provide a more verbose description of the changes about to be applied. Failure to do so may expose the end user to the risk of malicious changes being applied to the DNS zone.
 
 === Template Application
 
@@ -1808,33 +1946,171 @@ Examples of template processing are in <<examples>>.
 
 Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value — for example, a hijacked IP address — and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.
 
-Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Three mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), using an alternative flow not prone to this risk and disabling the synchronous flow via `"syncBlock"`, and setting the `"warnPhishing"` flag to prompt the DNS Provider to display additional warnings to the user.
+Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Two mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and using an alternative flow not prone to this risk by disabling the synchronous flow via `"syncBlock"`. In the absence of such a mitigation a template is treated as susceptible to phishing by default, and DNS Providers display the additional warnings described in <<user_authorization_of_changes>>.
+
+[[sec-discovery-record]]
+=== Untrusted DNS Provider Discovery Records
+
+DNS Provider Discovery (see <<dns-provider-discovery>>) requires the Service Provider to read the `"_domainconnect"` TXT record from the target zone and to fetch the Settings End-Point at the URL derived from it. The content of this record is controlled by whoever controls the zone, which is not necessarily a party the Service Provider trusts. 
+
+A malicious or compromised zone can therefore direct the Service Provider's HTTP client at an arbitrary endpoint. Two classes of attack arise:
+
+* Denial of Service - The record may point at a resource that is malformed, never terminates, responds very slowly, or returns an oversized or unbounded body, with the goal of exhausting the Service Provider's connections, memory, or processing capacity.
+
+* Server-Side Request Forgery (SSRF) - The derived authority may resolve to an address inside the Service Provider's own infrastructure (for example a loopback, link-local, or private-use address, or an internal-only hostname), causing the Service Provider to issue requests against internal services on the attacker's behalf.
+
+Service Providers MUST treat the `"_domainconnect"` TXT record content, and the Settings End-Point response derived from it, as untrusted input. In particular, Service Providers:
+
+* SHOULD reject derived authorities that resolve to loopback, link-local, private-use, or otherwise internal addresses, unless the Service Provider has a specific reason to permit them
+
+* MUST bound the discovery request, including connection and total-request timeouts, a maximum response size, and a limit on the number of redirects followed
+
+[[sec-underscore-host]]
+=== Underscored Host Names
+
+The `"host"` apply parameter is supplied by the requesting party and prepended to the template record owner names during <<host-name-rendering,format=title>>. When its value is an underscore-prefixed label per <<RFC8552>>, the applied records land under a name with special protocol meaning — for example `"_acme-challenge"`, `"_domainkey"`, or `"_dmarc"`. A template that places a `"CNAME"` on the apex (`"@"`) host could then be applied with such a `"host"` value to redirect one of these underscored names to infrastructure under an attacker's control, causing the user to authorize what appears to be an ordinary change while in fact delegating certificate issuance, DKIM key publication, or DMARC policy.
+
+Legitimate uses of an underscored `"host"` value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the `"host"` apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <<user_authorization_of_changes,format=title>> so that the special-meaning target is not obscured.
 
 [#iana]
 == IANA Considerations
 
-[[iana-underscore]]
-=== Underscore `"_domainconnect"` DNS Node Name
+[[iana-registration-procedure]]
+=== Registration Procedure for Domain Connect Registries
 
-Per <<RFC8552>>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:
+IANA is requested to create a new registry group named "Domain Connect Protocol". The registration procedure described in this section applies to all registries established by this document under that registry group.
 
-[cols=",,",options="header",title="IANA Registration for _domainconnect"]
-|=================
-| RR Type
-| _NODE NAME
-| Reference
+Values are registered after a three-week review period on the <dconn@ietf.org> mailing list or its successor, on the advice of one or more designated experts. To allow for the allocation of values prior to publication, the designated experts MAY approve registration once they are satisfied that the corresponding specification will be published.
 
-| TXT
-| _domainconnect
-| This document.
-|=================
+Registration requests sent to the review mailing list SHOULD use an appropriate subject line (e.g., "Request to register Domain Connect record type: example"). Registration requests that remain undetermined for a period longer than 21 days MAY be brought to IANA's attention (using the <iana@iana.org> mailing list) for resolution.
+
+The designated experts SHOULD determine whether a registration request contains enough information for the registry to be populated and whether the proposed new functionality already exists. In the case of an incomplete registration, or an attempt to register already existing functionality, the designated experts SHOULD ask for corrections or reject the registration.
+
+IANA is requested to appoint one or more designated experts for the registries in the "Domain Connect Protocol" registry group. It is RECOMMENDED that multiple designated experts be appointed who are able to represent the perspectives of different Service Providers and DNS Providers, in order to enable broadly informed review of registration decisions. In cases where a registration decision could be perceived as creating a conflict of interest for a particular expert, that expert SHOULD defer to the judgment of the other experts.
+
+[[iana-fully-specified-types]]
+=== Domain Connect Fully Specified Record Types Registry
+
+IANA is requested to create a new registry named "Domain Connect Fully Specified Record Types" under the "Domain Connect Protocol" registry group.
+
+Registration policy: Specification Required (see <<RFC8126>>), following the procedure in <<iana-registration-procedure>>.
+
+Each entry in the registry MUST include:
+
+* *RR Type*: the record type name as it appears in a template record `"type"` field. The value MUST conform to the `dc-type-name` syntax (see <<terminology>>).
+* *Status*: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
+** `"Active"`: the type is currently in use and its definition is normative.
+** `"Deprecated"`: the type SHOULD NOT be used in new templates; it MAY appear in existing deployments for backwards compatibility. If the corresponding DNS RR TYPE is marked deprecated or obsolete in the IANA "Resource Record (RR) TYPEs" registry, the entry here SHOULD be set to `"Deprecated"`.
+** `"Reserved"`: the type appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>, and MAY only be defined by a specification that extends this document. See <<reserved-for-extensions>>.
+* *Class*: the handling class of the type. The value MUST be one of `"Fully Specified"` (RDATA broken into dedicated template fields) or `"Computed"` (records derived by a defined computation). A `"Reserved"` entry MAY leave this field unassigned.
+* *DNS RR TYPE*: the name of the corresponding entry in the IANA "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group. A `"Fully Specified"` type SHOULD correspond to a registered DNS RR TYPE of the same name; before registering such a type, the designated experts MUST verify that the named DNS RR TYPE exists in that registry. For a `"Computed"` type, a `"Reserved"` type, or any other type for which no corresponding DNS RR TYPE exists or would be meaningful, the value MUST be `"N/A"`. Where a `"Fully Specified"` type would use a name that is not yet a registered DNS RR TYPE, or where an entry is registered with a `"DNS RR TYPE"` of `"N/A"` (such as a `"Computed"` type), the designated experts SHOULD coordinate with the designated experts of the "Resource Record (RR) TYPEs" registry before completing the registration, to confirm that the chosen name does not collide with an existing or anticipated DNS RR TYPE.
+* *Kind*: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for types defined in a standards-track RFC, `"Informational"` for types defined in an Informational RFC, or `"Other"` for any other specification.
+* *Reference*: the document that defines the type.
+
+A registration request MUST provide the following:
+
+RR Type:: The record type name (the `"type"` value), conforming to the `dc-type-name` syntax (see <<terminology>>).
+Status:: One of `"Active"`, `"Deprecated"`, or `"Reserved"`.
+Class:: `"Fully Specified"` or `"Computed"`; omitted for a `"Reserved"` entry.
+DNS RR TYPE:: The name of the corresponding IANA DNS RR TYPE, or `"N/A"`.
+Kind:: `"IETF Standard"`, `"Informational"`, or `"Other"`.
+Reference:: The document that defines the type, preferably including a URI from which a copy can be retrieved.
+
+The following types from this specification constitute the initial contents of the registry:
+
+[cols=",,,,,",options="header",title="Initial Domain Connect Fully Specified Record Types"]
+|=======================================================================
+|*RR Type*
+|*Status*
+|*Class*
+|*DNS RR TYPE*
+|*Kind*
+|*Reference*
+
+|`"A"`
+|Active
+|Fully Specified
+|`"A"`
+|IETF Standard
+|This document
+
+|`"AAAA"`
+|Active
+|Fully Specified
+|`"AAAA"`
+|IETF Standard
+|This document
+
+|`"CNAME"`
+|Active
+|Fully Specified
+|`"CNAME"`
+|IETF Standard
+|This document
+
+|`"MX"`
+|Active
+|Fully Specified
+|`"MX"`
+|IETF Standard
+|This document
+
+|`"TXT"`
+|Active
+|Fully Specified
+|`"TXT"`
+|IETF Standard
+|This document
+
+|`"SRV"`
+|Active
+|Fully Specified
+|`"SRV"`
+|IETF Standard
+|This document
+
+|`"NS"`
+|Active
+|Fully Specified
+|`"NS"`
+|IETF Standard
+|This document
+
+|`"SPFM"`
+|Active
+|Computed
+|`"N/A"`
+|IETF Standard
+|This document
+
+|`"APEXCNAME"`
+|Reserved
+|Computed
+|`"N/A"`
+|Other
+|<<DC-SPEC>>
+
+|`"REDIR301"`
+|Reserved
+|Computed
+|`"N/A"`
+|Other
+|<<DC-SPEC>>
+
+|`"REDIR302"`
+|Reserved
+|Computed
+|`"N/A"`
+|Other
+|<<DC-SPEC>>
+|=======================================================================
 
 [[iana-settings-properties]]
 === Domain Connect Settings Properties Registry
 
-IANA is requested to create a new registry named "Domain Connect Settings Properties" under a new registry group "Domain Connect Protocol".
+IANA is requested to create a new registry named "Domain Connect Settings Properties" under the "Domain Connect Protocol" registry group.
 
-Registration policy: Specification Needed (see <<RFC8126>>).
+Registration policy: Specification Required (see <<RFC8126>>), following the procedure in <<iana-registration-procedure>>.
 
 Each entry in the registry MUST include:
 
@@ -1845,6 +2121,13 @@ Each entry in the registry MUST include:
 ** `"Reserved"`: the property appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
 * *Kind*: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for properties defined in a standards-track RFC, `"Informational"` for properties defined in an Informational RFC, or `"Other"` for any other specification.
 * *Reference*: the document that defines the property.
+
+A registration request MUST provide the following:
+
+Property name:: The JSON key as it appears in the settings response.
+Status:: One of `"Active"`, `"Deprecated"`, or `"Reserved"`.
+Kind:: `"IETF Standard"`, `"Informational"`, or `"Other"`.
+Reference:: The document that defines the property, preferably including a URI from which a copy can be retrieved.
 
 The following properties from this specification constitute the initial contents of the registry:
 
@@ -1877,8 +2160,8 @@ The following properties from this specification constitute the initial contents
 
 |`"urlAsyncUX"`
 |Reserved
-|IETF Standard
-|This document
+|Other
+|<<DC-SPEC>>
 
 |`"urlAPI"`
 |Active
@@ -1886,25 +2169,94 @@ The following properties from this specification constitute the initial contents
 |This document
 
 |`"width"`
-|Active
-|IETF Standard
-|This document
+|Reserved
+|Other
+|<<DC-SPEC>>
 
 |`"height"`
-|Active
-|IETF Standard
-|This document
+|Reserved
+|Other
+|<<DC-SPEC>>
 
 |`"urlControlPanel"`
-|Active
-|IETF Standard
-|This document
+|Reserved
+|Other
+|<<DC-SPEC>>
 
 |`"nameServers"`
 |Active
 |IETF Standard
 |This document
 |=======================================================================
+
+[[iana-rrtype-guidance]]
+=== Guidance to the DNS Resource Record (RR) TYPEs Registry
+
+To avoid collisions between newly assigned DNS RR TYPE mnemonics and the record type names used by Domain Connect, IANA is requested to add the following note to the registration procedure of the "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group (see <<RFC6895>>):
+
+[quote]
+____
+When evaluating a request to assign a new RR TYPE mnemonic, the designated experts SHOULD consult the "Domain Connect Fully Specified Record Types" registry. If the requested mnemonic matches the name of an entry in that registry whose *DNS RR TYPE* field is `"N/A"`, the designated experts SHOULD flag the potential conflict and consult the designated experts of the "Domain Connect Fully Specified Record Types" registry before completing the assignment.
+____
+
+This coupling ensures that a Domain Connect record type name that does not (yet) correspond to a DNS RR TYPE — such as a `"Computed"` type — is not inadvertently assigned a conflicting meaning in the DNS RR TYPEs registry.
+
+In addition, IANA is requested to update the "Reference" of the "Resource Record (RR) TYPEs" registry to cite this document alongside the existing references:
+
+[quote]
+____
+OLD: [RFC6895][RFC1035] +
+NEW: [RFC6895][RFC1035][This document]
+____
+
+This records, on the DNS side, the obligation to consult the "Domain Connect Fully Specified Record Types" registry described above.
+
+[[iana-underscore]]
+=== Underscore `"_domainconnect"` DNS Node Name
+
+Per <<RFC8552>>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:
+
+[cols=",,",options="header",title="IANA Registration for _domainconnect"]
+|=================
+| RR Type
+| _NODE NAME
+| Reference
+
+| TXT
+| _domainconnect
+| This document.
+|=================
+
+[[iana-media-type]]
+=== Media Type Registration for application/domainconnect-template+json
+
+IANA is requested to register the following media type in the "Media Types" registry, per <<RFC6838>>.
+
+[horizontal]
+Type name::: application
+Subtype name::: domainconnect-template+json
+Required parameters::: N/A
+Optional parameters::: N/A
+Encoding considerations::: binary; the content is a JSON <<RFC8259>> document encoded in UTF-8.
+Security considerations::: See <<security-considerations>> of this document.
+Interoperability considerations::: See this document.
+Published specification::: This document (see <<template-definition>>).
+Applications that use this media type::: Domain Connect Service Providers and DNS Providers.
+Fragment identifier considerations::: The `"+json"` structured syntax suffix is defined in <<RFC6839>>; see also <<RFC8259>>.
+Additional information:::
++
+--
+[horizontal]
+Deprecated alias names for this type:::: N/A
+Magic number(s):::: N/A
+File extension(s):::: N/A
+Macintosh file type code(s):::: N/A
+--
+Person & email address to contact for further information::: IETF DCONN Working Group <dconn@ietf.org>
+Intended usage::: COMMON
+Restrictions on usage::: N/A
+Author::: IETF DCONN Working Group
+Change controller::: IETF
 
 [removeInRFC=true,toc=include,numbered=false]
 == Implementation Status
@@ -1955,10 +2307,27 @@ The authors wish to thank the following persons for their feedback and suggestio
 == Change History
 
 [toc=exclude,numbered=false]
-=== Change from draft-ietf-dconn-domainconnect-02 to -03
+=== Change from draft-ietf-dconn-domainconnect-03 to -04
 - Added <<apply-parameter-extensibility,format=title>> to <<apply-template-params,format=title>>, reserving the `"dc."` and `"vnd."` prefixes and the unprefixed grandfathered parameter names.
 - Reserved built-in and grandfathered apply parameter names as forbidden `variable-name` identifiers in <<special-variables,format=title>>.
 - Added `dc-apply-param`, `dc-predefined-param`, `dc-dot-param`, and `dc-vnd-param` to <<terminology,format=title>>.
+
+[toc=exclude,numbered=false]
+=== Change from draft-ietf-dconn-domainconnect-02 to -03
+- Classified template record types as Fully Specified, Computed, or Generic.
+- Added a shared <<iana-registration-procedure,format=title>> section (designated-expert assignment and review process) governing all Domain Connect registries.
+- Coupled the "Domain Connect Fully Specified Record Types" registry to the IANA DNS Resource Record (RR) TYPEs registry as a bidirectional maintenance contract (following the pattern set by RFC 9108 for that registry).
+- Added <<sec-discovery-record,format=title>> to <<security-considerations,format=title>>.
+- Clarified handling of multiple `"_domainconnect"` TXT records in <<dns-provider-discovery,format=title>>.
+- Deprecated and reserved the `"warnPhishing"` template flag in <<template-definition,format=title>>; phishing warnings are now default behavior, see <<sec-variable-phishing,format=title>>.
+- Clarified one-host-one-key rule in <<pubkey-publication,format=title>>.
+- Added <<iana-media-type,format=title>> in <<iana,format=title>>.
+- Added media type identification to <<template-definition,format=title>>.
+- Added HTTP content negotiation guidance to the Query Supported Template end-point.
+- Added <<identical-records,format=title>> to <<conflict-detection,format=title>> and shared-record retention to <<calc-conflict-resolution,format=title>>.
+- Added examples illustrating an optional path segment in the `"_domainconnect"` TXT record content and in the settings-response URL prefixes in <<dns-provider-discovery,format=title>>.
+- Added <<sec-underscore-host,format=title>> to <<security-considerations,format=title>>.
+- Marked the `"width"`, `"height"` and `"urlControlPanel"` <<dns-provider-discovery,format=title>> settings properties as Reserved, deferring their definition to <<DC-SPEC>>; removed reserved properties from the example settings response.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-01 to -02
@@ -2037,6 +2406,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 * [[[RFC3986, RFC 3986]]] Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform Resource Identifier (URI): Generic Syntax", IETF, STD 66, DOI 10.17487/RFC3986, BCP 66, RFC 3986, January 2005, <https://www.rfc-editor.org/info/rfc3986>.
 * [[[RFC7518, RFC 7518]]] Jones, M., "JSON Web Algorithms (JWA)", IETF, RFC 7518, DOI 10.17487/RFC7518, May 2015, <http://www.rfc-editor.org/info/rfc7518>.
 * [[[RFC6335,RFC 6335]]] Cotton, M., Eggert, L., Touch, J., Westerlund, M., and S. Cheshire, "Internet Assigned Numbers Authority (IANA) Procedures for the Management of the Service Name and Transport Protocol Port Number Registry", IETF, STD 76, DOI 10.17487/RFC6335, RFC 6335, August 2011, <https://www.rfc-editor.org/info/rfc6335>.
+* [[[RFC6895,RFC 6895]]] Eastlake 3rd, D., "Domain Name System (DNS) IANA Considerations", IETF, BCP 42, DOI 10.17487/RFC6895, RFC 6895, April 2013, <https://www.rfc-editor.org/info/rfc6895>.
 * [[[RFC6570,RFC 6570]]] Gregorio, J., Fielding, R., Hadley, M., Nottingham, M., and D. Orchard, "URI Template", IETF, DOI 10.17487/RFC6570, RFC 6570, March 2012, <https://www.rfc-editor.org/info/rfc6570>.
 * [[[RFC5234,RFC 5234]]] Crocker, D., Ed., and P. Overell, "Augmented BNF for Syntax Specifications: ABNF", IETF, STD 68, RFC 5234, DOI 10.17487/RFC5234, January 2008, <https://www.rfc-editor.org/info/rfc5234>.
 * [[[RFC4648,RFC 4648]]] Josefsson, S., "The Base16, Base32, and Base64 Data Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October 2006, <https://www.rfc-editor.org/info/rfc4648>.
@@ -2045,11 +2415,13 @@ The authors wish to thank the following persons for their feedback and suggestio
 * [[[RFC9839,RFC 9839]]] Salowey, J. and R. Housley, "Unicode Character Repertoire Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, <https://www.rfc-editor.org/info/rfc9839>.
 * [[[RFC8126,RFC 8126]]] Cotton, M., Leiba, B., and T. Narten, "Guidelines for Writing an IANA Considerations Section in RFCs", IETF, DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017, <https://www.rfc-editor.org/info/rfc8126>.
 * [[[RFC9499,RFC 9499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC9499, RFC 9499, March 2024, <https://www.rfc-editor.org/info/rfc9499>.
+* [[[RFC6838,RFC 6838]]] Freed, N., Klensin, J., and T. Hansen, "Media Type Specifications and Registration Procedures", IETF, DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013, <https://www.rfc-editor.org/info/rfc6838>.
+* [[[RFC9110,RFC 9110]]] Fielding, R., Nottingham, M., and J. Reschke, "HTTP Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97, RFC 9110, June 2022, <https://www.rfc-editor.org/info/rfc9110>. 
 
 [bibliography,normative=false]
 == Informative References
-* [[[RFC9364,RFC 9364]]] Hoffman, P., "DNS Security Extensions (DNSSEC)", IETF, DOI 10.17487/RFC9364, BCP 237, RFC 9364, February 2023, <https://www.rfc-editor.org/info/rfc9364>.
 * [[[RFC8499,RFC 8499]]] Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, <https://www.rfc-editor.org/info/rfc8499>.
+* [[[RFC6839,RFC 6839]]] Hansen, T. and A. Melnikov, "Additional Media Type Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839, RFC 6839, January 2013, <https://www.rfc-editor.org/info/rfc6839>.
 
 // Documentation of asciibib: https://www.relaton.org/asciibib/
 
@@ -2187,11 +2559,11 @@ srv=2
 
 would cause the application of this template to a domain to set the host name for the apex A record to the IP address "198.51.100.2" with a TTL of 600
 
-=== Example Records: Unspecified record type CAA
+=== Example Records: Generic Record Type CAA
 
-This example shows how to include a set of unspecified record types on an example of CAA records:
+This example shows how to include a set of Generic Record Types on an example of CAA records:
 
-.Unspecified record type CAA example
+.Generic Record Type CAA example
 ====
 [source,json]
 ----

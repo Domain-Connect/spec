@@ -301,6 +301,24 @@ Table of Contents
    dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                    ; comma-separated list of domain names
 
+   dc-apply-param =  dc-predefined-param / dc-dot-param / dc-vnd-param
+                   ; any apply-parameter name
+
+   dc-predefined-param =
+                      "providerId" / "serviceId" / "domain" / "host"
+                    / "redirect_uri" / "state" / "providerName"
+                    / "serviceName" / "groupId" / "sig" / "key"
+                    / "client_id" / "response_type" / "scope"
+                   ; parameter names defined by this specification or
+                   ; carried over from the client-request calls of the
+                   ; asynchronous flow of [DC-SPEC]
+
+   dc-dot-param   =  "dc." 1*ALPHA
+                   ; "dc." tree, reserved for standards-track extensions
+
+   dc-vnd-param   =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                   ; "vnd." tree, reserved for vendor/private use
+
    dc-template-property =  dc-unprefixed-property / dc-vnd-property
                    ; any template-definition property name
 
@@ -2097,6 +2115,41 @@ Table of Contents
    HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
    SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1
 
+8.3.2.2.  Apply Parameter Extensibility
+
+   The set of apply parameters MAY be extended.  To avoid name
+   collisions between this specification, future extensions, and vendor-
+   specific parameters, apply parameter names are governed by the
+   following reservation rules:
+
+   *  Parameter names beginning with "dc." are reserved for parameters
+      defined by future standards-track extensions that normatively
+      require this document as their base.  Implementations MUST NOT use
+      the "dc." prefix for private parameters.
+
+   *  Parameter names beginning with "vnd." are reserved for vendor-
+      specific and private-use parameters.  A vendor SHOULD further
+      namespace such parameters with a vendor identifier (e.g.
+      "vnd.example.foo").  Parameters using this prefix MUST NOT be
+      assumed to be interoperable across DNS Providers.
+
+   *  Parameter names without any dot-prefix are reserved for this
+      specification and for specifications extending this document that
+      carry over functionality of [DC-SPEC] (see Section 3, Paragraph
+      13), such as the client-request query parameters of the OAuth-
+      based asynchronous flow.  Implementations MUST NOT define private
+      or vendor-specific parameters using unprefixed names.
+
+   The name of every apply parameter MUST conform to the dc-apply-param
+   syntax (see Section 3), which partitions the parameter name space
+   into the three reservation classes above.  Extension parameter names
+   using a reserved prefix accordingly conform to the dc-dot-param (for
+   "dc.") or dc-vnd-param (for "vnd.") rule.  A DNS Provider MUST ignore
+   any apply parameter it does not recognise; an unrecognised extension
+   parameter MUST NOT cause the apply request to fail.  Extension
+   parameters, when present, are included in the canonical input string
+   for signing exactly as any other parameter (see Section 8.3.2.1).
+
 8.3.3.  Template Apply Request
 
    The Service Provider initiates the synchronous flow by directing the
@@ -2282,6 +2335,12 @@ Table of Contents
    render a valid IP address, therefore MUST NOT be used.  Likewise in
    "NS" record types it would render a circular delegation therefore
    MUST NOT be used.
+
+   Aside from the built-in variables above and "@", a template variable-
+   name MUST NOT collide with any reserved apply parameter name - the
+   dc-predefined-param names or names beginning with a reserved
+   extension prefix ("dc.", "vnd.") (see Section 3).  These names are
+   reserved for protocol use.
 
 9.2.  Variable substitution
 
@@ -3368,6 +3427,17 @@ Change History
 
 Change from draft-ietf-dconn-domainconnect-03 to -04
 
+   *  Added Apply Parameter Extensibility to Parameters/properties,
+      reserving the "dc." and "vnd." prefixes and the unprefixed
+      grandfathered parameter names.
+
+   *  Reserved built-in and grandfathered apply parameter names as
+      forbidden variable-name identifiers in Special and Built-In
+      Variables.
+
+   *  Added dc-apply-param, dc-predefined-param, dc-dot-param, and dc-
+      vnd-param to Terminology.
+
    *  Added Template Property Extensibility and the "crit" property to
       Template Definition.
 
@@ -3652,9 +3722,9 @@ Normative References
 
 Informative References
 
-   [RFC8499]  Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
+   [RFC8499]  "Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
               Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499,
-              January 2019, <https://www.rfc-editor.org/info/rfc8499>.
+              January 2019, >.".
 
    [RFC6839]  Hansen, T. and A. Melnikov, "Additional Media Type
               Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,

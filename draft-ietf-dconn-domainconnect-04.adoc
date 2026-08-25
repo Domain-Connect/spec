@@ -140,6 +140,24 @@ dc-id-list     =  dc-id *( "," dc-id )
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
 
+dc-apply-param =  dc-predefined-param / dc-dot-param / dc-vnd-param
+                ; any apply-parameter name
+
+dc-predefined-param =
+                   "providerId" / "serviceId" / "domain" / "host"
+                 / "redirect_uri" / "state" / "providerName"
+                 / "serviceName" / "groupId" / "sig" / "key"
+                 / "client_id" / "response_type" / "scope"
+                ; parameter names defined by this specification or
+                ; carried over from the client-request calls of the
+                ; asynchronous flow of [DC-SPEC]
+
+dc-dot-param   =  "dc." 1*ALPHA
+                ; "dc." tree, reserved for standards-track extensions
+
+dc-vnd-param   =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                ; "vnd." tree, reserved for vendor/private use
+
 dc-template-property =  dc-unprefixed-property / dc-vnd-property
                 ; any template-definition property name
 
@@ -1579,6 +1597,17 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1
 ----
 ====
 
+[[apply-parameter-extensibility]]
+===== Apply Parameter Extensibility
+
+The set of apply parameters MAY be extended. To avoid name collisions between this specification, future extensions, and vendor-specific parameters, apply parameter names are governed by the following reservation rules:
+
+* Parameter names beginning with `"dc."` are reserved for parameters defined by future standards-track extensions that normatively require this document as their base. Implementations MUST NOT use the `"dc."` prefix for private parameters.
+* Parameter names beginning with `"vnd."` are reserved for vendor-specific and private-use parameters. A vendor SHOULD further namespace such parameters with a vendor identifier (e.g. `"vnd.example.foo"`). Parameters using this prefix MUST NOT be assumed to be interoperable across DNS Providers.
+* Parameter names without any dot-prefix are reserved for this specification and for specifications extending this document that carry over functionality of <<DC-SPEC>> (see <<reserved-for-extensions>>), such as the client-request query parameters of the OAuth-based asynchronous flow. Implementations MUST NOT define private or vendor-specific parameters using unprefixed names.
+
+The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
+
 
 ==== Template Apply Request
 
@@ -1670,6 +1699,8 @@ For example, with the query string "domain=example.com&host=", `"%fqdn%"` in a t
 
 The `"@"` variable has special meaning, and can be used in the `"host"`/`"name"` field or in the `"pointsTo"` field in isolation. For the `"host"`/`"name"` and `"pointsTo"` fields it is a shortcut for the value `"%fqdn%."`. The trailing dot here is equal to the DNS master file notation <<RFC1035>>, which indicates the value is absolute.
 For some record types, like `"A"` or `"AAAA"` usage of `"@"` in pointsTo would not render a valid IP address, therefore MUST NOT be used. Likewise in `"NS"` record types it would render a circular delegation therefore MUST NOT be used.
+
+Aside from the built-in variables above and `"@"`, a template `variable-name` MUST NOT collide with any reserved apply parameter name — the `dc-predefined-param` names or names beginning with a reserved extension prefix (`"dc."`, `"vnd."`) (see <<terminology>>). These names are reserved for protocol use.
 
 [[variable-substitution]]
 === Variable substitution
@@ -2449,6 +2480,9 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-03 to -04
+- Added <<apply-parameter-extensibility,format=title>> to <<apply-template-params,format=title>>, reserving the `"dc."` and `"vnd."` prefixes and the unprefixed grandfathered parameter names.
+- Reserved built-in and grandfathered apply parameter names as forbidden `variable-name` identifiers in <<special-variables,format=title>>.
+- Added `dc-apply-param`, `dc-predefined-param`, `dc-dot-param`, and `dc-vnd-param` to <<terminology,format=title>>.
 - Added <<template-property-extensibility,format=title>> and the `"crit"` property to <<template-definition,format=title>>.
 - Added the `"templateSpecVersion"` property to <<template-definition,format=title>>.
 - Added the IANA "Domain Connect Template Properties" registry in <<iana-template-properties,format=title>>.

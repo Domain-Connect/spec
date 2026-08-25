@@ -126,7 +126,7 @@
 
 <t anchor="_0b56576e-a987-a78d-9d33-6c1e875899b9">The following additional ABNF rules are defined in this document and used normatively throughout.</t>
 
-<sourcecode anchor="_3d3d5b28-50c3-fdbd-b7ec-78da59c6b01c" type="abnf"><![CDATA[; ---- Identifier rules ----
+<sourcecode anchor="_9e0ae6eb-084c-2d53-5aa4-2bb864341963" type="abnf"><![CDATA[; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
                 ; non-empty token, max 63 octets;
@@ -139,6 +139,24 @@ dc-id-list     =  dc-id *( "," dc-id )
 
 dc-host-list   =  domain-name *( *SP "," *SP domain-name )
                 ; comma-separated list of domain names
+
+dc-apply-param =  dc-predefined-param / dc-dot-param / dc-vnd-param
+                ; any apply-parameter name
+
+dc-predefined-param =
+                   "providerId" / "serviceId" / "domain" / "host"
+                 / "redirect_uri" / "state" / "providerName"
+                 / "serviceName" / "groupId" / "sig" / "key"
+                 / "client_id" / "response_type" / "scope"
+                ; parameter names defined by this specification or
+                ; carried over from the client-request calls of the
+                ; asynchronous flow of [DC-SPEC]
+
+dc-dot-param   =  "dc." 1*ALPHA
+                ; "dc." tree, reserved for standards-track extensions
+
+dc-vnd-param   =  "vnd." 1*ALPHA *( "." 1*ALPHA )
+                ; "vnd." tree, reserved for vendor/private use
 
 dc-template-property =  dc-unprefixed-property / dc-vnd-property
                 ; any template-definition property name
@@ -937,12 +955,12 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 
 <section anchor="signing-procedure"><name>Signing Procedure</name>
 
-<t anchor="_50f27c3c-c37c-d343-1660-db04f9f02293">Signing the query string is OPTIONAL for templates that do not specify <tt>"syncPubKeyDomain"</tt>. When <tt>"syncPubKeyDomain"</tt> is present in the template, the Service Provider MUST sign the request and the DNS Provider MUST reject any unsigned apply request (see <xref target="sig-verification"></xref>).</t>
+<t anchor="_ebea4b21-5e28-2ea9-7dbe-e6d348146f5c">Signing the query string is OPTIONAL for templates that do not specify <tt>"syncPubKeyDomain"</tt>. When <tt>"syncPubKeyDomain"</tt> is present in the template, the Service Provider MUST sign the request and the DNS Provider MUST reject any unsigned apply request (see <xref target="sig-verification"></xref>).</t>
 
-<t anchor="_6a39b0a6-a83e-122a-93c8-1cc8ba1097bb">The Service Provider MUST generate the digital signature as follows:</t>
+<t anchor="_bf2a59a8-78e2-05ea-2d20-542a32ec8d60">The Service Provider MUST generate the digital signature as follows:</t>
 
-<ol anchor="_c18fcd90-dc19-f860-537a-68eb7d6f61c2" type="1"><li><t anchor="_22c9b8f2-6c89-bb91-53f7-c9ccd829c580">Construct the canonical input string:</t>
-<ol anchor="_a6ece73d-1490-1a73-0fe0-612c5957b7d8" type="a"><li>Take all apply parameters except <tt>"sig"</tt> and <tt>"key"</tt>.</li>
+<ol anchor="_775d6e28-cc2b-311a-cbae-b0eecf42dd3a" type="1"><li><t anchor="_daa6939d-e523-d0cc-f16c-3a653c389dd4">Construct the canonical input string:</t>
+<ol anchor="_491111ab-c2bc-cb0e-178d-530861604db0" type="a"><li>Take all apply parameters except <tt>"sig"</tt> and <tt>"key"</tt>.</li>
 <li>URL-encode each parameter name and value per <xref target="RFC3986" section="" relative=""></xref>.</li>
 <li>Sort the parameters in ascending lexicographic order of the URL-encoded parameter name.</li>
 <li>Concatenate them as <tt>name=value</tt> pairs joined by <tt>"&#x26;"</tt>.</li>
@@ -953,14 +971,26 @@ IP=192.168.42.42&RANDOMTEXT=shm%3A1542108821%3AHello]]></sourcecode>
 <li>Append the URL-encoded <tt>"sig"</tt> value and the <tt>"key"</tt> identifier to the canonical input string to form a signed query string.</li>
 </ol>
 
-<t anchor="_5181ddd9-9828-471a-f1ea-947b1556b0f2">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.</t>
+<t anchor="_a1447524-7a3a-3db3-8b56-e8db1dae66c1">The signed query string MUST be used as-is as the query string of the request URL, without re-encoding, adding or re-ordering of query parameters.</t>
 
-<t anchor="_425021c2-1d7e-b109-5e9e-bbfe81631097" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_bd26df97-8cfa-589b-39bd-f7c64a9d28b0">Example canonical input:</t><sourcecode anchor="_634d3cd4-f315-5a7c-98fe-8860d20fecd8"><![CDATA[a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb]]></sourcecode><t anchor="_6e01ac1c-9e2f-93e8-f3fd-e767cc4c94cd">Example signature:</t><sourcecode anchor="_9fd1b34c-f4da-6e2d-7598-08d28107442a"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
+<t anchor="_842006ba-7338-618b-6df6-8f0cce315181" keepWithNext="true">EXAMPLE: Example: signed query string parameters</t><t anchor="_31059352-2716-0978-4d45-4ef27a68cef0">Example canonical input:</t><sourcecode anchor="_76ab3a5a-2075-ce5c-4990-b4d664519059"><![CDATA[a=1&b=2&domain=example.net&ip=10.10.10.10&text=a%2Bb]]></sourcecode><t anchor="_3cdcf826-d474-9efa-7974-c7e490caea88">Example signature:</t><sourcecode anchor="_11d9171c-faf2-dba1-4299-9561516698bb"><![CDATA[sig=V2te9zWMU7G3plxBTsmYSJTvn2vzMvNwAjWQ%2BwTe91DxuJhdVf4cVc4vZBYfEYV
 7u5d7PzTO7se7OrkhyiB7TpoJJW1yB5qHR7HKM5SZldUsdtg5%2B1SzEtIX0Uq8b2mCmQ
 F%2FuJGXpqCyFrEajvpTM7fFKPk1kuctmtkjV7%2BATcvNPLWY7KyE4%2Bqc8jpfN61cP
 5l8iA4krAa3%2BfTro5cmWR8YUJ5yrnRs6KT4b5D71HFvOUk0sGEUddUUlsyRQKRHUFN6
 HjEya50YDHfZJlYHkHlK0xX6Yqeii9QZ2I35U9eJbSvZGQko5beqviWFXdsVDbvd3DYcb
 SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
+</section>
+
+<section anchor="apply-parameter-extensibility"><name>Apply Parameter Extensibility</name>
+
+<t anchor="_1663d89d-b0c9-690e-b7a3-121cd5984dac">The set of apply parameters MAY be extended. To avoid name collisions between this specification, future extensions, and vendor-specific parameters, apply parameter names are governed by the following reservation rules:</t>
+
+<ul anchor="_96f8866d-ae3a-87e8-1a05-002be0799727"><li>Parameter names beginning with <tt>"dc."</tt> are reserved for parameters defined by future standards-track extensions that normatively require this document as their base. Implementations MUST NOT use the <tt>"dc."</tt> prefix for private parameters.</li>
+<li>Parameter names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private-use parameters. A vendor SHOULD further namespace such parameters with a vendor identifier (e.g. <tt>"vnd.example.foo"</tt>). Parameters using this prefix MUST NOT be assumed to be interoperable across DNS Providers.</li>
+<li>Parameter names without any dot-prefix are reserved for this specification and for specifications extending this document that carry over functionality of <xref target="DC-SPEC" section="" relative=""></xref> (see <xref target="reserved-for-extensions"></xref>), such as the client-request query parameters of the OAuth-based asynchronous flow. Implementations MUST NOT define private or vendor-specific parameters using unprefixed names.</li>
+</ul>
+
+<t anchor="_bf0599a4-aec7-3bea-088c-9238e9906e36">The name of every apply parameter MUST conform to the <tt>dc-apply-param</tt> syntax (see <xref target="terminology"></xref>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the <tt>dc-dot-param</tt> (for <tt>"dc."</tt>) or <tt>dc-vnd-param</tt> (for <tt>"vnd."</tt>) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <xref target="signing-procedure"></xref>).</t>
 </section>
 </section>
 
@@ -1056,6 +1086,8 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 <t anchor="_61223692-8f1f-4bac-01d2-9fc7615d7332">For example, with the query string "domain=example.com&#x26;host=", <tt>"%fqdn%"</tt> in a template would be "example.com", and with "domain=example.com&#x26;host=sub1", <tt>"%fqdn%"</tt> in a template would be "sub1.example.com".</t>
 
 <t anchor="_c1f756d4-6eba-77bb-8eea-f1cc036f16df">The <tt>"@"</tt> variable has special meaning, and can be used in the <tt>"host"</tt>/<tt>"name"</tt> field or in the <tt>"pointsTo"</tt> field in isolation. For the <tt>"host"</tt>/<tt>"name"</tt> and <tt>"pointsTo"</tt> fields it is a shortcut for the value <tt>"%fqdn%."</tt>. The trailing dot here is equal to the DNS master file notation <xref target="RFC1035" section="" relative=""></xref>, which indicates the value is absolute. For some record types, like  <tt>"A"</tt> or <tt>"AAAA"</tt> usage of <tt>"@"</tt> in pointsTo would not render a valid IP address, therefore MUST NOT be used. Likewise in <tt>"NS"</tt> record types it would render a circular delegation therefore MUST NOT be used.</t>
+
+<t anchor="_891db170-beee-73c0-a141-a93572bdd745">Aside from the built-in variables above and <tt>"@"</tt>, a template <tt>variable-name</tt> MUST NOT collide with any reserved apply parameter name - the <tt>dc-predefined-param</tt> names or names beginning with a reserved extension prefix (<tt>"dc."</tt>, <tt>"vnd."</tt>) (see <xref target="terminology"></xref>). These names are reserved for protocol use.</t>
 </section>
 </section>
 
@@ -1581,11 +1613,14 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_4ad7df0a-fea4-b00b-9d16-f299ee91a243" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_d853b6ab-7541-1a0d-229e-d73061b51a41" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_e235ca21-67b6-3c09-880c-5dad283c1f43" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
+<section anchor="_b7f20842-9c37-b6e7-3041-9f639e2fbaa0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
 
-<ul anchor="_9a227ca2-bb09-f174-f17a-d885a880006e"><li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
+<ul anchor="_ccd2e891-5620-5c6f-22a9-9b472b0b4c3d"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
+<li>Reserved built-in and grandfathered apply parameter names as forbidden <tt>variable-name</tt> identifiers in <xref target="special-variables" format="title"></xref>.</li>
+<li>Added <tt>dc-apply-param</tt>, <tt>dc-predefined-param</tt>, <tt>dc-dot-param</tt>, and <tt>dc-vnd-param</tt> to <xref target="terminology" format="title"></xref>.</li>
+<li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
 <li>Added the <tt>"templateSpecVersion"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
 <li>Added the IANA "Domain Connect Template Properties" registry in <xref target="iana-template-properties" format="title"></xref>.</li>
 <li>Added <tt>dc-template-property</tt>, <tt>dc-unprefixed-property</tt>, and <tt>dc-vnd-property</tt> to <xref target="terminology" format="title"></xref>.</li>
@@ -1692,7 +1727,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 </section>
   </middle>
   <back>
-    <references anchor="_30b8b726-d547-c1a5-fc8b-0451d74d3bac">
+    <references anchor="_78053620-9a3b-d143-b62a-e6262315b5de">
       <name>Normative References</name>
       <reference target="https://www.rfc-editor.org/info/rfc1035" anchor="RFC1035"><front> <title>Domain names - implementation and specification</title> <author fullname="P. Mockapetris" asciiFullname="P. Mockapetris"></author> <date month="November" year="1987"></date> <keyword>DOMAIN</keyword><keyword>DNS</keyword> <abstract>  <t anchor="_aa3804f6-cf5f-52d9-e4c5-bc354524dec1">This RFC is the revised specification of the protocol and format used in the implementation of the Domain Name System. It obsoletes RFC-883. This memo documents the details of the domain name client - server communication.</t></abstract> </front> <seriesInfo name="STD" value="13"></seriesInfo> <seriesInfo value="10.17487/RFC1035" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="1035" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc2782" anchor="RFC2782"><stream>IETF</stream> <front> <title>A DNS RR for specifying the location of services (DNS SRV)</title> <author fullname="A. Gulbrandsen" asciiFullname="A. Gulbrandsen"></author> <author fullname="P. Vixie" asciiFullname="P. Vixie"></author> <author fullname="L. Esibov" asciiFullname="L. Esibov"></author> <date month="February" year="2000"></date> <keyword>DNS-SRV</keyword><keyword>domain name system</keyword><keyword>service</keyword><keyword>RR</keyword><keyword>resource record</keyword> <abstract>  <t anchor="_a2cd0d08-6829-dc0f-c808-dfc9938246a5">This document describes a DNS RR which specifies the location of the server(s) for a specific protocol and domain. [STANDARDS-TRACK]</t></abstract> </front> <seriesInfo value="10.17487/RFC2782" name="DOI"></seriesInfo> <seriesInfo value="2782" name="RFC"></seriesInfo></reference>
@@ -1718,9 +1753,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <reference target="https://www.rfc-editor.org/info/rfc6838" anchor="RFC6838"><stream>IETF</stream> <front> <title>Media Type Specifications and Registration Procedures</title> <author fullname="N. Freed" asciiFullname="N. Freed"></author> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <date month="January" year="2013"></date> <abstract>  <t anchor="_a235f651-646a-9589-e223-487b03c0f76a">This document defines procedures for the specification and registration of media types for use in HTTP, MIME, and other Internet protocols. This memo documents an Internet Best Current Practice.</t></abstract> </front> <seriesInfo value="10.17487/RFC6838" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="6838" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc9110" anchor="RFC9110"><stream>IETF</stream> <front> <title>HTTP Semantics</title> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="J. Reschke" asciiFullname="J. Reschke"></author> <date month="June" year="2022"></date> <keyword>Hypertext Transfer Protocol</keyword><keyword>HTTP</keyword><keyword>HTTP semantics</keyword><keyword>HTTP content</keyword><keyword>HTTP method</keyword><keyword>HTTP status code</keyword> <abstract>  <t anchor="_979a6385-7302-c8dd-62d9-826336611ca0">The Hypertext Transfer Protocol (HTTP) is a stateless application-level protocol for distributed, collaborative, hypertext information systems. This document describes the overall architecture of HTTP, establishes common terminology, and defines aspects of the protocol that are shared by all versions. In this definition are core protocol elements, extensibility mechanisms, and the "http" and "https" Uniform Resource Identifier (URI) schemes.</t>  <t anchor="_9abda66b-c6d0-57aa-1bce-4288952fe795">This document updates RFC 3864 and obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230.</t></abstract> </front> <seriesInfo name="STD" value="97"></seriesInfo> <seriesInfo value="10.17487/RFC9110" name="DOI"></seriesInfo> <seriesInfo value="97" name="BCP"></seriesInfo> <seriesInfo value="9110" name="RFC"></seriesInfo></reference>
     </references>
-    <references anchor="_1fa08da1-7727-c280-eebb-fbc69ca9f3aa">
+    <references anchor="_caa3fd87-3022-d3b3-29e7-0717696251b9">
       <name>Informative References</name>
-      <reference target="https://www.rfc-editor.org/info/rfc8499" anchor="RFC8499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="A. Sullivan" asciiFullname="A. Sullivan"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="January" year="2019"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_3bbdcc7f-4112-91e9-c2e1-7e37782a8e60">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has sometimes changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_3217b10c-6d16-2d1a-099b-d804214d3af6">This document obsoletes RFC 7719 and updates RFC 2308.</t></abstract> </front> <seriesInfo value="10.17487/RFC8499" name="DOI"></seriesInfo> <seriesInfo value="8499" name="RFC"></seriesInfo></reference>
+      <reference anchor="RFC8499">
+        <front>
+          <title>Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, &#x3e;.</title><author surname="Unknown"></author>
+        </front>
+      </reference>
       <reference target="https://www.rfc-editor.org/info/rfc6839" anchor="RFC6839"><stream>IETF</stream> <front> <title>Additional Media Type Structured Syntax Suffixes</title> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <author fullname="A. Melnikov" asciiFullname="A. Melnikov"></author> <date month="January" year="2013"></date> <keyword>structured syntax suffix</keyword><keyword>media type</keyword> <abstract>  <t anchor="_24f0cb66-7e53-6c67-6fac-8427d8e7b40a">A content media type name sometimes includes partitioned meta- information distinguished by a structured syntax to permit noting an attribute of the media as a suffix to the name. This document defines several structured syntax suffixes for use with media type registrations. In particular, it defines and registers the "+json", "+ber", "+der", "+fastinfoset", "+wbxml" and "+zip" structured syntax suffixes, and provides a media type structured syntax suffix registration form for the "+xml" structured syntax suffix. This document is not an Internet Standards Track specification; it is published for informational purposes.</t></abstract> </front> <seriesInfo value="10.17487/RFC6839" name="DOI"></seriesInfo> <seriesInfo value="6839" name="RFC"></seriesInfo></reference>
       <reference target="https://github.com/Domain-Connect/spec/blob/rev.67/Domain%20Connect%20Spec%20Draft.adoc" anchor="DC-SPEC">
         <front> <title>Domain Connect Specification, Version 2.3 Rev. 67</title> <author surname="Blinn" asciiSurname="Blinn" initials="A." asciiInitials="A."></author> <author surname="Kerola" asciiSurname="Kerola" initials="S." asciiInitials="S."></author> <author surname="Kowalik" asciiSurname="Kowalik" initials="P." asciiInitials="P."></author> <date day="2" year="2025" month="March"></date> </front>

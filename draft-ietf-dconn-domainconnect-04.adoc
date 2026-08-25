@@ -147,10 +147,15 @@ dc-predefined-param =
                    "providerId" / "serviceId" / "domain" / "host"
                  / "redirect_uri" / "state" / "providerName"
                  / "serviceName" / "groupId" / "sig" / "key"
+                 / "crit"
                  / "client_id" / "response_type" / "scope"
                 ; parameter names defined by this specification or
                 ; carried over from the client-request calls of the
                 ; asynchronous flow of [DC-SPEC]
+
+dc-crit-list   =  dc-apply-param *( "," dc-apply-param )
+                ; comma-separated list of apply parameter names;
+                ; used for the crit parameter
 
 dc-dot-param   =  "dc." 1*ALPHA
                 ; "dc." tree, reserved for standards-track extensions
@@ -365,10 +370,12 @@ A future revision of this protocol that is not backwards compatible with this do
 
 Revisions SHOULD instead strive to remain backwards compatible and be introduced as extensions under the existing `"/v2"` segment. To make this possible, every extensible data structure of this protocol follows the same principles:
 
-* Ignore unknown: a recipient MUST ignore any element it does not recognise, and the mere presence of an unrecognised element MUST NOT cause the message, template, or request to be rejected. This applies to template-definition properties (see <<template-property-extensibility>>), template record fields (see <<template-record-extensibility>>), Settings End-Point properties (see <<settings-property-extensibility>>), and apply parameters (see <<apply-parameter-extensibility>>).
-* *Must understand*: where an extension extends a message such that silently ignoring added elements would be unsafe, the sender marks the affected element names in a `"crit"` property, and a recipient that does not understand a listed element MUST reject the message rather than process it partially. This mechanism is defined for template definitions (see <<template-property-extensibility>>), for individual template records (see <<template-record-extensibility>>), and for the Settings End-Point (see <<settings-property-extensibility>>).
+* Ignore unknown: a recipient MUST ignore any element it does not recognise, and the mere presence of an unrecognised element MUST NOT cause the message, template, or request to be rejected. This applies to every extensible structure of this protocol: template-definition properties (see <<template-property-extensibility>>), template record fields (see <<template-record-extensibility>>), Settings End-Point properties (see <<settings-property-extensibility>>), apply parameters (see <<apply-parameter-extensibility>>), the response of the template query end-point (see <<query-supported-template>>), and the responses of the synchronous flow (see <<sync-apply-response>> and <<sync-apply-error-response>>).
+* Must understand: where an extension extends a message such that silently ignoring added elements would be unsafe, the sender marks the affected element names in a `"crit"` element, and a recipient that does not understand a listed element MUST refuse to act on the message rather than process it partially. This mechanism is defined for template definitions (see <<template-property-extensibility>>), for individual template records (see <<template-record-extensibility>>), for the Settings End-Point (see <<settings-property-extensibility>>), and for apply parameters (see <<apply-parameter-extensibility>>).
 
-Consequently, an extension that can safely be ignored requires no version change; an extension that cannot safely be ignored is signalled per-message through `"crit"`; and only a change that breaks the framing of the protocol itself requires a new version path segment.
+Consequently, an extension that can safely be ignored requires no version change; an extension that cannot safely be ignored is signalled per-message through `"crit"`; and only a change that breaks the framing of the protocol itself requires a new version path segment. For the limits of `"crit"` against deployments that predate this specification, see <<sec-crit-legacy>>.
+
+The must-understand mechanism is deliberately not defined for the responses of the synchronous flow. The authoritative record of what was applied is the DNS zone itself, which the Service Provider verifies independently (see <<verification-of-changes>>); by the time a response reaches the Service Provider the zone change has already occurred, so there is no operation left to refuse. Extensions to those responses therefore rely on the ignore-unknown rule alone.
 
 The `"_domainconnect"` TXT record (see <<dns-provider-discovery>>) carries no internal structure and therefore offers no place to hold a version indicator. This is intentional in this revision to maintain compatibility with existing deployments of <<DC-SPEC>>. A future revision MAY define a structured content format for this record, at which point a version indicator can be introduced within that structure. Service Providers implementing this document MUST reject record contents that do not conform to the rules in <<dns-provider-discovery>>, which keeps any such future format distinguishable from a plain authority-and-path value.
 
@@ -1392,7 +1399,7 @@ Settings property names schema is partitioned as follows:
 
 Every settings property name MUST conform to the `dc-settings-property` syntax (see <<terminology>>).
 
-The `"crit"` property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood. As stated in <<versioning>>, `"crit"` MUST NOT be relied upon as a security mechanism, since a Service Provider implementing an earlier revision of this specification ignores the `"crit"` property itself.
+The `"crit"` property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood.
 
 [[applying-domain-connect]]
 == Applying Domain Connect
@@ -1426,6 +1433,7 @@ https://connect.dnsprovider.example/api
 The root URLs for the UX endpoints and the API endpoints are returned in
 the JSON payload during DNS Provider discovery.
 
+[[query-supported-template]]
 === Query Supported Template
 
 Normative URI template of the template query end-point per <<RFC6570>>:
@@ -1471,6 +1479,8 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 Returning a status of 200 without a body indicates the template is supported.
 The DNS Provider MAY disclose the version of the template in a JSON object with field `"version"` (see: <<template-definition, version field>> or the full JSON object of deployed template.
+
+The Service Provider MUST ignore any JSON property in this response that it does not recognise; the presence of such a property MUST NOT cause the response to be treated as an error. Where the DNS Provider returns the full template object, the rules of <<template-property-extensibility>> and <<template-record-extensibility>> apply to it.
 
 The Service Provider MAY use HTTP content negotiation (see <<RFC9110>>) to
 request the full template object, for example by sending an `"Accept"` request
@@ -1620,6 +1630,14 @@ See the <<signing-procedure>> below for the signing procedure.
 The value MUST conform to the `dc-key-label` syntax (see <<terminology>>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label. +
 
 See the <<signing-procedure>> below.
+
+|*Critical Parameters*
+|crit
+|(OPTIONAL) A comma-separated list of the names of apply parameters that the DNS Provider is required to understand and process for the request to be handled correctly. +
+
+The value MUST conform to the `dc-crit-list` syntax (see <<terminology>>). +
+
+See <<apply-parameter-extensibility>> below.
 |=======================================================================
 
 An example query string:
@@ -1688,6 +1706,8 @@ The set of apply parameters MAY be extended. To avoid name collisions between th
 
 The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
 
+The `"crit"` parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <<sync-apply-error-response>> using the error code `"invalid_request"`. A listed name that does not correspond to a parameter present in the request is by definition understood.
+
 
 ==== Template Apply Request
 
@@ -1727,9 +1747,12 @@ The following parameters MUST be appended to the `"redirect_uri"`:
 
 To prevent open redirects, the DNS Provider MUST NOT redirect the user agent to a `"redirect_uri"` value whose registered domain is not listed in the template's `"syncRedirectDomain"` field, unless the request carries a valid digital signature (see <<signing-procedure>>).
 
+The DNS Provider MAY append parameters beyond those specified above to the `"redirect_uri"`. The Service Provider MUST ignore any parameter on the redirect that it does not recognise; the presence of such a parameter MUST NOT cause the Service Provider to treat an otherwise successful outcome as a failure. The same applies to the error redirect described in <<sync-apply-error-response>>.
+
 The Service Provider SHOULD verify the outcome via DNS regardless of how the flow terminates (see <<verification-of-changes>>).
 
 
+[[sync-apply-error-response]]
 ==== Template Apply Error Response
 
 If the DNS Provider cannot complete the apply operation — for example because authentication failed, the user does not control the domain, the domain is suspended, or the user explicitly canceled — the DNS Provider MUST signal an error.
@@ -2093,6 +2116,13 @@ Service Providers MUST treat the `"_domainconnect"` TXT record content, and the 
 The `"host"` apply parameter is supplied by the requesting party and prepended to the template record owner names during <<host-name-rendering,format=title>>. When its value is an underscore-prefixed label per <<RFC8552>>, the applied records land under a name with special protocol meaning — for example `"_acme-challenge"`, `"_domainkey"`, or `"_dmarc"`. A template that places a `"CNAME"` on the apex (`"@"`) host could then be applied with such a `"host"` value to redirect one of these underscored names to infrastructure under an attacker's control, causing the user to authorize what appears to be an ordinary change while in fact delegating certificate issuance, DKIM key publication, or DMARC policy.
 
 Legitimate uses of an underscored `"host"` value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the `"host"` apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <<user_authorization_of_changes,format=title>> so that the special-meaning target is not obscured.
+
+[[sec-crit-legacy]]
+=== Must-Understand Markers and Pre-Existing Deployments
+
+The `"crit"` must-understand marker (see <<versioning>>) is effective only against implementations that recognise `"crit"` itself. Deployments predating this specification, including those implementing <<DC-SPEC>> alone, ignore unrecognised elements without inspecting `"crit"`, and therefore proceed as though no such marker were present.
+
+A sender consequently cannot infer from the absence of a rejection that the receiver honoured a `"crit"` marker. Where an extension conveys a security property — for example a constraint narrowing what a template may modify, or an assertion the receiver is expected to enforce — marking it in `"crit"` does not by itself prevent a receiver that predates the extension from applying the request without that property. `"crit"` MUST NOT be treated as a downgrade-prevention mechanism, and the security of an extension MUST NOT rest on the receiver's recognition of `"crit"` alone.
 
 [#iana]
 == IANA Considerations

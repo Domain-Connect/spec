@@ -126,7 +126,7 @@
 
 <t anchor="_0b56576e-a987-a78d-9d33-6c1e875899b9">The following additional ABNF rules are defined in this document and used normatively throughout.</t>
 
-<sourcecode anchor="_9e0ae6eb-084c-2d53-5aa4-2bb864341963" type="abnf"><![CDATA[; ---- Identifier rules ----
+<sourcecode anchor="_91638720-067a-4214-1ec5-61c92b8fac82" type="abnf"><![CDATA[; ---- Identifier rules ----
 
 dc-id          =  1*63( ALPHA / DIGIT / "-" / "_" / "." )
                 ; non-empty token, max 63 octets;
@@ -147,10 +147,15 @@ dc-predefined-param =
                    "providerId" / "serviceId" / "domain" / "host"
                  / "redirect_uri" / "state" / "providerName"
                  / "serviceName" / "groupId" / "sig" / "key"
+                 / "crit"
                  / "client_id" / "response_type" / "scope"
                 ; parameter names defined by this specification or
                 ; carried over from the client-request calls of the
                 ; asynchronous flow of [DC-SPEC]
+
+dc-crit-list   =  dc-apply-param *( "," dc-apply-param )
+                ; comma-separated list of apply parameter names;
+                ; used for the crit parameter
 
 dc-dot-param   =  "dc." 1*ALPHA
                 ; "dc." tree, reserved for standards-track extensions
@@ -169,6 +174,12 @@ dc-unprefixed-property =  ( ALPHA / DIGIT ) *( ALPHA / DIGIT )
 dc-vnd-property =  "vnd." 1*ALPHA *( "." 1*ALPHA )
                 ; "vnd." tree for vendor/private template
                 ; properties
+
+dc-record-field =  dc-unprefixed-property / dc-vnd-property
+                ; any template record field name
+
+dc-settings-property =  dc-unprefixed-property / dc-vnd-property
+                ; any settings-response property name
 
 ; ---- Other parameter rules ----
 
@@ -318,7 +329,7 @@ dc-srv-service  =  dc-underscore-label
 
 <t anchor="reserved-for-extensions">Certain labels, parameters, endpoints, and registry entries are present in this specification with "Reserved" status. These items appear in the original Domain Connect community specification <xref target="DC-SPEC" section="" relative=""></xref> and are reserved here to ensure back-compatibility with that specification. Reserved items MUST NOT be redefined in any manner that is incompatible with their definition in <xref target="DC-SPEC" section="" relative=""></xref>. They MAY be used or further defined only in specifications or drafts that extend this document, provided those specifications normatively require this document as their base and are compatible with <xref target="DC-SPEC" section="" relative=""></xref>.</t>
 </section>
-    <section anchor="_6ec51cd3-7c65-a2d5-f181-85872018f191"><name>Protocol design</name>
+    <section anchor="_6c38104d-3234-a0d2-9054-d232d45ff21f"><name>Protocol design</name>
 
 <section anchor="_3f7cf203-830e-7754-3d43-a09639033ac6"><name>Templates</name>
 
@@ -338,6 +349,29 @@ dc-srv-service  =  dc-underscore-label
 <t anchor="_91420f30-b71d-61e6-9e14-2c19319b84c6">Service Providers are not assumed to be trusted by default. A malicious actor may attempt to exploit user trust by impersonating a legitimate Service Provider. Trust between DNS Providers and Service Providers is therefore established out-of-band - typically through an onboarding process involving contractual agreements or template acceptance policies - during which the DNS Provider verifies the legitimacy of the Service Provider and its templates.</t>
 
 <t anchor="_30be44f6-ef2e-ae18-0f9c-50cc088b3525">Templates define and restrict the permitted scope of DNS modifications. By fixing the records that a Service Provider may affect, templates ensure that no changes beyond the approved scope can be applied.</t>
+</section>
+
+<section anchor="versioning"><name>Protocol Versioning and Extensibility</name>
+
+<t anchor="_cf4a9185-534f-4302-5a43-ed5771d33d55">This specification is versioned at two independent levels: the HTTP interface and the template format.</t>
+
+<t anchor="_e880f546-bf95-9338-9c8d-3e6405581550">All HTTP end-points defined in this document carry a <tt>"/v2"</tt> path segment immediately after the URL prefix obtained from discovery (see <xref target="dns-provider-discovery"></xref> and <xref target="applying-domain-connect"></xref>). The <tt>"2"</tt> denotes the protocol generation specified by this document.</t>
+
+<t anchor="_c2cffeda-c21e-5ecd-b391-8dc35a3bba33">A future revision of this protocol that is not backwards compatible with this document MUST use a different version path segment. A revision is not backwards compatible if an implementation of this document, when interacting with an implementation of that revision over the same path segment, could fail to interoperate or could misinterpret a request or a response. Reusing the <tt>"/v2"</tt> segment for such a revision MUST NOT be used. A deployment MAY serve more than one version path segment concurrently.</t>
+
+<t anchor="_94f0fed4-7116-ee71-5297-855872f0eda7">Revisions SHOULD instead strive to remain backwards compatible and be introduced as extensions under the existing <tt>"/v2"</tt> segment. To make this possible, every extensible data structure of this protocol follows the same principles:</t>
+
+<ul anchor="_e443bf9c-841e-bee3-5a22-f357a37c585e"><li>Ignore unknown: a recipient MUST ignore any element it does not recognise, and the mere presence of an unrecognised element MUST NOT cause the message, template, or request to be rejected. This applies to every extensible structure of this protocol: template-definition properties (see <xref target="template-property-extensibility"></xref>), template record fields (see <xref target="template-record-extensibility"></xref>), Settings End-Point properties (see <xref target="settings-property-extensibility"></xref>), apply parameters (see <xref target="apply-parameter-extensibility"></xref>), the response of the template query end-point (see <xref target="query-supported-template"></xref>), and the responses of the synchronous flow (see <xref target="sync-apply-response"></xref> and <xref target="sync-apply-error-response"></xref>).</li>
+<li>Must understand: where an extension extends a message such that silently ignoring added elements would be unsafe, the sender marks the affected element names in a <tt>"crit"</tt> element, and a recipient that does not understand a listed element MUST refuse to act on the message rather than process it partially. This mechanism is defined for template definitions (see <xref target="template-property-extensibility"></xref>), for individual template records (see <xref target="template-record-extensibility"></xref>), for the Settings End-Point (see <xref target="settings-property-extensibility"></xref>), and for apply parameters (see <xref target="apply-parameter-extensibility"></xref>).</li>
+</ul>
+
+<t anchor="_f2084f83-655c-205c-42eb-4a4dda15c131">Consequently, an extension that can safely be ignored requires no version change; an extension that cannot safely be ignored is signalled per-message through <tt>"crit"</tt>; and only a change that breaks the framing of the protocol itself requires a new version path segment. For the limits of <tt>"crit"</tt> against deployments that predate this specification, see <xref target="sec-crit-legacy"></xref>.</t>
+
+<t anchor="_529fffa0-3d8a-d60c-99c3-60bac0d40585">The must-understand mechanism is deliberately not defined for the responses of the synchronous flow. The authoritative record of what was applied is the DNS zone itself, which the Service Provider verifies independently (see <xref target="verification-of-changes"></xref>); by the time a response reaches the Service Provider the zone change has already occurred, so there is no operation left to refuse. Extensions to those responses therefore rely on the ignore-unknown rule alone.</t>
+
+<t anchor="_2f5738cc-eb95-bc65-c214-5f2a86135b2e">The <tt>"_domainconnect"</tt> TXT record (see <xref target="dns-provider-discovery"></xref>) carries no internal structure and therefore offers no place to hold a version indicator. This is intentional in this revision to maintain compatibility with existing deployments of <xref target="DC-SPEC" section="" relative=""></xref>. A future revision MAY define a structured content format for this record, at which point a version indicator can be introduced within that structure. Service Providers implementing this document MUST reject record contents that do not conform to the rules in <xref target="dns-provider-discovery"></xref>, which keeps any such future format distinguishable from a plain authority-and-path value.</t>
+
+<t anchor="_6e10cdaf-6276-e5d6-3bf4-7afb43313c7b">The template format is versioned independently of the HTTP interface, through the <tt>"templateSpecVersion"</tt> template property (see <xref target="template-property-extensibility"></xref>).</t>
 </section>
 </section>
     <section anchor="_fef1c4e3-78c6-2705-68e9-5c4823e38897"><name>Protocol Flows Overview</name>
@@ -489,7 +523,7 @@ dc-srv-service  =  dc-underscore-label
 <li>Property names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private use. A vendor SHOULD further namespace such properties with a vendor identifier (e.g. <tt>"vnd.example.fooBar"</tt>), and such names MAY be registered in the IANA "Domain Connect Template Properties" registry (see <xref target="iana-template-properties"></xref>). Properties using this prefix MUST NOT be assumed to be interoperable across implementations, and the property name MUST conform to the <tt>dc-vnd-property</tt> syntax (see <xref target="terminology"></xref>).</li>
 </ul>
 
-<t anchor="_9cd0906f-9201-fa3b-c08e-b0dd781d8294">Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to <tt>"vnd."</tt> properties. An implementation MUST NOT rely on the semantics of a <tt>"vnd."</tt> property.</t>
+<t anchor="_71ff6ddb-a964-188b-79d9-ee9d758ebf41">Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to <tt>"vnd."</tt> properties.</t>
 
 <t anchor="_c9f8149b-5810-3657-72b6-04fdd67cbefc">The <tt>"crit"</tt> property (see <xref target="template-definition"></xref>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.</t>
 
@@ -714,9 +748,39 @@ dc-srv-service  =  dc-underscore-label
 <t anchor="_3b87b317-3e80-94f3-0db6-b7f115c8d913">These are desired rules for the SPF TXT record. These rules SHOULD be merged with other SPFM records into final SPF TXT record. See <xref target="spf-record-merging"></xref>. The value MUST contain only mechanism and modifier terms as defined in  <xref target="RFC7208" section="" relative=""></xref> Section 5, excluding the version prefix (<tt>"v=spf1"</tt>) and the terminating <tt>"all"</tt> qualifier. The DNS Provider MUST validate the syntax before merging.</t>
 </dd></dl>
 
-<t anchor="_99c8f0e5-26e8-40a1-5278-bd1d32702456">The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.</t>
+<dl anchor="_adbae70b-5d70-8fa2-da16-ada6281ce96a" newline="true"><dt anchor="record-crit"><tt>"Critical Fields"</tt>:</dt><dd anchor="_388d721b-864b-6266-d46d-974ad553e911"><dl anchor="_a8bb9970-aa1c-141e-c154-5e5c579d6962"><dt>JSON key:</dt><dd anchor="_7dd9e04b-1271-60f5-1355-da81ef7421ba"><t anchor="_7a7815d2-607d-a7fb-1277-7f704cbd26b4"><tt>"crit"</tt></t>
+</dd><dt>Type:</dt><dd anchor="_31a98dfc-6ba7-03a6-1637-4755b15bb33b"><t anchor="_58438ffd-5872-b0d7-cdbb-c60928572c4a"><tt>"Array of String"</tt></t>
+</dd></dl>
+
+<t anchor="_8f723c73-d042-3288-5201-6195395e55a9">(OPTIONAL) A list of the names of fields of this record that an implementation is required to understand and process for the record to be applied correctly.<br /></t>
+
+<t anchor="_e1279610-5254-0f97-8406-6fef0ca771ba">Each entry MUST conform to the <tt>dc-record-field</tt> syntax (see <xref target="terminology"></xref>).<br /></t>
+
+<t anchor="_0b2490ef-4225-9380-04c4-a29695f3dfcb">When present, the <tt>"crit"</tt> field MUST NOT be empty and MUST NOT contain variables.</t>
+</dd></dl>
+
+<t anchor="_e73e42a2-4194-c255-e43a-b62d3b180dd4">The following table lists the fields that are defined for each record type by this document. Fields beyond those listed are governed by <xref target="template-record-extensibility"></xref>.</t>
 
 <table anchor="_82354231-f10a-c8a2-0e64-0b7d60e3988c"><name>Fields per record type</name><thead><tr><th align="left">Type</th><th align="left">Required fields</th></tr></thead><tbody><tr><td align="left"><tt>"A"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"AAAA"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"CNAME"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt> (<tt>"host"</tt> MUST NOT be <tt>"@"</tt> or empty unless <tt>"hostRequired"</tt> is <tt>"true"</tt> in the template)</td></tr><tr><td align="left"><tt>"NS"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt></td></tr><tr><td align="left"><tt>"TXT"</tt></td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt>, <tt>"txtConflictMatchingMode"</tt>, <tt>"txtConflictMatchingPrefix"</tt></td></tr><tr><td align="left"><tt>"MX"</tt></td><td align="left"><tt>"host"</tt>, <tt>"pointsTo"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt></td></tr><tr><td align="left"><tt>"SRV"</tt></td><td align="left"><tt>"name"</tt>, <tt>"target"</tt>, <tt>"ttl"</tt>, <tt>"priority"</tt>, <tt>"protocol"</tt>, <tt>"service"</tt>, <tt>"weight"</tt>, <tt>"port"</tt></td></tr><tr><td align="left"><tt>"SPFM"</tt></td><td align="left"><tt>"host"</tt>, <tt>"spfRules"</tt></td></tr><tr><td align="left">Generic types</td><td align="left"><tt>"host"</tt>, <tt>"data"</tt>, <tt>"ttl"</tt></td></tr></tbody></table>
+
+<section anchor="template-record-extensibility"><name>Template Record Extensibility</name>
+
+<t anchor="_12f836b7-f0a3-eb46-b012-0ddedc5d127b">The set of template record fields defined above MAY be extended. Record field name space is partitioned as follows:</t>
+
+<ul anchor="_32e6fc0d-e162-dcfb-b32e-c5d315e2b049"><li>unprefixed names are reserved for this specification and for future standards-track extensions that normatively require this document as their base</li>
+<li>names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private use.</li>
+</ul>
+
+<t anchor="_627ec8a4-677d-518b-a99d-bdabc8c5c5b4">Every record field name MUST conform to the <tt>dc-record-field</tt> syntax (see <xref target="terminology"></xref>).</t>
+
+<t anchor="_727cef05-e745-a542-3649-6296d64dca9b">Record fields fall into two categories. Protocol-level fields - <tt>"type"</tt>, <tt>"groupId"</tt>, <tt>"essential"</tt> and <tt>"crit"</tt> - are defined by this protocol and are applicable to a record irrespective of its <tt>"type"</tt>. Because such a field must carry the same meaning for every record type, unprefixed protocol-level field names are coordinated through the IANA "Domain Connect Protocol-Level Record Fields" registry (see <xref target="iana-record-fields"></xref>). All remaining fields are type-specific: they carry the RDATA of a particular record type or are otherwise meaningful only for certain types.</t>
+
+<t anchor="_dd88f681-77e6-8178-4f65-f0a010095b1a">The two categories MUST NOT collide. A protocol-level field name, being valid for every record type, MUST NOT reuse a name already used as a type-specific field by any record type, and a specification defining type-specific fields MUST NOT reuse a name registered as protocol-level (see <xref target="iana-record-fields"></xref>).</t>
+
+<t anchor="_661980e6-4eed-14da-349e-6d0d2837c481">An implementation MUST ignore any record field it does not recognise, and MUST ignore any recognised field that is not defined for the record's type. The mere presence of such a field MUST NOT cause the record or the template to be rejected.</t>
+
+<t anchor="_bff6825e-331c-d9e9-4c7a-60c3b2f7b4e5">The <tt>"crit"</tt> record field (see <xref target="record-crit"></xref>) overrides this default for the fields it lists: if an implementation does not understand and cannot process one or more of those fields, it MUST reject the template and MUST NOT apply it. Rejection applies to the template as a whole, not only to the record carrying the <tt>"crit"</tt> field, because a partially applied template would leave the service configured incorrectly. A listed name that does not correspond to a field present in the record is by definition understood.</t>
+</section>
 </section>
 
 <section anchor="_a0085508-ca4c-8d9c-fc1e-3995764d090d"><name>Template Considerations</name>
@@ -828,7 +892,7 @@ p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 </section>
 </section>
 
-<section anchor="_c51cf5cb-7c40-c779-2657-e737a298d503"><name>Settings End-Point</name>
+<section anchor="_d1b305e5-2247-4f0f-bcd7-9e8093970b21"><name>Settings End-Point</name>
 
 <t anchor="_35135da2-d176-f556-716a-c242de7cfe91">The URL prefix returned in <tt>"_domainconnect"</tt> Resource Record MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
 
@@ -843,9 +907,7 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 <t anchor="_169f3af2-86f7-71fc-93cd-a46417999561">This MUST return a JSON structure containing the settings to use for Domain Connect on the domain name (passed in on the path) at the DNS Provider. This JSON structure MUST contain the following fields unless otherwise specified.</t>
 
-<table anchor="_fbbd3e05-e96b-5eb9-393c-484c36ed46c1"><name>properties of the settings data structure</name><thead><tr><th align="left"><strong>Field</strong></th><th align="left"><strong>Key</strong></th><th align="left"><strong>Type</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><strong>Provider Id</strong></td><td align="left">providerId</td><td align="left">String</td><td align="left">(REQUIRED) Unique identifier for the DNS Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To allow for non-coordinated uniqueness, this SHOULD be the domain name of the DNS Provider (e.g. virtucom.example).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">String</td><td align="left">(REQUIRED) The name of the DNS Provider.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Display Name</strong></td><td align="left">providerDisplayName</td><td align="left">String</td><td align="left">(OPTIONAL) The name of the DNS Provider that SHOULD be displayed by the Service Provider.<br />  This MAY change per domain for some DNS Providers that power multiple brands.<br />  When present, the value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>UX URL Prefix for Synchronous Flows</strong></td><td align="left">urlSyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>API URL Prefix</strong></td><td align="left">urlAPI</td><td align="left">String</td><td align="left">(REQUIRED) The URL Prefix for the REST API.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>Name Servers</strong></td><td align="left">nameServers</td><td align="left">List of String</td><td align="left">(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records).<br />   Each entry MUST conform to the  <tt>"domain-name"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlAsyncUX</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">width</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">height</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlControlPanel</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr></tbody></table>
-
-<t anchor="_6dcc69cb-0aa5-c477-8b2f-cc8129d32702">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <xref target="iana-settings-properties"></xref> in order to avoid name conflicts.</t>
+<table anchor="_e52259c7-4e21-6be7-d7b7-3dca681cfffe"><name>properties of the settings data structure</name><thead><tr><th align="left"><strong>Field</strong></th><th align="left"><strong>Key</strong></th><th align="left"><strong>Type</strong></th><th align="left"><strong>Description</strong></th></tr></thead><tbody><tr><td align="left"><strong>Provider Id</strong></td><td align="left">providerId</td><td align="left">String</td><td align="left">(REQUIRED) Unique identifier for the DNS Provider.<br />  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).<br />  To allow for non-coordinated uniqueness, this SHOULD be the domain name of the DNS Provider (e.g. virtucom.example).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">String</td><td align="left">(REQUIRED) The name of the DNS Provider.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Display Name</strong></td><td align="left">providerDisplayName</td><td align="left">String</td><td align="left">(OPTIONAL) The name of the DNS Provider that SHOULD be displayed by the Service Provider.<br />  This MAY change per domain for some DNS Providers that power multiple brands.<br />  When present, the value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>UX URL Prefix for Synchronous Flows</strong></td><td align="left">urlSyncUX</td><td align="left">String</td><td align="left">(OPTIONAL) The URL Prefix for linking to the UX of Domain Connect for the synchronous flow at the DNS Provider. If not returned, the DNS Provider is not supporting the synchronous flow on this domain.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>API URL Prefix</strong></td><td align="left">urlAPI</td><td align="left">String</td><td align="left">(REQUIRED) The URL Prefix for the REST API.<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt>, MUST include an authority component, and MUST NOT contain a query component or fragment component.<br />  The URI MAY include a path component.</td></tr><tr><td align="left"><strong>Name Servers</strong></td><td align="left">nameServers</td><td align="left">List of String</td><td align="left">(OPTIONAL) The list of nameserver hostnames for the zone held by this DNS Provider (typically derived from the zone's NS records).<br />   Each entry MUST conform to the  <tt>"domain-name"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Critical Properties</strong></td><td align="left">crit</td><td align="left">List of String</td><td align="left">(OPTIONAL) A list of the names of settings properties that a Service Provider is required to understand and process in order to interact correctly with this DNS Provider.<br />  Each entry MUST conform to the  <tt>dc-settings-property</tt> syntax (see <xref target="terminology"></xref>).<br />  When present, the  <tt>"crit"</tt> property MUST NOT be empty.</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlAsyncUX</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">width</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">height</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr><tr><td align="left"><strong>Reserved</strong></td><td align="left">urlControlPanel</td><td align="left"></td><td align="left">(Reserved. See <xref target="reserved-for-extensions"></xref>.)</td></tr></tbody></table>
 
 <t anchor="_11a9d187-406a-5607-da67-1ae827a94d38" keepWithNext="true">EXAMPLE: Example Settings End-Point response</t><sourcecode anchor="_2b9991fc-b2d5-f4ab-7400-e02465d5bf4e" type="json"><![CDATA[{
     "providerId": "virtucondomains.example",
@@ -859,17 +921,32 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
     domainsdns.example"]
 }]]></sourcecode>
 
-<t anchor="_cfa562d8-e356-64d2-654f-4fdaa15f4137">When constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
+<t anchor="_93077c84-e90a-b586-2651-8ad2a7dd2013">When constructing a deep link using <tt>"urlControlPanel"</tt>, the Service Provider MUST replace any occurrence of the literal token <tt>"%domain%"</tt> with the percent-encoded ACE-form domain name per <xref target="RFC3986" section="" relative=""></xref>. The <tt>"%domain%"</tt> token MUST be the only substitution token used.</t>
 
-<t anchor="_26a0158a-194f-3b92-3762-e1872f8121ce">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
+<t anchor="_8e86eabc-774b-6985-3157-c16891a3c90c">The Service Provider MAY compare the <tt>"nameServers"</tt> list against the authoritative nameservers obtained from the DNS registry or an authoritative NS query, to verify that the correct DNS Provider has been reached. A mismatch may indicate a stale or incorrect <tt>"_domainconnect"</tt> TXT record, or a deliberate administrative change such as pre-provisioning with a new DNS provider.</t>
 
-<t anchor="_f36c8f2a-3a96-f3a2-b186-943ef47ff96b">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
+<t anchor="_ed6cb8f1-99ad-a98e-335e-850f647d4058">Discovery MUST work on the Zone Apex only. Bear in mind that zones can be delegated to other users, making this information valuable to Service Providers since DNS changes may be different for a Zone Apex vs. a Sub Domain for an individual service.</t>
 
-<t anchor="_bc4b24c3-a2a7-e415-0edc-51eb74ee1ec6">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record succeeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
+<t anchor="_e910094e-84e8-cd99-6efd-0576832ce29a">The Service Provider MUST handle the condition when a query for the <tt>"_domainconnect"</tt> TXT record succeeds, but a call to query for the JSON fails. This can happen if the zone is hosted with another DNS Provider, but contains an incorrect  <tt>"_domainconnect"</tt> TXT record.</t>
 
-<t anchor="_8e210510-2cd6-fd5a-2c16-bc094891acde">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
+<t anchor="_68adf9ef-5bed-060d-3344-f45178daf74c">The DNS Provider MUST return a 404 HTTP error code if they do not contain the zone.</t>
 
 <table anchor="_d1470e36-72b5-6d47-8eab-dc956cb41879"><name>HTTP status codes for the settings end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response is the JSON described above.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the DNS Provider does not have the zone.</td></tr></tbody></table>
+
+<section anchor="settings-property-extensibility"><name>Settings Property Extensibility</name>
+
+<t anchor="_1438c52a-f7db-fd49-011b-d590f79558d2">Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension. DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in  <xref target="iana-settings-properties"></xref> in order to avoid name conflicts.</t>
+
+<t anchor="_444db5ca-e90a-f500-8bc8-9b6fe3d44f93">Settings property names schema is partitioned as follows:</t>
+
+<ul anchor="_6135b70e-346c-d30d-81d9-dd9af56c2cc2"><li>unprefixed names are reserved for this specification and for future standards-track extensions that normatively require this document as their base,</li>
+<li>names beginning with <tt>"vnd."</tt> are reserved for vendor-specific and private use.</li>
+</ul>
+
+<t anchor="_52338b29-3960-0850-c99f-5768e94f68ab">Every settings property name MUST conform to the <tt>dc-settings-property</tt> syntax (see <xref target="terminology"></xref>).</t>
+
+<t anchor="_4cadbaa0-d794-5f7c-4705-962c4390ee9f">The <tt>"crit"</tt> property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood.</t>
+</section>
 </section>
 </section>
     <section anchor="applying-domain-connect"><name>Applying Domain Connect</name>
@@ -895,7 +972,7 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 <t anchor="_4a503160-5d0d-6265-1d47-6539bb004405">The root URLs for the UX endpoints and the API endpoints are returned in the JSON payload during DNS Provider discovery.</t>
 </section>
 
-<section anchor="_039d6d33-f1aa-4fbb-e83e-bf670f9703bb"><name>Query Supported Template</name>
+<section anchor="query-supported-template"><name>Query Supported Template</name>
 
 <t anchor="_0f7e9d54-98c7-db47-f113-094e153e4264">Normative URI template of the template query end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
@@ -913,9 +990,11 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 <t anchor="_c0c0a55e-b37b-918e-8194-41702e540db1">Returning a status of 200 without a body indicates the template is supported. The DNS Provider MAY disclose the version of the template in a JSON object with field  <tt>"version"</tt> (see: <xref target="template-definition">version field</xref> or the full JSON object of deployed template.</t>
 
-<t anchor="_88d649ce-8ebe-58a0-2998-a5f53da1656b">The Service Provider MAY use HTTP content negotiation (see <xref target="RFC9110" section="" relative=""></xref>) to request the full template object, for example by sending an  <tt>"Accept"</tt> request header of  <tt>"application/domainconnect-template+json"</tt>. When the DNS Provider returns the full template object in the response body, it MUST set the <tt>"Content-Type"</tt> response header to <tt>"application/domainconnect-template+json"</tt> (see  <xref target="iana-media-type"></xref>). A DNS Provider that does not return the full template object responds as described above.</t>
+<t anchor="_17edd641-2f43-47ee-8e67-2f0527ef1556">The Service Provider MUST ignore any JSON property in this response that it does not recognise; the presence of such a property MUST NOT cause the response to be treated as an error. Where the DNS Provider returns the full template object, the rules of <xref target="template-property-extensibility"></xref> and <xref target="template-record-extensibility"></xref> apply to it.</t>
 
-<t anchor="_df56391c-8f2d-3dd0-0637-4d4a7f1f8ba8">Returning a status of 404 indicates the template is not supported.</t>
+<t anchor="_50b7f7f6-a7be-e6a1-01af-d42436b4eef1">The Service Provider MAY use HTTP content negotiation (see <xref target="RFC9110" section="" relative=""></xref>) to request the full template object, for example by sending an  <tt>"Accept"</tt> request header of  <tt>"application/domainconnect-template+json"</tt>. When the DNS Provider returns the full template object in the response body, it MUST set the <tt>"Content-Type"</tt> response header to <tt>"application/domainconnect-template+json"</tt> (see  <xref target="iana-media-type"></xref>). A DNS Provider that does not return the full template object responds as described above.</t>
+
+<t anchor="_af009aaf-066a-9861-f93b-4e2b50a6f311">Returning a status of 404 indicates the template is not supported.</t>
 
 <table anchor="_7396a636-46bb-30eb-7ced-bbbce82b56d9"><name>https status codes for the Query Supported Template end-point</name><thead><tr><th align="left">Status</th><th align="left">Response</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>Success</strong></td><td align="left">2xx</td><td align="left">A response of an http status code of 2xx indicates that the call was successful. The response OPTIONALLY contains the version or template.</td></tr><tr><td align="left"><strong>Not Found</strong></td><td align="left">404</td><td align="left">A response of a 404 indicates that the template is not supported</td></tr></tbody></table>
 </section>
@@ -940,7 +1019,7 @@ serviceName,instanceId,redirect_uri,properties*}{&sig,key}]]></sourcecode>
 
 <t anchor="_2fe5a392-a70c-57f7-475f-1e0eb32fa5e9">For <tt>"properties"</tt> name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <xref target="RFC3986" section="" relative=""></xref>) before processing.</t>
 
-<table anchor="_84c900ab-9af5-c763-ae89-3cc1af8e19d7"><name>URI template parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlSyncUX</td><td align="left">(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the <tt>"urlSyncUX"</tt> field of the settings endpoint response (see <xref target="dns-provider-discovery"></xref>).<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt></td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) Identifier of the Service Provider of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) Identifier of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).  The value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain within the zone identified by <tt>"domain"</tt>.<br />  When present, the value MUST be a single name conforming to  <tt>domain-name</tt> (see <xref target="terminology"></xref>) or an empty string.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the user agent to upon successful authorization or upon error.<br />  The value MUST be an absolute URI conforming to  <xref target="RFC3986" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.<br />  The value MUST conform to the  <tt>"state"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(REQUIRED) Variable values to be substituted into the template. Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the  <tt>variable-name</tt> syntax (see <xref target="terminology"></xref>).<br />  Each parameter value MUST conform to the  <tt>dc-prop-value</tt> syntax (see <xref target="terminology"></xref>), using the DNS presentation format  <xref target="RFC9499" section="" relative=""></xref>.<br />  The parameter value corresponds to the value that will be used when applying the template.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"providerName"</tt>, provided by the caller. If <tt>"sharedProviderName"</tt> is not set in the template, this parameter MUST NOT be set. Note: this used to be controlled by the <tt>"shared"</tt> attribute in the template, which has been deprecated.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"serviceName"</tt>, provided by the caller. If <tt>"sharedServiceName"</tt> is not set in the template, this parameter MUST NOT be set.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Group ID</strong></td><td align="left">groupId</td><td align="left">(OPTIONAL) Specifies the subset of groups from the template to apply.<br />  The value MUST conform to the  <tt>dc-id-list</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Signature</strong></td><td align="left">sig</td><td align="left">(OPTIONAL) A digital signature of the canonical query string.  The value MUST conform to the  <tt>dc-sig</tt> syntax (see <xref target="terminology"></xref>):<br />  a standard base64-encoded  <xref target="RFC4648" section="" relative=""></xref> signature, URL-encoded when carried in the query string.<br />  See the  <xref target="signing-procedure"></xref> below for the signing procedure.</td></tr><tr><td align="left"><strong>Key</strong></td><td align="left">key</td><td align="left">(OPTIONAL) The DNS host label within the <tt>syncPubKeyDomain</tt> at which the public key TXT record is published.<br />  The value MUST conform to the  <tt>dc-key-label</tt> syntax (see <xref target="terminology"></xref>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label.<br />  See the  <xref target="signing-procedure"></xref> below.</td></tr></tbody></table>
+<table anchor="_6823bfbf-7c88-696c-cab6-2a7c6ebd4dbf"><name>URI template parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlSyncUX</td><td align="left">(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the <tt>"urlSyncUX"</tt> field of the settings endpoint response (see <xref target="dns-provider-discovery"></xref>).<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt></td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) Identifier of the Service Provider of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) Identifier of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).  The value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain within the zone identified by <tt>"domain"</tt>.<br />  When present, the value MUST be a single name conforming to  <tt>domain-name</tt> (see <xref target="terminology"></xref>) or an empty string.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the user agent to upon successful authorization or upon error.<br />  The value MUST be an absolute URI conforming to  <xref target="RFC3986" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.<br />  The value MUST conform to the  <tt>"state"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(REQUIRED) Variable values to be substituted into the template. Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the  <tt>variable-name</tt> syntax (see <xref target="terminology"></xref>).<br />  Each parameter value MUST conform to the  <tt>dc-prop-value</tt> syntax (see <xref target="terminology"></xref>), using the DNS presentation format  <xref target="RFC9499" section="" relative=""></xref>.<br />  The parameter value corresponds to the value that will be used when applying the template.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"providerName"</tt>, provided by the caller. If <tt>"sharedProviderName"</tt> is not set in the template, this parameter MUST NOT be set. Note: this used to be controlled by the <tt>"shared"</tt> attribute in the template, which has been deprecated.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"serviceName"</tt>, provided by the caller. If <tt>"sharedServiceName"</tt> is not set in the template, this parameter MUST NOT be set.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Group ID</strong></td><td align="left">groupId</td><td align="left">(OPTIONAL) Specifies the subset of groups from the template to apply.<br />  The value MUST conform to the  <tt>dc-id-list</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Signature</strong></td><td align="left">sig</td><td align="left">(OPTIONAL) A digital signature of the canonical query string.  The value MUST conform to the  <tt>dc-sig</tt> syntax (see <xref target="terminology"></xref>):<br />  a standard base64-encoded  <xref target="RFC4648" section="" relative=""></xref> signature, URL-encoded when carried in the query string.<br />  See the  <xref target="signing-procedure"></xref> below for the signing procedure.</td></tr><tr><td align="left"><strong>Key</strong></td><td align="left">key</td><td align="left">(OPTIONAL) The DNS host label within the <tt>syncPubKeyDomain</tt> at which the public key TXT record is published.<br />  The value MUST conform to the  <tt>dc-key-label</tt> syntax (see <xref target="terminology"></xref>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label.<br />  See the  <xref target="signing-procedure"></xref> below.</td></tr><tr><td align="left"><strong>Critical Parameters</strong></td><td align="left">crit</td><td align="left">(OPTIONAL) A comma-separated list of the names of apply parameters that the DNS Provider is required to understand and process for the request to be handled correctly.<br />  The value MUST conform to the  <tt>dc-crit-list</tt> syntax (see <xref target="terminology"></xref>).<br />  See  <xref target="apply-parameter-extensibility"></xref> below.</td></tr></tbody></table>
 
 <t anchor="_cf6a078e-4a99-02db-4672-47179821ecff">An example query string:</t>
 
@@ -991,6 +1070,8 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 </ul>
 
 <t anchor="_bf0599a4-aec7-3bea-088c-9238e9906e36">The name of every apply parameter MUST conform to the <tt>dc-apply-param</tt> syntax (see <xref target="terminology"></xref>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the <tt>dc-dot-param</tt> (for <tt>"dc."</tt>) or <tt>dc-vnd-param</tt> (for <tt>"vnd."</tt>) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <xref target="signing-procedure"></xref>).</t>
+
+<t anchor="_8ba29a14-e498-d200-7bd6-4d032980209f">The <tt>"crit"</tt> parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <xref target="sync-apply-error-response"></xref> using the error code <tt>"invalid_request"</tt>. A listed name that does not correspond to a parameter present in the request is by definition understood.</t>
 </section>
 </section>
 
@@ -1032,10 +1113,12 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 
 <t anchor="_f0e9c778-fbdc-7474-01fe-8d8e843e12da">To prevent open redirects, the DNS Provider MUST NOT redirect the user agent to a <tt>"redirect_uri"</tt> value whose registered domain is not listed in the template's <tt>"syncRedirectDomain"</tt> field, unless the request carries a valid digital signature (see <xref target="signing-procedure"></xref>).</t>
 
-<t anchor="_d9a2c375-8400-32fc-85b2-72752d07449b">The Service Provider SHOULD verify the outcome via DNS regardless of how the flow terminates (see <xref target="verification-of-changes"></xref>).</t>
+<t anchor="_f3db8a64-ed61-974a-af67-97f794c8fcfa">The DNS Provider MAY append parameters beyond those specified above to the <tt>"redirect_uri"</tt>. The Service Provider MUST ignore any parameter on the redirect that it does not recognise; the presence of such a parameter MUST NOT cause the Service Provider to treat an otherwise successful outcome as a failure. The same applies to the error redirect described in <xref target="sync-apply-error-response"></xref>.</t>
+
+<t anchor="_12aadeb3-1ca5-ed57-3a6e-bfc4007cdedb">The Service Provider SHOULD verify the outcome via DNS regardless of how the flow terminates (see <xref target="verification-of-changes"></xref>).</t>
 </section>
 
-<section anchor="_3d732d89-1638-ee8e-4fa2-0679013d029f"><name>Template Apply Error Response</name>
+<section anchor="sync-apply-error-response"><name>Template Apply Error Response</name>
 
 <t anchor="_8abdf815-5b89-6f21-f405-4ddec363941a">If the DNS Provider cannot complete the apply operation - for example because authentication failed, the user does not control the domain, the domain is suspended, or the user explicitly canceled - the DNS Provider MUST signal an error.</t>
 
@@ -1402,6 +1485,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_34b7c35c-9950-5fbc-3e06-83e783cbcde7">Legitimate uses of an underscored <tt>"host"</tt> value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the <tt>"host"</tt> apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <xref target="user_authorization_of_changes" format="title"></xref> so that the special-meaning target is not obscured.</t>
 </section>
+
+<section anchor="sec-crit-legacy"><name>Must-Understand Markers and Pre-Existing Deployments</name>
+
+<t anchor="_5d9acd19-60b6-f725-464f-55f798d045f7">The <tt>"crit"</tt> must-understand marker (see <xref target="versioning"></xref>) is effective only against implementations that recognise <tt>"crit"</tt> itself. Deployments predating this specification, including those implementing <xref target="DC-SPEC" section="" relative=""></xref> alone, ignore unrecognised elements without inspecting <tt>"crit"</tt>, and therefore proceed as though no such marker were present.</t>
+
+<t anchor="_e60b64d4-b8b6-88f4-eb2f-d4f8494e385a">A sender consequently cannot infer from the absence of a rejection that the receiver honoured a <tt>"crit"</tt> marker. Where an extension conveys a security property - for example a constraint narrowing what a template may modify, or an assertion the receiver is expected to enforce - marking it in <tt>"crit"</tt> does not by itself prevent a receiver that predates the extension from applying the request without that property. <tt>"crit"</tt> MUST NOT be treated as a downgrade-prevention mechanism, and the security of an extension MUST NOT rest on the receiver's recognition of <tt>"crit"</tt> alone.</t>
+</section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
 
@@ -1422,7 +1512,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_af9d750c-5374-6261-5448-c291e0b9a653">IANA is requested to create a new registry named "Domain Connect Fully Specified Record Types" under the "Domain Connect Protocol" registry group.</t>
 
-<t anchor="_0a670e10-9457-de85-29fa-d0f5532a9113">Registration policy: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>), following the procedure in <xref target="iana-registration-procedure"></xref>.</t>
+<t anchor="_3027d5e9-c425-4fec-cb2f-cbb59b1d1a2b">Registration policy: Specification Required <xref target="RFC8126" section="" relative=""></xref>.</t>
 
 <t anchor="_234aff10-d622-01bd-6d65-dc963726ebe2">Each entry in the registry MUST include:</t>
 
@@ -1458,13 +1548,17 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_1c96a705-3b2a-3332-9dd9-22ba0a39310e">IANA is requested to create a new registry named "Domain Connect Settings Properties" under the "Domain Connect Protocol" registry group.</t>
 
-<t anchor="_4a7a43dc-601c-bb02-6642-c2b4afb3359c">Registration policy: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>).</t>
+<t anchor="_cfb8ffff-df5b-993e-9ee3-d8c979beeea1">Registration policy:</t>
+
+<ul anchor="_cc5f718f-7982-fa51-dcc8-cba1d004e696"><li>For property names without any prefix: Specification Required <xref target="RFC8126" section="" relative=""></xref>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.</li>
+<li>For property names beginning with <tt>"vnd."</tt>: Specification Required <xref target="RFC8126" section="" relative=""></xref>.</li>
+</ul>
 
 <t anchor="_4acfb74b-ef81-5e69-a919-a9062f68504d">Each entry in the registry MUST include:</t>
 
-<ul anchor="_63458522-c923-f8d7-05cc-7bb2a2589f9a"><li><strong>Property name</strong>: the JSON key as it appears in the settings response.</li>
-<li><t anchor="_626e7308-89e7-a75a-a613-ae4fa9bbcb15"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
-<ul anchor="_a5c64e85-24b0-57ac-ed27-7cd7d1a85577"><li><tt>"Active"</tt>: the property is currently in use and its definition is normative.</li>
+<ul anchor="_39e3c498-7198-40f0-3141-98b4a143f9ba"><li><strong>Property name</strong>: the JSON key as it appears in the settings response. The value MUST conform to the <tt>dc-settings-property</tt> syntax (see <xref target="terminology"></xref>).</li>
+<li><t anchor="_dd7b6a44-e351-6750-8658-dc8e4fc9eb02"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
+<ul anchor="_0e4e5cf8-9922-adca-98f9-433aeec565c5"><li><tt>"Active"</tt>: the property is currently in use and its definition is normative.</li>
 <li><tt>"Deprecated"</tt>: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.</li>
 <li><tt>"Reserved"</tt>: the property appears in earlier versions of the Domain Connect specification (see <xref target="DC-SPEC" section="" relative=""></xref>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <xref target="DC-SPEC" section="" relative=""></xref>. See <xref target="reserved-for-extensions"></xref>.</li>
 </ul>
@@ -1483,7 +1577,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_6266c1c4-8310-729d-c2b8-f19d6bbd2cdc">The following properties from this specification constitute the initial contents of the registry:</t>
 
-<table anchor="_1eaa1cc3-9bbe-ff13-7f70-e6aa2190d72c"><name>Initial Domain Connect Settings Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerDisplayName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlSyncUX"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAsyncUX"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlAPI"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"width"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"height"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlControlPanel"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"nameServers"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
+<table anchor="_893f4d10-da9a-6499-b9c7-8758e70a6140"><name>Initial Domain Connect Settings Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerDisplayName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlSyncUX"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"urlAsyncUX"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlAPI"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"width"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"height"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"urlControlPanel"</tt></td><td align="left">Reserved</td><td align="left">Other</td><td align="left"><xref target="DC-SPEC" section="" relative=""></xref></td></tr><tr><td align="left"><tt>"nameServers"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"crit"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
 </section>
 
 <section anchor="iana-template-properties"><name>Domain Connect Template Properties Registry</name>
@@ -1492,11 +1586,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_17241aef-dc05-27ad-79e5-14549c6b5dea">Registration policy:</t>
 
-<ul anchor="_8213dc90-340a-0bd5-6a2b-5c9faf020f5e"><li>For property names without any prefix: RFC Required (see <xref target="RFC8126" section="" relative=""></xref>).</li>
-<li>For property names beginning with <tt>"vnd."</tt>: Specification Required (see <xref target="RFC8126" section="" relative=""></xref>).</li>
+<ul anchor="_9cda20fc-9a60-06f0-8012-43b733249c0a"><li>For property names without any prefix: Specification Required <xref target="RFC8126" section="" relative=""></xref>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.</li>
+<li>For property names beginning with <tt>"vnd."</tt>: Specification Required <xref target="RFC8126" section="" relative=""></xref>.</li>
 </ul>
 
-<t anchor="_1207a1df-0292-c9e1-bee7-e9754332ccf4">Each entry in the registry MUST include:</t>
+<t anchor="_bb4d7c63-6668-b6a5-6ec6-b09d69f6535e">This registry covers the properties of the template definition (see <xref target="template-definition"></xref>).</t>
+
+<t anchor="_3cc93d58-f856-2d82-5b6c-e4f69cb8fae9">Each entry in the registry MUST include:</t>
 
 <ul anchor="_b61e8e54-c66d-6b0f-f266-27053d3223dd"><li><strong>Property name</strong>: the JSON key of the property as it appears in the template definition. The value MUST conform to the <tt>dc-template-property</tt> syntax (see <xref target="terminology"></xref>).</li>
 <li><t anchor="_f4ab65c0-6311-e403-9299-9f44919c7a4c"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
@@ -1509,59 +1605,91 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li><strong>Reference</strong>: the document that defines the property.</li>
 </ul>
 
-<t anchor="_8bbfe750-0c23-6f00-a691-3dca78798e37">The following properties from this specification constitute the initial contents of the registry:</t>
+<t anchor="_9c9098c9-1dea-f6a2-c6d9-270615fc8282">The following properties from this specification constitute the initial contents of the registry:</t>
 
 <table anchor="_85012f2d-6df9-747f-9e5c-a02364965969"><name>Initial Domain Connect Template Properties</name><thead><tr><th align="left"><strong>Property Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"providerId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"providerName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"serviceId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"serviceName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"version"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"templateSpecVersion"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"logoUrl"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"description"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"variableDescription"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncBlock"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"shared"</tt></td><td align="left">Deprecated</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"sharedProviderName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"sharedServiceName"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncPubKeyDomain"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"syncRedirectDomain"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"multiInstance"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"warnPhishing"</tt></td><td align="left">Deprecated</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"hostRequired"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"crit"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"records"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
 </section>
 
+<section anchor="iana-record-fields"><name>Domain Connect Protocol-Level Record Fields Registry</name>
+
+<t anchor="_f30e6612-0524-2047-ca71-53691175a950">IANA is requested to create a new registry named "Domain Connect Protocol-Level Record Fields" under the "Domain Connect Protocol" registry group (see <xref target="iana-settings-properties"></xref>).</t>
+
+<t anchor="_22580a63-d6b6-10f3-f5fc-6a46cbd1a94d">This registry covers only those template record fields that are protocol-level, that is, fields whose meaning is defined by this protocol and that are applicable to a template record irrespective of its <tt>"type"</tt> (see <xref target="template-record-extensibility"></xref>). Fields that carry the RDATA of a particular record type, or that are otherwise meaningful only for specific record types, are not registered here: the <tt>"type"</tt> field partitions that part of the name space, and each record type is free to define its own type-specific fields in the specification that defines the type.</t>
+
+<t anchor="_83fd1d98-482f-1b25-1531-e15b9307a6ef">Because a protocol-level field applies to records of every type, it occupies its name across all record types at once. A specification registering a protocol-level field MUST therefore establish that the requested name does not collide with a type-specific field name already in use by any record type, whether or not that type-specific field is itself registered. A name that collides in this way MUST NOT be registered, and a different name chosen.</t>
+
+<t anchor="_85ce8460-f1a1-08ef-e8bb-384449186bfb">Registration policy:</t>
+
+<ul anchor="_ff3c3828-305d-e4a4-8b38-1f9a8bf2cb42"><li>For field names without any prefix: Specification Required <xref target="RFC8126" section="" relative=""></xref>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.</li>
+<li>For field names beginning with <tt>"vnd."</tt>: Specification Required <xref target="RFC8126" section="" relative=""></xref>.</li>
+</ul>
+
+<t anchor="_4c9f980e-88c0-4620-2072-de8ad3053074">Each entry in the registry MUST include:</t>
+
+<ul anchor="_c91bfcc2-8e0d-067c-4f9b-4ef764563509"><li><strong>Field name</strong>: the JSON key of the field as it appears in a template record. The value MUST conform to the <tt>dc-record-field</tt> syntax (see <xref target="terminology"></xref>).</li>
+<li><t anchor="_4e97f4e4-fa20-24de-a9da-2dad111e4635"><strong>Status</strong>: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:</t>
+<ul anchor="_3f7f95fa-1986-f004-c1d2-59a5fe5953b9"><li><tt>"Active"</tt>: the field is currently in use and its definition is normative.</li>
+<li><tt>"Deprecated"</tt>: the field SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.</li>
+<li><tt>"Reserved"</tt>: the field appears in earlier versions of the Domain Connect specification (see <xref target="DC-SPEC" section="" relative=""></xref>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <xref target="DC-SPEC" section="" relative=""></xref>. See <xref target="reserved-for-extensions"></xref>.</li>
+</ul>
+</li>
+<li><strong>Kind</strong>: the nature of the defining document. The value MUST be one of: <tt>"IETF Standard"</tt> for fields defined in a standards-track RFC, <tt>"Informational"</tt> for fields defined in an Informational RFC, or <tt>"Other"</tt> for any other specification.</li>
+<li><strong>Reference</strong>: the document that defines the field.</li>
+</ul>
+
+<t anchor="_e4e966ad-3b06-62e2-66a0-f9568cbbb2f7">The following protocol-level record fields from this specification constitute the initial contents of the registry:</t>
+
+<table anchor="_472e330c-0b9c-d64c-7441-a5fe9f49136f"><name>Initial Domain Connect Protocol-Level Record Fields</name><thead><tr><th align="left"><strong>Field Name</strong></th><th align="left"><strong>Status</strong></th><th align="left"><strong>Kind</strong></th><th align="left"><strong>Reference</strong></th></tr></thead><tbody><tr><td align="left"><tt>"type"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"groupId"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"essential"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr><tr><td align="left"><tt>"crit"</tt></td><td align="left">Active</td><td align="left">IETF Standard</td><td align="left">This document</td></tr></tbody></table>
+</section>
+
 <section anchor="iana-rrtype-guidance"><name>Guidance to the DNS Resource Record (RR) TYPEs Registry</name>
 
-<t anchor="_8ef94c13-a0ef-5328-d3df-b2f4a3fb31d2">To avoid collisions between newly assigned DNS RR TYPE mnemonics and the record type names used by Domain Connect, IANA is requested to add the following note to the registration procedure of the "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group (see <xref target="RFC6895" section="" relative=""></xref>):</t>
+<t anchor="_2dd79220-efd3-627d-c1b1-0e9de4cd5518">To avoid collisions between newly assigned DNS RR TYPE mnemonics and the record type names used by Domain Connect, IANA is requested to add the following note to the registration procedure of the "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group (see <xref target="RFC6895" section="" relative=""></xref>):</t>
 
-<blockquote><t anchor="_4a73e86a-30be-1d47-fe1c-aef895b7e6f1">When evaluating a request to assign a new RR TYPE mnemonic, the designated experts SHOULD consult the "Domain Connect Fully Specified Record Types" registry. If the requested mnemonic matches the name of an entry in that registry whose <strong>DNS RR TYPE</strong> field is <tt>"N/A"</tt>, the designated experts SHOULD flag the potential conflict and consult the designated experts of the "Domain Connect Fully Specified Record Types" registry before completing the assignment.</t>
+<blockquote><t anchor="_dd19d04d-0750-d58e-4f84-feb532db6a7a">When evaluating a request to assign a new RR TYPE mnemonic, the designated experts SHOULD consult the "Domain Connect Fully Specified Record Types" registry. If the requested mnemonic matches the name of an entry in that registry whose <strong>DNS RR TYPE</strong> field is <tt>"N/A"</tt>, the designated experts SHOULD flag the potential conflict and consult the designated experts of the "Domain Connect Fully Specified Record Types" registry before completing the assignment.</t>
 </blockquote>
 
-<t anchor="_48b6a680-d164-f788-4d7d-33d19146f441">This coupling ensures that a Domain Connect record type name that does not (yet) correspond to a DNS RR TYPE - such as a <tt>"Computed"</tt> type - is not inadvertently assigned a conflicting meaning in the DNS RR TYPEs registry.</t>
+<t anchor="_2ef224e3-faa2-5f87-d179-a83d460df7bb">This coupling ensures that a Domain Connect record type name that does not (yet) correspond to a DNS RR TYPE - such as a <tt>"Computed"</tt> type - is not inadvertently assigned a conflicting meaning in the DNS RR TYPEs registry.</t>
 
-<t anchor="_977b44fd-6bcb-727e-b169-7efdc313fdc3">In addition, IANA is requested to update the "Reference" of the "Resource Record (RR) TYPEs" registry to cite this document alongside the existing references:</t>
+<t anchor="_8d0aa669-fe8d-737e-b49a-17b143207da4">In addition, IANA is requested to update the "Reference" of the "Resource Record (RR) TYPEs" registry to cite this document alongside the existing references:</t>
 
-<blockquote><t anchor="_e5648f4d-09ac-83a4-b45b-108efe9a41cc">OLD: [RFC6895][RFC1035]<br /> NEW: [RFC6895][RFC1035][This document]</t>
+<blockquote><t anchor="_74470497-b1d7-c52c-d2da-d204754889f9">OLD: [RFC6895][RFC1035]<br /> NEW: [RFC6895][RFC1035][This document]</t>
 </blockquote>
 
-<t anchor="_6fdbff20-db50-8ed5-470a-25af2ed643e7">This records, on the DNS side, the obligation to consult the "Domain Connect Fully Specified Record Types" registry described above.</t>
+<t anchor="_e95c04cc-b36e-eca3-34d1-0a83cf5fba43">This records, on the DNS side, the obligation to consult the "Domain Connect Fully Specified Record Types" registry described above.</t>
 </section>
 
 <section anchor="iana-underscore"><name>Underscore <tt>"_domainconnect"</tt> DNS Node Name</name>
 
-<t anchor="_98f9949d-37d5-ab99-3f27-c6dafb747d32">Per <xref target="RFC8552" section="" relative=""></xref>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:</t>
+<t anchor="_418d3115-b996-30bf-fa01-a0652d7c8f92">Per <xref target="RFC8552" section="" relative=""></xref>, please add the following entry to the "Underscored and Globally Scoped DNS Node Names" registry:</t>
 
-<table anchor="_19828c91-04b5-60d7-a2e8-d692e71a1e71"><name>IANA Registration for _domainconnect</name><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
+<table anchor="_5b68558c-2203-09fb-e31e-13bdfaac8f07"><name>IANA Registration for _domainconnect</name><thead><tr><th align="left">RR Type</th><th align="left">_NODE NAME</th><th align="left">Reference</th></tr></thead><tbody><tr><td align="left">TXT</td><td align="left">_domainconnect</td><td align="left">This document.</td></tr></tbody></table>
 </section>
 
 <section anchor="iana-media-type"><name>Media Type Registration for application/domainconnect-template+json</name>
 
-<t anchor="_f7ebbabc-e872-f304-930d-2e52d6beaaa4">IANA is requested to register the following media type in the "Media Types" registry, per <xref target="RFC6838" section="" relative=""></xref>.</t>
+<t anchor="_000367f4-f1a3-d572-bebf-93e2176333ec">IANA is requested to register the following media type in the "Media Types" registry, per <xref target="RFC6838" section="" relative=""></xref>.</t>
 
-<dl anchor="_0675786e-56ec-3633-7404-d459efd13a5c"><dt>Type name:</dt><dd anchor="_7fb70308-c4d6-a33f-b1b0-2a6e1cb10b9c"><t anchor="_b7d6176e-f740-d2ba-c99f-a8fe2ab90d34">application</t>
-</dd><dt>Subtype name:</dt><dd anchor="_e998a198-ad42-fdb9-c455-bbbb1f644b1a"><t anchor="_31bebaa6-d501-871b-8fd8-c833ffd708b1">domainconnect-template+json</t>
-</dd><dt>Required parameters:</dt><dd anchor="_3c9836a9-4f90-e09b-73f1-836afefbef52"><t anchor="_78605df0-4a2c-6efa-7444-6d9ed819c92f">N/A</t>
-</dd><dt>Optional parameters:</dt><dd anchor="_6d103196-f660-7d6c-1d1b-657eb319a36a"><t anchor="_76a0c33e-3a3e-5fe0-372d-0c78515e5e6e">N/A</t>
-</dd><dt>Encoding considerations:</dt><dd anchor="_dfe46c2e-cb69-19e6-c54d-7a2b8984626e"><t anchor="_1faa31e7-39a6-4804-7def-8066ab847fac">binary; the content is a JSON <xref target="RFC8259" section="" relative=""></xref> document encoded in UTF-8.</t>
-</dd><dt>Security considerations:</dt><dd anchor="_3e94a7f1-7863-00c0-aaed-8fe26a60c3d6"><t anchor="_e2f9b49f-cfc9-effc-21b2-542959e85276">See <xref target="security-considerations"></xref> of this document.</t>
-</dd><dt>Interoperability considerations:</dt><dd anchor="_40f75983-b3aa-d23f-0e46-84b60d140b24"><t anchor="_2052b08d-c698-f132-e94c-fd5af24e928e">See this document.</t>
-</dd><dt>Published specification:</dt><dd anchor="_4e4b8178-a64b-7ee4-ff90-651439a97d6c"><t anchor="_a3cd91ac-bf64-c4dd-3af4-83180e44f891">This document (see <xref target="template-definition"></xref>).</t>
-</dd><dt>Applications that use this media type:</dt><dd anchor="_332d5ace-21bc-46a8-aed4-fa2507ffa87a"><t anchor="_49fb95a4-7cea-92eb-96aa-92e907f45206">Domain Connect Service Providers and DNS Providers.</t>
-</dd><dt>Fragment identifier considerations:</dt><dd anchor="_23144755-f4d3-7519-2776-15e06934ae7c"><t anchor="_959e56c4-56a8-0c42-46f5-6c0f3a01a8ef">The <tt>"+json"</tt> structured syntax suffix is defined in <xref target="RFC6839" section="" relative=""></xref>; see also <xref target="RFC8259" section="" relative=""></xref>.</t>
-</dd><dt>Additional information:</dt><dd anchor="_3a79decf-e0b6-eaf0-015f-25f2b1f30ea5"><dl anchor="_807f50c0-4f13-aa64-456a-eb5577342f3e"><dt>Deprecated alias names for this type:</dt><dd anchor="_18ac4f74-645a-fced-6e67-d67694514d51"><t anchor="_959e167a-5d84-cc53-e745-8b078cc10e1f">N/A</t>
-</dd><dt>Magic number(s):</dt><dd anchor="_aaed77e0-3d60-1c82-c138-d79ecf927273"><t anchor="_8a08f3f1-499c-038b-6950-21038fde6791">N/A</t>
-</dd><dt>File extension(s):</dt><dd anchor="_0fe8435f-61c5-d968-4fa5-67416119d98a"><t anchor="_aee814c3-ae8c-5550-84c5-e61027e2f2b4">N/A</t>
-</dd><dt>Macintosh file type code(s):</dt><dd anchor="_6710aed0-05c8-c1cc-e551-15362d1f26e3"><t anchor="_3be64950-e47d-ae8e-1525-5df1fef0eb00">N/A</t>
+<dl anchor="_222ddac8-7a15-1cdf-c015-0fa5d6be1788"><dt>Type name:</dt><dd anchor="_d21b33df-0519-abbe-4c19-719d6274ac81"><t anchor="_c8d54f33-5fbd-26c0-d365-ef16145ed124">application</t>
+</dd><dt>Subtype name:</dt><dd anchor="_a3e28b89-097d-05cb-ce80-d3b6e8c29387"><t anchor="_bec79ca1-8e09-425f-5306-2ea3e12c4dcf">domainconnect-template+json</t>
+</dd><dt>Required parameters:</dt><dd anchor="_0c3c1b42-b63b-f933-9ce4-7d60a6bc011a"><t anchor="_58e54e67-123a-3051-092b-532bd4f22406">N/A</t>
+</dd><dt>Optional parameters:</dt><dd anchor="_d6dfc448-dd72-e38f-dc77-41d86d276374"><t anchor="_5c23895e-1a7e-336f-d0a6-2eb88bfff550">N/A</t>
+</dd><dt>Encoding considerations:</dt><dd anchor="_12579a80-ecc5-a55a-a38f-bf7060123d5c"><t anchor="_42bfef7f-6e1a-9564-6b15-db827ce25d23">binary; the content is a JSON <xref target="RFC8259" section="" relative=""></xref> document encoded in UTF-8.</t>
+</dd><dt>Security considerations:</dt><dd anchor="_0bd242af-a9e9-17bc-d8bd-cef4417c5cc2"><t anchor="_a6037b2f-92f5-e551-52c1-c94325378b8f">See <xref target="security-considerations"></xref> of this document.</t>
+</dd><dt>Interoperability considerations:</dt><dd anchor="_79016d2f-2775-40e2-5acb-dfee17f6911c"><t anchor="_0d24ca1a-e30b-763b-991a-9f45688ca28c">See this document.</t>
+</dd><dt>Published specification:</dt><dd anchor="_3d4ed31e-0286-04b5-07ef-45c5734ffb34"><t anchor="_e31a16ff-83fb-6b80-c7f2-400726f9e6a3">This document (see <xref target="template-definition"></xref>).</t>
+</dd><dt>Applications that use this media type:</dt><dd anchor="_208ab043-6d57-d28c-b2ce-33e351a2f1c9"><t anchor="_ede8b520-22e8-9d95-de01-22e2f89bfcb4">Domain Connect Service Providers and DNS Providers.</t>
+</dd><dt>Fragment identifier considerations:</dt><dd anchor="_05a69a38-3bf0-a323-95c3-820ed58d430b"><t anchor="_0f23e115-be85-b546-7604-653ea6daca58">The <tt>"+json"</tt> structured syntax suffix is defined in <xref target="RFC6839" section="" relative=""></xref>; see also <xref target="RFC8259" section="" relative=""></xref>.</t>
+</dd><dt>Additional information:</dt><dd anchor="_d4320d6b-08a3-91e1-073b-192074d6e3e6"><dl anchor="_96e3f5f7-c9ab-9ed3-59f6-12b2b7ac1c6d"><dt>Deprecated alias names for this type:</dt><dd anchor="_cdc2e25f-635f-8db9-578d-7845e23a9515"><t anchor="_01624c05-eae6-e712-12ad-a1b1fa05e114">N/A</t>
+</dd><dt>Magic number(s):</dt><dd anchor="_a045ca6c-803d-6f89-bb51-fa58943742a0"><t anchor="_478c65af-f685-92b3-7451-c573da742e0f">N/A</t>
+</dd><dt>File extension(s):</dt><dd anchor="_522acbbd-437d-de80-c750-2313139bf7d5"><t anchor="_ad7ad6df-9118-df90-b2bd-0c55c162c5d5">N/A</t>
+</dd><dt>Macintosh file type code(s):</dt><dd anchor="_9d841b35-c072-0737-d13e-b7ac68e5405c"><t anchor="_0f48b699-e889-7c7a-0c8c-82ba0d773d7b">N/A</t>
 </dd></dl>
-</dd><dt>Person  email address to contact for further information:</dt><dd anchor="_01554a77-a7ab-d42e-2524-06ddda875823"><t anchor="_90b80ad1-f07c-b215-7376-098df5b19bde">IETF DCONN Working Group &#x3c;<eref target="mailto:dconn@ietf.org"></eref>&#x3e;</t>
-</dd><dt>Intended usage:</dt><dd anchor="_1ce5a1d5-5f2f-248b-fc5b-b1c7f0f65479"><t anchor="_8d72fe0c-a8f6-3088-40bb-6d57af8e2040">COMMON</t>
-</dd><dt>Restrictions on usage:</dt><dd anchor="_9775482c-a430-4077-48ab-0b8f9570d7a9"><t anchor="_fa2e7945-ef28-a6c2-31ef-5ce11b3c9e02">N/A</t>
-</dd><dt>Author:</dt><dd anchor="_b90569bf-6eb1-95b7-9462-dc339a266445"><t anchor="_a56796b8-0fff-3c06-0161-26ac33e2f9a6">IETF DCONN Working Group</t>
-</dd><dt>Change controller:</dt><dd anchor="_ede368c7-c47d-6266-e416-f09a7cfad801"><t anchor="_f979c04e-2e02-a739-1bb2-e5ab00f07d97">IETF</t>
+</dd><dt>Person  email address to contact for further information:</dt><dd anchor="_57fd3b0f-c629-350e-64a9-eb96022cbfd4"><t anchor="_acf604ef-2dfd-a3f4-2ea2-df5bc8772c6b">IETF DCONN Working Group &#x3c;<eref target="mailto:dconn@ietf.org"></eref>&#x3e;</t>
+</dd><dt>Intended usage:</dt><dd anchor="_54b4985b-773b-ed97-1680-f704b0f137cf"><t anchor="_1ff145b4-6a64-705e-a05d-ae9cdaf0e145">COMMON</t>
+</dd><dt>Restrictions on usage:</dt><dd anchor="_4614ca84-fb5c-b5c5-abb2-ab3b1609e0c5"><t anchor="_4e068674-ed2a-f7f4-3970-6f37a1de181e">N/A</t>
+</dd><dt>Author:</dt><dd anchor="_43f1c0ff-5053-371d-40a7-6b7f984d41a0"><t anchor="_cd074776-a67b-b8ca-1988-01aa63995293">IETF DCONN Working Group</t>
+</dd><dt>Change controller:</dt><dd anchor="_a81b91b1-fab4-3e57-160a-75f412931971"><t anchor="_4ca34054-be5b-8df9-47ae-4730d20e30ad">IETF</t>
 </dd></dl>
 </section>
 </section>
@@ -1613,17 +1741,14 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_d853b6ab-7541-1a0d-229e-d73061b51a41" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_fb51d501-16a4-b5ef-69fb-fb8be3c20b51" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_b7f20842-9c37-b6e7-3041-9f639e2fbaa0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
+<section anchor="_dc2f41b9-72d9-f91d-fdbe-98c923bb12a1" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
 
-<ul anchor="_ccd2e891-5620-5c6f-22a9-9b472b0b4c3d"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
-<li>Reserved built-in and grandfathered apply parameter names as forbidden <tt>variable-name</tt> identifiers in <xref target="special-variables" format="title"></xref>.</li>
-<li>Added <tt>dc-apply-param</tt>, <tt>dc-predefined-param</tt>, <tt>dc-dot-param</tt>, and <tt>dc-vnd-param</tt> to <xref target="terminology" format="title"></xref>.</li>
-<li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
-<li>Added the <tt>"templateSpecVersion"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
-<li>Added the IANA "Domain Connect Template Properties" registry in <xref target="iana-template-properties" format="title"></xref>.</li>
-<li>Added <tt>dc-template-property</tt>, <tt>dc-unprefixed-property</tt>, and <tt>dc-vnd-property</tt> to <xref target="terminology" format="title"></xref>.</li>
+<ul anchor="_c402a138-d59a-c627-aa9b-b1021a015531"><li>Partitioned the name spaces of apply parameters, template properties, template record fields, and settings properties into standards-track and vendor-private trees, and established IANA registries to coordinate them.</li>
+<li>Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a <tt>"crit"</tt> must-understand marker.</li>
+<li>Added <xref target="versioning" format="title"></xref>, describing how the protocol is versioned and how future revisions preserve backwards compatibility.</li>
+<li>Aligned the registration policies of all Domain Connect registries with the review process of <xref target="iana-registration-procedure" format="title"></xref>.</li>
 </ul>
 </section>
 
@@ -1753,13 +1878,9 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <reference target="https://www.rfc-editor.org/info/rfc6838" anchor="RFC6838"><stream>IETF</stream> <front> <title>Media Type Specifications and Registration Procedures</title> <author fullname="N. Freed" asciiFullname="N. Freed"></author> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <date month="January" year="2013"></date> <abstract>  <t anchor="_a235f651-646a-9589-e223-487b03c0f76a">This document defines procedures for the specification and registration of media types for use in HTTP, MIME, and other Internet protocols. This memo documents an Internet Best Current Practice.</t></abstract> </front> <seriesInfo value="10.17487/RFC6838" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="6838" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc9110" anchor="RFC9110"><stream>IETF</stream> <front> <title>HTTP Semantics</title> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="J. Reschke" asciiFullname="J. Reschke"></author> <date month="June" year="2022"></date> <keyword>Hypertext Transfer Protocol</keyword><keyword>HTTP</keyword><keyword>HTTP semantics</keyword><keyword>HTTP content</keyword><keyword>HTTP method</keyword><keyword>HTTP status code</keyword> <abstract>  <t anchor="_979a6385-7302-c8dd-62d9-826336611ca0">The Hypertext Transfer Protocol (HTTP) is a stateless application-level protocol for distributed, collaborative, hypertext information systems. This document describes the overall architecture of HTTP, establishes common terminology, and defines aspects of the protocol that are shared by all versions. In this definition are core protocol elements, extensibility mechanisms, and the "http" and "https" Uniform Resource Identifier (URI) schemes.</t>  <t anchor="_9abda66b-c6d0-57aa-1bce-4288952fe795">This document updates RFC 3864 and obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230.</t></abstract> </front> <seriesInfo name="STD" value="97"></seriesInfo> <seriesInfo value="10.17487/RFC9110" name="DOI"></seriesInfo> <seriesInfo value="97" name="BCP"></seriesInfo> <seriesInfo value="9110" name="RFC"></seriesInfo></reference>
     </references>
-    <references anchor="_caa3fd87-3022-d3b3-29e7-0717696251b9">
+    <references anchor="_450f5e0d-c691-497f-076a-3739617b36c2">
       <name>Informative References</name>
-      <reference anchor="RFC8499">
-        <front>
-          <title>Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, &#x3e;.</title><author surname="Unknown"></author>
-        </front>
-      </reference>
+      <reference target="https://www.rfc-editor.org/info/rfc8499" anchor="RFC8499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="A. Sullivan" asciiFullname="A. Sullivan"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="January" year="2019"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_3bbdcc7f-4112-91e9-c2e1-7e37782a8e60">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has sometimes changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_3217b10c-6d16-2d1a-099b-d804214d3af6">This document obsoletes RFC 7719 and updates RFC 2308.</t></abstract> </front> <seriesInfo value="10.17487/RFC8499" name="DOI"></seriesInfo> <seriesInfo value="8499" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc6839" anchor="RFC6839"><stream>IETF</stream> <front> <title>Additional Media Type Structured Syntax Suffixes</title> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <author fullname="A. Melnikov" asciiFullname="A. Melnikov"></author> <date month="January" year="2013"></date> <keyword>structured syntax suffix</keyword><keyword>media type</keyword> <abstract>  <t anchor="_24f0cb66-7e53-6c67-6fac-8427d8e7b40a">A content media type name sometimes includes partitioned meta- information distinguished by a structured syntax to permit noting an attribute of the media as a suffix to the name. This document defines several structured syntax suffixes for use with media type registrations. In particular, it defines and registers the "+json", "+ber", "+der", "+fastinfoset", "+wbxml" and "+zip" structured syntax suffixes, and provides a media type structured syntax suffix registration form for the "+xml" structured syntax suffix. This document is not an Internet Standards Track specification; it is published for informational purposes.</t></abstract> </front> <seriesInfo value="10.17487/RFC6839" name="DOI"></seriesInfo> <seriesInfo value="6839" name="RFC"></seriesInfo></reference>
       <reference target="https://github.com/Domain-Connect/spec/blob/rev.67/Domain%20Connect%20Spec%20Draft.adoc" anchor="DC-SPEC">
         <front> <title>Domain Connect Specification, Version 2.3 Rev. 67</title> <author surname="Blinn" asciiSurname="Blinn" initials="A." asciiInitials="A."></author> <author surname="Kerola" asciiSurname="Kerola" initials="S." asciiInitials="S."></author> <author surname="Kowalik" asciiSurname="Kowalik" initials="P." asciiInitials="P."></author> <date day="2" year="2025" month="March"></date> </front>

@@ -147,10 +147,15 @@ dc-predefined-param =
                    "providerId" / "serviceId" / "domain" / "host"
                  / "redirect_uri" / "state" / "providerName"
                  / "serviceName" / "groupId" / "sig" / "key"
+                 / "crit"
                  / "client_id" / "response_type" / "scope"
                 ; parameter names defined by this specification or
                 ; carried over from the client-request calls of the
                 ; asynchronous flow of [DC-SPEC]
+
+dc-crit-list   =  dc-apply-param *( "," dc-apply-param )
+                ; comma-separated list of apply parameter names;
+                ; used for the crit parameter
 
 dc-dot-param   =  "dc." 1*ALPHA
                 ; "dc." tree, reserved for standards-track extensions
@@ -169,6 +174,12 @@ dc-unprefixed-property =  ( ALPHA / DIGIT ) *( ALPHA / DIGIT )
 dc-vnd-property =  "vnd." 1*ALPHA *( "." 1*ALPHA )
                 ; "vnd." tree for vendor/private template
                 ; properties
+
+dc-record-field =  dc-unprefixed-property / dc-vnd-property
+                ; any template record field name
+
+dc-settings-property =  dc-unprefixed-property / dc-vnd-property
+                ; any settings-response property name
 
 ; ---- Other parameter rules ----
 
@@ -347,6 +358,28 @@ DNS Providers are trusted parties by virtue of their existing full access to the
 Service Providers are not assumed to be trusted by default. A malicious actor may attempt to exploit user trust by impersonating a legitimate Service Provider. Trust between DNS Providers and Service Providers is therefore established out-of-band — typically through an onboarding process involving contractual agreements or template acceptance policies — during which the DNS Provider verifies the legitimacy of the Service Provider and its templates.
 
 Templates define and restrict the permitted scope of DNS modifications. By fixing the records that a Service Provider may affect, templates ensure that no changes beyond the approved scope can be applied.
+
+[[versioning]]
+=== Protocol Versioning and Extensibility
+
+This specification is versioned at two independent levels: the HTTP interface and the template format.
+
+All HTTP end-points defined in this document carry a `"/v2"` path segment immediately after the URL prefix obtained from discovery (see <<dns-provider-discovery>> and <<applying-domain-connect>>). The `"2"` denotes the protocol generation specified by this document.
+
+A future revision of this protocol that is not backwards compatible with this document MUST use a different version path segment. A revision is not backwards compatible if an implementation of this document, when interacting with an implementation of that revision over the same path segment, could fail to interoperate or could misinterpret a request or a response. Reusing the `"/v2"` segment for such a revision MUST NOT be used. A deployment MAY serve more than one version path segment concurrently.
+
+Revisions SHOULD instead strive to remain backwards compatible and be introduced as extensions under the existing `"/v2"` segment. To make this possible, every extensible data structure of this protocol follows the same principles:
+
+* Ignore unknown: a recipient MUST ignore any element it does not recognise, and the mere presence of an unrecognised element MUST NOT cause the message, template, or request to be rejected. This applies to every extensible structure of this protocol: template-definition properties (see <<template-property-extensibility>>), template record fields (see <<template-record-extensibility>>), Settings End-Point properties (see <<settings-property-extensibility>>), apply parameters (see <<apply-parameter-extensibility>>), the response of the template query end-point (see <<query-supported-template>>), and the responses of the synchronous flow (see <<sync-apply-response>> and <<sync-apply-error-response>>).
+* Must understand: where an extension extends a message such that silently ignoring added elements would be unsafe, the sender marks the affected element names in a `"crit"` element, and a recipient that does not understand a listed element MUST refuse to act on the message rather than process it partially. This mechanism is defined for template definitions (see <<template-property-extensibility>>), for individual template records (see <<template-record-extensibility>>), for the Settings End-Point (see <<settings-property-extensibility>>), and for apply parameters (see <<apply-parameter-extensibility>>).
+
+Consequently, an extension that can safely be ignored requires no version change; an extension that cannot safely be ignored is signalled per-message through `"crit"`; and only a change that breaks the framing of the protocol itself requires a new version path segment. For the limits of `"crit"` against deployments that predate this specification, see <<sec-crit-legacy>>.
+
+The must-understand mechanism is deliberately not defined for the responses of the synchronous flow. The authoritative record of what was applied is the DNS zone itself, which the Service Provider verifies independently (see <<verification-of-changes>>); by the time a response reaches the Service Provider the zone change has already occurred, so there is no operation left to refuse. Extensions to those responses therefore rely on the ignore-unknown rule alone.
+
+The `"_domainconnect"` TXT record (see <<dns-provider-discovery>>) carries no internal structure and therefore offers no place to hold a version indicator. This is intentional in this revision to maintain compatibility with existing deployments of <<DC-SPEC>>. A future revision MAY define a structured content format for this record, at which point a version indicator can be introduced within that structure. Service Providers implementing this document MUST reject record contents that do not conform to the rules in <<dns-provider-discovery>>, which keeps any such future format distinguishable from a plain authority-and-path value.
+
+The template format is versioned independently of the HTTP interface, through the `"templateSpecVersion"` template property (see <<template-property-extensibility>>).
 
 == Protocol Flows Overview
 === General information
@@ -654,7 +687,7 @@ The set of template-definition properties defined above MAY be extended. To keep
 * Property names without any prefix are reserved for this specification and for future standards-track extensions that normatively require this document as their base. Such names are managed through the IANA "Domain Connect Template Properties" registry (see <<iana-template-properties>>). Implementations MUST NOT introduce private or vendor-specific properties using unprefixed names.
 * Property names beginning with `"vnd."` are reserved for vendor-specific and private use. A vendor SHOULD further namespace such properties with a vendor identifier (e.g. `"vnd.example.fooBar"`), and such names MAY be registered in the IANA "Domain Connect Template Properties" registry (see <<iana-template-properties>>). Properties using this prefix MUST NOT be assumed to be interoperable across implementations, and the property name MUST conform to the `dc-vnd-property` syntax (see <<terminology>>).
 
-Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to `"vnd."` properties. An implementation MUST NOT rely on the semantics of a `"vnd."` property.
+Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognise; the mere presence of an unrecognised property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to `"vnd."` properties.
 
 The `"crit"` property (see <<template-definition>>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.
 
@@ -960,7 +993,22 @@ excluding the version prefix (`"v=spf1"`) and the terminating `"all"` qualifier.
 The DNS Provider MUST validate the syntax before merging.
 --
 
-The following table lists the fields that MAY be defined for each record type. Other fields MUST NOT be used.
+[newline=true]
+[[record-crit]]`"Critical Fields"`::
++
+--
+[horizontal]
+JSON key::: `"crit"`
+Type::: `"Array of String"`
+
+(OPTIONAL) A list of the names of fields of this record that an implementation is required to understand and process for the record to be applied correctly. +
+
+Each entry MUST conform to the `dc-record-field` syntax (see <<terminology>>). +
+
+When present, the `"crit"` field MUST NOT be empty and MUST NOT contain variables.
+--
+
+The following table lists the fields that are defined for each record type by this document. Fields beyond those listed are governed by <<template-record-extensibility>>.
 
 [cols=",",options="header",title="Fields per record type"]
 |=======================================================================
@@ -985,6 +1033,24 @@ The following table lists the fields that MAY be defined for each record type. O
 |Generic types|`"host"`, `"data"`, `"ttl"`
 
 |=======================================================================
+
+[[template-record-extensibility]]
+==== Template Record Extensibility
+
+The set of template record fields defined above MAY be extended. Record field name space is partitioned as follows: 
+
+- unprefixed names are reserved for this specification and for future standards-track extensions that normatively require this document as their base
+- names beginning with `"vnd."` are reserved for vendor-specific and private use. 
+
+Every record field name MUST conform to the `dc-record-field` syntax (see <<terminology>>).
+
+Record fields fall into two categories. Protocol-level fields — `"type"`, `"groupId"`, `"essential"` and `"crit"` — are defined by this protocol and are applicable to a record irrespective of its `"type"`. Because such a field must carry the same meaning for every record type, unprefixed protocol-level field names are coordinated through the IANA "Domain Connect Protocol-Level Record Fields" registry (see <<iana-record-fields>>). All remaining fields are type-specific: they carry the RDATA of a particular record type or are otherwise meaningful only for certain types.
+
+The two categories MUST NOT collide. A protocol-level field name, being valid for every record type, MUST NOT reuse a name already used as a type-specific field by any record type, and a specification defining type-specific fields MUST NOT reuse a name registered as protocol-level (see <<iana-record-fields>>).
+
+An implementation MUST ignore any record field it does not recognise, and MUST ignore any recognised field that is not defined for the record's type. The mere presence of such a field MUST NOT cause the record or the template to be rejected.
+
+The `"crit"` record field (see <<record-crit>>) overrides this default for the fields it lists: if an implementation does not understand and cannot process one or more of those fields, it MUST reject the template and MUST NOT apply it. Rejection applies to the template as a whole, not only to the record carrying the `"crit"` field, because a partially applied template would leave the service configured incorrectly. A listed name that does not correspond to a field present in the record is by definition understood.
 
 === Template Considerations
 
@@ -1240,6 +1306,15 @@ The URI MAY include a path component.
 
 Each entry MUST conform to the `"domain-name"` syntax (see <<terminology>>).
 
+|*Critical Properties*
+|crit
+|List of String
+|(OPTIONAL) A list of the names of settings properties that a Service Provider is required to understand and process in order to interact correctly with this DNS Provider. +
+
+Each entry MUST conform to the `dc-settings-property` syntax (see <<terminology>>). +
+
+When present, the `"crit"` property MUST NOT be empty.
+
 |*Reserved*
 |urlAsyncUX
 |
@@ -1261,9 +1336,6 @@ Each entry MUST conform to the `"domain-name"` syntax (see <<terminology>>).
 |(Reserved. See <<reserved-for-extensions>>.)
 
 |=======================================================================
-
-Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension.
-DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in <<iana-settings-properties>> in order to avoid name conflicts.
 
 .Example Settings End-Point response
 ====
@@ -1314,6 +1386,21 @@ call was successful. The response is the JSON described above.
 |A response of a 404 indicates that the DNS Provider does not have the zone.
 |=======================================================================
 
+[[settings-property-extensibility]]
+==== Settings Property Extensibility
+
+Clients MUST ignore any JSON properties in the settings response that are not defined in this specification or not recognized from an applicable extension.
+DNS Providers MAY include additional JSON properties in the settings response beyond those defined in this specification, however it is RECOMMENDED that those properties are registered in the "Domain Connect Settings Properties" registry defined in <<iana-settings-properties>> in order to avoid name conflicts.
+
+Settings property names schema is partitioned as follows:
+
+- unprefixed names are reserved for this specification and for future standards-track extensions that normatively require this document as their base,
+- names beginning with `"vnd."` are reserved for vendor-specific and private use.
+
+Every settings property name MUST conform to the `dc-settings-property` syntax (see <<terminology>>).
+
+The `"crit"` property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood.
+
 [[applying-domain-connect]]
 == Applying Domain Connect
 
@@ -1346,6 +1433,7 @@ https://connect.dnsprovider.example/api
 The root URLs for the UX endpoints and the API endpoints are returned in
 the JSON payload during DNS Provider discovery.
 
+[[query-supported-template]]
 === Query Supported Template
 
 Normative URI template of the template query end-point per <<RFC6570>>:
@@ -1391,6 +1479,8 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 
 Returning a status of 200 without a body indicates the template is supported.
 The DNS Provider MAY disclose the version of the template in a JSON object with field `"version"` (see: <<template-definition, version field>> or the full JSON object of deployed template.
+
+The Service Provider MUST ignore any JSON property in this response that it does not recognise; the presence of such a property MUST NOT cause the response to be treated as an error. Where the DNS Provider returns the full template object, the rules of <<template-property-extensibility>> and <<template-record-extensibility>> apply to it.
 
 The Service Provider MAY use HTTP content negotiation (see <<RFC9110>>) to
 request the full template object, for example by sending an `"Accept"` request
@@ -1540,6 +1630,14 @@ See the <<signing-procedure>> below for the signing procedure.
 The value MUST conform to the `dc-key-label` syntax (see <<terminology>>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label. +
 
 See the <<signing-procedure>> below.
+
+|*Critical Parameters*
+|crit
+|(OPTIONAL) A comma-separated list of the names of apply parameters that the DNS Provider is required to understand and process for the request to be handled correctly. +
+
+The value MUST conform to the `dc-crit-list` syntax (see <<terminology>>). +
+
+See <<apply-parameter-extensibility>> below.
 |=======================================================================
 
 An example query string:
@@ -1608,6 +1706,8 @@ The set of apply parameters MAY be extended. To avoid name collisions between th
 
 The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
 
+The `"crit"` parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <<sync-apply-error-response>> using the error code `"invalid_request"`. A listed name that does not correspond to a parameter present in the request is by definition understood.
+
 
 ==== Template Apply Request
 
@@ -1647,9 +1747,12 @@ The following parameters MUST be appended to the `"redirect_uri"`:
 
 To prevent open redirects, the DNS Provider MUST NOT redirect the user agent to a `"redirect_uri"` value whose registered domain is not listed in the template's `"syncRedirectDomain"` field, unless the request carries a valid digital signature (see <<signing-procedure>>).
 
+The DNS Provider MAY append parameters beyond those specified above to the `"redirect_uri"`. The Service Provider MUST ignore any parameter on the redirect that it does not recognise; the presence of such a parameter MUST NOT cause the Service Provider to treat an otherwise successful outcome as a failure. The same applies to the error redirect described in <<sync-apply-error-response>>.
+
 The Service Provider SHOULD verify the outcome via DNS regardless of how the flow terminates (see <<verification-of-changes>>).
 
 
+[[sync-apply-error-response]]
 ==== Template Apply Error Response
 
 If the DNS Provider cannot complete the apply operation — for example because authentication failed, the user does not control the domain, the domain is suspended, or the user explicitly canceled — the DNS Provider MUST signal an error.
@@ -2014,6 +2117,13 @@ The `"host"` apply parameter is supplied by the requesting party and prepended t
 
 Legitimate uses of an underscored `"host"` value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the `"host"` apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <<user_authorization_of_changes,format=title>> so that the special-meaning target is not obscured.
 
+[[sec-crit-legacy]]
+=== Must-Understand Markers and Pre-Existing Deployments
+
+The `"crit"` must-understand marker (see <<versioning>>) is effective only against implementations that recognise `"crit"` itself. Deployments predating this specification, including those implementing <<DC-SPEC>> alone, ignore unrecognised elements without inspecting `"crit"`, and therefore proceed as though no such marker were present.
+
+A sender consequently cannot infer from the absence of a rejection that the receiver honoured a `"crit"` marker. Where an extension conveys a security property — for example a constraint narrowing what a template may modify, or an assertion the receiver is expected to enforce — marking it in `"crit"` does not by itself prevent a receiver that predates the extension from applying the request without that property. `"crit"` MUST NOT be treated as a downgrade-prevention mechanism, and the security of an extension MUST NOT rest on the receiver's recognition of `"crit"` alone.
+
 [#iana]
 == IANA Considerations
 
@@ -2035,7 +2145,7 @@ IANA is requested to appoint one or more designated experts for the registries i
 
 IANA is requested to create a new registry named "Domain Connect Fully Specified Record Types" under the "Domain Connect Protocol" registry group.
 
-Registration policy: Specification Required (see <<RFC8126>>), following the procedure in <<iana-registration-procedure>>.
+Registration policy: Specification Required <<RFC8126>>.
 
 Each entry in the registry MUST include:
 
@@ -2152,11 +2262,14 @@ The following types from this specification constitute the initial contents of t
 
 IANA is requested to create a new registry named "Domain Connect Settings Properties" under the "Domain Connect Protocol" registry group.
 
-Registration policy: Specification Required (see <<RFC8126>>).
+Registration policy:
+
+* For property names without any prefix: Specification Required <<RFC8126>>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.
+* For property names beginning with `"vnd."`: Specification Required <<RFC8126>>.
 
 Each entry in the registry MUST include:
 
-* *Property name*: the JSON key as it appears in the settings response.
+* *Property name*: the JSON key as it appears in the settings response. The value MUST conform to the `dc-settings-property` syntax (see <<terminology>>).
 * *Status*: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
 ** `"Active"`: the property is currently in use and its definition is normative.
 ** `"Deprecated"`: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.
@@ -2229,6 +2342,11 @@ The following properties from this specification constitute the initial contents
 |Active
 |IETF Standard
 |This document
+
+|`"crit"`
+|Active
+|IETF Standard
+|This document
 |=======================================================================
 
 [[iana-template-properties]]
@@ -2238,8 +2356,10 @@ IANA is requested to create a new registry named "Domain Connect Template Proper
 
 Registration policy:
 
-* For property names without any prefix: RFC Required (see <<RFC8126>>).
-* For property names beginning with `"vnd."`: Specification Required (see <<RFC8126>>).
+* For property names without any prefix: Specification Required <<RFC8126>>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.
+* For property names beginning with `"vnd."`: Specification Required <<RFC8126>>.
+
+This registry covers the properties of the template definition (see <<template-definition>>).
 
 Each entry in the registry MUST include:
 
@@ -2361,6 +2481,61 @@ The following properties from this specification constitute the initial contents
 |IETF Standard
 |This document
 |=======================================================================
+
+[[iana-record-fields]]
+=== Domain Connect Protocol-Level Record Fields Registry
+
+IANA is requested to create a new registry named "Domain Connect Protocol-Level Record Fields" under the "Domain Connect Protocol" registry group (see <<iana-settings-properties>>).
+
+This registry covers only those template record fields that are protocol-level, that is, fields whose meaning is defined by this protocol and that are applicable to a template record irrespective of its `"type"` (see <<template-record-extensibility>>). Fields that carry the RDATA of a particular record type, or that are otherwise meaningful only for specific record types, are not registered here: the `"type"` field partitions that part of the name space, and each record type is free to define its own type-specific fields in the specification that defines the type.
+
+Because a protocol-level field applies to records of every type, it occupies its name across all record types at once. A specification registering a protocol-level field MUST therefore establish that the requested name does not collide with a type-specific field name already in use by any record type, whether or not that type-specific field is itself registered. A name that collides in this way MUST NOT be registered, and a different name chosen.
+
+Registration policy:
+
+* For field names without any prefix: Specification Required <<RFC8126>>. Registration additionally requires a standards-track RFC that normatively requires this document as its base.
+* For field names beginning with `"vnd."`: Specification Required <<RFC8126>>.
+
+Each entry in the registry MUST include:
+
+* *Field name*: the JSON key of the field as it appears in a template record. The value MUST conform to the `dc-record-field` syntax (see <<terminology>>).
+* *Status*: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
+** `"Active"`: the field is currently in use and its definition is normative.
+** `"Deprecated"`: the field SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.
+** `"Reserved"`: the field appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
+* *Kind*: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for fields defined in a standards-track RFC, `"Informational"` for fields defined in an Informational RFC, or `"Other"` for any other specification.
+* *Reference*: the document that defines the field.
+
+The following protocol-level record fields from this specification constitute the initial contents of the registry:
+
+[cols=",,,"options="header",title="Initial Domain Connect Protocol-Level Record Fields"]
+|=======================================================================
+|*Field Name*
+|*Status*
+|*Kind*
+|*Reference*
+
+|`"type"`
+|Active
+|IETF Standard
+|This document
+
+|`"groupId"`
+|Active
+|IETF Standard
+|This document
+
+|`"essential"`
+|Active
+|IETF Standard
+|This document
+
+|`"crit"`
+|Active
+|IETF Standard
+|This document
+|=======================================================================
+
 [[iana-rrtype-guidance]]
 === Guidance to the DNS Resource Record (RR) TYPEs Registry
 
@@ -2480,13 +2655,10 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-03 to -04
-- Added <<apply-parameter-extensibility,format=title>> to <<apply-template-params,format=title>>, reserving the `"dc."` and `"vnd."` prefixes and the unprefixed grandfathered parameter names.
-- Reserved built-in and grandfathered apply parameter names as forbidden `variable-name` identifiers in <<special-variables,format=title>>.
-- Added `dc-apply-param`, `dc-predefined-param`, `dc-dot-param`, and `dc-vnd-param` to <<terminology,format=title>>.
-- Added <<template-property-extensibility,format=title>> and the `"crit"` property to <<template-definition,format=title>>.
-- Added the `"templateSpecVersion"` property to <<template-definition,format=title>>.
-- Added the IANA "Domain Connect Template Properties" registry in <<iana-template-properties,format=title>>.
-- Added `dc-template-property`, `dc-unprefixed-property`, and `dc-vnd-property` to <<terminology,format=title>>.
+- Partitioned the name spaces of apply parameters, template properties, template record fields, and settings properties into standards-track and vendor-private trees, and established IANA registries to coordinate them.
+- Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a `"crit"` must-understand marker.
+- Added <<versioning,format=title>>, describing how the protocol is versioned and how future revisions preserve backwards compatibility.
+- Aligned the registration policies of all Domain Connect registries with the review process of <<iana-registration-procedure,format=title>>.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-02 to -03

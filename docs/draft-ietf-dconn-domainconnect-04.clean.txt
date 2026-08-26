@@ -237,7 +237,7 @@ Table of Contents
    capitals, as shown here.
 
    The Terms like "*Registrar*", "*Authoritative server*", "*Zone*",
-   "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC8499].
+   "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC9499].
 
    This specification uses the Augmented Backus-Naur Form (ABNF)
    notation of [RFC5234].  The following ABNF rules are imported from
@@ -1007,11 +1007,7 @@ Table of Contents
    |             |        |                   |work only when both     |
    |             |        |                   |"domain" and "host"     |
    |             |        |                   |apply parameters are    |
-   |             |        |                   |provided, for example   |
-   |             |        |                   |when the template       |
-   |             |        |                   |contains a CNAME record |
-   |             |        |                   |targeted at the fully   |
-   |             |        |                   |qualified domain name.  |
+   |             |        |                   |provided.               |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
    |*Critical    |Array of|crit               |(OPTIONAL) A list of the|
@@ -1240,6 +1236,11 @@ Table of Contents
       order to avoid necessity of per provider adjustment to the
       application flow.
 
+      Records forming the same RRset (i.e., sharing "host"/"name" and
+      record type) SHOULD be given the same "ttl" value in the template
+      definition, since [RFC2181] Section 5.2 requires all resource
+      records in an RRset to share a single TTL.
+
       Support of variables in this field is OPTIONAL for DNS Provider.
 
    "Data":
@@ -1455,7 +1456,7 @@ Table of Contents
 
    The value in the template could simply contain "%servercluster%", and
    the fully qualified string passed in.  Alternatively, the value in
-   the template could contain "%var%.example.com" and a value of "01",
+   the template could contain "s%var%.example.com" and a value of "01",
    "02", or "03" passed in.  By placing more fixed data into the
    template, the template is less prone to error or misuse and allows
    better review of intent by the DNS Provider when onboarding the
@@ -2580,18 +2581,18 @@ Table of Contents
 
    4.  *Resolve variables* - All variable expressions in active template
        records are substituted with the values provided by the caller,
-       producing a concrete set of DNS resource records (RRs) to be
-       applied (see Section 9.2).
+       producing the Rendered Record Set: a concrete set of DNS resource
+       records (RRs) to be applied (see Section 9.2).
 
        a.  abort if rendered RRs are not possible to be applied to the
            target zone
 
    5.  *Perform conflict detection* - The DNS Provider checks the
-       resolved RR set against the existing zone content according to
-       the conflict detection rules (see Section 10.4).
+       Rendered Record Set against the existing zone content according
+       to the conflict detection rules (see Section 10.4).
 
        a.  Identify individual zone records that conflict with the
-           resolved RR set.
+           Rendered Record Set.
 
        b.  (only DNS Providers tracking template state): Check each
            resolved RR against essential records of previously applied
@@ -2620,7 +2621,13 @@ Table of Contents
 
        a.  Remove all records pre-calculated for removal from the zone.
 
-       b.  Write the resolved RR set to the zone in totality.
+       b.  Write the Rendered Record Set to the zone in totality.
+
+           i.  Note: if the Rendered Record Set yields differing "ttl"
+               values across new and existing RRs that form the same
+               RRset, the DNS Provider MUST reconcile them to a single
+               TTL (e.g., by taking the lowest value), per [RFC2181]
+               Section 5.2
 
        c.  (only DNS Providers tracking template state): Record the new
            template instance for the "domain" and "host" pair and remove
@@ -2680,7 +2687,8 @@ Table of Contents
    host, unless otherwise specified.
 
    *  A CNAME record conflicts with any other record on the same host,
-      and any existing records conflict with a CNAME.
+      including another CNAME, and any existing records conflict with a
+      CNAME.
 
    *  An NS record conflicts with all other records on the same host,
       and with any record whose host is subordinate to the NS host.  For
@@ -2708,10 +2716,11 @@ Table of Contents
          the same host whose value starts with
          "txtConflictMatchingPrefix".
 
-   Note: DNS Provider MUST also check applicability of all generated
-   records to the target DNS zone in its own system.  For example it is
-   very common for DNS provider not to allow CNAME records to be at the
-   zone apex.
+   Note: A DNS Provider MUST also check the applicability of all
+   generated records to the target DNS zone against constraints imposed
+   by the DNS protocol itself, such as the coexistence rules of
+   [RFC2181], as well as any other local capabilities, limits or
+   policies.
 
 10.4.1.  Conflict Detection Special Handling
 
@@ -2937,36 +2946,46 @@ Table of Contents
    section applies to all registries established by this document under
    that registry group.
 
-   Values are registered after a three-week review period on the
-   <mailto:dconn@ietf.org> mailing list or its successor, on the advice
-   of one or more designated experts.  To allow for the allocation of
-   values prior to publication, the designated experts MAY approve
-   registration once they are satisfied that the corresponding
-   specification will be published.
-
-   Registration requests sent to the review mailing list SHOULD use an
-   appropriate subject line (e.g., "Request to register Domain Connect
-   record type: example").  Registration requests that remain
-   undetermined for a period longer than 21 days MAY be brought to
-   IANA's attention (using the <mailto:iana@iana.org> mailing list) for
-   resolution.
-
-   The designated experts SHOULD determine whether a registration
-   request contains enough information for the registry to be populated
-   and whether the proposed new functionality already exists.  In the
-   case of an incomplete registration, or an attempt to register already
-   existing functionality, the designated experts SHOULD ask for
-   corrections or reject the registration.
-
    IANA is requested to appoint one or more designated experts for the
-   registries in the "Domain Connect Protocol" registry group.  It is
-   RECOMMENDED that multiple designated experts be appointed who are
-   able to represent the perspectives of different Service Providers and
-   DNS Providers, in order to enable broadly informed review of
-   registration decisions.  In cases where a registration decision could
-   be perceived as creating a conflict of interest for a particular
-   expert, that expert SHOULD defer to the judgment of the other
-   experts.
+   registries in the "Domain Connect Protocol" registry group.  Multiple
+   designated experts are preferred, able to represent the perspectives
+   of different Service Providers and DNS Providers, so that
+   registration decisions benefit from broadly informed review.  Where a
+   registration decision could be perceived as creating a conflict of
+   interest for a particular expert, that expert is expected to defer to
+   the judgment of the other experts.
+
+   The following guidance is offered to the designated experts.  It
+   describes how to decide whether to approve a registration request.
+
+   The primary consideration is whether the request contains enough
+   information to populate the registry and whether the referenced
+   specification is clear enough to allow interoperable implementations.
+   Experts are expected to be lenient, approving requests that meet this
+   bar, and to ask for corrections rather than reject a request that is
+   merely incomplete.
+
+   Grounds for asking for corrections or refusing a request include:
+
+   *  the registration request or the referenced specification does not
+      describe the registered value in enough detail for an implementer
+      to interoperate;
+
+   *  the proposed value duplicates functionality that already exists in
+      the registry, without explaining why a separate value is needed;
+
+   *  the proposed value does not conform to the syntax required for
+      that registry;
+
+   *  the proposed value would change the meaning of an existing entry,
+      in a way that is incompatible with its existing use;
+
+   *  the proposed value would occupy a term, which is not corresponding
+      to the described use, or is too generic for the specific use case.
+
+   To allow values to be allocated before the referenced specification
+   is published, the experts may approve a registration once they are
+   satisfied that the specification will be published.
 
 12.2.  Domain Connect Fully Specified Record Types Registry
 
@@ -2984,7 +3003,8 @@ Table of Contents
       (see Section 3).
 
    *  *Status*: the lifecycle state of the registration.  The following
-      values are defined; IANA MAY define additional values as needed:
+      values are defined; the designated experts may define additional
+      values as needed:
 
       -  "Active": the type is currently in use and its definition is
          normative.
@@ -3002,23 +3022,23 @@ Table of Contents
          specification that extends this document.  See Section 3,
          Paragraph 13.
 
-   *  *Class*: the handling class of the type.  The value MUST be one of
-      "Fully Specified" (RDATA broken into dedicated template fields) or
-      "Computed" (records derived by a defined computation).  A
+   *  *Handling*: the handling class of the type.  The value MUST be one
+      of "Fully Specified" (RDATA broken into dedicated template fields)
+      or "Computed" (records derived by a defined computation).  A
       "Reserved" entry MAY leave this field unassigned.
 
    *  *DNS RR TYPE*: the name of the corresponding entry in the IANA
       "Resource Record (RR) TYPEs" registry within the "Domain Name
       System (DNS) Parameters" registry group.  A "Fully Specified" type
-      SHOULD correspond to a registered DNS RR TYPE of the same name;
-      before registering such a type, the designated experts MUST verify
-      that the named DNS RR TYPE exists in that registry.  For a
-      "Computed" type, a "Reserved" type, or any other type for which no
+      normally corresponds to a registered DNS RR TYPE of the same name;
+      before registering such a type, the designated experts verify that
+      the named DNS RR TYPE exists in that registry.  For a "Computed"
+      type, a "Reserved" type, or any other type for which no
       corresponding DNS RR TYPE exists or would be meaningful, the value
       MUST be "N/A".  Where a "Fully Specified" type would use a name
       that is not yet a registered DNS RR TYPE, or where an entry is
       registered with a "DNS RR TYPE" of "N/A" (such as a "Computed"
-      type), the designated experts SHOULD coordinate with the
+      type), the designated experts are expected to coordinate with the
       designated experts of the "Resource Record (RR) TYPEs" registry
       before completing the registration, to confirm that the chosen
       name does not collide with an existing or anticipated DNS RR TYPE.
@@ -3037,7 +3057,7 @@ Table of Contents
 
    Status:  One of "Active", "Deprecated", or "Reserved".
 
-   Class:  "Fully Specified" or "Computed"; omitted for a "Reserved"
+   Handling:  "Fully Specified" or "Computed"; omitted for a "Reserved"
       entry.
 
    DNS RR TYPE:  The name of the corresponding IANA DNS RR TYPE, or "N/
@@ -3051,42 +3071,42 @@ Table of Contents
    The following types from this specification constitute the initial
    contents of the registry:
 
-    +=============+========+===========+=======+========+=============+
-    | *RR Type*   |*Status*| *Class*   |*DNS RR|*Kind*  | *Reference* |
-    |             |        |           |TYPE*  |        |             |
-    +=============+========+===========+=======+========+=============+
-    | "A"         |Active  | Fully     |"A"    |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "AAAA"      |Active  | Fully     |"AAAA" |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "CNAME"     |Active  | Fully     |"CNAME"|IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "MX"        |Active  | Fully     |"MX"   |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "TXT"       |Active  | Fully     |"TXT"  |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "SRV"       |Active  | Fully     |"SRV"  |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "NS"        |Active  | Fully     |"NS"   |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "SPFM"      |Active  | Computed  |"N/A"  |IETF    | This        |
-    |             |        |           |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "APEXCNAME" |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "REDIR301"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "REDIR302"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
+   +=============+========+============+=======+========+=============+
+   | *RR Type*   |*Status*| *Handling* |*DNS RR|*Kind*  | *Reference* |
+   |             |        |            |TYPE*  |        |             |
+   +=============+========+============+=======+========+=============+
+   | "A"         |Active  | Fully      |"A"    |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "AAAA"      |Active  | Fully      |"AAAA" |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "CNAME"     |Active  | Fully      |"CNAME"|IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "MX"        |Active  | Fully      |"MX"   |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "TXT"       |Active  | Fully      |"TXT"  |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "SRV"       |Active  | Fully      |"SRV"  |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "NS"        |Active  | Fully      |"NS"   |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "SPFM"      |Active  | Computed   |"N/A"  |IETF    | This        |
+   |             |        |            |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "APEXCNAME" |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "REDIR301"  |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "REDIR302"  |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
 
-        Table 9: Initial Domain Connect Fully Specified Record Types
+       Table 9: Initial Domain Connect Fully Specified Record Types
 
 12.3.  Domain Connect Settings Properties Registry
 
@@ -3102,7 +3122,8 @@ Table of Contents
       response.
 
    *  *Status*: the lifecycle state of the registration.  The following
-      values are defined; IANA MAY define additional values as needed:
+      values are defined; the designated experts may define additional
+      values as needed:
 
       -  "Active": the property is currently in use and its definition
          is normative.
@@ -3184,7 +3205,8 @@ Table of Contents
       property syntax (see Section 3).
 
    *  *Status*: the lifecycle state of the registration.  The following
-      values are defined; IANA MAY define additional values as needed:
+      values are defined; the designated experts may define additional
+      values as needed:
 
       -  "Active": the property is currently in use and its definition
          is normative.
@@ -3283,13 +3305,12 @@ Table of Contents
    Parameters" registry group (see [RFC6895]):
 
    |  When evaluating a request to assign a new RR TYPE mnemonic, the
-   |  designated experts SHOULD consult the "Domain Connect Fully
-   |  Specified Record Types" registry.  If the requested mnemonic
+   |  designated experts are expected to consult the "Domain Connect
+   |  Fully Specified Record Types" registry.  If the requested mnemonic
    |  matches the name of an entry in that registry whose *DNS RR TYPE*
-   |  field is "N/A", the designated experts SHOULD flag the potential
-   |  conflict and consult the designated experts of the "Domain Connect
-   |  Fully Specified Record Types" registry before completing the
-   |  assignment.
+   |  field is "N/A", the designated experts flag the potential conflict
+   |  and consult the designated experts of the "Domain Connect Fully
+   |  Specified Record Types" registry before completing the assignment.
 
    This coupling ensures that a Domain Connect record type name that
    does not (yet) correspond to a DNS RR TYPE - such as a "Computed"
@@ -3448,6 +3469,20 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
 
    *  Added dc-template-property, dc-unprefixed-property, and dc-vnd-
       property to Terminology.
+
+   *  Reformulated the IANA registration procedure as guidance to the
+      designated experts, replacing normative keywords and IANA-directed
+      process with advice on when to approve a registration.
+
+   *  Corrected nits from early Dnsdir review.
+
+   *  Clarified RR placement constraints arising from the DNS protocol.
+
+   *  Noted RRset TTL consistency requirements in Template Record and
+      Steps to Apply a Template.
+
+   *  Introduced Rendered Record Set terminology in Steps to Apply a
+      Template to disambiguate from RRset.
 
 Change from draft-ietf-dconn-domainconnect-02 to -03
 
@@ -3720,11 +3755,11 @@ Normative References
               RFC 9110, June 2022,
               <https://www.rfc-editor.org/info/rfc9110>.
 
-Informative References
+   [RFC2181]  Elz, R. and R. Bush, "Clarifications to the DNS
+              Specification", IETF, DOI 10.17487/RFC2181, RFC 2181, July
+              1997, <https://www.rfc-editor.org/info/rfc2181>.
 
-   [RFC8499]  "Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
-              Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499,
-              January 2019, >.".
+Informative References
 
    [RFC6839]  Hansen, T. and A. Melnikov, "Additional Media Type
               Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,

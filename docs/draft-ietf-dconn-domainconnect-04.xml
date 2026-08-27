@@ -1402,6 +1402,28 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_34b7c35c-9950-5fbc-3e06-83e783cbcde7">Legitimate uses of an underscored <tt>"host"</tt> value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the <tt>"host"</tt> apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <xref target="user_authorization_of_changes" format="title"></xref> so that the special-meaning target is not obscured.</t>
 </section>
+
+<section anchor="sec-template-format"><name>Template Format</name>
+
+<t anchor="_9890da03-fd91-7783-64c4-855b60f665af">A Domain Connect template is a declarative JSON document. It contains no executable content and no scripting or macro facility, and processing a template does not cause code to be executed on the recipient's system. A template does, however, describe DNS records that a DNS Provider is being asked to add to a user's zone, and applying one changes the configuration of that domain. A recipient therefore does not act on a template solely because it has been received; see <xref target="sec-template-onboarding"></xref> for how a DNS Provider establishes that a template is legitimate before accepting it, and <xref target="user_authorization_of_changes"></xref> for the authorization required before records are written.</t>
+
+<t anchor="_82989786-b0f3-d335-0ce7-a7f9dfbe0eee">The format employs no compression, so a template presents no decompression-expansion attack surface, nor does it contain any sensitive content which would require external protection measures.</t>
+</section>
+
+<section anchor="sec-template-onboarding"><name>Template Onboarding</name>
+
+<t anchor="_e1ecc7d5-5b62-206d-fa4d-e37066f82417">Templates reach a DNS Provider out of band. This protocol has no mechanism by which a DNS Provider retrieves a template from a Service Provider. A DNS Provider therefore cannot infer a template's provenance from the protocol, and the trust decision is made entirely during the onboarding process described in <xref target="trust-model"></xref>.</t>
+
+<t anchor="_88aa01fa-7d9b-d48f-2fd5-56c2315c7d84">Two classes of attack follow. In the first, an attacker submits a template under its own identity whose records are broader than the service it claims to provide - for example a template that places records at the zone apex, delegates authority with <tt>"NS"</tt>, or accepts variables in positions that let the applied value be chosen freely at apply time. In the second, an attacker submits a template impersonating an established Service Provider, borrowing a recognisable <tt>"providerName"</tt>, <tt>"serviceName"</tt>, or <tt>"logoUrl"</tt> so that the consent screen shown during <xref target="user_authorization_of_changes" format="title"></xref> carries the reputation of the party being impersonated. The <tt>"providerId"</tt> and <tt>"serviceId"</tt> fields are self-asserted identifiers and are not validated by any authority.</t>
+
+<t anchor="_f2cd637c-8c40-dc15-846f-ff1cca4824ac">DNS Providers therefore treat template onboarding as a trust decision rather than a data import, and:</t>
+
+<ul anchor="_1aa040df-4f70-3cda-711a-0339ece6fbd3"><li>MUST verify that the party submitting a template controls the identity it claims, rather than relying on the identifying fields carried in the template. Where the template specifies <tt>"syncPubKeyDomain"</tt>, demonstrated control of that domain and of the key published under it (see <xref target="pubkey-publication"></xref>) serves this purpose.</li>
+<li>MUST review the records a template requests before accepting it, and reject or require further justification for a scope wider than the service being offered.</li>
+<li>MUST confirm that the display fields presented to users, in particular <tt>"providerName"</tt>, <tt>"serviceName"</tt>, and <tt>"logoUrl"</tt>, are not liable to be confused with those of another Service Provider already onboarded.</li>
+<li>MUST re-apply these checks when an onboarded template is updated, since a subsequent <tt>"version"</tt> of an accepted template may widen its scope or alter its display fields.</li>
+</ul>
+</section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
 
@@ -1542,12 +1564,12 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_f7ebbabc-e872-f304-930d-2e52d6beaaa4">IANA is requested to register the following media type in the "Media Types" registry, per <xref target="RFC6838" section="" relative=""></xref>.</t>
 
-<dl anchor="_0675786e-56ec-3633-7404-d459efd13a5c"><dt>Type name:</dt><dd anchor="_7fb70308-c4d6-a33f-b1b0-2a6e1cb10b9c"><t anchor="_b7d6176e-f740-d2ba-c99f-a8fe2ab90d34">application</t>
+<dl anchor="_0fc0d30f-3a6d-1b6c-6e95-e8b2c679e023"><dt>Type name:</dt><dd anchor="_7fb70308-c4d6-a33f-b1b0-2a6e1cb10b9c"><t anchor="_b7d6176e-f740-d2ba-c99f-a8fe2ab90d34">application</t>
 </dd><dt>Subtype name:</dt><dd anchor="_e998a198-ad42-fdb9-c455-bbbb1f644b1a"><t anchor="_31bebaa6-d501-871b-8fd8-c833ffd708b1">domainconnect-template+json</t>
 </dd><dt>Required parameters:</dt><dd anchor="_3c9836a9-4f90-e09b-73f1-836afefbef52"><t anchor="_78605df0-4a2c-6efa-7444-6d9ed819c92f">N/A</t>
 </dd><dt>Optional parameters:</dt><dd anchor="_6d103196-f660-7d6c-1d1b-657eb319a36a"><t anchor="_76a0c33e-3a3e-5fe0-372d-0c78515e5e6e">N/A</t>
 </dd><dt>Encoding considerations:</dt><dd anchor="_dfe46c2e-cb69-19e6-c54d-7a2b8984626e"><t anchor="_1faa31e7-39a6-4804-7def-8066ab847fac">binary; the content is a JSON <xref target="RFC8259" section="" relative=""></xref> document encoded in UTF-8.</t>
-</dd><dt>Security considerations:</dt><dd anchor="_3e94a7f1-7863-00c0-aaed-8fe26a60c3d6"><t anchor="_e2f9b49f-cfc9-effc-21b2-542959e85276">See <xref target="security-considerations"></xref> of this document.</t>
+</dd><dt>Security considerations:</dt><dd anchor="_7185700b-7527-f4cf-81e8-e7a69ad3d324"><t anchor="_9924ca0c-7679-e35a-6e15-46713fab2004">See <xref target="sec-template-format"></xref> and <xref target="security-considerations"></xref> of this document.</t>
 </dd><dt>Interoperability considerations:</dt><dd anchor="_40f75983-b3aa-d23f-0e46-84b60d140b24"><t anchor="_2052b08d-c698-f132-e94c-fd5af24e928e">See this document.</t>
 </dd><dt>Published specification:</dt><dd anchor="_4e4b8178-a64b-7ee4-ff90-651439a97d6c"><t anchor="_a3cd91ac-bf64-c4dd-3af4-83180e44f891">This document (see <xref target="template-definition"></xref>).</t>
 </dd><dt>Applications that use this media type:</dt><dd anchor="_332d5ace-21bc-46a8-aed4-fa2507ffa87a"><t anchor="_49fb95a4-7cea-92eb-96aa-92e907f45206">Domain Connect Service Providers and DNS Providers.</t>
@@ -1613,17 +1635,18 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_d853b6ab-7541-1a0d-229e-d73061b51a41" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_9736bdb5-2491-9c77-0b43-4a46caafa18f" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_b7f20842-9c37-b6e7-3041-9f639e2fbaa0" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
+<section anchor="_f3b77975-6ae3-0d98-d8a6-43357a28c643" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
 
-<ul anchor="_ccd2e891-5620-5c6f-22a9-9b472b0b4c3d"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
+<ul anchor="_37a40253-669c-7d68-f941-bd57a572ee96"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
 <li>Reserved built-in and grandfathered apply parameter names as forbidden <tt>variable-name</tt> identifiers in <xref target="special-variables" format="title"></xref>.</li>
 <li>Added <tt>dc-apply-param</tt>, <tt>dc-predefined-param</tt>, <tt>dc-dot-param</tt>, and <tt>dc-vnd-param</tt> to <xref target="terminology" format="title"></xref>.</li>
 <li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
 <li>Added the <tt>"templateSpecVersion"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
 <li>Added the IANA "Domain Connect Template Properties" registry in <xref target="iana-template-properties" format="title"></xref>.</li>
 <li>Added <tt>dc-template-property</tt>, <tt>dc-unprefixed-property</tt>, and <tt>dc-vnd-property</tt> to <xref target="terminology" format="title"></xref>.</li>
+<li>Added security considerations for the template format and for template onboarding, covering acceptance of untrusted or impersonating templates.</li>
 </ul>
 </section>
 
@@ -1753,13 +1776,9 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
       <reference target="https://www.rfc-editor.org/info/rfc6838" anchor="RFC6838"><stream>IETF</stream> <front> <title>Media Type Specifications and Registration Procedures</title> <author fullname="N. Freed" asciiFullname="N. Freed"></author> <author fullname="J. Klensin" asciiFullname="J. Klensin"></author> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <date month="January" year="2013"></date> <abstract>  <t anchor="_a235f651-646a-9589-e223-487b03c0f76a">This document defines procedures for the specification and registration of media types for use in HTTP, MIME, and other Internet protocols. This memo documents an Internet Best Current Practice.</t></abstract> </front> <seriesInfo value="10.17487/RFC6838" name="DOI"></seriesInfo> <seriesInfo value="13" name="BCP"></seriesInfo> <seriesInfo value="6838" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc9110" anchor="RFC9110"><stream>IETF</stream> <front> <title>HTTP Semantics</title> <author fullname="R. Fielding" asciiFullname="R. Fielding"></author> <author fullname="M. Nottingham" asciiFullname="M. Nottingham"></author> <author fullname="J. Reschke" asciiFullname="J. Reschke"></author> <date month="June" year="2022"></date> <keyword>Hypertext Transfer Protocol</keyword><keyword>HTTP</keyword><keyword>HTTP semantics</keyword><keyword>HTTP content</keyword><keyword>HTTP method</keyword><keyword>HTTP status code</keyword> <abstract>  <t anchor="_979a6385-7302-c8dd-62d9-826336611ca0">The Hypertext Transfer Protocol (HTTP) is a stateless application-level protocol for distributed, collaborative, hypertext information systems. This document describes the overall architecture of HTTP, establishes common terminology, and defines aspects of the protocol that are shared by all versions. In this definition are core protocol elements, extensibility mechanisms, and the "http" and "https" Uniform Resource Identifier (URI) schemes.</t>  <t anchor="_9abda66b-c6d0-57aa-1bce-4288952fe795">This document updates RFC 3864 and obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230.</t></abstract> </front> <seriesInfo name="STD" value="97"></seriesInfo> <seriesInfo value="10.17487/RFC9110" name="DOI"></seriesInfo> <seriesInfo value="97" name="BCP"></seriesInfo> <seriesInfo value="9110" name="RFC"></seriesInfo></reference>
     </references>
-    <references anchor="_caa3fd87-3022-d3b3-29e7-0717696251b9">
+    <references anchor="_450f5e0d-c691-497f-076a-3739617b36c2">
       <name>Informative References</name>
-      <reference anchor="RFC8499">
-        <front>
-          <title>Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499, January 2019, &#x3e;.</title><author surname="Unknown"></author>
-        </front>
-      </reference>
+      <reference target="https://www.rfc-editor.org/info/rfc8499" anchor="RFC8499"><stream>IETF</stream> <front> <title>DNS Terminology</title> <author fullname="P. Hoffman" asciiFullname="P. Hoffman"></author> <author fullname="A. Sullivan" asciiFullname="A. Sullivan"></author> <author fullname="K. Fujiwara" asciiFullname="K. Fujiwara"></author> <date month="January" year="2019"></date> <keyword>vocabulary</keyword><keyword>domain name system</keyword> <abstract>  <t anchor="_3bbdcc7f-4112-91e9-c2e1-7e37782a8e60">The Domain Name System (DNS) is defined in literally dozens of different RFCs. The terminology used by implementers and developers of DNS protocols, and by operators of DNS systems, has sometimes changed in the decades since the DNS was first defined. This document gives current definitions for many of the terms used in the DNS in a single document.</t>  <t anchor="_3217b10c-6d16-2d1a-099b-d804214d3af6">This document obsoletes RFC 7719 and updates RFC 2308.</t></abstract> </front> <seriesInfo value="10.17487/RFC8499" name="DOI"></seriesInfo> <seriesInfo value="8499" name="RFC"></seriesInfo></reference>
       <reference target="https://www.rfc-editor.org/info/rfc6839" anchor="RFC6839"><stream>IETF</stream> <front> <title>Additional Media Type Structured Syntax Suffixes</title> <author fullname="T. Hansen" asciiFullname="T. Hansen"></author> <author fullname="A. Melnikov" asciiFullname="A. Melnikov"></author> <date month="January" year="2013"></date> <keyword>structured syntax suffix</keyword><keyword>media type</keyword> <abstract>  <t anchor="_24f0cb66-7e53-6c67-6fac-8427d8e7b40a">A content media type name sometimes includes partitioned meta- information distinguished by a structured syntax to permit noting an attribute of the media as a suffix to the name. This document defines several structured syntax suffixes for use with media type registrations. In particular, it defines and registers the "+json", "+ber", "+der", "+fastinfoset", "+wbxml" and "+zip" structured syntax suffixes, and provides a media type structured syntax suffix registration form for the "+xml" structured syntax suffix. This document is not an Internet Standards Track specification; it is published for informational purposes.</t></abstract> </front> <seriesInfo value="10.17487/RFC6839" name="DOI"></seriesInfo> <seriesInfo value="6839" name="RFC"></seriesInfo></reference>
       <reference target="https://github.com/Domain-Connect/spec/blob/rev.67/Domain%20Connect%20Spec%20Draft.adoc" anchor="DC-SPEC">
         <front> <title>Domain Connect Specification, Version 2.3 Rev. 67</title> <author surname="Blinn" asciiSurname="Blinn" initials="A." asciiInitials="A."></author> <author surname="Kerola" asciiSurname="Kerola" initials="S." asciiInitials="S."></author> <author surname="Kowalik" asciiSurname="Kowalik" initials="P." asciiInitials="P."></author> <date day="2" year="2025" month="March"></date> </front>

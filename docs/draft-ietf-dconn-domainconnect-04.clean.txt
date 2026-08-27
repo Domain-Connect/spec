@@ -118,6 +118,7 @@ Table of Contents
      11.1.  Template Variable Phishing
      11.2.  Untrusted DNS Provider Discovery Records
      11.3.  Underscored Host Names
+     11.4.  Template Onboarding
    12. IANA Considerations
      12.1.  Registration Procedure for Domain Connect Registries
      12.2.  Domain Connect Fully Specified Record Types Registry
@@ -2937,6 +2938,47 @@ Table of Contents
    and verbose manner during User Authorization of Changes so that the
    special-meaning target is not obscured.
 
+11.4.  Template Onboarding
+
+   Templates reach a DNS Provider out of band.  This protocol has no
+   mechanism by which a DNS Provider retrieves a template from a Service
+   Provider.  A DNS Provider therefore cannot infer a template's
+   provenance from the protocol, and the trust decision is made entirely
+   during the onboarding process described in Section 4.2.
+
+   Two classes of attack follow.  In the first, an attacker submits a
+   template under its own identity whose records are broader than the
+   service it claims to provide, or accepts variables in positions that
+   let the applied value be chosen freely at apply time.  In the second,
+   an attacker submits a template impersonating an established Service
+   Provider, borrowing a recognisable "providerName", "serviceName", or
+   "logoUrl" so that the consent screen shown during User Authorization
+   of Changes carries the reputation of the party being impersonated.
+   The "providerId" and "serviceId" fields are self-asserted identifiers
+   and are not validated by any authority.
+
+   DNS Providers therefore treat template onboarding as a trust decision
+   rather than a data import, and:
+
+   *  MUST verify that the party submitting a template controls the
+      identity it claims, rather than relying on the identifying fields
+      carried in the template.  Where the template specifies
+      "syncPubKeyDomain", demonstrated control of that domain and of the
+      key published under it (see Section 6.4) serves this purpose.
+
+   *  MUST review the records a template requests before accepting it,
+      and reject or require further justification for a scope wider than
+      the service being offered.
+
+   *  MUST confirm that the display fields presented to users, in
+      particular "providerName", "serviceName", and "logoUrl", are not
+      liable to be confused with those of another Service Provider
+      already onboarded.
+
+   *  MUST re-apply these checks when an onboarded template is updated,
+      since a subsequent "version" of an accepted template may widen its
+      scope or alter its display fields.
+
 12.  IANA Considerations
 
 12.1.  Registration Procedure for Domain Connect Registries
@@ -3346,7 +3388,21 @@ Table of Contents
    Encoding considerations:  binary; the content is a JSON [RFC8259]
       document encoded in UTF-8.
 
-   Security considerations:  See Section 11 of this document.
+   Security considerations:  A Domain Connect template is a declarative
+      JSON document.  It contains no executable content and no scripting
+      or macro facility, and processing a template does not cause code
+      to be executed on the recipient's system.  A template does,
+      however, describe DNS records that a DNS Provider is being asked
+      to add to a user's zone, and applying one changes the
+      configuration of that domain.  A recipient therefore does not act
+      on a template solely because it has been received.  Measures are
+      required on DNS Provider side to mitigate risks related to the
+      template and its application (see Section 11 and Section 10.6).
+
+      The format employs no compression, so a template presents no
+      decompression-expansion attack surface, nor does it contain any
+      sensitive content which would require external protection
+      measures.
 
    Interoperability considerations:  See this document.
 
@@ -3467,6 +3523,10 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
 
    *  Introduced Rendered Record Set terminology in Steps to Apply a
       Template to disambiguate from RRset.
+
+   *  Added security considerations for the template format and for
+      template onboarding, covering acceptance of untrusted or
+      impersonating templates.
 
 Change from draft-ietf-dconn-domainconnect-02 to -03
 

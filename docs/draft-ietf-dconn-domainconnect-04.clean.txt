@@ -238,7 +238,7 @@ Table of Contents
    capitals, as shown here.
 
    The Terms like "*Registrar*", "*Authoritative server*", "*Zone*",
-   "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC8499].
+   "*Zone Apex*" or "*Sub Domain*" are used as defined in [RFC9499].
 
    This specification uses the Augmented Backus-Naur Form (ABNF)
    notation of [RFC5234].  The following ABNF rules are imported from
@@ -1008,11 +1008,7 @@ Table of Contents
    |             |        |                   |work only when both     |
    |             |        |                   |"domain" and "host"     |
    |             |        |                   |apply parameters are    |
-   |             |        |                   |provided, for example   |
-   |             |        |                   |when the template       |
-   |             |        |                   |contains a CNAME record |
-   |             |        |                   |targeted at the fully   |
-   |             |        |                   |qualified domain name.  |
+   |             |        |                   |provided.               |
    |             |        |                   |The default is "false". |
    +-------------+--------+-------------------+------------------------+
    |*Critical    |Array of|crit               |(OPTIONAL) A list of the|
@@ -1241,6 +1237,11 @@ Table of Contents
       order to avoid necessity of per provider adjustment to the
       application flow.
 
+      Records forming the same RRset (i.e., sharing "host"/"name" and
+      record type) SHOULD be given the same "ttl" value in the template
+      definition, since [RFC2181] Section 5.2 requires all resource
+      records in an RRset to share a single TTL.
+
       Support of variables in this field is OPTIONAL for DNS Provider.
 
    "Data":
@@ -1456,7 +1457,7 @@ Table of Contents
 
    The value in the template could simply contain "%servercluster%", and
    the fully qualified string passed in.  Alternatively, the value in
-   the template could contain "%var%.example.com" and a value of "01",
+   the template could contain "s%var%.example.com" and a value of "01",
    "02", or "03" passed in.  By placing more fixed data into the
    template, the template is less prone to error or misuse and allows
    better review of intent by the DNS Provider when onboarding the
@@ -2581,18 +2582,18 @@ Table of Contents
 
    4.  *Resolve variables* - All variable expressions in active template
        records are substituted with the values provided by the caller,
-       producing a concrete set of DNS resource records (RRs) to be
-       applied (see Section 9.2).
+       producing the Rendered Record Set: a concrete set of DNS resource
+       records (RRs) to be applied (see Section 9.2).
 
        a.  abort if rendered RRs are not possible to be applied to the
            target zone
 
    5.  *Perform conflict detection* - The DNS Provider checks the
-       resolved RR set against the existing zone content according to
-       the conflict detection rules (see Section 10.4).
+       Rendered Record Set against the existing zone content according
+       to the conflict detection rules (see Section 10.4).
 
        a.  Identify individual zone records that conflict with the
-           resolved RR set.
+           Rendered Record Set.
 
        b.  (only DNS Providers tracking template state): Check each
            resolved RR against essential records of previously applied
@@ -2621,7 +2622,13 @@ Table of Contents
 
        a.  Remove all records pre-calculated for removal from the zone.
 
-       b.  Write the resolved RR set to the zone in totality.
+       b.  Write the Rendered Record Set to the zone in totality.
+
+           i.  Note: if the Rendered Record Set yields differing "ttl"
+               values across new and existing RRs that form the same
+               RRset, the DNS Provider MUST reconcile them to a single
+               TTL (e.g., by taking the lowest value), per [RFC2181]
+               Section 5.2
 
        c.  (only DNS Providers tracking template state): Record the new
            template instance for the "domain" and "host" pair and remove
@@ -2681,7 +2688,8 @@ Table of Contents
    host, unless otherwise specified.
 
    *  A CNAME record conflicts with any other record on the same host,
-      and any existing records conflict with a CNAME.
+      including another CNAME, and any existing records conflict with a
+      CNAME.
 
    *  An NS record conflicts with all other records on the same host,
       and with any record whose host is subordinate to the NS host.  For
@@ -2709,10 +2717,11 @@ Table of Contents
          the same host whose value starts with
          "txtConflictMatchingPrefix".
 
-   Note: DNS Provider MUST also check applicability of all generated
-   records to the target DNS zone in its own system.  For example it is
-   very common for DNS provider not to allow CNAME records to be at the
-   zone apex.
+   Note: A DNS Provider MUST also check the applicability of all
+   generated records to the target DNS zone against constraints imposed
+   by the DNS protocol itself, such as the coexistence rules of
+   [RFC2181], as well as any other local capabilities, limits or
+   policies.
 
 10.4.1.  Conflict Detection Special Handling
 
@@ -3046,7 +3055,7 @@ Table of Contents
          specification that extends this document.  See Section 3,
          Paragraph 13.
 
-   *  *Class*: the handling class of the type.  The value MUST be one of
+   *  *Handling*: the handling of the type.  The value MUST be one of
       "Fully Specified" (RDATA broken into dedicated template fields) or
       "Computed" (records derived by a defined computation).  A
       "Reserved" entry MAY leave this field unassigned.
@@ -3081,7 +3090,7 @@ Table of Contents
 
    Status:  One of "Active", "Deprecated", or "Reserved".
 
-   Class:  "Fully Specified" or "Computed"; omitted for a "Reserved"
+   Handling:  "Fully Specified" or "Computed"; omitted for a "Reserved"
       entry.
 
    DNS RR TYPE:  The name of the corresponding IANA DNS RR TYPE, or "N/
@@ -3095,42 +3104,42 @@ Table of Contents
    The following types from this specification constitute the initial
    contents of the registry:
 
-    +=============+========+===========+=======+========+=============+
-    | *RR Type*   |*Status*| *Class*   |*DNS RR|*Kind*  | *Reference* |
-    |             |        |           |TYPE*  |        |             |
-    +=============+========+===========+=======+========+=============+
-    | "A"         |Active  | Fully     |"A"    |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "AAAA"      |Active  | Fully     |"AAAA" |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "CNAME"     |Active  | Fully     |"CNAME"|IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "MX"        |Active  | Fully     |"MX"   |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "TXT"       |Active  | Fully     |"TXT"  |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "SRV"       |Active  | Fully     |"SRV"  |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "NS"        |Active  | Fully     |"NS"   |IETF    | This        |
-    |             |        | Specified |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "SPFM"      |Active  | Computed  |"N/A"  |IETF    | This        |
-    |             |        |           |       |Standard| document    |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "APEXCNAME" |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "REDIR301"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
-    | "REDIR302"  |Reserved| Computed  |"N/A"  |Other   | [DC-SPEC]   |
-    +-------------+--------+-----------+-------+--------+-------------+
+   +=============+========+============+=======+========+=============+
+   | *RR Type*   |*Status*| *Handling* |*DNS RR|*Kind*  | *Reference* |
+   |             |        |            |TYPE*  |        |             |
+   +=============+========+============+=======+========+=============+
+   | "A"         |Active  | Fully      |"A"    |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "AAAA"      |Active  | Fully      |"AAAA" |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "CNAME"     |Active  | Fully      |"CNAME"|IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "MX"        |Active  | Fully      |"MX"   |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "TXT"       |Active  | Fully      |"TXT"  |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "SRV"       |Active  | Fully      |"SRV"  |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "NS"        |Active  | Fully      |"NS"   |IETF    | This        |
+   |             |        | Specified  |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "SPFM"      |Active  | Computed   |"N/A"  |IETF    | This        |
+   |             |        |            |       |Standard| document    |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "APEXCNAME" |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "REDIR301"  |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
+   | "REDIR302"  |Reserved| Computed   |"N/A"  |Other   | [DC-SPEC]   |
+   +-------------+--------+------------+-------+--------+-------------+
 
-        Table 9: Initial Domain Connect Fully Specified Record Types
+       Table 9: Initial Domain Connect Fully Specified Record Types
 
 12.3.  Domain Connect Settings Properties Registry
 
@@ -3507,6 +3516,16 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
    *  Added dc-template-property, dc-unprefixed-property, and dc-vnd-
       property to Terminology.
 
+   *  Corrected nits from early Dnsdir review.
+
+   *  Clarified RR placement constraints arising from the DNS protocol.
+
+   *  Noted RRset TTL consistency requirements in Template Record and
+      Steps to Apply a Template.
+
+   *  Introduced Rendered Record Set terminology in Steps to Apply a
+      Template to disambiguate from RRset.
+
    *  Added security considerations for the template format and for
       template onboarding, covering acceptance of untrusted or
       impersonating templates.
@@ -3782,11 +3801,11 @@ Normative References
               RFC 9110, June 2022,
               <https://www.rfc-editor.org/info/rfc9110>.
 
-Informative References
+   [RFC2181]  Elz, R. and R. Bush, "Clarifications to the DNS
+              Specification", IETF, DOI 10.17487/RFC2181, RFC 2181, July
+              1997, <https://www.rfc-editor.org/info/rfc2181>.
 
-   [RFC8499]  Hoffman, P., Sullivan, A., and K. Fujiwara, "DNS
-              Terminology", IETF, DOI 10.17487/RFC8499, RFC 8499,
-              January 2019, <https://www.rfc-editor.org/info/rfc8499>.
+Informative References
 
    [RFC6839]  Hansen, T. and A. Melnikov, "Additional Media Type
               Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,

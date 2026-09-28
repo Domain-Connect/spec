@@ -1407,6 +1407,21 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_34b7c35c-9950-5fbc-3e06-83e783cbcde7">Legitimate uses of an underscored <tt>"host"</tt> value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the <tt>"host"</tt> apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <xref target="user_authorization_of_changes" format="title"></xref> so that the special-meaning target is not obscured.</t>
 </section>
+
+<section anchor="sec-template-onboarding"><name>Template Onboarding</name>
+
+<t anchor="_fa046e71-5c0d-84fc-5a23-68372daa638a">Templates reach a DNS Provider out of band. This protocol has no mechanism by which a DNS Provider retrieves a template from a Service Provider. A DNS Provider therefore cannot infer a template's provenance from the protocol, and the trust decision is made entirely during the onboarding process described in <xref target="trust-model"></xref>.</t>
+
+<t anchor="_de2543c5-55cd-afc3-4b85-34ad220e5125">Two classes of attack follow. In the first, an attacker submits a template under its own identity whose records are broader than the service it claims to provide, or accepts variables in positions that let the applied value be chosen freely at apply time. In the second, an attacker submits a template impersonating an established Service Provider, borrowing a recognisable <tt>"providerName"</tt>, <tt>"serviceName"</tt>, or <tt>"logoUrl"</tt> so that the consent screen shown during <xref target="user_authorization_of_changes" format="title"></xref> carries the reputation of the party being impersonated. The <tt>"providerId"</tt> and <tt>"serviceId"</tt> fields are self-asserted identifiers and are not validated by any authority.</t>
+
+<t anchor="_8a06be00-4ad9-07ad-24ce-dd4e9fa6e641">DNS Providers therefore treat template onboarding as a trust decision rather than a data import, and:</t>
+
+<ul anchor="_15296e6b-b946-4991-fc5e-16b79a1ff7c8"><li>MUST verify that the party submitting a template controls the identity it claims, rather than relying on the identifying fields carried in the template. Where the template specifies <tt>"syncPubKeyDomain"</tt>, demonstrated control of that domain and of the key published under it (see <xref target="pubkey-publication"></xref>) serves this purpose.</li>
+<li>MUST review the records a template requests before accepting it, and reject or require further justification for a scope wider than the service being offered.</li>
+<li>MUST confirm that the display fields presented to users, in particular <tt>"providerName"</tt>, <tt>"serviceName"</tt>, and <tt>"logoUrl"</tt>, are not liable to be confused with those of another Service Provider already onboarded.</li>
+<li>MUST re-apply these checks when an onboarded template is updated, since a subsequent <tt>"version"</tt> of an accepted template may widen its scope or alter its display fields.</li>
+</ul>
+</section>
 </section>
     <section anchor="iana"><name>IANA Considerations</name>
 
@@ -1547,12 +1562,14 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 
 <t anchor="_f7ebbabc-e872-f304-930d-2e52d6beaaa4">IANA is requested to register the following media type in the "Media Types" registry, per <xref target="RFC6838" section="" relative=""></xref>.</t>
 
-<dl anchor="_0675786e-56ec-3633-7404-d459efd13a5c"><dt>Type name:</dt><dd anchor="_7fb70308-c4d6-a33f-b1b0-2a6e1cb10b9c"><t anchor="_b7d6176e-f740-d2ba-c99f-a8fe2ab90d34">application</t>
+<dl anchor="_94a3cfe3-a2e5-498e-288b-9020d92b1abc"><dt>Type name:</dt><dd anchor="_7fb70308-c4d6-a33f-b1b0-2a6e1cb10b9c"><t anchor="_b7d6176e-f740-d2ba-c99f-a8fe2ab90d34">application</t>
 </dd><dt>Subtype name:</dt><dd anchor="_e998a198-ad42-fdb9-c455-bbbb1f644b1a"><t anchor="_31bebaa6-d501-871b-8fd8-c833ffd708b1">domainconnect-template+json</t>
 </dd><dt>Required parameters:</dt><dd anchor="_3c9836a9-4f90-e09b-73f1-836afefbef52"><t anchor="_78605df0-4a2c-6efa-7444-6d9ed819c92f">N/A</t>
 </dd><dt>Optional parameters:</dt><dd anchor="_6d103196-f660-7d6c-1d1b-657eb319a36a"><t anchor="_76a0c33e-3a3e-5fe0-372d-0c78515e5e6e">N/A</t>
 </dd><dt>Encoding considerations:</dt><dd anchor="_dfe46c2e-cb69-19e6-c54d-7a2b8984626e"><t anchor="_1faa31e7-39a6-4804-7def-8066ab847fac">binary; the content is a JSON <xref target="RFC8259" section="" relative=""></xref> document encoded in UTF-8.</t>
-</dd><dt>Security considerations:</dt><dd anchor="_3e94a7f1-7863-00c0-aaed-8fe26a60c3d6"><t anchor="_e2f9b49f-cfc9-effc-21b2-542959e85276">See <xref target="security-considerations"></xref> of this document.</t>
+</dd><dt>Security considerations:</dt><dd anchor="_e7fdd74f-1106-4349-a5e2-6a8d8b23d116"><t anchor="_b34df865-e8a9-008d-ea7f-d36d35c1fe2f">A Domain Connect template is a declarative JSON document. It contains no executable content and no scripting or macro facility, and processing a template does not cause code to be executed on the recipient's system. A template does, however, describe DNS records that a DNS Provider is being asked to add to a user's zone, and applying one changes the configuration of that domain. A recipient therefore does not act on a template solely because it has been received. Measures are required on DNS Provider side to mitigate risks related to the template and its application (see <xref target="security-considerations"></xref> and <xref target="user_authorization_of_changes"></xref>).</t>
+
+<t anchor="_ec01ffa2-e7a2-9625-2ef3-4c99ec0cfa5f">The format employs no compression, so a template presents no decompression-expansion attack surface, nor does it contain any sensitive content which would require external protection measures.</t>
 </dd><dt>Interoperability considerations:</dt><dd anchor="_40f75983-b3aa-d23f-0e46-84b60d140b24"><t anchor="_2052b08d-c698-f132-e94c-fd5af24e928e">See this document.</t>
 </dd><dt>Published specification:</dt><dd anchor="_4e4b8178-a64b-7ee4-ff90-651439a97d6c"><t anchor="_a3cd91ac-bf64-c4dd-3af4-83180e44f891">This document (see <xref target="template-definition"></xref>).</t>
 </dd><dt>Applications that use this media type:</dt><dd anchor="_332d5ace-21bc-46a8-aed4-fa2507ffa87a"><t anchor="_49fb95a4-7cea-92eb-96aa-92e907f45206">Domain Connect Service Providers and DNS Providers.</t>
@@ -1618,11 +1635,11 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_de786719-6996-ef52-850a-2432f26cd299" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_c098472d-8b99-d586-b934-50c160d99ea0" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_6c6f2caa-c606-2e6b-48de-3affac80ebed" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
+<section anchor="_71c5e6b6-0024-ccea-8a3e-a18d706bb588" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
 
-<ul anchor="_4d53bceb-cd6e-9a00-f2a4-93920d45fe82"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
+<ul anchor="_cd1cd41b-519b-2d78-cba8-1fe75ab295e6"><li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
 <li>Reserved built-in and grandfathered apply parameter names as forbidden <tt>variable-name</tt> identifiers in <xref target="special-variables" format="title"></xref>.</li>
 <li>Added <tt>dc-apply-param</tt>, <tt>dc-predefined-param</tt>, <tt>dc-dot-param</tt>, and <tt>dc-vnd-param</tt> to <xref target="terminology" format="title"></xref>.</li>
 <li>Added <xref target="template-property-extensibility" format="title"></xref> and the <tt>"crit"</tt> property to <xref target="template-definition" format="title"></xref>.</li>
@@ -1633,6 +1650,7 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Clarified RR placement constraints arising from the DNS protocol.</li>
 <li>Noted RRset TTL consistency requirements in <xref target="template-record" format="title"></xref> and <xref target="steps-to-apply" format="title"></xref>.</li>
 <li>Introduced Rendered Record Set terminology in <xref target="steps-to-apply" format="title"></xref> to disambiguate from RRset.</li>
+<li>Added security considerations for the template format and for template onboarding, covering acceptance of untrusted or impersonating templates.</li>
 </ul>
 </section>
 

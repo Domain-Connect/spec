@@ -2017,6 +2017,23 @@ The `"host"` apply parameter is supplied by the requesting party and prepended t
 
 Legitimate uses of an underscored `"host"` value exist but are rare. DNS Providers SHOULD therefore apply additional measures when the `"host"` apply parameter contains an underscore-prefixed label, such as presenting the affected owner names to the user in a more explicit and verbose manner during <<user_authorization_of_changes,format=title>> so that the special-meaning target is not obscured.
 
+[[sec-template-onboarding]]
+=== Template Onboarding
+
+Templates reach a DNS Provider out of band. This protocol has no mechanism by which a DNS Provider retrieves a template from a Service Provider. A DNS Provider therefore cannot infer a template's provenance from the protocol, and the trust decision is made entirely during the onboarding process described in <<trust-model>>.
+
+Two classes of attack follow. In the first, an attacker submits a template under its own identity whose records are broader than the service it claims to provide, or accepts variables in positions that let the applied value be chosen freely at apply time. In the second, an attacker submits a template impersonating an established Service Provider, borrowing a recognisable `"providerName"`, `"serviceName"`, or `"logoUrl"` so that the consent screen shown during <<user_authorization_of_changes,format=title>> carries the reputation of the party being impersonated. The `"providerId"` and `"serviceId"` fields are self-asserted identifiers and are not validated by any authority.
+
+DNS Providers therefore treat template onboarding as a trust decision rather than a data import, and:
+
+* MUST verify that the party submitting a template controls the identity it claims, rather than relying on the identifying fields carried in the template. Where the template specifies `"syncPubKeyDomain"`, demonstrated control of that domain and of the key published under it (see <<pubkey-publication>>) serves this purpose.
+
+* MUST review the records a template requests before accepting it, and reject or require further justification for a scope wider than the service being offered.
+
+* MUST confirm that the display fields presented to users, in particular `"providerName"`, `"serviceName"`, and `"logoUrl"`, are not liable to be confused with those of another Service Provider already onboarded.
+
+* MUST re-apply these checks when an onboarded template is updated, since a subsequent `"version"` of an accepted template may widen its scope or alter its display fields.
+
 [#iana]
 == IANA Considerations
 
@@ -2413,7 +2430,13 @@ Subtype name::: domainconnect-template+json
 Required parameters::: N/A
 Optional parameters::: N/A
 Encoding considerations::: binary; the content is a JSON <<RFC8259>> document encoded in UTF-8.
-Security considerations::: See <<security-considerations>> of this document.
+Security considerations:::
++
+--
+A Domain Connect template is a declarative JSON document. It contains no executable content and no scripting or macro facility, and processing a template does not cause code to be executed on the recipient's system. A template does, however, describe DNS records that a DNS Provider is being asked to add to a user's zone, and applying one changes the configuration of that domain. A recipient therefore does not act on a template solely because it has been received. Measures are required on DNS Provider side to mitigate risks related to the template and its application (see <<security-considerations>> and <<user_authorization_of_changes>>).
+
+The format employs no compression, so a template presents no decompression-expansion attack surface, nor does it contain any sensitive content which would require external protection measures.
+--
 Interoperability considerations::: See this document.
 Published specification::: This document (see <<template-definition>>).
 Applications that use this media type::: Domain Connect Service Providers and DNS Providers.
@@ -2494,6 +2517,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Clarified RR placement constraints arising from the DNS protocol.
 - Noted RRset TTL consistency requirements in <<template-record,format=title>> and <<steps-to-apply,format=title>>.
 - Introduced Rendered Record Set terminology in <<steps-to-apply,format=title>> to disambiguate from RRset.
+- Added security considerations for the template format and for template onboarding, covering acceptance of untrusted or impersonating templates.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-02 to -03

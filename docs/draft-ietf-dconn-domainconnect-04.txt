@@ -134,31 +134,31 @@ Internet-Draft               Domain Connect                    July 2026
      11.1.  Template Variable Phishing . . . . . . . . . . . . . . .  62
      11.2.  Untrusted DNS Provider Discovery Records . . . . . . . .  63
      11.3.  Underscored Host Names . . . . . . . . . . . . . . . . .  63
-   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  64
-     12.1.  Registration Procedure for Domain Connect Registries . .  64
-     12.2.  Domain Connect Fully Specified Record Types Registry . .  65
-     12.3.  Domain Connect Settings Properties Registry  . . . . . .  67
-     12.4.  Domain Connect Template Properties Registry  . . . . . .  69
+     11.4.  Template Onboarding  . . . . . . . . . . . . . . . . . .  64
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  65
+     12.1.  Registration Procedure for Domain Connect Registries . .  65
+     12.2.  Domain Connect Fully Specified Record Types Registry . .  66
+     12.3.  Domain Connect Settings Properties Registry  . . . . . .  68
+     12.4.  Domain Connect Template Properties Registry  . . . . . .  70
      12.5.  Guidance to the DNS Resource Record (RR) TYPEs
-            Registry . . . . . . . . . . . . . . . . . . . . . . . .  72
-     12.6.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  72
+            Registry . . . . . . . . . . . . . . . . . . . . . . . .  73
+     12.6.  Underscore "_domainconnect" DNS Node Name  . . . . . . .  73
      12.7.  Media Type Registration for application/
-            domainconnect-template+json  . . . . . . . . . . . . . .  73
-   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  74
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  74
-   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  75
-   Normative References  . . . . . . . . . . . . . . . . . . . . . .  79
-   Informative References  . . . . . . . . . . . . . . . . . . . . .  81
-   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  82
-     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  82
-     A.2.  Example Records: Single static host record  . . . . . . .  83
-     A.3.  Example Records: Single variable host record for A  . . .  83
-     A.4.  Example Records: Generic Record Type CAA  . . . . . . . .  83
+            domainconnect-template+json  . . . . . . . . . . . . . .  74
+   Implementation Status . . . . . . . . . . . . . . . . . . . . . .  75
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  76
+   Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  76
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  80
+   Informative References  . . . . . . . . . . . . . . . . . . . . .  83
+   Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  83
+     A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  83
+     A.2.  Example Records: Single static host record  . . . . . . .  84
+     A.3.  Example Records: Single variable host record for A  . . .  85
+     A.4.  Example Records: Generic Record Type CAA  . . . . . . . .  85
      A.5.  Example: Template application to DNS Zone and Conflict
-           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  84
-     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  86
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  87
-
+           Resolution  . . . . . . . . . . . . . . . . . . . . . . .  86
+     A.6.  Example: SPF Record Merging . . . . . . . . . . . . . . .  88
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  89
 
 
 
@@ -3539,6 +3539,57 @@ Internet-Draft               Domain Connect                    July 2026
    and verbose manner during User Authorization of Changes so that the
    special-meaning target is not obscured.
 
+11.4.  Template Onboarding
+
+   Templates reach a DNS Provider out of band.  This protocol has no
+   mechanism by which a DNS Provider retrieves a template from a Service
+   Provider.  A DNS Provider therefore cannot infer a template's
+   provenance from the protocol, and the trust decision is made entirely
+   during the onboarding process described in Section 4.2.
+
+   Two classes of attack follow.  In the first, an attacker submits a
+   template under its own identity whose records are broader than the
+   service it claims to provide, or accepts variables in positions that
+   let the applied value be chosen freely at apply time.  In the second,
+   an attacker submits a template impersonating an established Service
+   Provider, borrowing a recognisable "providerName", "serviceName", or
+   "logoUrl" so that the consent screen shown during User Authorization
+   of Changes carries the reputation of the party being impersonated.
+   The "providerId" and "serviceId" fields are self-asserted identifiers
+   and are not validated by any authority.
+
+   DNS Providers therefore treat template onboarding as a trust decision
+   rather than a data import, and:
+
+   *  MUST verify that the party submitting a template controls the
+      identity it claims, rather than relying on the identifying fields
+      carried in the template.  Where the template specifies
+      "syncPubKeyDomain", demonstrated control of that domain and of the
+      key published under it (see Section 6.4) serves this purpose.
+
+   *  MUST review the records a template requests before accepting it,
+      and reject or require further justification for a scope wider than
+      the service being offered.
+
+   *  MUST confirm that the display fields presented to users, in
+      particular "providerName", "serviceName", and "logoUrl", are not
+      liable to be confused with those of another Service Provider
+      already onboarded.
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 64]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   *  MUST re-apply these checks when an onboarded template is updated,
+      since a subsequent "version" of an accepted template may widen its
+      scope or alter its display fields.
+
 12.  IANA Considerations
 
 12.1.  Registration Procedure for Domain Connect Registries
@@ -3579,15 +3630,17 @@ Internet-Draft               Domain Connect                    July 2026
    *  the proposed value does not conform to the syntax required for
       that registry;
 
+   *  the proposed value would change the meaning of an existing entry,
+      in a way that is incompatible with its existing use;
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 64]
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 65]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   *  the proposed value would change the meaning of an existing entry,
-      in a way that is incompatible with its existing use;
 
    *  the proposed value would occupy a term, which is not corresponding
       to the described use, or is too generic for the specific use case.
@@ -3634,17 +3687,16 @@ Internet-Draft               Domain Connect                    July 2026
       -  "Reserved": the type appears in earlier versions of the Domain
          Connect specification (see [DC-SPEC]) and is reserved for back-
          compatibility.  It MUST NOT be redefined in a manner
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 65]
-
-Internet-Draft               Domain Connect                    July 2026
-
-
          incompatible with [DC-SPEC], and MAY only be defined by a
          specification that extends this document.  See Section 3,
          Paragraph 13.
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 66]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    *  *Handling*: how the DNS Provider processes a record of this type,
       as defined in Section 3.  The value MUST be one of "Fully
@@ -3690,16 +3742,17 @@ Internet-Draft               Domain Connect                    July 2026
 
    Kind:  "IETF Standard", "Informational", or "Other".
 
+   Reference:  The document that defines the type, preferably including
+      a URI from which a copy can be retrieved.
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 66]
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 67]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   Reference:  The document that defines the type, preferably including
-      a URI from which a copy can be retrieved.
 
    The following types from this specification constitute the initial
    contents of the registry:
@@ -3747,14 +3800,15 @@ Internet-Draft               Domain Connect                    July 2026
    Settings Properties" under the "Domain Connect Protocol" registry
    group.
 
+   Registration policy: Specification Required (see [RFC8126]).
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 67]
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 68]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   Registration policy: Specification Required (see [RFC8126]).
 
    Each entry in the registry MUST include:
 
@@ -3805,7 +3859,9 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 68]
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 69]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -3861,7 +3917,7 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 69]
+Kowalik, et al.          Expires 4 January 2027                [Page 70]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -3917,7 +3973,7 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 70]
+Kowalik, et al.          Expires 4 January 2027                [Page 71]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -3973,7 +4029,7 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 71]
+Kowalik, et al.          Expires 4 January 2027                [Page 72]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4029,7 +4085,7 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 72]
+Kowalik, et al.          Expires 4 January 2027                [Page 73]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4051,7 +4107,21 @@ Internet-Draft               Domain Connect                    July 2026
    Encoding considerations:  binary; the content is a JSON [RFC8259]
       document encoded in UTF-8.
 
-   Security considerations:  See Section 11 of this document.
+   Security considerations:  A Domain Connect template is a declarative
+      JSON document.  It contains no executable content and no scripting
+      or macro facility, and processing a template does not cause code
+      to be executed on the recipient's system.  A template does,
+      however, describe DNS records that a DNS Provider is being asked
+      to add to a user's zone, and applying one changes the
+      configuration of that domain.  A recipient therefore does not act
+      on a template solely because it has been received.  Measures are
+      required on DNS Provider side to mitigate risks related to the
+      template and its application (see Section 11 and Section 10.6).
+
+      The format employs no compression, so a template presents no
+      decompression-expansion attack surface, nor does it contain any
+      sensitive content which would require external protection
+      measures.
 
    Interoperability considerations:  See this document.
 
@@ -4069,6 +4139,13 @@ Internet-Draft               Domain Connect                    July 2026
 
                             File extension(s):  N/A
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 74]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
                             Macintosh file type code(s):  N/A
 
    Person email address to contact for further information:  IETF DCONN
@@ -4081,14 +4158,6 @@ Internet-Draft               Domain Connect                    July 2026
    Author:  IETF DCONN Working Group
 
    Change controller:  IETF
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 73]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
 Implementation Status
 
@@ -4126,6 +4195,13 @@ Proprietary implementations
 
       Source: https://stats.domainconnect.org/
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 75]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
 Acknowledgements
 
    The authors wish to thank the following persons for their feedback
@@ -4138,13 +4214,6 @@ Acknowledgements
    *  Darrel Miller
 
    *  Peter Thomassen
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 74]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    *  Paul Hoffmann
 
@@ -4178,6 +4247,17 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
    *  Added dc-template-property, dc-unprefixed-property, and dc-vnd-
       property to Terminology.
 
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 76]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Reformulated the IANA registration procedure as guidance to the
       designated experts, replacing normative keywords and IANA-directed
       process with advice on when to approve a registration, and
@@ -4194,13 +4274,9 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
    *  Introduced Rendered Record Set terminology in Steps to Apply a
       Template to disambiguate from RRset.
 
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 75]
-
-Internet-Draft               Domain Connect                    July 2026
-
+   *  Added security considerations for the template format and for
+      template onboarding, covering acceptance of untrusted or
+      impersonating templates.
 
 Change from draft-ietf-dconn-domainconnect-02 to -03
 
@@ -4231,6 +4307,13 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
    *  Added Media Type Registration for application/
       domainconnect-template+json in IANA Considerations.
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 77]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Added media type identification to Template Definition.
 
    *  Added HTTP content negotiation guidance to the Query Supported
@@ -4249,14 +4332,6 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
       Discovery settings properties as Reserved, deferring their
       definition to [DC-SPEC]; removed reserved properties from the
       example settings response.
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 76]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
 Change from draft-ietf-dconn-domainconnect-01 to -02
 
@@ -4287,6 +4362,14 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       Error structure; rewrote Verification of Changes as normative
       text.
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 78]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Restructured Security Considerations: moved phishing threat into
       new Template Variable Phishing subsection; editorial cleanup.
 
@@ -4304,15 +4387,6 @@ Change from draft-kowalik-domainconnect-02 to draft-ietf-dconn-
 domainconnect-00
 
    *  DCONN WG adoption.  No other changes.
-
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 77]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
 Change from -01 to -02
 
@@ -4343,6 +4417,15 @@ Change from -00 to -01
 Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-
 domainconnect-00
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 79]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Added possibility to specify any DNS record type in a generic
       manner.
 
@@ -4361,14 +4444,6 @@ Change from -02 to -03
    *  Added width/height JSON values returned by DNS Provider Discovery.
 
    *  Corrected text of GET method for getting the authorization token.
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 78]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    *  Added clarifying text to Group ID description parameter of the
       apply template POST method.  Quite a few minor edits and
@@ -4397,6 +4472,16 @@ Normative References
               DOI 10.17487/RFC2782, RFC 2782, February 2000,
               <https://www.rfc-editor.org/info/rfc2782>.
 
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 80]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
               RFC 2119, March 1997,
@@ -4415,16 +4500,6 @@ Normative References
    [RFC6749]  Hardt, D., "The OAuth 2.0 Authorization Framework", IETF,
               DOI 10.17487/RFC6749, RFC 6749, October 2012,
               <https://www.rfc-editor.org/info/rfc6749>.
-
-
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 79]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    [RFC3597]  Gustafsson, A., "Handling of Unknown DNS Resource Record
               (RR) Types", IETF, DOI 10.17487/RFC3597, RFC 3597,
@@ -4456,6 +4531,13 @@ Internet-Draft               Domain Connect                    July 2026
               DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
               <https://www.rfc-editor.org/info/rfc6335>.
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 81]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [RFC6895]  3rd, D. E., "Domain Name System (DNS) IANA
               Considerations", IETF, DOI 10.17487/RFC6895, BCP 42,
               RFC 6895, April 2013,
@@ -4474,13 +4556,6 @@ Internet-Draft               Domain Connect                    July 2026
    [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
               Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October
               2006, <https://www.rfc-editor.org/info/rfc4648>.
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 80]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    [RFC5891]  Klensin, J., "Internationalized Domain Names in
               Applications (IDNA): Protocol", IETF,
@@ -4505,15 +4580,23 @@ Internet-Draft               Domain Connect                    July 2026
               DOI 10.17487/RFC9499, BCP 219, RFC 9499, March 2024,
               <https://www.rfc-editor.org/info/rfc9499>.
 
-   [RFC6838]  Freed, N., Klensin, J., and T. Hansen, "Media Type
-              Specifications and Registration Procedures", IETF,
-              DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013,
-              <https://www.rfc-editor.org/info/rfc6838>.
+   [RFC6838]  "Freed, N., Klensin, J., and T. Hansen, "Media Type
+              Specifications and Registration Procedures", IETF, DOI
+              10.17487/RFC6838, BCP 13, RFC 6838, January 2013, >.".
 
-   [RFC9110]  Fielding, R., Nottingham, M., and J. Reschke, "HTTP
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 82]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
+   [RFC9110]  "Fielding, R., Nottingham, M., and J. Reschke, "HTTP
               Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97,
-              RFC 9110, June 2022,
-              <https://www.rfc-editor.org/info/rfc9110>.
+              RFC 9110, June 2022, >.".
 
    [RFC2181]  Elz, R. and R. Bush, "Clarifications to the DNS
               Specification", IETF, DOI 10.17487/RFC2181, RFC 2181, July
@@ -4531,18 +4614,41 @@ Informative References
               <https://github.com/Domain-Connect/spec/blob/rev.67/
               Domain%20Connect%20Spec%20Draft.adoc>.
 
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 81]
-
-Internet-Draft               Domain Connect                    July 2026
-
-
 Appendix A.  Examples
 
 A.1.  Example Template
 
    EXAMPLE: Full template example
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 83]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    {
        "providerId": "example.com",
@@ -4584,16 +4690,6 @@ A.1.  Example Template
        ]
    }
 
-
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 82]
-
-Internet-Draft               Domain Connect                    July 2026
-
-
 A.2.  Example Records: Single static host record
 
    Consider a template for setting a single host record.  The records
@@ -4601,6 +4697,14 @@ A.2.  Example Records: Single static host record
    could have a value of:
 
    EXAMPLE: Single static host record example
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 84]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
    [{
        "type": "A",
@@ -4645,7 +4749,15 @@ A.4.  Example Records: Generic Record Type CAA
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 83]
+
+
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 85]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4701,7 +4813,7 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 84]
+Kowalik, et al.          Expires 4 January 2027                [Page 86]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4757,7 +4869,7 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 85]
+Kowalik, et al.          Expires 4 January 2027                [Page 87]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4813,7 +4925,7 @@ A.6.  Example: SPF Record Merging
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 86]
+Kowalik, et al.          Expires 4 January 2027                [Page 88]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4869,7 +4981,7 @@ Authors' Addresses
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 87]
+Kowalik, et al.          Expires 4 January 2027                [Page 89]
 
 Internet-Draft               Domain Connect                    July 2026
 
@@ -4925,4 +5037,4 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-Kowalik, et al.          Expires 4 January 2027                [Page 88]
+Kowalik, et al.          Expires 4 January 2027                [Page 90]

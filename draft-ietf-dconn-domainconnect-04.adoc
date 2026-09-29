@@ -817,6 +817,8 @@ The pointsTo location for A, AAAA, CNAME, NS and MX records. +
 
 When used in a template definition, the value MUST conform to the `"dc-pointsto-tmpl"` syntax for `"CNAME"`/`"MX"` and to the `"dc-pointsto-nat-tmpl"` syntax for A/AAAA/NS (see <<terminology>>). +
 
+For `"CNAME"`, `"MX"` and `"NS"` records the resolved value is a domain name and MUST be treated as fully qualified, whether or not it ends with a `"."`. It MUST NOT be interpreted relative to the applied host and domain. +
+
 After variable substitution, the resolved value MUST conform to the presentation format of the corresponding resource record type.
 --
 
@@ -977,6 +979,8 @@ Type::: `"String"`
 The target hostname for the SRV record as defined in Section 3.1 of <<RFC2782>>. +
 
 When used in a template definition, the value MUST conform to the `dc-pointsto-tmpl` syntax (see <<terminology>>), or be the single label `"."` to indicate that the service is not available. +
+
+The resolved value MUST be treated as fully qualified, whether or not it ends with a `"."`. It MUST NOT be interpreted relative to the applied host and domain. +
 
 After variable substitution, the resolved value MUST conform to the `domain-name` syntax (see <<terminology>>), or be `"."`.
 --
@@ -1804,7 +1808,7 @@ There are three Built-In variables:
 
 For example, with the query string "domain=example.com&host=", `"%fqdn%"` in a template would be "example.com", and with "domain=example.com&host=sub1", `"%fqdn%"` in a template would be "sub1.example.com".
 
-The `"@"` variable has special meaning, and can be used in the `"host"`/`"name"` field or in the `"pointsTo"` field in isolation. For the `"host"`/`"name"` and `"pointsTo"` fields it is a shortcut for the value `"%fqdn%."`. The trailing dot here is equal to the DNS master file notation <<RFC1035>>, which indicates the value is absolute.
+The `"@"` variable has special meaning, and can be used in the `"host"`/`"name"` field or in the `"pointsTo"` or `"target"` field in isolation. For the `"host"`/`"name"`, `"pointsTo"` and `"target"` fields it is a shortcut for the value `"%fqdn%."`. The trailing dot here is equal to the DNS master file notation <<RFC1035>>, which indicates the value is absolute.
 For some record types, like `"A"` or `"AAAA"` usage of `"@"` in pointsTo would not render a valid IP address, therefore MUST NOT be used. Likewise in `"NS"` record types it would render a circular delegation therefore MUST NOT be used.
 
 Aside from the built-in variables above and `"@"`, a template `variable-name` MUST NOT collide with any reserved apply parameter name — the `dc-predefined-param` names or names beginning with a reserved extension prefix (`"dc."`, `"vnd."`) (see <<terminology>>). These names are reserved for protocol use.
@@ -2711,6 +2715,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 - Noted RRset TTL consistency requirements in <<template-record,format=title>> and <<steps-to-apply,format=title>>.
 - Introduced Rendered Record Set terminology in <<steps-to-apply,format=title>> to disambiguate from RRset.
 - Added security considerations for the template format and for template onboarding, covering acceptance of untrusted or impersonating templates.
+- Clarified that domain names in pointsTo and target fields are always fully qualified.
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-02 to -03
@@ -3117,8 +3122,8 @@ $ORIGIN example.com.
 1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
-@ 3600 IN MX 10 mx1.example.net.
-@ 3600 IN MX 10 mx2.example.net.
+@ 1800 IN MX 10 mx1.example.net.
+www 1800 IN MX 10 mx2.example.net.
 @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
 ----
 
@@ -3146,8 +3151,8 @@ $ORIGIN example.com.
 1800 1209600 3600
 @ 3600 IN NS ns11.example.net.
 @ 3600 IN NS ns12.example.net.
-@ 3600 IN MX 10 mx1.example.net.
-@ 3600 IN MX 10 mx2.example.net.
+@ 1800 IN MX 10 mx1.example.net.
+www 1800 IN MX 10 mx2.example.net.
 @ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newslett
 er.
 example ~all"

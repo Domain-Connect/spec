@@ -377,7 +377,7 @@ Revisions SHOULD instead strive to remain backwards compatible and be introduced
 
 Consequently, an extension that can safely be ignored requires no version change; an extension that cannot safely be ignored is signaled per-message through `"crit"`; and only a change that breaks the framing of the protocol itself requires a new version path segment. For the limits of `"crit"` against deployments that predate this specification, see <<sec-crit-legacy>>.
 
-The must-understand mechanism is deliberately not defined for the responses of the synchronous flow. The authoritative record of what was applied is the DNS zone itself, which the Service Provider verifies independently (see <<verification-of-changes>>); by the time a response reaches the Service Provider the zone change has already occurred, so there is no operation left to refuse. Extensions to those responses therefore rely on the ignore-unknown rule alone.
+The must-understand mechanism is deliberately not defined for the responses of the synchronous flow. The authoritative record of what was applied is the DNS zone itself, which the Service Provider verifies independently (see <<verification-of-changes>>). By the time a response reaches the Service Provider the zone change has already occurred, so there is no operation left to refuse. Extensions to those responses therefore rely on the ignore-unknown rule alone.
 
 The `"_domainconnect"` TXT record (see <<dns-provider-discovery>>) carries no internal structure and therefore offers no place to hold a version indicator. This is intentional in this revision to maintain compatibility with existing deployments of <<DC-SPEC>>. A future revision MAY define a structured content format for this record, at which point a version indicator can be introduced within that structure. Service Providers implementing this document MUST reject record contents that do not conform to the rules in <<dns-provider-discovery>>, which keeps any such future format distinguishable from a plain authority-and-path value.
 
@@ -398,7 +398,7 @@ This flow is tailored for the Service Provider that requires a user-attended, on
 In this flow, the user is present throughout: they authenticate with the DNS Provider and explicitly consent to the changes within a single interaction session.
 
 The term "synchronous" refers to this user-interaction model -- not to immediate DNS propagation. The DNS Provider commits to applying the template upon user consent, but the changes MAY be queued internally and propagation to authoritative servers MAY take additional time.
-Service Providers MUST NOT assume that DNS records are resolvable immediately after the flow completes; see <<verification-of-changes>>.
+Service Providers MUST NOT assume that DNS records are resolvable immediately after the flow completes. See <<verification-of-changes>>.
 
 .Sequence diagram of Synchronous Flow
 ....
@@ -796,7 +796,7 @@ The set of template-definition properties defined above MAY be extended. To keep
 * Property names without any prefix are reserved for this specification and for future standards-track extensions that normatively require this document as their base. Such names are managed through the IANA "Domain Connect Template Properties" registry (see <<iana-template-properties>>). Implementations MUST NOT introduce private or vendor-specific properties using unprefixed names.
 * Property names beginning with `"vnd."` are reserved for vendor-specific and private use. A vendor SHOULD further namespace such properties with a vendor identifier (e.g. `"vnd.example.fooBar"`), and such names MAY be registered in the IANA "Domain Connect Template Properties" registry (see <<iana-template-properties>>). Properties using this prefix MUST NOT be assumed to be interoperable across implementations, and the property name MUST conform to the `dc-vnd-property` syntax (see <<terminology>>).
 
-Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognize; the mere presence of an unrecognized property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to `"vnd."` properties.
+Both DNS Providers and Service Providers process template definitions. An implementation of either role MUST ignore any template property it does not recognize. The mere presence of an unrecognized property MUST NOT cause the template to be rejected. This applies equally to unprefixed properties added by later revisions of this specification and to `"vnd."` properties.
 
 The `"crit"` property (see <<template-definition>>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.
 
@@ -1704,7 +1704,7 @@ The value MUST conform to the `dc-id` syntax (see <<terminology>>).
 Returning a status of 200 without a body indicates the template is supported.
 The DNS Provider MAY disclose the version of the template in a JSON object with field `"version"` (see: <<template-definition, version field>> or the full JSON object of deployed template.
 
-The Service Provider MUST ignore any JSON property in this response that it does not recognize; the presence of such a property MUST NOT cause the response to be treated as an error. Where the DNS Provider returns the full template object, the rules of <<template-property-extensibility,format=title>> and <<template-record-extensibility,format=title>> apply to it.
+The Service Provider MUST ignore any JSON property in this response that it does not recognize. The presence of such a property MUST NOT cause the response to be treated as an error. Where the DNS Provider returns the full template object, the rules of <<template-property-extensibility,format=title>> and <<template-record-extensibility,format=title>> apply to it.
 
 The Service Provider MAY use HTTP content negotiation (see <<RFC9110>>) to
 request the full template object, for example by sending an `"Accept"` request
@@ -2016,7 +2016,7 @@ The set of apply parameters MAY be extended. To avoid name collisions between th
 * Parameter names beginning with `"vnd."` are reserved for vendor-specific and private-use parameters. A vendor SHOULD further namespace such parameters with a vendor identifier (e.g. `"vnd.example.foo"`). Parameters using this prefix MUST NOT be assumed to be interoperable across DNS Providers.
 * Parameter names without any dot-prefix are reserved for this specification and for specifications extending this document that carry over functionality of <<DC-SPEC>> (see <<reserved-for-extensions>>), such as the client-request query parameters of the OAuth-based asynchronous flow. Implementations MUST NOT define private or vendor-specific parameters using unprefixed names.
 
-The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognize; an unrecognized extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
+The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognize. An unrecognized extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
 
 The `"crit"` parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <<sync-apply-error-response>> using the error code `"invalid_request"`. A listed name that does not correspond to a parameter present in the request is by definition understood.
 
@@ -2071,7 +2071,7 @@ The following parameters MUST be appended to the `"redirect_uri"`:
 
 To prevent open redirects, the DNS Provider MUST NOT redirect the user agent to a `"redirect_uri"` value whose registered domain is not listed in the template's `"syncRedirectDomain"` field, unless the request carries a valid digital signature (see <<signing-procedure>>).
 
-The DNS Provider MAY append parameters beyond those specified above to the `"redirect_uri"`. The Service Provider MUST ignore any parameter on the redirect that it does not recognize; the presence of such a parameter MUST NOT cause the Service Provider to treat an otherwise successful outcome as a failure. The same applies to the error redirect described in <<sync-apply-error-response>>.
+The DNS Provider MAY append parameters beyond those specified above to the `"redirect_uri"`. The Service Provider MUST ignore any parameter on the redirect that it does not recognize. The presence of such a parameter MUST NOT cause the Service Provider to treat an otherwise successful outcome as a failure. The same applies to the error redirect described in <<sync-apply-error-response>>.
 
 The Service Provider SHOULD verify the outcome via DNS regardless of how the flow terminates (see <<verification-of-changes>>).
 
@@ -2098,7 +2098,7 @@ If `"redirect_uri"` is not present or the open-redirect constraint is not satisf
 
 After the synchronous flow completes, the Service Provider SHOULD verify that the expected DNS records are present in the zone by querying the authoritative DNS server for the domain.
 
-DNS verification MUST be treated as the authoritative signal of success. A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes. Similarly, a `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied; the DNS Provider MAY have applied the template before the error condition arose.
+DNS verification MUST be treated as the authoritative signal of success. A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes. Similarly, a `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.
 
 Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
 
@@ -2135,7 +2135,7 @@ Aside from the built-in variables above and `"@"`, a template `variable-name` MU
 ==== Input Values
 
 * Template fields — the string-valued fields of each template record where variables are allowed. Fields MUST be decoded from JSON string encoding before variable substitution is performed.
-* Named variable values — the name/value pairs supplied by the caller in the apply request (query string parameters or JSON body). Values MUST be treated as strings regardless of how the underlying data source represents them; any transport encoding (e.g., URL percent-encoding) MUST be decoded before substitution. The resulting substituted value MUST reflect the exact original input value string.
+* Named variable values — the name/value pairs supplied by the caller in the apply request (query string parameters or JSON body). Values MUST be treated as strings regardless of how the underlying data source represents them. Any transport encoding (e.g., URL percent-encoding) MUST be decoded before substitution. The resulting substituted value MUST reflect the exact original input value string.
 * Built-in variable values — the values of `"%domain%"`, `"%host%"`, and `"%fqdn%"` derived from the `"domain"` and `"host"` apply parameters (see <<special-variables>>).
 
 ==== Processing
@@ -2411,7 +2411,7 @@ Examples of template processing are in <<examples>>.
 
 Templates that accept variable parameters introduce a phishing risk. The more static the values in a template record, the more secure the template. When variable values cannot be avoided, a bad actor could craft an apply URL substituting a malicious value — for example, a hijacked IP address — and send it to users as a seemingly legitimate reconfiguration request. The user would be presented with a DNS Provider consent screen that appears valid, but would result in DNS being pointed at infrastructure under the attacker's control.
 
-Not all templates are susceptible; the risk is proportional to how much of a record's content is controlled by variables. Two mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and using an alternative flow not prone to this risk by disabling the synchronous flow via `"syncBlock"`. In the absence of such a mitigation a template is treated as susceptible to phishing by default, and DNS Providers display the additional warnings described in <<user_authorization_of_changes>>.
+Not all templates are susceptible. The risk is proportional to how much of a record's content is controlled by variables. Two mitigations are available to template authors and Service Providers: digitally signing apply requests (see the Section <<<<signing-procedure>>,format=title>>), and using an alternative flow not prone to this risk by disabling the synchronous flow via `"syncBlock"`. In the absence of such a mitigation a template is treated as susceptible to phishing by default, and DNS Providers display the additional warnings described in <<user_authorization_of_changes>>.
 
 [[sec-discovery-record]]
 === Untrusted DNS Provider Discovery Records
@@ -2497,12 +2497,12 @@ Registration policy: Specification Required <<RFC8126>>.
 Each entry in the registry includes:
 
 * RR Type: the record type name as it appears in a template record `"type"` field. The value MUST conform to the `dc-type-name` syntax (see <<terminology>>).
-* Status: the lifecycle state of the registration. The following values are defined; the designated experts may define additional values as needed:
+* Status: the lifecycle state of the registration. The following values are defined. The designated experts may define additional values as needed:
 ** `"Active"`: the type is currently in use and its definition is normative.
-** `"Deprecated"`: the type SHOULD NOT be used in new templates; it MAY appear in existing deployments for backwards compatibility. If the corresponding DNS RR TYPE is marked deprecated or obsolete in the IANA "Resource Record (RR) TYPEs" registry, the entry here SHOULD be set to `"Deprecated"`.
+** `"Deprecated"`: the type SHOULD NOT be used in new templates. It MAY appear in existing deployments for backwards compatibility. If the corresponding DNS RR TYPE is marked deprecated or obsolete in the IANA "Resource Record (RR) TYPEs" registry, the entry here SHOULD be set to `"Deprecated"`.
 ** `"Reserved"`: the type appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>, and MAY only be defined by a specification that extends this document. See <<reserved-for-extensions>>.
 * Handling: how the DNS Provider processes a record of this type, as defined in <<terminology>>. The value MUST be one of `"Fully Specified"` or `"Computed"`. Generic Record Types are carried opaquely and are not registered here. A `"Reserved"` entry MAY leave this field unassigned.
-* DNS RR TYPE: the name of the corresponding entry in the IANA "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group. A `"Fully Specified"` type normally corresponds to a registered DNS RR TYPE of the same name; before registering such a type, the designated experts verify that the named DNS RR TYPE exists in that registry. For a `"Computed"` type, a `"Reserved"` type, or any other type for which no corresponding DNS RR TYPE exists or would be meaningful, the value MUST be `"N/A"`. Where a `"Fully Specified"` type would use a name that is not yet a registered DNS RR TYPE, or where an entry is registered with a `"DNS RR TYPE"` of `"N/A"` (such as a `"Computed"` type), the designated experts are expected to coordinate with the designated experts of the "Resource Record (RR) TYPEs" registry before completing the registration, to confirm that the chosen name does not collide with an existing or anticipated DNS RR TYPE.
+* DNS RR TYPE: the name of the corresponding entry in the IANA "Resource Record (RR) TYPEs" registry within the "Domain Name System (DNS) Parameters" registry group. A `"Fully Specified"` type normally corresponds to a registered DNS RR TYPE of the same name. Before registering such a type, the designated experts verify that the named DNS RR TYPE exists in that registry. For a `"Computed"` type, a `"Reserved"` type, or any other type for which no corresponding DNS RR TYPE exists or would be meaningful, the value MUST be `"N/A"`. Where a `"Fully Specified"` type would use a name that is not yet a registered DNS RR TYPE, or where an entry is registered with a `"DNS RR TYPE"` of `"N/A"` (such as a `"Computed"` type), the designated experts are expected to coordinate with the designated experts of the "Resource Record (RR) TYPEs" registry before completing the registration, to confirm that the chosen name does not collide with an existing or anticipated DNS RR TYPE.
 * Kind: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for types defined in a standards-track RFC, `"Informational"` for types defined in an Informational RFC, or `"Other"` for any other specification.
 * Reference: the document that defines the type.
 
@@ -2617,9 +2617,9 @@ Registration policy:
 Each entry in the registry includes:
 
 * Property name: the JSON key as it appears in the settings response. The value MUST conform to the `dc-settings-property` syntax (see <<terminology>>).
-* Status: the lifecycle state of the registration. The following values are defined; the designated experts may define additional values as needed:
+* Status: the lifecycle state of the registration. The following values are defined. The designated experts may define additional values as needed:
 ** `"Active"`: the property is currently in use and its definition is normative.
-** `"Deprecated"`: the property SHOULD NOT be used in new implementations; it MAY appear in existing deployments for backwards compatibility.
+** `"Deprecated"`: the property SHOULD NOT be used in new implementations. It MAY appear in existing deployments for backwards compatibility.
 ** `"Reserved"`: the property appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
 * Kind: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for properties defined in a standards-track RFC, `"Informational"` for properties defined in an Informational RFC, or `"Other"` for any other specification.
 * Reference: the document that defines the property.
@@ -2711,9 +2711,9 @@ This registry covers the properties of the template definition (see <<template-d
 Each entry in the registry includes:
 
 * Property name: the JSON key of the property as it appears in the template definition. The value MUST conform to the `dc-template-property` syntax (see <<terminology>>).
-* Status: the lifecycle state of the registration. The following values are defined; the designated experts may define additional values as needed:
+* Status: the lifecycle state of the registration. The following values are defined. The designated experts may define additional values as needed:
 ** `"Active"`: the property is currently in use and its definition is normative.
-** `"Deprecated"`: the property SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.
+** `"Deprecated"`: the property SHOULD NOT be used in new templates. It MAY appear in existing templates for backwards compatibility.
 ** `"Reserved"`: the property appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
 * Kind: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for properties defined in a standards-track RFC, `"Informational"` for properties defined in an Informational RFC, or `"Other"` for any other specification.
 * Reference: the document that defines the property.
@@ -2846,9 +2846,9 @@ Registration policy:
 Each entry in the registry includes:
 
 * Field name: the JSON key of the field as it appears in a template record. The value MUST conform to the `dc-record-field` syntax (see <<terminology>>).
-* Status: the lifecycle state of the registration. The following values are defined; IANA MAY define additional values as needed:
+* Status: the lifecycle state of the registration. The following values are defined. IANA MAY define additional values as needed:
 ** `"Active"`: the field is currently in use and its definition is normative.
-** `"Deprecated"`: the field SHOULD NOT be used in new templates; it MAY appear in existing templates for backwards compatibility.
+** `"Deprecated"`: the field SHOULD NOT be used in new templates. It MAY appear in existing templates for backwards compatibility.
 ** `"Reserved"`: the field appears in earlier versions of the Domain Connect specification (see <<DC-SPEC>>) and is reserved for back-compatibility. It MUST NOT be redefined in a manner incompatible with <<DC-SPEC>>. See <<reserved-for-extensions>>.
 * Kind: the nature of the defining document. The value MUST be one of: `"IETF Standard"` for fields defined in a standards-track RFC, `"Informational"` for fields defined in an Informational RFC, or `"Other"` for any other specification.
 * Reference: the document that defines the field.
@@ -2942,7 +2942,7 @@ The format employs no compression, so a template presents no decompression-expan
 Interoperability considerations::: See this document.
 Published specification::: This document (see <<template-definition>>).
 Applications that use this media type::: Domain Connect Service Providers and DNS Providers.
-Fragment identifier considerations::: The `"+json"` structured syntax suffix is defined in <<RFC6839>>; see also <<RFC8259>>.
+Fragment identifier considerations::: The `"+json"` structured syntax suffix is defined in <<RFC6839>>. See also <<RFC8259>>.
 Additional information:::
 +
 --

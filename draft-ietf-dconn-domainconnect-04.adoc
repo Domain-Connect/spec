@@ -693,6 +693,8 @@ Both DNS Providers and Service Providers process template definitions. An implem
 
 The `"crit"` property (see <<template-definition>>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.
 
+An example of vendor-specific template properties and a template-level `"crit"` property is given in <<example-vendor-extensions>>.
+
 The `"templateSpecVersion"` property (see <<template-definition>>) identifies the version of the template specification the template conforms to. An implementation that does not support the indicated template specification version MUST reject the template and MUST NOT apply it. A template that omits `"templateSpecVersion"` is processed as if it declared version `"1"`.
 
 [[template-record]]
@@ -1062,6 +1064,8 @@ An implementation MUST ignore any record field it does not recognise, and MUST i
 
 The `"crit"` record field (see <<record-crit>>) overrides this default for the fields it lists: if an implementation does not understand and cannot process one or more of those fields, it MUST reject the template and MUST NOT apply it. Rejection applies to the template as a whole, not only to the record carrying the `"crit"` field, because a partially applied template would leave the service configured incorrectly. A listed name that does not correspond to a field present in the record is by definition understood.
 
+An example of vendor-specific record fields and a record-level `"crit"` field is given in <<example-vendor-extensions>>.
+
 === Template Considerations
 
 [[template-scope]]
@@ -1411,6 +1415,26 @@ Every settings property name MUST conform to the `dc-settings-property` syntax (
 
 The `"crit"` property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood.
 
+.Example Settings End-Point response with vendor-specific properties
+====
+[source,json]
+----
+{
+    "providerId": "virtucondomains.example",
+    "providerName": "Virtucon Domains",
+    "providerDisplayName": "Virtucon Domains",
+    "urlSyncUX": "https://domainconnect.virtucondomains.example/sync",
+    "urlAPI": "https://api.domainconnect.virtucondomains.example",
+    "vnd.example.contact": {
+        "supportUrl": "https://support.virtucondomains.example/",
+        "email": "support@virtucondomains.example"
+    },
+    "vnd.example.euSyncUX": "https://eu.virtucondomains.example",
+    "crit": ["vnd.example.euSyncUX"]
+}
+----
+====
+
 [[applying-domain-connect]]
 == Applying Domain Connect
 
@@ -1531,7 +1555,8 @@ GET
 
 {+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
 /{serviceId}/apply{?domain,host,groupId,providerName,
-serviceName,instanceId,redirect_uri,properties*}{&sig,key}
+serviceName,instanceId,redirect_uri,state,crit,properties*,
+extensions*}{&sig,key}
 ----
 
 This is the URL, where the user agent is directed to apply a template to a dns zone the user controls. It is redirected to or linked from the Service Provider to start the synchronous Domain Connect Protocol.
@@ -1539,7 +1564,7 @@ This is the URL, where the user agent is directed to apply a template to a dns z
 [[apply-template-params]]
 ==== Parameters/properties
 
-For `"properties"` name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
+For `"properties"` and `"extensions"` name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <<RFC3986>>) before processing.
 
 [cols=",,",options="header",title="URI template parameters of the apply call in the sync flow"]
 |=======================================================================
@@ -1602,6 +1627,12 @@ Each parameter value MUST conform to the `dc-prop-value` syntax (see <<terminolo
 using the DNS presentation format <<RFC9499>>. +
 
 The parameter value corresponds to the value that will be used when applying the template.
+
+|*Extension Parameters*
+|extensions
+|(OPTIONAL) Name/value pairs of extension parameters as specified in <<apply-parameter-extensibility>>. +
+
+Each parameter name MUST conform to the `dc-dot-param` or `dc-vnd-param` syntax (see <<terminology>>).
 
 |*Provider Name*
 |providerName
@@ -1719,6 +1750,18 @@ The set of apply parameters MAY be extended. To avoid name collisions between th
 The name of every apply parameter MUST conform to the `dc-apply-param` syntax (see <<terminology>>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the `dc-dot-param` (for `"dc."`) or `dc-vnd-param` (for `"vnd."`) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <<signing-procedure>>).
 
 The `"crit"` parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <<sync-apply-error-response>> using the error code `"invalid_request"`. A listed name that does not correspond to a parameter present in the request is by definition understood.
+
+.Example: apply request with a critical vendor-specific parameter
+====
+[source]
+----
+GET
+
+https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
+exampleservice.example/services/template1/apply?domain=example.com&
+IP=192.168.42.42&vnd.example.dryRun=1&crit=vnd.example.dryRun
+----
+====
 
 
 ==== Template Apply Request
@@ -2697,7 +2740,8 @@ The authors wish to thank the following persons for their feedback and suggestio
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-03 to -04
 - Partitioned the name spaces of apply parameters, template properties, template record fields, and settings properties into standards-track and vendor-private trees, and established IANA registries to coordinate them.
-- Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a `"crit"` must-understand marker.
+- Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a `"crit"` must-understand marker, and illustrated it with examples.
+- Aligned the Apply Template URL template with the defined apply parameters and extension parameters.
 - Added <<versioning,format=title>>, describing how the protocol is versioned and how future revisions preserve backwards compatibility.
 - Aligned the registration policies of all Domain Connect registries with the review process of <<iana-registration-procedure,format=title>>.
 - Added <<apply-parameter-extensibility,format=title>> to <<apply-template-params,format=title>>, reserving the `"dc."` and `"vnd."` prefixes and the unprefixed grandfathered parameter names.
@@ -2991,6 +3035,48 @@ This example shows how to include a set of Generic Record Types on an example of
 
 This would have no variable substitution and the application of this
 template to a domain would add 2 CAA records.
+
+[[example-vendor-extensions]]
+=== Example: Vendor-Specific Extensions and Critical Markers
+
+This example shows a template using vendor-specific extensions at both the template and the record level (see <<template-property-extensibility>> and <<template-record-extensibility>>):
+
+.Template with vendor-specific extensions example
+====
+[source,json]
+----
+{
+    "providerId": "example.com",
+    "providerName": "Example Web Hosting",
+    "serviceId": "cdn",
+    "serviceName": "Example CDN",
+    "version": 1,
+    "vnd.example.contact": {
+        "supportUrl": "https://support.example.com/cdn",
+        "email": "support@example.com"
+    },
+    "vnd.example.lockRecords": true,
+    "crit": ["vnd.example.lockRecords"],
+    "records": [
+        {
+            "type": "A",
+            "host": "www",
+            "pointsTo": "%ip%",
+            "ttl": 600,
+            "vnd.example.proxied": true,
+            "crit": ["vnd.example.proxied"]
+        },
+        {
+            "type": "CNAME",
+            "host": "static",
+            "pointsTo": "cdn.example.com",
+            "ttl": 600,
+            "vnd.example.comment": "Static content"
+        }
+    ]
+}
+----
+====
 
 === Example: Template application to DNS Zone and Conflict Resolution
 

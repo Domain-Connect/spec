@@ -529,7 +529,9 @@ dc-srv-service  =  dc-underscore-label
 
 <t anchor="_c9f8149b-5810-3657-72b6-04fdd67cbefc">The <tt>"crit"</tt> property (see <xref target="template-definition"></xref>) overrides this default for the properties it lists: if an implementation does not understand and cannot process one or more of those properties, it MUST reject the template and MUST NOT apply it. A listed name that does not correspond to a property present in the template definition, is by definition understood.</t>
 
-<t anchor="_3a862afe-cfab-60a1-87f5-8f5ab1d53054">The <tt>"templateSpecVersion"</tt> property (see <xref target="template-definition"></xref>) identifies the version of the template specification the template conforms to. An implementation that does not support the indicated template specification version MUST reject the template and MUST NOT apply it. A template that omits <tt>"templateSpecVersion"</tt> is processed as if it declared version <tt>"1"</tt>.</t>
+<t anchor="_dd55d3ce-dd17-a50e-409e-ab9e0aaffb94">An example of vendor-specific template properties and a template-level <tt>"crit"</tt> property is given in <xref target="example-vendor-extensions"></xref>.</t>
+
+<t anchor="_39c94e5d-9dd1-f4d0-5821-36a098b3291f">The <tt>"templateSpecVersion"</tt> property (see <xref target="template-definition"></xref>) identifies the version of the template specification the template conforms to. An implementation that does not support the indicated template specification version MUST reject the template and MUST NOT apply it. A template that omits <tt>"templateSpecVersion"</tt> is processed as if it declared version <tt>"1"</tt>.</t>
 </section>
 </section>
 
@@ -790,6 +792,8 @@ dc-srv-service  =  dc-underscore-label
 <t anchor="_661980e6-4eed-14da-349e-6d0d2837c481">An implementation MUST ignore any record field it does not recognise, and MUST ignore any recognised field that is not defined for the record's type. The mere presence of such a field MUST NOT cause the record or the template to be rejected.</t>
 
 <t anchor="_bff6825e-331c-d9e9-4c7a-60c3b2f7b4e5">The <tt>"crit"</tt> record field (see <xref target="record-crit"></xref>) overrides this default for the fields it lists: if an implementation does not understand and cannot process one or more of those fields, it MUST reject the template and MUST NOT apply it. Rejection applies to the template as a whole, not only to the record carrying the <tt>"crit"</tt> field, because a partially applied template would leave the service configured incorrectly. A listed name that does not correspond to a field present in the record is by definition understood.</t>
+
+<t anchor="_793ec9ec-22c7-81e9-8e11-a62f73abb7cf">An example of vendor-specific record fields and a record-level <tt>"crit"</tt> field is given in <xref target="example-vendor-extensions"></xref>.</t>
 </section>
 </section>
 
@@ -902,7 +906,7 @@ p=3,a=RS256,d=weDjXrJwIDAQAB]]></sourcecode>
 </section>
 </section>
 
-<section anchor="_d1b305e5-2247-4f0f-bcd7-9e8093970b21"><name>Settings End-Point</name>
+<section anchor="_466e7275-5d5e-9455-d34e-b4dc49e3044d"><name>Settings End-Point</name>
 
 <t anchor="_35135da2-d176-f556-716a-c242de7cfe91">The URL prefix returned in <tt>"_domainconnect"</tt> Resource Record MUST be subsequently used by the Service Provider to determine the additional settings for using Domain Connect on this domain at the DNS Provider. This is done by calling a REST API.</t>
 
@@ -956,6 +960,20 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 <t anchor="_52338b29-3960-0850-c99f-5768e94f68ab">Every settings property name MUST conform to the <tt>dc-settings-property</tt> syntax (see <xref target="terminology"></xref>).</t>
 
 <t anchor="_4cadbaa0-d794-5f7c-4705-962c4390ee9f">The <tt>"crit"</tt> property overrides the ignore-unknown default for the properties it lists: if the Service Provider does not understand and cannot process one or more of those properties, it MUST NOT proceed with the flow against this DNS Provider. A listed name that does not correspond to a property present in the settings response is by definition understood.</t>
+
+<t anchor="_b3801482-159f-e24f-9da3-53864ca681cf" keepWithNext="true">EXAMPLE: Example Settings End-Point response with vendor-specific properties</t><sourcecode anchor="_811c07fe-4fcb-15b7-795e-1d998e2aa142" type="json"><![CDATA[{
+    "providerId": "virtucondomains.example",
+    "providerName": "Virtucon Domains",
+    "providerDisplayName": "Virtucon Domains",
+    "urlSyncUX": "https://domainconnect.virtucondomains.example/sync",
+    "urlAPI": "https://api.domainconnect.virtucondomains.example",
+    "vnd.example.contact": {
+        "supportUrl": "https://support.virtucondomains.example/",
+        "email": "support@virtucondomains.example"
+    },
+    "vnd.example.euSyncUX": "https://eu.virtucondomains.example",
+    "crit": ["vnd.example.euSyncUX"]
+}]]></sourcecode>
 </section>
 </section>
 </section>
@@ -1015,11 +1033,12 @@ https://{+_domainconnect}/v2/{domain}/settings]]></sourcecode>
 
 <t anchor="_0db5ab6d-656f-b86d-7a5a-a4b902c62bbd">Normative URI template of the synchronous template apply end-point per <xref target="RFC6570" section="" relative=""></xref>:</t>
 
-<sourcecode anchor="_95de3e17-275d-6f90-2c9a-840d8818987b"><![CDATA[GET
+<sourcecode anchor="_7959c21e-c8bd-a92a-3e1f-f60ea5d2f425"><![CDATA[GET
 
 {+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
 /{serviceId}/apply{?domain,host,groupId,providerName,
-serviceName,instanceId,redirect_uri,properties*}{&sig,key}]]></sourcecode>
+serviceName,instanceId,redirect_uri,state,crit,properties*,
+extensions*}{&sig,key}]]></sourcecode>
 
 
 <t anchor="_d78d49e7-d0e1-993e-3a1d-3c44ddf05dcd">This is the URL, where the user agent is directed to apply a template to a dns zone the user controls. It is redirected to or linked from the Service Provider to start the synchronous Domain Connect Protocol.</t>
@@ -1027,9 +1046,9 @@ serviceName,instanceId,redirect_uri,properties*}{&sig,key}]]></sourcecode>
 
 <section anchor="apply-template-params"><name>Parameters/properties</name>
 
-<t anchor="_2fe5a392-a70c-57f7-475f-1e0eb32fa5e9">For <tt>"properties"</tt> name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <xref target="RFC3986" section="" relative=""></xref>) before processing.</t>
+<t anchor="_a6be7f8d-8135-eae2-cf39-4773c4cfec1b">For <tt>"properties"</tt> and <tt>"extensions"</tt> name/value pairs, parameter names and values MUST be URL-decoded (percent-decoded per <xref target="RFC3986" section="" relative=""></xref>) before processing.</t>
 
-<table anchor="_6823bfbf-7c88-696c-cab6-2a7c6ebd4dbf"><name>URI template parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlSyncUX</td><td align="left">(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the <tt>"urlSyncUX"</tt> field of the settings endpoint response (see <xref target="dns-provider-discovery"></xref>).<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt></td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) Identifier of the Service Provider of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) Identifier of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).  The value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain within the zone identified by <tt>"domain"</tt>.<br />  When present, the value MUST be a single name conforming to  <tt>domain-name</tt> (see <xref target="terminology"></xref>) or an empty string.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the user agent to upon successful authorization or upon error.<br />  The value MUST be an absolute URI conforming to  <xref target="RFC3986" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.<br />  The value MUST conform to the  <tt>"state"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(REQUIRED) Variable values to be substituted into the template. Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the  <tt>variable-name</tt> syntax (see <xref target="terminology"></xref>).<br />  Each parameter value MUST conform to the  <tt>dc-prop-value</tt> syntax (see <xref target="terminology"></xref>), using the DNS presentation format  <xref target="RFC9499" section="" relative=""></xref>.<br />  The parameter value corresponds to the value that will be used when applying the template.</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"providerName"</tt>, provided by the caller. If <tt>"sharedProviderName"</tt> is not set in the template, this parameter MUST NOT be set. Note: this used to be controlled by the <tt>"shared"</tt> attribute in the template, which has been deprecated.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"serviceName"</tt>, provided by the caller. If <tt>"sharedServiceName"</tt> is not set in the template, this parameter MUST NOT be set.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Group ID</strong></td><td align="left">groupId</td><td align="left">(OPTIONAL) Specifies the subset of groups from the template to apply.<br />  The value MUST conform to the  <tt>dc-id-list</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Signature</strong></td><td align="left">sig</td><td align="left">(OPTIONAL) A digital signature of the canonical query string.  The value MUST conform to the  <tt>dc-sig</tt> syntax (see <xref target="terminology"></xref>):<br />  a standard base64-encoded  <xref target="RFC4648" section="" relative=""></xref> signature, URL-encoded when carried in the query string.<br />  See the  <xref target="signing-procedure"></xref> below for the signing procedure.</td></tr><tr><td align="left"><strong>Key</strong></td><td align="left">key</td><td align="left">(OPTIONAL) The DNS host label within the <tt>syncPubKeyDomain</tt> at which the public key TXT record is published.<br />  The value MUST conform to the  <tt>dc-key-label</tt> syntax (see <xref target="terminology"></xref>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label.<br />  See the  <xref target="signing-procedure"></xref> below.</td></tr><tr><td align="left"><strong>Critical Parameters</strong></td><td align="left">crit</td><td align="left">(OPTIONAL) A comma-separated list of the names of apply parameters that the DNS Provider is required to understand and process for the request to be handled correctly.<br />  The value MUST conform to the  <tt>dc-crit-list</tt> syntax (see <xref target="terminology"></xref>).<br />  See  <xref target="apply-parameter-extensibility"></xref> below.</td></tr></tbody></table>
+<table anchor="_14b083f5-9964-dd9a-05cc-ffdb51ca8931"><name>URI template parameters of the apply call in the sync flow</name><thead><tr><th align="left">Property</th><th align="left">Request Parameter</th><th align="left">Description</th></tr></thead><tbody><tr><td align="left"><strong>URL Sync UX</strong></td><td align="left">urlSyncUX</td><td align="left">(REQUIRED) The base URL of the DNS Provider synchronous UX endpoint, taken from the <tt>"urlSyncUX"</tt> field of the settings endpoint response (see <xref target="dns-provider-discovery"></xref>).<br />  This MUST be a valid URI  <xref target="RFC3986" section="" relative=""></xref> with scheme <tt>"https"</tt></td></tr><tr><td align="left"><strong>Service Provider Id</strong></td><td align="left">providerId</td><td align="left">(REQUIRED) Identifier of the Service Provider of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Id</strong></td><td align="left">serviceId</td><td align="left">(REQUIRED) Identifier of the template to be applied.  The value MUST conform to the  <tt>dc-id</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Domain</strong></td><td align="left">domain</td><td align="left">(REQUIRED) The domain name being configured. This is the Zone Apex (the registered domain or delegated zone).  The value MUST conform to the  <tt>domain-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Host</strong></td><td align="left">host</td><td align="left">(OPTIONAL) The host name of the Sub Domain within the zone identified by <tt>"domain"</tt>.<br />  When present, the value MUST be a single name conforming to  <tt>domain-name</tt> (see <xref target="terminology"></xref>) or an empty string.</td></tr><tr><td align="left"><strong>Redirect URI</strong></td><td align="left">redirect_uri</td><td align="left">(OPTIONAL) The location to direct the user agent to upon successful authorization or upon error.<br />  The value MUST be an absolute URI conforming to  <xref target="RFC3986" section="" relative=""></xref>.</td></tr><tr><td align="left"><strong>State</strong></td><td align="left">state</td><td align="left">(OPTIONAL) A random and unique string passed along to prevent CSRF, or to pass back state.<br />  The value MUST conform to the  <tt>"state"</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Name/Value Pairs</strong></td><td align="left">properties</td><td align="left">(REQUIRED) Variable values to be substituted into the template. Each parameter name MUST correspond to a variable name defined in the template and MUST conform to the  <tt>variable-name</tt> syntax (see <xref target="terminology"></xref>).<br />  Each parameter value MUST conform to the  <tt>dc-prop-value</tt> syntax (see <xref target="terminology"></xref>), using the DNS presentation format  <xref target="RFC9499" section="" relative=""></xref>.<br />  The parameter value corresponds to the value that will be used when applying the template.</td></tr><tr><td align="left"><strong>Extension Parameters</strong></td><td align="left">extensions</td><td align="left">(OPTIONAL) Name/value pairs of extension parameters as specified in <xref target="apply-parameter-extensibility"></xref>.<br />  Each parameter name MUST conform to the  <tt>dc-dot-param</tt> or <tt>dc-vnd-param</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Provider Name</strong></td><td align="left">providerName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"providerName"</tt>, provided by the caller. If <tt>"sharedProviderName"</tt> is not set in the template, this parameter MUST NOT be set. Note: this used to be controlled by the <tt>"shared"</tt> attribute in the template, which has been deprecated.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Service Name</strong></td><td align="left">serviceName</td><td align="left">(OPTIONAL) Additional display text for the template <tt>"serviceName"</tt>, provided by the caller. If <tt>"sharedServiceName"</tt> is not set in the template, this parameter MUST NOT be set.<br />  The value MUST conform to the  <tt>dc-display-name</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Group ID</strong></td><td align="left">groupId</td><td align="left">(OPTIONAL) Specifies the subset of groups from the template to apply.<br />  The value MUST conform to the  <tt>dc-id-list</tt> syntax (see <xref target="terminology"></xref>).</td></tr><tr><td align="left"><strong>Signature</strong></td><td align="left">sig</td><td align="left">(OPTIONAL) A digital signature of the canonical query string.  The value MUST conform to the  <tt>dc-sig</tt> syntax (see <xref target="terminology"></xref>):<br />  a standard base64-encoded  <xref target="RFC4648" section="" relative=""></xref> signature, URL-encoded when carried in the query string.<br />  See the  <xref target="signing-procedure"></xref> below for the signing procedure.</td></tr><tr><td align="left"><strong>Key</strong></td><td align="left">key</td><td align="left">(OPTIONAL) The DNS host label within the <tt>syncPubKeyDomain</tt> at which the public key TXT record is published.<br />  The value MUST conform to the  <tt>dc-key-label</tt> syntax (see <xref target="terminology"></xref>): a single DNS label, either a plain ACE-form label or an RFC 8552 underscore-prefixed label.<br />  See the  <xref target="signing-procedure"></xref> below.</td></tr><tr><td align="left"><strong>Critical Parameters</strong></td><td align="left">crit</td><td align="left">(OPTIONAL) A comma-separated list of the names of apply parameters that the DNS Provider is required to understand and process for the request to be handled correctly.<br />  The value MUST conform to the  <tt>dc-crit-list</tt> syntax (see <xref target="terminology"></xref>).<br />  See  <xref target="apply-parameter-extensibility"></xref> below.</td></tr></tbody></table>
 
 <t anchor="_4bd0581a-e583-4b62-b37f-c184a1920cf6">Where an apply parameter carries text intended for display to the user, the Service Provider MAY set its value to text localized to match the user agent's language preference (e.g. the HTTP <tt>"Accept-Language"</tt> header).</t>
 
@@ -1084,6 +1103,12 @@ SHgJq9%2FXoMTTw%3D%3D&key=_dcpubkeyv1]]></sourcecode>
 <t anchor="_bf0599a4-aec7-3bea-088c-9238e9906e36">The name of every apply parameter MUST conform to the <tt>dc-apply-param</tt> syntax (see <xref target="terminology"></xref>), which partitions the parameter name space into the three reservation classes above. Extension parameter names using a reserved prefix accordingly conform to the <tt>dc-dot-param</tt> (for <tt>"dc."</tt>) or <tt>dc-vnd-param</tt> (for <tt>"vnd."</tt>) rule. A DNS Provider MUST ignore any apply parameter it does not recognise; an unrecognised extension parameter MUST NOT cause the apply request to fail. Extension parameters, when present, are included in the canonical input string for signing exactly as any other parameter (see <xref target="signing-procedure"></xref>).</t>
 
 <t anchor="_8ba29a14-e498-d200-7bd6-4d032980209f">The <tt>"crit"</tt> parameter overrides this default for the parameters it lists. If the DNS Provider does not understand and cannot process one or more of the listed parameters, it MUST NOT apply the template, and MUST signal an error as described in <xref target="sync-apply-error-response"></xref> using the error code <tt>"invalid_request"</tt>. A listed name that does not correspond to a parameter present in the request is by definition understood.</t>
+
+<t anchor="_27380632-978a-9279-ba2c-91de333a7b58" keepWithNext="true">EXAMPLE: Example: apply request with a critical vendor-specific parameter</t><sourcecode anchor="_91bfa2fa-e5fc-186f-9410-c2b51337892c"><![CDATA[GET
+
+https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
+exampleservice.example/services/template1/apply?domain=example.com&
+IP=192.168.42.42&vnd.example.dryRun=1&crit=vnd.example.dryRun]]></sourcecode>
 </section>
 </section>
 
@@ -1782,12 +1807,13 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <li>Arnt Gulbrandsen</li>
 </ul>
 </section>
-    <section anchor="_7c0d11e9-4a17-043a-6491-f73ba075b235" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
+    <section anchor="_eb355d67-3438-1ead-04bd-c261b4db0770" numbered="false" removeInRFC="true" toc="include"><name>Change History</name>
 
-<section anchor="_eac233a1-26b6-d76b-cdf0-6245d898ed12" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
+<section anchor="_9e7e4aff-4575-0a0e-0c1e-c3d5013f5007" numbered="false" toc="exclude"><name>Change from draft-ietf-dconn-domainconnect-03 to -04</name>
 
-<ul anchor="_b4015423-7c4c-0b47-76fd-ec7bb2b29bcd"><li>Partitioned the name spaces of apply parameters, template properties, template record fields, and settings properties into standards-track and vendor-private trees, and established IANA registries to coordinate them.</li>
-<li>Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a <tt>"crit"</tt> must-understand marker.</li>
+<ul anchor="_8c790265-c493-307f-0704-c102a5ff0af0"><li>Partitioned the name spaces of apply parameters, template properties, template record fields, and settings properties into standards-track and vendor-private trees, and established IANA registries to coordinate them.</li>
+<li>Defined a common extensibility model for all protocol elements, combining an ignore-unknown default with a <tt>"crit"</tt> must-understand marker, and illustrated it with examples.</li>
+<li>Aligned the Apply Template URL template with the defined apply parameters and extension parameters.</li>
 <li>Added <xref target="versioning" format="title"></xref>, describing how the protocol is versioned and how future revisions preserve backwards compatibility.</li>
 <li>Aligned the registration policies of all Domain Connect registries with the review process of <xref target="iana-registration-procedure" format="title"></xref>.</li>
 <li>Added <xref target="apply-parameter-extensibility" format="title"></xref> to <xref target="apply-template-params" format="title"></xref>, reserving the <tt>"dc."</tt> and <tt>"vnd."</tt> prefixes and the unprefixed grandfathered parameter names.</li>
@@ -2043,11 +2069,47 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 <t anchor="_4a7bb606-9a11-7985-ceaf-688bf3e4236c">This would have no variable substitution and the application of this template to a domain would add 2 CAA records.</t>
 </section>
 
-<section anchor="_040a1276-6076-1f5d-ed0a-fdfc8ad22a63"><name>Example: Template application to DNS Zone and Conflict Resolution</name>
+<section anchor="example-vendor-extensions"><name>Example: Vendor-Specific Extensions and Critical Markers</name>
 
-<t anchor="_4559b1e8-3fdb-177e-febc-050f2fc06d35">Consider a DNS Zone before a template application:</t>
+<t anchor="_258850a8-45e5-2cc5-7fb2-80e28ed6f5ce">This example shows a template using vendor-specific extensions at both the template and the record level (see <xref target="template-property-extensibility"></xref> and <xref target="template-record-extensibility"></xref>):</t>
 
-<sourcecode anchor="_073dbaab-e649-b1e3-54fb-a6a6f336f025"><![CDATA[$ORIGIN example.com.
+<t anchor="_cc818230-dabc-499d-26ed-1c1e1521a09c" keepWithNext="true">EXAMPLE: Template with vendor-specific extensions example</t><sourcecode anchor="_6cac0f97-d9f7-42e2-0307-63d0fb740bc5" type="json"><![CDATA[{
+    "providerId": "example.com",
+    "providerName": "Example Web Hosting",
+    "serviceId": "cdn",
+    "serviceName": "Example CDN",
+    "version": 1,
+    "vnd.example.contact": {
+        "supportUrl": "https://support.example.com/cdn",
+        "email": "support@example.com"
+    },
+    "vnd.example.lockRecords": true,
+    "crit": ["vnd.example.lockRecords"],
+    "records": [
+        {
+            "type": "A",
+            "host": "www",
+            "pointsTo": "%ip%",
+            "ttl": 600,
+            "vnd.example.proxied": true,
+            "crit": ["vnd.example.proxied"]
+        },
+        {
+            "type": "CNAME",
+            "host": "static",
+            "pointsTo": "cdn.example.com",
+            "ttl": 600,
+            "vnd.example.comment": "Static content"
+        }
+    ]
+}]]></sourcecode>
+</section>
+
+<section anchor="_81435e7f-22e3-b088-af1a-8020c8849340"><name>Example: Template application to DNS Zone and Conflict Resolution</name>
+
+<t anchor="_4d228712-461e-93ef-a48d-c8168d1630f9">Consider a DNS Zone before a template application:</t>
+
+<sourcecode anchor="_29eb1faa-cf8c-4847-8325-43c4c3dc8a6a"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
 1800 1209600 3600
@@ -2063,9 +2125,9 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
 www 3600 IN CNAME other.host.example.]]></sourcecode>
 
 
-<t anchor="_36edeecd-7d04-d3d8-e995-a6b9aeeaeb54">Now application of the following template:</t>
+<t anchor="_54312d56-4424-97b0-62c9-c1b8bacc9f91">Now application of the following template:</t>
 
-<sourcecode anchor="_c951e767-823d-6a12-8d9e-a8f30cda6c9c" type="json"><![CDATA[[
+<sourcecode anchor="_2aeb2ab8-800a-30e9-c633-8424f5bd95d1" type="json"><![CDATA[[
     {
         "type":"A",
         "host":"@",
@@ -2086,20 +2148,20 @@ www 3600 IN CNAME other.host.example.]]></sourcecode>
 ]]]></sourcecode>
 
 
-<t anchor="_e62c7f88-17e7-2154-dcab-2f70f14fd5d9">The following DNS Zone would be generated after the template is applied.</t>
+<t anchor="_352825b5-8d66-19c9-9a13-659e0f7649c5">The following DNS Zone would be generated after the template is applied.</t>
 
-<t anchor="_4cb48b71-0947-c5b9-5dbc-7a63b54bc181">A following list of conflicts would be detected in this case:</t>
+<t anchor="_a6fdb471-ba22-e3e4-1b8c-f7cb80967477">A following list of conflicts would be detected in this case:</t>
 
-<sourcecode anchor="_1e043ab9-44d9-bc58-4bde-e5b0892a6dee"><![CDATA[@ 3600 IN A 192.0.2.1
+<sourcecode anchor="_7ac832c4-3f9d-46a5-60a1-e4e950da2c90"><![CDATA[@ 3600 IN A 192.0.2.1
 @ 3600 IN A 192.0.2.2
 @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
 @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
 www 3600 IN CNAME other.host.example.]]></sourcecode>
 
 
-<t anchor="_1ab3a476-41b1-c633-c895-57f49d9f731d">After changes applied the zone would be updated to the following state. Note existing A and AAAA records removed due to the conflicts as well as SPF TXT record content merged with the existing entry.</t>
+<t anchor="_1b535e17-6234-8a51-7197-3e32ac0ab79a">After changes applied the zone would be updated to the following state. Note existing A and AAAA records removed due to the conflicts as well as SPF TXT record content merged with the existing entry.</t>
 
-<sourcecode anchor="_ac78bac7-93c2-8f4a-6ef8-dd5866ed68fa"><![CDATA[$ORIGIN example.com.
+<sourcecode anchor="_ebf6e91e-4326-b425-2e6c-72012f5db6ae"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050920 7200
 1800 1209600 3600
@@ -2116,9 +2178,9 @@ www 1800 IN A 203.0.113.2]]></sourcecode>
 
 <section anchor="example-spf-merge"><name>Example: SPF Record Merging</name>
 
-<t anchor="_4d228712-461e-93ef-a48d-c8168d1630f9">Consider a DNS Zone before a template application:</t>
+<t anchor="_d0106194-b0d4-3729-0cdc-be1fa6fa655f">Consider a DNS Zone before a template application:</t>
 
-<sourcecode anchor="_88a6396b-b4a1-7ab3-7647-009eb7167201"><![CDATA[$ORIGIN example.com.
+<sourcecode anchor="_7d9d88a3-10f6-127e-cb81-cec930676ac7"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
 1800 1209600 3600
@@ -2126,9 +2188,9 @@ www 1800 IN A 203.0.113.2]]></sourcecode>
 @ 3600 IN NS ns12.example.net.]]></sourcecode>
 
 
-<t anchor="_f4b921be-1689-7721-a9be-f5e5bc51a503">Now application of the following template of Mail service:</t>
+<t anchor="_6179215a-5173-966e-da2f-f42f01d83040">Now application of the following template of Mail service:</t>
 
-<sourcecode anchor="_4b0a7f2d-4219-921d-c9bb-c703ca436a8e" type="json"><![CDATA[[
+<sourcecode anchor="_af717d8a-65d4-bf1a-fac8-2e01af3182d1" type="json"><![CDATA[[
     {
         "type":"MX",
         "host":"@",
@@ -2151,9 +2213,9 @@ www 1800 IN A 203.0.113.2]]></sourcecode>
 ]]]></sourcecode>
 
 
-<t anchor="_2164ceea-eb15-1387-c549-bd0c0ef87339">Expected result in the DNS Zone</t>
+<t anchor="_ef0d4537-2bc9-c395-85c0-b9014620ade0">Expected result in the DNS Zone</t>
 
-<sourcecode anchor="_1e350aff-af3b-9d56-a1b7-1f6860ce1ed5"><![CDATA[$ORIGIN example.com.
+<sourcecode anchor="_3b0aaba3-a352-ac7f-bb74-3c5290178690"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
 1800 1209600 3600
@@ -2164,9 +2226,9 @@ www 1800 IN MX 10 mx2.example.net.
 @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"]]></sourcecode>
 
 
-<t anchor="_0662cc37-7e3b-9261-8066-5004809fb669">In the next step application of the following template of Newsletter service:</t>
+<t anchor="_e8d92137-b495-d9e4-a569-9891f3019a01">In the next step application of the following template of Newsletter service:</t>
 
-<sourcecode anchor="_00715d3a-7849-a6d8-21ee-c57272977611" type="json"><![CDATA[[
+<sourcecode anchor="_1e91ddbb-dc89-a3ad-26d8-41dc3fbc46f6" type="json"><![CDATA[[
     {
         "type":"SPFM",
         "host":"@",
@@ -2175,9 +2237,9 @@ www 1800 IN MX 10 mx2.example.net.
 ]]]></sourcecode>
 
 
-<t anchor="_b9aebc03-bcc4-bfe8-ade7-1c642f8b805e">Expected result in the DNS Zone. Note merged SPF entry.</t>
+<t anchor="_acd5c066-c20e-d75a-6702-e230d8387261">Expected result in the DNS Zone. Note merged SPF entry.</t>
 
-<sourcecode anchor="_c8863550-465b-d739-8e4a-2b009cc3ebf2"><![CDATA[$ORIGIN example.com.
+<sourcecode anchor="_b3ca44e4-5920-eb52-62f8-c0fd9c4803bf"><![CDATA[$ORIGIN example.com.
 
 @ 3600 IN SOA ns11.example.net. support.example.net. 2017050817 7200
 1800 1209600 3600

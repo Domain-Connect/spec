@@ -143,9 +143,10 @@ Table of Contents
      A.2.  Example Records: Single static host record
      A.3.  Example Records: Single variable host record for A
      A.4.  Example Records: Generic Record Type CAA
-     A.5.  Example: Template application to DNS Zone and Conflict
+     A.5.  Example: Vendor-Specific Extensions and Critical Markers
+     A.6.  Example: Template application to DNS Zone and Conflict
            Resolution
-     A.6.  Example: SPF Record Merging
+     A.7.  Example: SPF Record Merging
    Authors' Addresses
 
 1.  Introduction
@@ -1164,6 +1165,9 @@ Table of Contents
    correspond to a property present in the template definition, is by
    definition understood.
 
+   An example of vendor-specific template properties and a template-
+   level "crit" property is given in Appendix A.5.
+
    The "templateSpecVersion" property (see Section 6.1) identifies the
    version of the template specification the template conforms to.  An
    implementation that does not support the indicated template
@@ -1574,6 +1578,9 @@ Table of Contents
    partially applied template would leave the service configured
    incorrectly.  A listed name that does not correspond to a field
    present in the record is by definition understood.
+
+   An example of vendor-specific record fields and a record-level "crit"
+   field is given in Appendix A.5.
 
 6.3.  Template Considerations
 
@@ -2006,6 +2013,23 @@ Table of Contents
    correspond to a property present in the settings response is by
    definition understood.
 
+   EXAMPLE: Example Settings End-Point response with vendor-specific
+   properties
+
+   {
+       "providerId": "virtucondomains.example",
+       "providerName": "Virtucon Domains",
+       "providerDisplayName": "Virtucon Domains",
+       "urlSyncUX": "https://domainconnect.virtucondomains.example/sync",
+       "urlAPI": "https://api.domainconnect.virtucondomains.example",
+       "vnd.example.contact": {
+           "supportUrl": "https://support.virtucondomains.example/",
+           "email": "support@virtucondomains.example"
+       },
+       "vnd.example.euSyncUX": "https://eu.virtucondomains.example",
+       "crit": ["vnd.example.euSyncUX"]
+   }
+
 8.  Applying Domain Connect
 
 8.1.  Endpoints
@@ -2118,7 +2142,8 @@ Table of Contents
 
    {+urlSyncUX}/v2/domainTemplates/providers/{providerId}/services
    /{serviceId}/apply{?domain,host,groupId,providerName,
-   serviceName,instanceId,redirect_uri,properties*}{&sig,key}
+   serviceName,instanceId,redirect_uri,state,crit,properties*,
+   extensions*}{&sig,key}
 
    This is the URL, where the user agent is directed to apply a template
    to a dns zone the user controls.  It is redirected to or linked from
@@ -2127,8 +2152,9 @@ Table of Contents
 
 8.3.2.  Parameters/properties
 
-   For "properties" name/value pairs, parameter names and values MUST be
-   URL-decoded (percent-decoded per [RFC3986]) before processing.
+   For "properties" and "extensions" name/value pairs, parameter names
+   and values MUST be URL-decoded (percent-decoded per [RFC3986]) before
+   processing.
 
     +=============+==============+===================================+
     | Property    | Request      | Description                       |
@@ -2195,6 +2221,13 @@ Table of Contents
     |             |              | The parameter value corresponds   |
     |             |              | to the value that will be used    |
     |             |              | when applying the template.       |
+    +-------------+--------------+-----------------------------------+
+    | *Extension  | extensions   | (OPTIONAL) Name/value pairs of    |
+    | Parameters* |              | extension parameters as specified |
+    |             |              | in Section 8.3.2.2.               |
+    |             |              | Each parameter name MUST conform  |
+    |             |              | to the dc-dot-param or dc-vnd-    |
+    |             |              | param syntax (see Section 3).     |
     +-------------+--------------+-----------------------------------+
     | *Provider   | providerName | (OPTIONAL) Additional display     |
     | Name*       |              | text for the template             |
@@ -2374,6 +2407,15 @@ Table of Contents
    and MUST signal an error as described in Section 8.3.6 using the
    error code "invalid_request".  A listed name that does not correspond
    to a parameter present in the request is by definition understood.
+
+   EXAMPLE: Example: apply request with a critical vendor-specific
+   parameter
+
+   GET
+
+   https://web-connect.dnsprovider.example/v2/domainTemplates/providers/
+   exampleservice.example/services/template1/apply?domain=example.com&
+   IP=192.168.42.42&vnd.example.dryRun=1&crit=vnd.example.dryRun
 
 8.3.3.  Template Apply Request
 
@@ -2766,7 +2808,7 @@ Table of Contents
    exact match, as it might be strongly influenced by the DNS Provider
    merging strategy and user actions.
 
-   See Appendix A.6.
+   See Appendix A.7.
 
 10.  Template Application
 
@@ -3860,7 +3902,10 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
 
    *  Defined a common extensibility model for all protocol elements,
       combining an ignore-unknown default with a "crit" must-understand
-      marker.
+      marker, and illustrated it with examples.
+
+   *  Aligned the Apply Template URL template with the defined apply
+      parameters and extension parameters.
 
    *  Added Protocol Versioning and Extensibility, describing how the
       protocol is versioned and how future revisions preserve backwards
@@ -4322,7 +4367,46 @@ A.4.  Example Records: Generic Record Type CAA
    This would have no variable substitution and the application of this
    template to a domain would add 2 CAA records.
 
-A.5.  Example: Template application to DNS Zone and Conflict Resolution
+A.5.  Example: Vendor-Specific Extensions and Critical Markers
+
+   This example shows a template using vendor-specific extensions at
+   both the template and the record level (see Section 6.1.1 and
+   Section 6.2.1):
+
+   EXAMPLE: Template with vendor-specific extensions example
+
+   {
+       "providerId": "example.com",
+       "providerName": "Example Web Hosting",
+       "serviceId": "cdn",
+       "serviceName": "Example CDN",
+       "version": 1,
+       "vnd.example.contact": {
+           "supportUrl": "https://support.example.com/cdn",
+           "email": "support@example.com"
+       },
+       "vnd.example.lockRecords": true,
+       "crit": ["vnd.example.lockRecords"],
+       "records": [
+           {
+               "type": "A",
+               "host": "www",
+               "pointsTo": "%ip%",
+               "ttl": 600,
+               "vnd.example.proxied": true,
+               "crit": ["vnd.example.proxied"]
+           },
+           {
+               "type": "CNAME",
+               "host": "static",
+               "pointsTo": "cdn.example.com",
+               "ttl": 600,
+               "vnd.example.comment": "Static content"
+           }
+       ]
+   }
+
+A.6.  Example: Template application to DNS Zone and Conflict Resolution
 
    Consider a DNS Zone before a template application:
 
@@ -4391,7 +4475,7 @@ A.5.  Example: Template application to DNS Zone and Conflict Resolution
    ample ~all"
    www 1800 IN A 203.0.113.2
 
-A.6.  Example: SPF Record Merging
+A.7.  Example: SPF Record Merging
 
    Consider a DNS Zone before a template application:
 

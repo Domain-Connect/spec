@@ -133,13 +133,13 @@ Internet-Draft               Domain Connect                    July 2026
      10.6.  User Authorization of Changes  . . . . . . . . . . . . .  67
      10.7.  Template Application . . . . . . . . . . . . . . . . . .  68
      10.8.  Examples . . . . . . . . . . . . . . . . . . . . . . . .  68
-   11. Security Considerations . . . . . . . . . . . . . . . . . . .  69
+   11. Security Considerations . . . . . . . . . . . . . . . . . . .  68
      11.1.  Template Variable Phishing . . . . . . . . . . . . . . .  69
      11.2.  Untrusted DNS Provider Discovery Records . . . . . . . .  69
      11.3.  Underscored Host Names . . . . . . . . . . . . . . . . .  70
      11.4.  Must-Understand Markers and Pre-Existing Deployments . .  70
      11.5.  Template Onboarding  . . . . . . . . . . . . . . . . . .  71
-   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  72
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  71
      12.1.  Registration Procedure for Domain Connect Registries . .  72
      12.2.  Domain Connect Fully Specified Record Types Registry . .  73
      12.3.  Domain Connect Settings Properties Registry  . . . . . .  75
@@ -153,7 +153,7 @@ Internet-Draft               Domain Connect                    July 2026
    Implementation Status . . . . . . . . . . . . . . . . . . . . . .  83
    Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  84
    Change History  . . . . . . . . . . . . . . . . . . . . . . . . .  85
-   Normative References  . . . . . . . . . . . . . . . . . . . . . .  89
+   Normative References  . . . . . . . . . . . . . . . . . . . . . .  90
    Informative References  . . . . . . . . . . . . . . . . . . . . .  92
    Appendix A.  Examples . . . . . . . . . . . . . . . . . . . . . .  92
      A.1.  Example Template  . . . . . . . . . . . . . . . . . . . .  92
@@ -532,17 +532,19 @@ Internet-Draft               Domain Connect                    July 2026
    ; -- host / name / pointsTo / target fields --
 
 
-    dc-host-tmpl    =  template-apex-var
+   dc-host-tmpl    = ""
+                    ; empty string
+                    / template-apex-var
                     ; "@" alone
                     /  1*( named-variable / dc-name-char )
                     ; mix of literal chars and %-variables
 
-    dc-pointsto-tmpl =  template-apex-var
+   dc-pointsto-tmpl =  template-apex-var
                     ; "@" alone
                     /  1*( dc-name-char / named-variable )
                     ; mix of literal chars and %-variables
 
-    dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
+   dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
                     ; mix of literal chars and %-variables
 
    ; -- integer fields with optional variable --
@@ -553,8 +555,6 @@ Internet-Draft               Domain Connect                    July 2026
    dc-ttl-value   =  1*DIGIT
                    ; non-negative integer seconds, resolved
 
-   dc-uint16-tmpl  =  ( %x30-39 *4DIGIT ) / named-variable
-
 
 
 Kowalik, et al.          Expires 4 January 2027                [Page 10]
@@ -562,6 +562,7 @@ Kowalik, et al.          Expires 4 January 2027                [Page 10]
 Internet-Draft               Domain Connect                    July 2026
 
 
+   dc-uint16-tmpl  =  ( %x30-39 *4DIGIT ) / named-variable
                    ; 0-65535 literal, or a sole %-variable
 
    dc-uint16-value =  %x30-39 *4DIGIT
@@ -606,7 +607,6 @@ Internet-Draft               Domain Connect                    July 2026
       Provider and DNS Provider.
 
    Fully Specified Record Type:  A DNS resource record type for which
-
 
 
 
@@ -1505,7 +1505,7 @@ Internet-Draft               Domain Connect                    July 2026
       dc-host-tmpl syntax (see Section 3).
 
       After variable substitution, the resolved value MUST conform to
-      the domain-name syntax (see Section 3).
+      the domain-name syntax (see Section 3) or be empty.
 
 
 
@@ -1521,14 +1521,17 @@ Internet-Draft               Domain Connect                    July 2026
 
       The name for the SRV record.
 
-      This value is relative to the applied host and domain.  A value of
-      empty or "@" indicates the root of the applied host and domain.
+      This value is relative to the applied host and domain, unless
+      trailed by a ".".
+
+      A value of empty or "@" indicates the root of the applied host and
+      domain.
 
       When used in a template definition, the value MUST conform to the
       dc-host-tmpl syntax (see Section 3).
 
       After variable substitution, the resolved value MUST conform to
-      the domain-name syntax (see Section 3).
+      the domain-name syntax (see Section 3) or be empty.
 
    "Points To":
       JSON key:  "pointsTo"
@@ -1540,6 +1543,11 @@ Internet-Draft               Domain Connect                    July 2026
       When used in a template definition, the value MUST conform to the
       "dc-pointsto-tmpl" syntax for "CNAME"/"MX" and to the "dc-
       pointsto-nat-tmpl" syntax for A/AAAA/NS (see Section 3).
+
+      For "CNAME", "MX" and "NS" records the resolved value is a domain
+      name and MUST be treated as fully qualified, whether or not it
+      ends with a ".".  It MUST NOT be interpreted relative to the
+      applied host and domain.
 
       After variable substitution, the resolved value MUST conform to
       the presentation format of the corresponding resource record type.
@@ -1553,6 +1561,15 @@ Internet-Draft               Domain Connect                    July 2026
       NS, TXT, MX, and SRV records.  This SHOULD NOT contain variables
       unless absolutely necessary.
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 28]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       When used in a template definition, the value MUST conform to the
       dc-ttl-tmpl syntax (see Section 3).
 
@@ -1562,14 +1579,6 @@ Internet-Draft               Domain Connect                    July 2026
       This value, no matter if variable or constant, is understood as
       "best effort" by DNS Provider and MAY be limited or adjusted by
       local policy at runtime or during template onboarding, like
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 28]
-
-Internet-Draft               Domain Connect                    July 2026
-
-
       applying a certain minimum or maximum value of TTL or an
       enumeration of TTL values supported by the DNS Provider.  The DNS
       Provider SHOULD NOT reject template application because of invalid
@@ -1610,6 +1619,13 @@ Internet-Draft               Domain Connect                    July 2026
       Describes how conflicts on the TXT record are detected.  Possible
       values are None, All, or Prefix.  See below (Section 10.4).
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 29]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
       The value MUST conform to the dc-txt-conflict-mode syntax (see
       Section 3).
 
@@ -1617,14 +1633,6 @@ Internet-Draft               Domain Connect                    July 2026
 
    "TXT Conflict Matching Prefix":
       JSON key:  "txtConflictMatchingPrefix"
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 29]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
       Type:  "String"
 
@@ -1667,20 +1675,19 @@ Internet-Draft               Domain Connect                    July 2026
    "Port":
       JSON key:  "port"
 
-      Type:  "Int" or string representation of "Int"
-
-      The port for the SRV record.
-
-      When used in a template definition, the value MUST conform to the
-      dc-uint16-tmpl syntax (see Section 3).
-
-
 
 
 Kowalik, et al.          Expires 4 January 2027                [Page 30]
 
 Internet-Draft               Domain Connect                    July 2026
 
+
+      Type:  "Int" or string representation of "Int"
+
+      The port for the SRV record.
+
+      When used in a template definition, the value MUST conform to the
+      dc-uint16-tmpl syntax (see Section 3).
 
       After variable substitution, the resolved value MUST conform to
       the dc-uint16-value syntax.
@@ -1722,13 +1729,6 @@ Internet-Draft               Domain Connect                    July 2026
       dc-pointsto-tmpl syntax (see Section 3), or be the single label
       "." to indicate that the service is not available.
 
-      After variable substitution, the resolved value MUST conform to
-      the domain-name syntax (see Section 3), or be ".".
-
-   "SPF Rules":
-      JSON key:  "spfRules"
-
-      Type:  "String"
 
 
 
@@ -1737,6 +1737,18 @@ Kowalik, et al.          Expires 4 January 2027                [Page 31]
 
 Internet-Draft               Domain Connect                    July 2026
 
+
+      The resolved value MUST be treated as fully qualified, whether or
+      not it ends with a ".".  It MUST NOT be interpreted relative to
+      the applied host and domain.
+
+      After variable substitution, the resolved value MUST conform to
+      the domain-name syntax (see Section 3), or be ".".
+
+   "SPF Rules":
+      JSON key:  "spfRules"
+
+      Type:  "String"
 
       These are desired rules for the SPF TXT record.  These rules
       SHOULD be merged with other SPFM records into final SPF TXT
@@ -1777,50 +1789,37 @@ Internet-Draft               Domain Connect                    July 2026
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 Kowalik, et al.          Expires 4 January 2027                [Page 32]
 
 Internet-Draft               Domain Connect                    July 2026
 
 
-   +=========+========================================================+
-   | Type    | Required fields                                        |
-   +=========+========================================================+
-   | "A"     | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "AAAA"  | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "CNAME" | "host", "pointsTo", "ttl" ("host" MUST NOT be "@" or   |
-   |         | empty unless "hostRequired" is "true" in the template) |
-   +---------+--------------------------------------------------------+
-   | "NS"    | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "TXT"   | "host", "data", "ttl", "txtConflictMatchingMode",      |
-   |         | "txtConflictMatchingPrefix"                            |
-   +---------+--------------------------------------------------------+
-   | "MX"    | "host", "pointsTo", "ttl", "priority"                  |
-   +---------+--------------------------------------------------------+
-   | "SRV"   | "name", "target", "ttl", "priority", "protocol",       |
-   |         | "service", "weight", "port"                            |
-   +---------+--------------------------------------------------------+
-   | "SPFM"  | "host", "spfRules"                                     |
-   +---------+--------------------------------------------------------+
-   | Generic | "host", "data", "ttl"                                  |
-   | types   |                                                        |
-   +---------+--------------------------------------------------------+
+      +=========+===================================================+
+      | Type    | Required fields                                   |
+      +=========+===================================================+
+      | "A"     | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "AAAA"  | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "CNAME" | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "NS"    | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "TXT"   | "host", "data", "ttl", "txtConflictMatchingMode", |
+      |         | "txtConflictMatchingPrefix"                       |
+      +---------+---------------------------------------------------+
+      | "MX"    | "host", "pointsTo", "ttl", "priority"             |
+      +---------+---------------------------------------------------+
+      | "SRV"   | "name", "target", "ttl", "priority", "protocol",  |
+      |         | "service", "weight", "port"                       |
+      +---------+---------------------------------------------------+
+      | "SPFM"  | "host", "spfRules"                                |
+      +---------+---------------------------------------------------+
+      | Generic | "host", "data", "ttl"                             |
+      | types   |                                                   |
+      +---------+---------------------------------------------------+
 
-                     Table 2: Fields per record type
+                      Table 2: Fields per record type
 
 6.2.1.  Template Record Extensibility
 
@@ -1842,6 +1841,7 @@ Internet-Draft               Domain Connect                    July 2026
    protocol and are applicable to a record irrespective of its "type".
    Because such a field must carry the same meaning for every record
    type, unprefixed protocol-level field names are coordinated through
+   the IANA "Domain Connect Protocol-Level Record Fields" registry (see
 
 
 
@@ -1850,7 +1850,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 33]
 Internet-Draft               Domain Connect                    July 2026
 
 
-   the IANA "Domain Connect Protocol-Level Record Fields" registry (see
    Section 12.5).  All remaining fields are type-specific: they carry
    the RDATA of a particular record type or are otherwise meaningful
    only for certain types.
@@ -1898,6 +1897,7 @@ Internet-Draft               Domain Connect                    July 2026
    state tracking.  Template "host" field values containing variables
    that resolve to sub-domain labels cause the template scope to be
    indeterminate at consent time, which prevents accurate conflict
+   detection.
 
 
 
@@ -1905,8 +1905,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 34]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   detection.
 
    To add a record at the Zone Apex even when a Sub Domain is specified
    in the apply request, the template "host" field value "%domain%." MAY
@@ -1945,6 +1943,8 @@ Internet-Draft               Domain Connect                    July 2026
    value.
 
    Each TXT record MUST conform to the following grammar:
+
+
 
 
 
@@ -2560,8 +2560,8 @@ Internet-Draft               Domain Connect                    July 2026
    The Service Provider MUST ignore any JSON property in this response
    that it does not recognise; the presence of such a property MUST NOT
    cause the response to be treated as an error.  Where the DNS Provider
-   returns the full template object, the rules of Section 6.1.1 and
-   Section 6.2.1 apply to it.
+   returns the full template object, the rules of Template Property
+   Extensibility and Template Record Extensibility apply to it.
 
 
 
@@ -3152,11 +3152,11 @@ Internet-Draft               Domain Connect                    July 2026
 
    There are three Built-In variables:
 
-   *  "%host%"`: This is the host passed from the query string
+   *  "%host%": This is the host passed from the query string
 
-   *  "%domain%"`: This is the domain passed from the query string
+   *  "%domain%": This is the domain passed from the query string
 
-   *  "%fqdn%": This is the fully qualified domain name or template
+   *  "%fqdn%": This is the fully qualified domain name of template
       application e.g. [host.]domain
 
    For example, with the query string "domain=example.com&host=",
@@ -3165,14 +3165,14 @@ Internet-Draft               Domain Connect                    July 2026
    "sub1.example.com".
 
    The "@" variable has special meaning, and can be used in the
-   "host"/"name" field or in the "pointsTo" field in isolation.  For the
-   "host"/"name" and "pointsTo" fields it is a shortcut for the value
-   "%fqdn%.".  The trailing dot here is equal to the DNS master file
-   notation [RFC1035], which indicates the value is absolute.  For some
-   record types, like "A" or "AAAA" usage of "@" in pointsTo would not
-   render a valid IP address, therefore MUST NOT be used.  Likewise in
-   "NS" record types it would render a circular delegation therefore
-   MUST NOT be used.
+   "host"/"name" field or in the "pointsTo" or "target" field in
+   isolation.  For the "host"/"name", "pointsTo" and "target" fields it
+   is a shortcut for the value "%fqdn%.".  The trailing dot here is
+   equal to the DNS master file notation [RFC1035], which indicates the
+   value is absolute.  For some record types, like "A" or "AAAA" usage
+   of "@" in pointsTo would not render a valid IP address, therefore
+   MUST NOT be used.  Likewise in "NS" record types it would render a
+   circular delegation therefore MUST NOT be used.
 
    Aside from the built-in variables above and "@", a template variable-
    name MUST NOT collide with any reserved apply parameter name - the
@@ -3434,10 +3434,13 @@ Internet-Draft               Domain Connect                    July 2026
    where the template has been applied.  Therefore, the same template
    MUST be able to be applied more than once to the same DNS zone
    identified by "domain", as long as the value of "host" parameter
-   differs.  Application of the same template with same "host" MAY be
-   handled as an update by DNS provider, or just trigger a regular
-   conflict detection and resolution routine by DNS Provider - removal
-   of the previous instance and apply of the new instance.
+   differs.  Applying the same template again with the same "host"
+   replaces the previous instance: its records are removed and the
+   records of the new instance are written, unless the rules of
+   Multi-Instance or Group Filtering apply.  A DNS Provider MAY
+   implement this as an in-place update, provided the resulting zone
+   content and template state are the same as removing and then
+   applying.
 
    Manual changes made by the user at the DNS Provider MAY also trigger
    conflict detection against applied templates in order to maintain
@@ -3461,10 +3464,7 @@ Internet-Draft               Domain Connect                    July 2026
        processing based on "groupId" property of the template and
        "groupId" apply parameter (see Section 10.3).
 
-   4.  *Resolve variables* - All variable expressions in active template
-       records are substituted with the values provided by the caller,
-       producing the Rendered Record Set: a concrete set of DNS resource
-       records (RRs) to be applied (see Section 9.2).
+
 
 
 
@@ -3473,6 +3473,11 @@ Kowalik, et al.          Expires 4 January 2027                [Page 62]
 
 Internet-Draft               Domain Connect                    July 2026
 
+
+   4.  *Resolve variables* - All variable expressions in active template
+       records are substituted with the values provided by the caller,
+       producing the Rendered Record Set: a concrete set of DNS resource
+       records (RRs) to be applied (see Section 9.2).
 
        a.  abort if rendered RRs are not possible to be applied to the
            target zone
@@ -3493,31 +3498,26 @@ Internet-Draft               Domain Connect                    July 2026
        c.  (only DNS Providers tracking template state): Mark instances
            of the same template applied on the same "host" for removal
            unless "multiInstance" is set for the template (see
-           Section 10.4.1.1).
+           Section 10.4.1.1) or "groupId" parameter is supplied in the
+           template application (see Section 10.3).
 
    6.  *Pre-calculate conflict resolution* - Determine the full set of
        records and, where applicable, template instances that would be
        removed upon application (see Section 10.5).
 
-   7.  *Obtain user authorization* - The DNS Provider MUST present the
+   7.  *Obtain user authorization* - The DNS Provider presents the
        intended changes and the pre-calculated conflict consequences to
-       the user and obtain explicit authorization before proceeding (see
-       Section 10.6).
+       the user and obtains explicit authorization before proceeding
+       (see Section 10.6).
 
        a.  abort if authorization not granted
 
-   8.  *Apply changes* - After authorization is granted, or at later
-       point in Asynchronous flow:
+   8.  *Apply changes* - After authorization is granted:
 
        a.  Remove all records pre-calculated for removal from the zone.
 
        b.  Write the Rendered Record Set to the zone in totality.
 
-           i.  Note: if the Rendered Record Set yields differing "ttl"
-               values across new and existing RRs that form the same
-               RRset, the DNS Provider MUST reconcile them to a single
-               TTL (e.g., by taking the lowest value), per [RFC2181]
-               Section 5.2
 
 
 
@@ -3529,6 +3529,12 @@ Kowalik, et al.          Expires 4 January 2027                [Page 63]
 
 Internet-Draft               Domain Connect                    July 2026
 
+
+           i.  Note: if the Rendered Record Set yields differing "ttl"
+               values across new and existing RRs that form the same
+               RRset, the DNS Provider MUST reconcile them to a single
+               TTL (e.g., by taking the lowest value), per [RFC2181]
+               Section 5.2
 
        c.  (only DNS Providers tracking template state): Record the new
            template instance for the "domain" and "host" pair and remove
@@ -3570,12 +3576,6 @@ Internet-Draft               Domain Connect                    July 2026
    additive: only the records belonging to the specified groups are
    written, while records of other groups that were written by a prior
    application of the same template instance MUST NOT be disturbed.
-
-
-
-
-
-
 
 
 
@@ -3652,15 +3652,15 @@ Internet-Draft               Domain Connect                    July 2026
 
 10.4.1.1.  Multi-Instance
 
-   This processing only REQUIRED for DNS Providers that maintain applied
-   template state.
+   This processing is only REQUIRED for DNS Providers that maintain
+   applied template state.
 
    By default a template is expected to be applied only once to a target
-   "domain" and "host", therefore any consecutive attempt to apply the
-   same template would be treated as an update.  For some templates
-   however it is desirable to be able to create multiple instances (for
-   example add second TXT record on the same host as opposed to
-   replacing the current value).
+   "domain" and "host", so applying the same template again replaces the
+   previous instance (see Section 10.2).  For some templates however it
+   is desirable to be able to create multiple instances (for example add
+   second TXT record on the same host as opposed to replacing the
+   current value).
 
    A template flag multiInstance (Section 6.1) can be set in order to
    allow for that.  This tells the DNS Provider that the template is
@@ -3672,8 +3672,8 @@ Internet-Draft               Domain Connect                    July 2026
 
 10.4.1.2.  Essential Records
 
-   This processing only REQUIRED for DNS Providers that maintain applied
-   template state.
+   This processing is only REQUIRED for DNS Providers that maintain
+   applied template state.
 
    A template record is considered essential when it MUST be present and
    remain consistent with the applied template for the entire lifetime
@@ -3755,10 +3755,12 @@ Internet-Draft               Domain Connect                    July 2026
 
 
    If conflicts are detected - at either the template or record level -
-   the DNS Provider SHOULD present these to the user before
-   authorization is granted.  For template instances this means
-   identifying services that would be disabled; for records this means
-   identifying records that would be deleted or overwritten.
+   the DNS Provider SHOULD present these to the end user before
+   authorization is granted - otherwise the end user may fail to
+   recognise the whole scope and consequence of the change.  For
+   template instances this means identifying services that would be
+   disabled.  For records this means identifying records that would be
+   deleted or overwritten.
 
    The DNS Provider MUST allow the user to override a detected conflict
    and proceed with the template application, or to abort the process.
@@ -3785,10 +3787,6 @@ Internet-Draft               Domain Connect                    July 2026
    In the Synchronous Flow, after authorization is granted, the DNS
    Provider applies the template to the DNS zone.
 
-   In the Asynchronous Flow this happens in later point in time.  In
-   this case conflict resolution MUST be calculated again for the actual
-   state of the zone and parameters provided with the apply request.
-
    The DNS Provider MUST remove all conflicting templates and records
    from the target zone.
 
@@ -3798,6 +3796,8 @@ Internet-Draft               Domain Connect                    July 2026
 10.8.  Examples
 
    Examples of template processing are in Appendix A.
+
+11.  Security Considerations
 
 
 
@@ -3809,8 +3809,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 68]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-11.  Security Considerations
 
 11.1.  Template Variable Phishing
 
@@ -3857,7 +3855,9 @@ Internet-Draft               Domain Connect                    July 2026
       Provider to issue requests against internal services on the
       attacker's behalf.
 
-
+   Service Providers MUST treat the "_domainconnect" TXT record content,
+   and the Settings End-Point response derived from it, as untrusted
+   input.  In particular, Service Providers:
 
 
 
@@ -3865,10 +3865,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 69]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   Service Providers MUST treat the "_domainconnect" TXT record content,
-   and the Settings End-Point response derived from it, as untrusted
-   input.  In particular, Service Providers:
 
    *  SHOULD reject derived authorities that resolve to loopback, link-
       local, private-use, or otherwise internal addresses, unless the
@@ -3907,21 +3903,6 @@ Internet-Draft               Domain Connect                    July 2026
    alone, ignore unrecognised elements without inspecting "crit", and
    therefore proceed as though no such marker were present.
 
-
-
-
-
-
-
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 70]
-
-Internet-Draft               Domain Connect                    July 2026
-
-
    A sender consequently cannot infer from the absence of a rejection
    that the receiver honoured a "crit" marker.  Where an extension
    conveys a security property - for example a constraint narrowing what
@@ -3931,6 +3912,15 @@ Internet-Draft               Domain Connect                    July 2026
    property. "crit" MUST NOT be treated as a downgrade-prevention
    mechanism, and the security of an extension MUST NOT rest on the
    receiver's recognition of "crit" alone.
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 70]
+
+Internet-Draft               Domain Connect                    July 2026
+
 
 11.5.  Template Onboarding
 
@@ -3969,6 +3959,16 @@ Internet-Draft               Domain Connect                    July 2026
       liable to be confused with those of another Service Provider
       already onboarded.
 
+   *  MUST re-apply these checks when an onboarded template is updated,
+      since a subsequent "version" of an accepted template may widen its
+      scope or alter its display fields.
+
+12.  IANA Considerations
+
+
+
+
+
 
 
 
@@ -3977,12 +3977,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 71]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   *  MUST re-apply these checks when an onboarded template is updated,
-      since a subsequent "version" of an accepted template may widen its
-      scope or alter its display fields.
-
-12.  IANA Considerations
 
 12.1.  Registration Procedure for Domain Connect Registries
 
@@ -4025,6 +4019,12 @@ Internet-Draft               Domain Connect                    July 2026
    *  the proposed value would change the meaning of an existing entry,
       in a way that is incompatible with its existing use;
 
+   *  the proposed value would occupy a term, which is not corresponding
+      to the described use, or is too generic for the specific use case.
+
+   To allow values to be allocated before the referenced specification
+   is published, the experts may approve a registration once they are
+   satisfied that the specification will be published.
 
 
 
@@ -4033,13 +4033,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 72]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   *  the proposed value would occupy a term, which is not corresponding
-      to the described use, or is too generic for the specific use case.
-
-   To allow values to be allocated before the referenced specification
-   is published, the experts may approve a registration once they are
-   satisfied that the specification will be published.
 
    Change control for the registries in this group - that is, altering a
    registry's format or registration policy, or reassigning the meaning
@@ -4082,6 +4075,13 @@ Internet-Draft               Domain Connect                    July 2026
          specification that extends this document.  See Section 3,
          Paragraph 13.
 
+   *  *Handling*: how the DNS Provider processes a record of this type,
+      as defined in Section 3.  The value MUST be one of "Fully
+      Specified" or "Computed".  Generic Record Types are carried
+      opaquely and are not registered here.  A "Reserved" entry MAY
+      leave this field unassigned.
+
+
 
 
 
@@ -4089,12 +4089,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 73]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   *  *Handling*: how the DNS Provider processes a record of this type,
-      as defined in Section 3.  The value MUST be one of "Fully
-      Specified" or "Computed".  Generic Record Types are carried
-      opaquely and are not registered here.  A "Reserved" entry MAY
-      leave this field unassigned.
 
    *  *DNS RR TYPE*: the name of the corresponding entry in the IANA
       "Resource Record (RR) TYPEs" registry within the "Domain Name
@@ -4137,6 +4131,12 @@ Internet-Draft               Domain Connect                    July 2026
    Reference:  The document that defines the type, preferably including
       a URI from which a copy can be retrieved.
 
+   The following types from this specification constitute the initial
+   contents of the registry:
+
+
+
+
 
 
 
@@ -4145,9 +4145,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 74]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   The following types from this specification constitute the initial
-   contents of the registry:
 
    +=============+========+============+=======+========+=============+
    | *RR Type*   |*Status*| *Handling* |*DNS RR|*Kind*  | *Reference* |
@@ -4194,6 +4191,9 @@ Internet-Draft               Domain Connect                    July 2026
 
    Registration policy:
 
+   *  For property names without any prefix: Specification Required
+      [RFC8126].  Registration additionally requires a standards-track
+      RFC that normatively requires this document as its base.
 
 
 
@@ -4201,10 +4201,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 75]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   *  For property names without any prefix: Specification Required
-      [RFC8126].  Registration additionally requires a standards-track
-      RFC that normatively requires this document as its base.
 
    *  For property names beginning with "vnd.": Specification Required
       [RFC8126].
@@ -4249,6 +4245,10 @@ Internet-Draft               Domain Connect                    July 2026
    Reference:  The document that defines the property, preferably
       including a URI from which a copy can be retrieved.
 
+   The following properties from this specification constitute the
+   initial contents of the registry:
+
+
 
 
 
@@ -4257,9 +4257,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 76]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   The following properties from this specification constitute the
-   initial contents of the registry:
 
    +=======================+==========+===============+===============+
    | *Property Name*       | *Status* | *Kind*        | *Reference*   |
@@ -4307,14 +4304,15 @@ Internet-Draft               Domain Connect                    July 2026
    This registry covers the properties of the template definition (see
    Section 6.1).
 
+   Each entry in the registry includes:
+
+
 
 
 Kowalik, et al.          Expires 4 January 2027                [Page 77]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-   Each entry in the registry includes:
 
    *  *Property name*: the JSON key of the property as it appears in the
       template definition.  The value MUST conform to the dc-template-
@@ -4362,6 +4360,8 @@ Internet-Draft               Domain Connect                    July 2026
    |                       |            |               | document    |
    +-----------------------+------------+---------------+-------------+
    | "version"             | Active     | IETF Standard | This        |
+   |                       |            |               | document    |
+   +-----------------------+------------+---------------+-------------+
 
 
 
@@ -4370,8 +4370,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 78]
 Internet-Draft               Domain Connect                    July 2026
 
 
-   |                       |            |               | document    |
-   +-----------------------+------------+---------------+-------------+
    | "templateSpecVersion" | Active     | IETF Standard | This        |
    |                       |            |               | document    |
    +-----------------------+------------+---------------+-------------+
@@ -4418,6 +4416,8 @@ Internet-Draft               Domain Connect                    July 2026
    |                       |            |               | document    |
    +-----------------------+------------+---------------+-------------+
 
+           Table 11: Initial Domain Connect Template Properties
+
 
 
 
@@ -4425,8 +4425,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 79]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-           Table 11: Initial Domain Connect Template Properties
 
 12.5.  Domain Connect Protocol-Level Record Fields Registry
 
@@ -4473,6 +4471,8 @@ Internet-Draft               Domain Connect                    July 2026
       -  "Active": the field is currently in use and its definition is
          normative.
 
+      -  "Deprecated": the field SHOULD NOT be used in new templates; it
+         MAY appear in existing templates for backwards compatibility.
 
 
 
@@ -4481,9 +4481,6 @@ Kowalik, et al.          Expires 4 January 2027                [Page 80]
 
 Internet-Draft               Domain Connect                    July 2026
 
-
-      -  "Deprecated": the field SHOULD NOT be used in new templates; it
-         MAY appear in existing templates for backwards compatibility.
 
       -  "Reserved": the field appears in earlier versions of the Domain
          Connect specification (see [DC-SPEC]) and is reserved for back-
@@ -4530,6 +4527,9 @@ Internet-Draft               Domain Connect                    July 2026
    |  field is "N/A", the designated experts flag the potential conflict
    |  and consult the designated experts of the "Domain Connect Fully
    |  Specified Record Types" registry before completing the assignment.
+
+
+
 
 
 
@@ -4785,6 +4785,13 @@ Internet-Draft               Domain Connect                    July 2026
       template onboarding, covering acceptance of untrusted or
       impersonating templates.
 
+   *  Clarified rendering of host, name, pointsTo and target values,
+      including fully qualified names and empty hosts.
+
+   *  Aligned the template application steps with group filtering, user
+      authorization, re-application of templates, and the removal of the
+      asynchronous flow.
+
 Change from draft-ietf-dconn-domainconnect-02 to -03
 
    *  Classified template record types as Fully Specified, Computed, or
@@ -4802,6 +4809,15 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
    *  Added Untrusted DNS Provider Discovery Records to Security
       Considerations.
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 86]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Clarified handling of multiple "_domainconnect" TXT records in DNS
       Provider Discovery.
 
@@ -4810,13 +4826,6 @@ Change from draft-ietf-dconn-domainconnect-02 to -03
       see Template Variable Phishing.
 
    *  Clarified one-host-one-key rule in Public Key Publication.
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 86]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    *  Added Media Type Registration for application/
       domainconnect-template+json in IANA Considerations.
@@ -4855,15 +4864,6 @@ Change from draft-ietf-dconn-domainconnect-00 to -01
       replaced informal prose constraints throughout parameter tables
       and field definitions with normative ABNF references.
 
-   *  Restructured Template Application: added Group Filtering,
-      Essential Records, Steps to Apply a Template, and focused Conflict
-      Detection, User Authorization of Changes subsections; moved UX and
-      runtime-processing rules into their appropriate sections; moved
-      Domain Connect Objects and Templates before Applying Domain
-      Connect in the document structure.
-
-   *  Restructured request signing into Signing Procedure, Signature
-      Verification, and Public Key Publication
 
 
 
@@ -4873,6 +4873,16 @@ Kowalik, et al.          Expires 4 January 2027                [Page 87]
 
 Internet-Draft               Domain Connect                    July 2026
 
+
+   *  Restructured Template Application: added Group Filtering,
+      Essential Records, Steps to Apply a Template, and focused Conflict
+      Detection, User Authorization of Changes subsections; moved UX and
+      runtime-processing rules into their appropriate sections; moved
+      Domain Connect Objects and Templates before Applying Domain
+      Connect in the document structure.
+
+   *  Restructured request signing into Signing Procedure, Signature
+      Verification, and Public Key Publication
 
    *  Replaced Sync Apply Interaction with a normative Request/Response/
       Error structure; rewrote Verification of Changes as normative
@@ -4911,6 +4921,15 @@ Change from -00 to -01
 
    *  Added Trust Model
 
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 88]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    *  Added sequence diagrams for synchronous and asynchronous flows
       instead of UX mocks
 
@@ -4921,14 +4940,6 @@ Change from -00 to -01
    *  Variable substitution description updated
 
    *  All URLs are now normatively defined with URI templates
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 88]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
 Change from draft-kowalik-regext-domainconnect-00 to draft-kowalik-
 domainconnect-00
@@ -4967,6 +4978,14 @@ Change from draft-carney-regext-domainconnect-00 to -01
 
    *  Minor edits and clarifications found during implementation.
 
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 89]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
 Normative References
 
    [RFC1035]  Mockapetris, P., "Domain names - implementation and
@@ -4978,13 +4997,6 @@ Normative References
               specifying the location of services (DNS SRV)", IETF,
               DOI 10.17487/RFC2782, RFC 2782, February 2000,
               <https://www.rfc-editor.org/info/rfc2782>.
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 89]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
@@ -5019,6 +5031,17 @@ Internet-Draft               Domain Connect                    July 2026
               IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
               <https://www.rfc-editor.org/info/rfc8552>.
 
+
+
+
+
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 90]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [RFC3986]  Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform
               Resource Identifier (URI): Generic Syntax", IETF, STD 66,
               DOI 10.17487/RFC3986, BCP 66, RFC 3986, January 2005,
@@ -5034,13 +5057,6 @@ Internet-Draft               Domain Connect                    July 2026
               Transport Protocol Port Number Registry", IETF,
               DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
               <https://www.rfc-editor.org/info/rfc6335>.
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 90]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    [RFC6895]  3rd, D. E., "Domain Name System (DNS) IANA
               Considerations", IETF, DOI 10.17487/RFC6895, BCP 42,
@@ -5075,6 +5091,13 @@ Internet-Draft               Domain Connect                    July 2026
               Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, August
               2025, <https://www.rfc-editor.org/info/rfc9839>.
 
+
+
+Kowalik, et al.          Expires 4 January 2027                [Page 91]
+
+Internet-Draft               Domain Connect                    July 2026
+
+
    [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "Guidelines for
               Writing an IANA Considerations Section in RFCs", IETF,
               DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017,
@@ -5088,15 +5111,6 @@ Internet-Draft               Domain Connect                    July 2026
               Specifications and Registration Procedures", IETF,
               DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013,
               <https://www.rfc-editor.org/info/rfc6838>.
-
-
-
-
-
-Kowalik, et al.          Expires 4 January 2027                [Page 91]
-
-Internet-Draft               Domain Connect                    July 2026
-
 
    [RFC9110]  Fielding, R., Nottingham, M., and J. Reschke, "HTTP
               Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97,
@@ -5124,20 +5138,6 @@ Appendix A.  Examples
 A.1.  Example Template
 
    EXAMPLE: Full template example
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5424,7 +5424,7 @@ Internet-Draft               Domain Connect                    July 2026
    @ 3600 IN A 192.0.2.2
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
-
+   www 3600 IN CNAME other.host.example.
 
 
 
@@ -5520,8 +5520,8 @@ Internet-Draft               Domain Connect                    July 2026
    1800 1209600 3600
    @ 3600 IN NS ns11.example.net.
    @ 3600 IN NS ns12.example.net.
-   @ 3600 IN MX 10 mx1.example.net.
-   @ 3600 IN MX 10 mx2.example.net.
+   @ 1800 IN MX 10 mx1.example.net.
+   www 1800 IN MX 10 mx2.example.net.
    @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
 
    In the next step application of the following template of Newsletter
@@ -5552,8 +5552,8 @@ Internet-Draft               Domain Connect                    July 2026
    1800 1209600 3600
    @ 3600 IN NS ns11.example.net.
    @ 3600 IN NS ns12.example.net.
-   @ 3600 IN MX 10 mx1.example.net.
-   @ 3600 IN MX 10 mx2.example.net.
+   @ 1800 IN MX 10 mx1.example.net.
+   www 1800 IN MX 10 mx2.example.net.
    @ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newslett
    er.
    example ~all"

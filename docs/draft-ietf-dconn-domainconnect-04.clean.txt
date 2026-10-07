@@ -447,17 +447,19 @@ Table of Contents
    ; -- host / name / pointsTo / target fields --
 
 
-    dc-host-tmpl    =  template-apex-var
+   dc-host-tmpl    = ""
+                    ; empty string
+                    / template-apex-var
                     ; "@" alone
                     /  1*( named-variable / dc-name-char )
                     ; mix of literal chars and %-variables
 
-    dc-pointsto-tmpl =  template-apex-var
+   dc-pointsto-tmpl =  template-apex-var
                     ; "@" alone
                     /  1*( dc-name-char / named-variable )
                     ; mix of literal chars and %-variables
 
-    dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
+   dc-pointsto-nat-tmpl =  1*( dc-name-char / named-variable )
                     ; mix of literal chars and %-variables
 
    ; -- integer fields with optional variable --
@@ -1273,7 +1275,7 @@ Table of Contents
       dc-host-tmpl syntax (see Section 3).
 
       After variable substitution, the resolved value MUST conform to
-      the domain-name syntax (see Section 3).
+      the domain-name syntax (see Section 3) or be empty.
 
    "Name":
       JSON key:  "name"
@@ -1282,14 +1284,17 @@ Table of Contents
 
       The name for the SRV record.
 
-      This value is relative to the applied host and domain.  A value of
-      empty or "@" indicates the root of the applied host and domain.
+      This value is relative to the applied host and domain, unless
+      trailed by a ".".
+
+      A value of empty or "@" indicates the root of the applied host and
+      domain.
 
       When used in a template definition, the value MUST conform to the
       dc-host-tmpl syntax (see Section 3).
 
       After variable substitution, the resolved value MUST conform to
-      the domain-name syntax (see Section 3).
+      the domain-name syntax (see Section 3) or be empty.
 
    "Points To":
       JSON key:  "pointsTo"
@@ -1301,6 +1306,11 @@ Table of Contents
       When used in a template definition, the value MUST conform to the
       "dc-pointsto-tmpl" syntax for "CNAME"/"MX" and to the "dc-
       pointsto-nat-tmpl" syntax for A/AAAA/NS (see Section 3).
+
+      For "CNAME", "MX" and "NS" records the resolved value is a domain
+      name and MUST be treated as fully qualified, whether or not it
+      ends with a ".".  It MUST NOT be interpreted relative to the
+      applied host and domain.
 
       After variable substitution, the resolved value MUST conform to
       the presentation format of the corresponding resource record type.
@@ -1459,6 +1469,10 @@ Table of Contents
       dc-pointsto-tmpl syntax (see Section 3), or be the single label
       "." to indicate that the service is not available.
 
+      The resolved value MUST be treated as fully qualified, whether or
+      not it ends with a ".".  It MUST NOT be interpreted relative to
+      the applied host and domain.
+
       After variable substitution, the resolved value MUST conform to
       the domain-name syntax (see Section 3), or be ".".
 
@@ -1493,33 +1507,32 @@ Table of Contents
    type by this document.  Fields beyond those listed are governed by
    Section 6.2.1.
 
-   +=========+========================================================+
-   | Type    | Required fields                                        |
-   +=========+========================================================+
-   | "A"     | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "AAAA"  | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "CNAME" | "host", "pointsTo", "ttl" ("host" MUST NOT be "@" or   |
-   |         | empty unless "hostRequired" is "true" in the template) |
-   +---------+--------------------------------------------------------+
-   | "NS"    | "host", "pointsTo", "ttl"                              |
-   +---------+--------------------------------------------------------+
-   | "TXT"   | "host", "data", "ttl", "txtConflictMatchingMode",      |
-   |         | "txtConflictMatchingPrefix"                            |
-   +---------+--------------------------------------------------------+
-   | "MX"    | "host", "pointsTo", "ttl", "priority"                  |
-   +---------+--------------------------------------------------------+
-   | "SRV"   | "name", "target", "ttl", "priority", "protocol",       |
-   |         | "service", "weight", "port"                            |
-   +---------+--------------------------------------------------------+
-   | "SPFM"  | "host", "spfRules"                                     |
-   +---------+--------------------------------------------------------+
-   | Generic | "host", "data", "ttl"                                  |
-   | types   |                                                        |
-   +---------+--------------------------------------------------------+
+      +=========+===================================================+
+      | Type    | Required fields                                   |
+      +=========+===================================================+
+      | "A"     | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "AAAA"  | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "CNAME" | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "NS"    | "host", "pointsTo", "ttl"                         |
+      +---------+---------------------------------------------------+
+      | "TXT"   | "host", "data", "ttl", "txtConflictMatchingMode", |
+      |         | "txtConflictMatchingPrefix"                       |
+      +---------+---------------------------------------------------+
+      | "MX"    | "host", "pointsTo", "ttl", "priority"             |
+      +---------+---------------------------------------------------+
+      | "SRV"   | "name", "target", "ttl", "priority", "protocol",  |
+      |         | "service", "weight", "port"                       |
+      +---------+---------------------------------------------------+
+      | "SPFM"  | "host", "spfRules"                                |
+      +---------+---------------------------------------------------+
+      | Generic | "host", "data", "ttl"                             |
+      | types   |                                                   |
+      +---------+---------------------------------------------------+
 
-                     Table 2: Fields per record type
+                      Table 2: Fields per record type
 
 6.2.1.  Template Record Extensibility
 
@@ -2089,8 +2102,8 @@ Table of Contents
    The Service Provider MUST ignore any JSON property in this response
    that it does not recognise; the presence of such a property MUST NOT
    cause the response to be treated as an error.  Where the DNS Provider
-   returns the full template object, the rules of Section 6.1.1 and
-   Section 6.2.1 apply to it.
+   returns the full template object, the rules of Template Property
+   Extensibility and Template Record Extensibility apply to it.
 
    The Service Provider MAY use HTTP content negotiation (see [RFC9110])
    to request the full template object, for example by sending an
@@ -2576,11 +2589,11 @@ Table of Contents
 
    There are three Built-In variables:
 
-   *  "%host%"`: This is the host passed from the query string
+   *  "%host%": This is the host passed from the query string
 
-   *  "%domain%"`: This is the domain passed from the query string
+   *  "%domain%": This is the domain passed from the query string
 
-   *  "%fqdn%": This is the fully qualified domain name or template
+   *  "%fqdn%": This is the fully qualified domain name of template
       application e.g. [host.]domain
 
    For example, with the query string "domain=example.com&host=",
@@ -2589,14 +2602,14 @@ Table of Contents
    "sub1.example.com".
 
    The "@" variable has special meaning, and can be used in the
-   "host"/"name" field or in the "pointsTo" field in isolation.  For the
-   "host"/"name" and "pointsTo" fields it is a shortcut for the value
-   "%fqdn%.".  The trailing dot here is equal to the DNS master file
-   notation [RFC1035], which indicates the value is absolute.  For some
-   record types, like "A" or "AAAA" usage of "@" in pointsTo would not
-   render a valid IP address, therefore MUST NOT be used.  Likewise in
-   "NS" record types it would render a circular delegation therefore
-   MUST NOT be used.
+   "host"/"name" field or in the "pointsTo" or "target" field in
+   isolation.  For the "host"/"name", "pointsTo" and "target" fields it
+   is a shortcut for the value "%fqdn%.".  The trailing dot here is
+   equal to the DNS master file notation [RFC1035], which indicates the
+   value is absolute.  For some record types, like "A" or "AAAA" usage
+   of "@" in pointsTo would not render a valid IP address, therefore
+   MUST NOT be used.  Likewise in "NS" record types it would render a
+   circular delegation therefore MUST NOT be used.
 
    Aside from the built-in variables above and "@", a template variable-
    name MUST NOT collide with any reserved apply parameter name - the
@@ -2813,10 +2826,13 @@ Table of Contents
    where the template has been applied.  Therefore, the same template
    MUST be able to be applied more than once to the same DNS zone
    identified by "domain", as long as the value of "host" parameter
-   differs.  Application of the same template with same "host" MAY be
-   handled as an update by DNS provider, or just trigger a regular
-   conflict detection and resolution routine by DNS Provider - removal
-   of the previous instance and apply of the new instance.
+   differs.  Applying the same template again with the same "host"
+   replaces the previous instance: its records are removed and the
+   records of the new instance are written, unless the rules of
+   Multi-Instance or Group Filtering apply.  A DNS Provider MAY
+   implement this as an in-place update, provided the resulting zone
+   content and template state are the same as removing and then
+   applying.
 
    Manual changes made by the user at the DNS Provider MAY also trigger
    conflict detection against applied templates in order to maintain
@@ -2864,21 +2880,21 @@ Table of Contents
        c.  (only DNS Providers tracking template state): Mark instances
            of the same template applied on the same "host" for removal
            unless "multiInstance" is set for the template (see
-           Section 10.4.1.1).
+           Section 10.4.1.1) or "groupId" parameter is supplied in the
+           template application (see Section 10.3).
 
    6.  *Pre-calculate conflict resolution* - Determine the full set of
        records and, where applicable, template instances that would be
        removed upon application (see Section 10.5).
 
-   7.  *Obtain user authorization* - The DNS Provider MUST present the
+   7.  *Obtain user authorization* - The DNS Provider presents the
        intended changes and the pre-calculated conflict consequences to
-       the user and obtain explicit authorization before proceeding (see
-       Section 10.6).
+       the user and obtains explicit authorization before proceeding
+       (see Section 10.6).
 
        a.  abort if authorization not granted
 
-   8.  *Apply changes* - After authorization is granted, or at later
-       point in Asynchronous flow:
+   8.  *Apply changes* - After authorization is granted:
 
        a.  Remove all records pre-calculated for removal from the zone.
 
@@ -2987,15 +3003,15 @@ Table of Contents
 
 10.4.1.1.  Multi-Instance
 
-   This processing only REQUIRED for DNS Providers that maintain applied
-   template state.
+   This processing is only REQUIRED for DNS Providers that maintain
+   applied template state.
 
    By default a template is expected to be applied only once to a target
-   "domain" and "host", therefore any consecutive attempt to apply the
-   same template would be treated as an update.  For some templates
-   however it is desirable to be able to create multiple instances (for
-   example add second TXT record on the same host as opposed to
-   replacing the current value).
+   "domain" and "host", so applying the same template again replaces the
+   previous instance (see Section 10.2).  For some templates however it
+   is desirable to be able to create multiple instances (for example add
+   second TXT record on the same host as opposed to replacing the
+   current value).
 
    A template flag multiInstance (Section 6.1) can be set in order to
    allow for that.  This tells the DNS Provider that the template is
@@ -3007,8 +3023,8 @@ Table of Contents
 
 10.4.1.2.  Essential Records
 
-   This processing only REQUIRED for DNS Providers that maintain applied
-   template state.
+   This processing is only REQUIRED for DNS Providers that maintain
+   applied template state.
 
    A template record is considered essential when it MUST be present and
    remain consistent with the applied template for the entire lifetime
@@ -3074,10 +3090,12 @@ Table of Contents
    before changes are applied.
 
    If conflicts are detected - at either the template or record level -
-   the DNS Provider SHOULD present these to the user before
-   authorization is granted.  For template instances this means
-   identifying services that would be disabled; for records this means
-   identifying records that would be deleted or overwritten.
+   the DNS Provider SHOULD present these to the end user before
+   authorization is granted - otherwise the end user may fail to
+   recognise the whole scope and consequence of the change.  For
+   template instances this means identifying services that would be
+   disabled.  For records this means identifying records that would be
+   deleted or overwritten.
 
    The DNS Provider MUST allow the user to override a detected conflict
    and proceed with the template application, or to abort the process.
@@ -3103,10 +3121,6 @@ Table of Contents
 
    In the Synchronous Flow, after authorization is granted, the DNS
    Provider applies the template to the DNS zone.
-
-   In the Asynchronous Flow this happens in later point in time.  In
-   this case conflict resolution MUST be calculated again for the actual
-   state of the zone and parameters provided with the apply request.
 
    The DNS Provider MUST remove all conflicting templates and records
    from the target zone.
@@ -3946,6 +3960,13 @@ Change from draft-ietf-dconn-domainconnect-03 to -04
       template onboarding, covering acceptance of untrusted or
       impersonating templates.
 
+   *  Clarified rendering of host, name, pointsTo and target values,
+      including fully qualified names and empty hosts.
+
+   *  Aligned the template application steps with group filtering, user
+      authorization, re-application of templates, and the removal of the
+      asynchronous flow.
+
 Change from draft-ietf-dconn-domainconnect-02 to -03
 
    *  Classified template record types as Fully Specified, Computed, or
@@ -4435,6 +4456,7 @@ A.6.  Example: Template application to DNS Zone and Conflict Resolution
    @ 3600 IN A 192.0.2.2
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0000
    @ 3600 IN AAAA 2001:db8:1234:0000:0000:0000:0000:0001
+   www 3600 IN CNAME other.host.example.
 
    After changes applied the zone would be updated to the following
    state.  Note existing A and AAAA records removed due to the conflicts
@@ -4496,8 +4518,8 @@ A.7.  Example: SPF Record Merging
    1800 1209600 3600
    @ 3600 IN NS ns11.example.net.
    @ 3600 IN NS ns12.example.net.
-   @ 3600 IN MX 10 mx1.example.net.
-   @ 3600 IN MX 10 mx2.example.net.
+   @ 1800 IN MX 10 mx1.example.net.
+   www 1800 IN MX 10 mx2.example.net.
    @ 3600 IN TXT "v=spf1 a include:spf.example.net ~all"
 
    In the next step application of the following template of Newsletter
@@ -4519,8 +4541,8 @@ A.7.  Example: SPF Record Merging
    1800 1209600 3600
    @ 3600 IN NS ns11.example.net.
    @ 3600 IN NS ns12.example.net.
-   @ 3600 IN MX 10 mx1.example.net.
-   @ 3600 IN MX 10 mx2.example.net.
+   @ 1800 IN MX 10 mx1.example.net.
+   www 1800 IN MX 10 mx2.example.net.
    @ 3600 IN TXT "v=spf1 a include:spf.example.net include:_spf.newslett
    er.
    example ~all"

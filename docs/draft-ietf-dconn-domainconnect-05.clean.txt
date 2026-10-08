@@ -5,17 +5,17 @@
 Network Working Group                                         P. Kowalik
 Internet-Draft                                                  DENIC eG
 Intended status: Standards Track                                A. Blinn
-Expires: 4 January 2027                                                 
+Expires: 10 April 2027                                                  
                                                                J. Kolker
                                                             GoDaddy Inc.
                                                                S. Kerola
                                                         Cloudflare, Inc.
-                                                             3 July 2026
+                                                          7 October 2026
 
 
   Domain Connect Protocol - DNS provisioning between Services and DNS
                                Providers
-             draft-ietf-dconn-domainconnect-04 (editorial)
+             draft-ietf-dconn-domainconnect-05 (editorial)
 
 Abstract
 
@@ -39,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 4 January 2027.
+   This Internet-Draft will expire on 10 April 2027.
 
 Copyright Notice
 
@@ -117,21 +117,33 @@ Table of Contents
      10.6.  User Authorization of Changes
      10.7.  Template Application
      10.8.  Examples
-   11. Security Considerations
-     11.1.  Template Variable Phishing
-     11.2.  Untrusted DNS Provider Discovery Records
-     11.3.  Underscored Host Names
-     11.4.  Must-Understand Markers and Pre-Existing Deployments
-     11.5.  Template Onboarding
-   12. IANA Considerations
-     12.1.  Registration Procedure for Domain Connect Registries
-     12.2.  Domain Connect Fully Specified Record Types Registry
-     12.3.  Domain Connect Settings Properties Registry
-     12.4.  Domain Connect Template Properties Registry
-     12.5.  Domain Connect Protocol-Level Record Fields Registry
-     12.6.  Guidance to the DNS Resource Record (RR) TYPEs Registry
-     12.7.  Underscore "_domainconnect" DNS Node Name
-     12.8.  Media Type Registration for application/
+   11. Operational Considerations
+     11.1.  Management Model
+     11.2.  Deployment and Initial Setup
+     11.3.  Migration and Coexistence
+     11.4.  Dependencies on Other Protocols
+     11.5.  Impact on DNS and Network Operation
+     11.6.  Limits on Scale
+     11.7.  Verifying Correct Operation
+     11.8.  Fault Management
+     11.9.  Configuration Management
+     11.10. Human-Readable Messages
+     11.11. Topics Not Applicable
+   12. Security Considerations
+     12.1.  Template Variable Phishing
+     12.2.  Untrusted DNS Provider Discovery Records
+     12.3.  Underscored Host Names
+     12.4.  Must-Understand Markers and Pre-Existing Deployments
+     12.5.  Template Onboarding
+   13. IANA Considerations
+     13.1.  Registration Procedure for Domain Connect Registries
+     13.2.  Domain Connect Fully Specified Record Types Registry
+     13.3.  Domain Connect Settings Properties Registry
+     13.4.  Domain Connect Template Properties Registry
+     13.5.  Domain Connect Protocol-Level Record Fields Registry
+     13.6.  Guidance to the DNS Resource Record (RR) TYPEs Registry
+     13.7.  Underscore "_domainconnect" DNS Node Name
+     13.8.  Media Type Registration for application/
             domainconnect-template+json
    Implementation Status
    Acknowledgements
@@ -516,7 +528,7 @@ Table of Contents
 
    Fully Specified Record Type:  A DNS resource record type for which
       this document, or a specification registered in the IANA "Domain
-      Connect Fully Specified Record Types" registry (see Section 12.2),
+      Connect Fully Specified Record Types" registry (see Section 13.2),
       defines a breakdown of the record's RDATA into individual,
       normatively-typed template fields rather than carrying the RDATA
       opaquely.
@@ -589,6 +601,11 @@ Table of Contents
    affect, templates ensure that no changes beyond the approved scope
    can be applied.
 
+   As part of its template acceptance policy, a DNS Provider MAY limit
+   the number of records in a template.  Such a limit is enforced during
+   onboarding by rejecting the template, so it does not cause apply
+   requests for an onboarded template to fail.
+
 4.3.  Protocol Versioning and Extensibility
 
    This specification is versioned at two independent levels: the HTTP
@@ -635,11 +652,11 @@ Table of Contents
       Section 8.3.2.2).
 
    Consequently, an extension that can safely be ignored requires no
-   version change; an extension that cannot safely be ignored is
-   signaled per-message through "crit"; and only a change that breaks
-   the framing of the protocol itself requires a new version path
-   segment.  For the limits of "crit" against deployments that predate
-   this specification, see Section 11.4.
+   version change.  An extension that cannot safely be ignored is
+   signaled per-message through "crit".  A change that breaks the
+   framing of the protocol itself requires a new version path segment.
+   For the limits of "crit" against deployments that predate this
+   specification, see Section 12.4.
 
    The must-understand mechanism is deliberately not defined for the
    responses of the synchronous flow.  The authoritative record of what
@@ -875,7 +892,7 @@ Table of Contents
 
    The template JSON structure defined in this section is identified by
    the media type "application/domainconnect-template+json" (see
-   Section 12.8).
+   Section 13.8).
 
    Properties of the template definition:
 
@@ -1077,7 +1094,7 @@ Table of Contents
       (DEPRECATED) This flag is deprecated and its code point is
       reserved (see Section 3, Paragraph 13).  Phishing warnings are now
       the default behavior in the absence of other security mechanisms
-      (see Section 11.1).  This flag MUST NOT be relied upon and MUST
+      (see Section 12.1).  This flag MUST NOT be relied upon and MUST
       NOT be set in new templates.  A DNS Provider MUST NOT treat the
       absence of this flag as a signal that a template is not
       susceptible to phishing.
@@ -1126,14 +1143,14 @@ Table of Contents
       specification and for future standards-track extensions that
       normatively require this document as their base.  Such names are
       managed through the IANA "Domain Connect Template Properties"
-      registry (see Section 12.4).  Implementations MUST NOT introduce
+      registry (see Section 13.4).  Implementations MUST NOT introduce
       private or vendor-specific properties using unprefixed names.
 
    *  Property names beginning with "vnd." are reserved for vendor-
       specific and private use.  A vendor SHOULD further namespace such
       properties with a vendor identifier (e.g. "vnd.example.fooBar"),
       and such names MAY be registered in the IANA "Domain Connect
-      Template Properties" registry (see Section 12.4).  Properties
+      Template Properties" registry (see Section 13.4).  Properties
       using this prefix MUST NOT be assumed to be interoperable across
       implementations, and the property name MUST conform to the dc-vnd-
       property syntax (see Section 3).
@@ -1190,7 +1207,7 @@ Table of Contents
       Fully Specified Record Types - A, AAAA, CNAME, MX, TXT, SRV, NS -
       whose RDATA is broken into dedicated template fields.  The
       complete set is managed by the IANA "Domain Connect Fully
-      Specified Record Types" registry (see Section 12.2).
+      Specified Record Types" registry (see Section 13.2).
 
       Computed Record Types - which instruct the DNS Provider to derive
       DNS records by a defined computation rather than write a verbatim
@@ -1542,7 +1559,7 @@ Table of Contents
    Because such a field must carry the same meaning for every record
    type, unprefixed protocol-level field names are coordinated through
    the IANA "Domain Connect Protocol-Level Record Fields" registry (see
-   Section 12.5).  All remaining fields are type-specific: they carry
+   Section 13.5).  All remaining fields are type-specific: they carry
    the RDATA of a particular record type or are otherwise meaningful
    only for certain types.
 
@@ -1550,7 +1567,7 @@ Table of Contents
    being valid for every record type, MUST NOT reuse a name already used
    as a type-specific field by any record type, and a specification
    defining type-specific fields MUST NOT reuse a name registered as
-   protocol-level (see Section 12.5).
+   protocol-level (see Section 13.5).
 
    An implementation MUST ignore any record field it does not recognize,
    and MUST ignore any recognized field that is not defined for the
@@ -1705,6 +1722,15 @@ Table of Contents
    values "a" and "t" MUST be equal across them, and their "d" fragments
    MUST have distinct "p" indices.
 
+   A DNS Provider MAY limit the number of fragments it reassembles.  If
+   a key exceeds that limit, signature verification fails and the
+   request is rejected as described in Section 8.3.4.  A Service
+   Provider SHOULD therefore publish a key in as few fragments as DNS
+   record size limits allow.  A key split into more fragments than
+   necessary risks the rejection of all signed apply requests by DNS
+   Providers that apply such a limit, and enlarges the DNS response,
+   which can force a fallback from UDP to TCP.
+
    Given the public key (line breaks for brevity):
 
    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
@@ -1762,6 +1788,12 @@ Table of Contents
    Provider MUST process at least one of them.  The Service Provider MAY
    iterate over the remaining valid records, attempting discovery with
    each in turn, until a valid Settings End-Point response is obtained.
+   The Service Provider SHOULD limit the number of records it attempts.
+   Without such a limit, a zone that returns many records can cause the
+   Service Provider to issue an unbounded number of HTTPS requests for a
+   single discovery.  If no valid Settings End-Point response is
+   obtained within that limit, discovery fails in the same way as when
+   no valid record remains.
 
 7.1.1.  Deployment considerations
 
@@ -1971,7 +2003,7 @@ Table of Contents
    properties in the settings response beyond those defined in this
    specification, however it is RECOMMENDED that those properties are
    registered in the "Domain Connect Settings Properties" registry
-   defined in Section 12.3 in order to avoid name conflicts.
+   defined in Section 13.3 in order to avoid name conflicts.
 
    Settings property names schema is partitioned as follows:
 
@@ -2089,7 +2121,7 @@ Table of Contents
    "Accept" request header of "application/domainconnect-template+json".
    When the DNS Provider returns the full template object in the
    response body, it MUST set the "Content-Type" response header to
-   "application/domainconnect-template+json" (see Section 12.8).  A DNS
+   "application/domainconnect-template+json" (see Section 13.8).  A DNS
    Provider that does not return the full template object responds as
    described above.
 
@@ -2128,6 +2160,16 @@ Table of Contents
    to a dns zone the user controls.  It is redirected to or linked from
    the Service Provider to start the synchronous Domain Connect
    Protocol.
+
+   User agents and intermediaries limit the length of the URLs they
+   handle.  In line with Section 4.1 of [RFC9110], a DNS Provider SHOULD
+   accept Apply Template URLs of at least 8000 octets, and a Service
+   Provider SHOULD NOT construct longer ones.  A DNS Provider that
+   receives an Apply Template URL longer than it supports MUST reject
+   the request.  If it can still obtain a valid "redirect_uri" from the
+   request, it signals the error "invalid_request" as described in
+   Section 8.3.6.  Otherwise it MAY respond with the HTTP status code
+   414 (URI Too Long) defined in Section 15.5.15 of [RFC9110].
 
 8.3.2.  Parameters/properties
 
@@ -2457,6 +2499,12 @@ Table of Contents
        [RFC4648] the "sig" parameter value, and verify the signature
        against the input string using the retrieved public key and
        identified algorithm.
+
+   Upon receiving a Template Apply Request for a template whose
+   "syncPubKeyDomain" is not set, the DNS Provider MUST ignore the "sig"
+   and "key" parameters, if present, and MUST process the request as an
+   unsigned request.  The presence of these parameters MUST NOT cause
+   the request to be rejected.
 
 8.3.5.  Template Apply Response
 
@@ -3121,9 +3169,346 @@ Table of Contents
 
    Examples of template processing are in Appendix A.
 
-11.  Security Considerations
+11.  Operational Considerations
 
-11.1.  Template Variable Phishing
+   This section discusses the operational and manageability aspects of
+   Domain Connect, following the guidelines of
+   [I-D.ietf-opsawg-rfc5706bis].  Where a consideration is specified
+   elsewhere in this document, this section summarizes it and refers to
+   the normative text.  Topics of those guidelines that do not apply to
+   this protocol are listed, each with the reason, in Section 11.11.
+
+11.1.  Management Model
+
+   Domain Connect is an application-layer provisioning protocol between
+   Service Providers and DNS Providers.  It is not a network management
+   protocol and does not manage network devices.  The entities operated
+   and managed in a Domain Connect deployment are:
+
+   *  the "_domainconnect" TXT record served for each zone hosted by a
+      DNS Provider (see Section 7);
+
+   *  the data returned by the Settings End-Point of a DNS Provider (see
+      Section 7);
+
+   *  the templates onboarded with a DNS Provider, and their versions
+      (see Section 6.1);
+
+   *  the public signing keys published in DNS by a Service Provider
+      (see Section 6.4);
+
+   *  the applied template state, where a DNS Provider maintains it (see
+      Section 10);
+
+   *  the local policies of a DNS Provider that govern template
+      application (see Section 11.9).
+
+   Each of these entities is managed locally by the party that owns it,
+   through interfaces specific to that party.  A Service Provider
+   authors its templates and publishes its signing keys in its own DNS
+   zone.  A DNS Provider configures its discovery records, its Settings
+   End-Point, its local policies and the set of onboarded templates in
+   its own systems.  Templates pass from the Service Provider to the DNS
+   Provider through the out-of-band onboarding process described in
+   Section 4.2 and Section 12.5.  Users manage the resulting DNS records
+   through the control panel or other interfaces of their DNS Provider.
+   The zone changes that result from applying a template reach the
+   authoritative servers through whatever provisioning mechanisms the
+   DNS Provider already uses, which are outside the scope of this
+   document.
+
+   This document deliberately defines no standardized management
+   protocol, Information Model, or Data Model for these entities.
+   Onboarding a template is a bilateral trust decision that involves
+   verification of the submitter's identity and human review of the
+   requested records (see Section 12.5).  It is not suited to automation
+   through a generic management interface.  The remaining entities are
+   internal to a single operator, and interoperability between operators
+   does not depend on how they are managed.  Because onboarding is
+   bilateral, a Service Provider onboards its templates with each DNS
+   Provider separately, and the effort grows with the number of DNS
+   Providers it wants to reach.  The deployed base of [DC-SPEC] has
+   operated at this scale without a standardized management interface.
+
+   Where one party needs visibility into the configuration of another,
+   the protocol provides read-only views.  The Settings End-Point
+   describes the DNS Provider's support for a given zone, and the Query
+   Supported Template end-point (see Section 8.2) reveals whether a
+   template is deployed and, optionally, which version.
+
+11.2.  Deployment and Initial Setup
+
+   To deploy Domain Connect, a DNS Provider answers queries for the
+   "_domainconnect" TXT record of the zones it hosts, operates the
+   Settings End-Point and the end-points of Section 8 over HTTPS, and
+   provides the consent user experience of Section 10.6.  The
+   "_domainconnect" record need not be stored in each zone.  It can be
+   synthesized or delegated by CNAME, as described in Section 7.  A
+   Service Provider deploys Domain Connect by onboarding its templates,
+   optionally publishing a signing key (see Section 6.4), implementing
+   discovery, and verifying the resulting DNS changes (see Section 8.4).
+
+   Deployment is incremental.  Templates are onboarded one at a time, a
+   DNS Provider decides per zone whether to serve a "_domainconnect"
+   record, and a DNS Provider can withhold the synchronous flow for a
+   zone by omitting "urlSyncUX" from the Settings End-Point response.
+   No coordination is needed between parties beyond the onboarding of
+   the templates concerned.
+
+   The template format defines default values for its optional
+   properties and record fields (see Section 6.1 and Section 6.2), and
+   public key publication defines defaults for the key algorithm and
+   type (see Section 6.4).  These defaults favor conservative behavior.
+   Records are essential unless marked otherwise (see Section 10.4.1.2),
+   a TXT record does not conflict with other TXT records unless the
+   template says so (see Section 10.4), and an unsigned apply request is
+   treated as susceptible to phishing (see Section 10.6).  The TTL of
+   each record is requested by the template and is adjusted by the DNS
+   Provider to its local policy, rather than rejected (see Section 6.2).
+   The time and resources a Service Provider spends on discovery and on
+   verification of changes are bounded as described in Section 12.2 and
+   Section 8.4.
+
+   The values actually in effect remain observable.  The records written
+   to the zone, including any TTL adjusted by the DNS Provider, are
+   visible in public DNS, and the deployed version of a template can be
+   obtained through Section 8.2.
+
+11.3.  Migration and Coexistence
+
+   This document is derived from [DC-SPEC], which is widely deployed.
+   Compatibility with that installed base is preserved by keeping the
+   "/v2" path segment and the format of the "_domainconnect" record (see
+   Section 4.3), and by reserving elements of [DC-SPEC] that this
+   document does not specify (see Section 3, Paragraph 13).  A
+   deployment can serve more than one version path segment concurrently,
+   so a future incompatible revision can be introduced alongside this
+   one.  Extensions under the existing path segment follow the ignore-
+   unknown and must-understand rules of Section 4.3.  The limits of the
+   must-understand marker against deployments that predate this document
+   are described in Section 12.4.
+
+   Because both documents use the same path segment, an implementation
+   of this document cannot tell from the protocol whether its
+   counterpart implements this document or [DC-SPEC] alone.  The
+   differences between the two are therefore limited to stricter
+   validation, clarified processing and new optional elements, so that
+   each party can migrate independently without coordinating with its
+   counterparts.  The synchronous flow, its parameters and its error
+   redirect are unchanged.  A template written for [DC-SPEC] carries no
+   "templateSpecVersion" and is processed as version "1" (see
+   Section 6.1.1).  It remains usable without change, provided it
+   conforms to the syntax in Section 3.
+
+   A DNS Provider that implements [DC-SPEC] conforms to this document by
+   addressing the following points:
+
+   *  Its "_domainconnect" record content conforms to the validity rules
+      of Section 7.  Service Providers implementing this document reject
+      non-conforming records, so a record that carries a scheme, query
+      or fragment no longer leads to discovery.
+
+   *  It treats every unsigned apply request as susceptible to phishing,
+      as described in Section 10.6, independent of the deprecated
+      "warnPhishing" flag.  Users therefore see additional warnings for
+      unsigned templates that were previously presented without them.
+
+   *  It verifies signatures over the query string as received (see
+      Section 8.3.4).  This accepts both signatures generated under
+      [DC-SPEC] and signatures over the canonical input string of
+      Section 8.3.2.1.
+
+   *  It ignores template properties, record fields and apply parameters
+      it does not recognize, and rejects a template or request whose
+      "crit" lists an element it does not understand, or whose
+      "templateSpecVersion" it does not support (see Section 4.3).
+
+   The asynchronous flow of [DC-SPEC], together with the settings
+   properties and apply parameters that serve it, is not specified by
+   this document and is Reserved (see Section 3, Paragraph 13).  A DNS
+   Provider that offers it can continue to do so alongside the
+   synchronous flow.
+
+   A Service Provider that implements [DC-SPEC] conforms to this
+   document by addressing the following points:
+
+   *  It rejects "_domainconnect" record content that does not conform
+      to Section 7, and bounds its discovery requests as described in
+      Section 12.2.
+
+   *  It signs apply requests over the canonical input string of
+      Section 8.3.2.1 and sends the signed query string unchanged.  DNS
+      Providers that verify the received query string accept such
+      signatures whether or not they implement this document.
+
+   *  It does not set the deprecated "warnPhishing" flag in new
+      templates.  It continues to set the deprecated "shared" flag
+      together with "sharedProviderName" where DNS Providers predating
+      version 2.2 of [DC-SPEC] are to be supported (see Section 6.1).
+
+   *  It uses "crit" and "templateSpecVersion" only with the limits
+      described in Section 12.4 in mind.  A DNS Provider that implements
+      [DC-SPEC] alone ignores both properties.  Because templates are
+      onboarded with each DNS Provider separately, onboarding is the
+      point at which a Service Provider can establish whether a DNS
+      Provider supports them.
+
+   Migration also includes moving a template from unsigned to signed
+   requests.  Adding "syncPubKeyDomain" to a template takes effect at
+   each DNS Provider only when that DNS Provider onboards the updated
+   version.  From then on, it rejects unsigned requests for the template
+   (see Section 8.3.2.1).  A DNS Provider that still holds the earlier
+   version ignores the signature and processes the request as unsigned
+   (see Section 8.3.4).  A Service Provider can therefore publish its
+   key (see Section 6.4) and sign every apply request for the template
+   before submitting the updated version, so that requests remain
+   accepted while DNS Providers hold different versions of the template.
+   Conversely, an update that removes "syncPubKeyDomain" or widens
+   "syncRedirectDomain" weakens the protection of the template, and is
+   subject to the re-review described in Section 12.5.
+
+11.4.  Dependencies on Other Protocols
+
+   Domain Connect depends on the DNS for DNS Provider discovery, for
+   publication of Service Provider signing keys, and for verification of
+   applied changes.  It depends on HTTP over TLS [RFC9110] for the
+   Settings End-Point, the Query Supported Template end-point and the
+   synchronous flow.  The synchronous flow also relies on a user agent
+   capable of following redirects, on the user authentication mechanisms
+   of the DNS Provider, and on the error codes of [RFC6749].  Signatures
+   use algorithm identifiers of [RFC7518].  Template records are subject
+   to the constraints of the DNS protocol, notably [RFC2181], as
+   described in Section 10.4.
+
+11.5.  Impact on DNS and Network Operation
+
+   The applicability of the protocol, and the scenarios outside its
+   scope, are described in the "Use Cases" section.  Domain Connect
+   produces ordinary DNS records and introduces no new behavior in DNS
+   resolution.  Its interactions with the DNS are limited to the
+   following: TTL reconciliation within an RRset (see Section 10.2),
+   coexistence rules of the DNS protocol (see Section 10.4), the
+   constraints of merged SPF records (see Section 9.4), and the
+   additional queries issued for discovery, for retrieval of signing
+   keys (see Section 8.3.4) and for verification of changes (see
+   Section 8.4).
+
+11.6.  Limits on Scale
+
+   This section summarizes the limits on the size and number of protocol
+   elements, and the behavior when a limit is exceeded.  Limits on the
+   length of identifiers and display strings are part of the syntax in
+   Section 3.  The resources a Service Provider spends on a single
+   discovery request are bounded as described in Section 12.2.
+
+   The number of records an apply request can write is fixed by the
+   template, and group filtering (see Section 10.3) can only reduce it.
+   A DNS Provider that limits the number of records per template
+   therefore enforces that limit when the template is onboarded (see
+   Section 4.2), not when it is applied.
+
+   The length of the Apply Template URL grows with the number and size
+   of the variables, with the "redirect_uri" and "state" values, and
+   with the signature.  Section 8.3.1 sets a minimum URL length that DNS
+   Providers accept and that Service Providers stay within, and
+   describes how a request that exceeds the length a DNS Provider
+   supports is rejected.
+
+   A public key published in many fragments enlarges DNS responses and
+   costs the DNS Provider additional processing.  Section 6.4 allows DNS
+   Providers to limit the number of fragments, in which case signature
+   verification fails, and therefore asks Service Providers to keep the
+   number of fragments small.
+
+   Each "_domainconnect" record a Service Provider attempts leads to a
+   separate HTTPS request.  Section 7 therefore asks the Service
+   Provider to limit the number of records it attempts, and treats
+   reaching that limit as a discovery failure.
+
+11.7.  Verifying Correct Operation
+
+   The authoritative signal that a template was applied is the content
+   of the DNS zone, not the outcome of the synchronous flow (see
+   Section 8.4).  A Service Provider can additionally confirm that it
+   reached the correct DNS Provider by comparing "nameServers" with the
+   authoritative name servers of the zone (see Section 7), and that a
+   template is deployed in the expected version through Section 8.2.
+
+11.8.  Fault Management
+
+   Faults are reported per request.  Discovery failures surface as
+   invalid or missing "_domainconnect" records, or as a Settings End-
+   Point that does not serve the zone (see Section 7).  Apply failures
+   are returned through the error redirect of Section 8.3.6, which
+   carries a machine-readable error code.  The protocol defines no
+   notifications.  A failure that occurs after the user has consented,
+   for example a queued change that never reaches the authoritative
+   servers, is detected only by verification of the zone content (see
+   Section 8.4).  Messages and templates are validated against the
+   syntax in Section 3 and the rules of each section, so a faulty
+   message can be distinguished from a valid one.
+
+11.9.  Configuration Management
+
+   The configuration of a Service Provider consists of its templates and
+   its published signing keys.  The configuration of a DNS Provider
+   consists of its discovery data, the onboarded templates and the local
+   policies that govern template application.  This document refers to
+   such local policy for the accepted range or set of TTL values (see
+   Section 6.2), the record types supported in addition to those
+   required (see Section 6.2), the handling of SPF record merging (see
+   Section 9.4), whether applied template state is maintained (see
+   Section 10), local capabilities and limits checked during conflict
+   detection (see Section 10.4), and the amount of detail disclosed to
+   the user during authorization (see Section 10.6).
+
+   The DNS zone is the persistent result of template application.
+   Applied template state, where maintained, is internal to the DNS
+   Provider.  The cases in which a DNS Provider alters the records
+   requested by a template are limited to those defined in this
+   document: TTL adjustment and reconciliation, SPF record merging, and
+   sharing of identical records (see Section 10.4.1.3).  Templates are
+   the configuration templates of this protocol.  Re-application and
+   group filtering define how a zone moves from one applied
+   configuration to another (see Section 10).
+
+11.10.  Human-Readable Messages
+
+   Errors returned by the DNS Provider carry a machine-readable error
+   code together with an optional developer-oriented description (see
+   Section 8.3.6).  User-facing display strings in templates and apply
+   parameters are expressed in Unicode (see Section 3).
+
+11.11.  Topics Not Applicable
+
+   The following topics of [I-D.ietf-opsawg-rfc5706bis] do not apply to
+   this protocol:
+
+   *  YANG modules and Information or Data Models: none are defined, for
+      the reasons given in Section 11.1.  The template format is a
+      protocol data format, not a management model, and no separately
+      consumable schema artifact is defined.
+
+   *  Data-plane performance, Operations, Administration, and
+      Maintenance (OAM) traffic, and new performance metrics: the
+      protocol carries no user traffic and generates no OAM traffic.
+
+   *  MTU and IP fragmentation: the protocol runs over HTTP and DNS and
+      defines no transport of its own.
+
+   *  Protocol counters and device or network monitoring: the protocol
+      has no packet-level state and no device-resident instances.
+
+   *  Notification throttling and alarm hierarchies: the protocol
+      defines no notifications.
+
+   *  Encrypted metadata and operator visibility: the protocol hides no
+      information that was previously visible to operators, and the
+      resulting zone content remains public in DNS.
+
+12.  Security Considerations
+
+12.1.  Template Variable Phishing
 
    Templates that accept variable parameters introduce a phishing risk.
    The more static the values in a template record, the more secure the
@@ -3144,7 +3529,7 @@ Table of Contents
    treated as susceptible to phishing by default, and DNS Providers
    display the additional warnings described in Section 10.6.
 
-11.2.  Untrusted DNS Provider Discovery Records
+12.2.  Untrusted DNS Provider Discovery Records
 
    DNS Provider Discovery (see Section 7) requires the Service Provider
    to read the "_domainconnect" TXT record from the target zone and to
@@ -3180,7 +3565,7 @@ Table of Contents
       request timeouts, a maximum response size, and a limit on the
       number of redirects followed
 
-11.3.  Underscored Host Names
+12.3.  Underscored Host Names
 
    The "host" apply parameter is supplied by the requesting party and
    prepended to the template record owner names during Host Name
@@ -3201,7 +3586,7 @@ Table of Contents
    and verbose manner during User Authorization of Changes so that the
    special-meaning target is not obscured.
 
-11.4.  Must-Understand Markers and Pre-Existing Deployments
+12.4.  Must-Understand Markers and Pre-Existing Deployments
 
    The "crit" must-understand marker (see Section 4.3) is effective only
    against implementations that recognize "crit" itself.  Deployments
@@ -3219,7 +3604,7 @@ Table of Contents
    mechanism, and the security of an extension MUST NOT rest on the
    receiver's recognition of "crit" alone.
 
-11.5.  Template Onboarding
+12.5.  Template Onboarding
 
    Templates reach a DNS Provider out of band.  This protocol has no
    mechanism by which a DNS Provider retrieves a template from a Service
@@ -3260,9 +3645,9 @@ Table of Contents
       since a subsequent "version" of an accepted template may widen its
       scope or alter its display fields.
 
-12.  IANA Considerations
+13.  IANA Considerations
 
-12.1.  Registration Procedure for Domain Connect Registries
+13.1.  Registration Procedure for Domain Connect Registries
 
    IANA is requested to create a new registry group named "Domain
    Connect Protocol".  The registration procedure described in this
@@ -3317,7 +3702,7 @@ Table of Contents
    This is distinct from the registration policy of each registry, which
    governs new entries only.
 
-12.2.  Domain Connect Fully Specified Record Types Registry
+13.2.  Domain Connect Fully Specified Record Types Registry
 
    IANA is requested to create a new registry named "Domain Connect
    Fully Specified Record Types" under the "Domain Connect Protocol"
@@ -3438,7 +3823,7 @@ Table of Contents
 
         Table 4: Initial Domain Connect Fully Specified Record Types
 
-12.3.  Domain Connect Settings Properties Registry
+13.3.  Domain Connect Settings Properties Registry
 
    IANA is requested to create a new registry named "Domain Connect
    Settings Properties" under the "Domain Connect Protocol" registry
@@ -3524,11 +3909,11 @@ Table of Contents
 
            Table 5: Initial Domain Connect Settings Properties
 
-12.4.  Domain Connect Template Properties Registry
+13.4.  Domain Connect Template Properties Registry
 
    IANA is requested to create a new registry named "Domain Connect
    Template Properties" under the "Domain Connect Protocol" registry
-   group (see Section 12.3).
+   group (see Section 13.3).
 
    Registration policy:
 
@@ -3640,11 +4025,11 @@ Table of Contents
 
            Table 6: Initial Domain Connect Template Properties
 
-12.5.  Domain Connect Protocol-Level Record Fields Registry
+13.5.  Domain Connect Protocol-Level Record Fields Registry
 
    IANA is requested to create a new registry named "Domain Connect
    Protocol-Level Record Fields" under the "Domain Connect Protocol"
-   registry group (see Section 12.3).
+   registry group (see Section 13.3).
 
    This registry covers only those template record fields that are
    protocol-level, that is, fields whose meaning is defined by this
@@ -3719,7 +4104,7 @@ Table of Contents
               Table 7: Initial Domain Connect Protocol-Level
                               Record Fields
 
-12.6.  Guidance to the DNS Resource Record (RR) TYPEs Registry
+13.6.  Guidance to the DNS Resource Record (RR) TYPEs Registry
 
    To avoid collisions between newly assigned DNS RR TYPE mnemonics and
    the record type names used by Domain Connect, IANA is requested to
@@ -3750,7 +4135,7 @@ Table of Contents
    This records, on the DNS side, the obligation to consult the "Domain
    Connect Fully Specified Record Types" registry described above.
 
-12.7.  Underscore "_domainconnect" DNS Node Name
+13.7.  Underscore "_domainconnect" DNS Node Name
 
    Per [RFC8552], please add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry:
@@ -3763,7 +4148,7 @@ Table of Contents
 
                Table 8: IANA Registration for _domainconnect
 
-12.8.  Media Type Registration for application/domainconnect-
+13.8.  Media Type Registration for application/domainconnect-
        template+json
 
    IANA is requested to register the following media type in the "Media
@@ -3789,7 +4174,7 @@ Table of Contents
       configuration of that domain.  A recipient therefore does not act
       on a template solely because it has been received.  Measures are
       required on DNS Provider side to mitigate risks related to the
-      template and its application (see Section 11 and Section 10.6).
+      template and its application (see Section 12 and Section 10.6).
 
       The format employs no compression, so a template presents no
       decompression-expansion attack surface, nor does it contain any
@@ -3881,6 +4266,16 @@ Acknowledgements
 Change History
 
    This section is to be removed before publishing as an RFC.
+
+Change from draft-ietf-dconn-domainconnect-04 to -05
+
+   *  Added Operational Considerations, stating the management model,
+      summarizing the operational aspects of the protocol, describing
+      the migration of existing [DC-SPEC] deployments, and bounding the
+      scale of its protocol elements.
+
+   *  Specified that a DNS Provider ignores a signature on an apply
+      request for a template that does not require signing.
 
 Change from draft-ietf-dconn-domainconnect-03 to -04
 
@@ -4237,6 +4632,14 @@ Informative References
               Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,
               RFC 6839, January 2013,
               <https://www.rfc-editor.org/info/rfc6839>.
+
+   [I-D.ietf-opsawg-rfc5706bis]
+              Claise, B., Clarke, J., Farrel, A., Barguil, S.,
+              Pignataro, C., and R. Chen, "Guidelines for Considering
+              Operations and Management in IETF Specifications", draft-
+              ietf-opsawg-rfc5706bis-08, 24 September 2026,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-
+              rfc5706bis-08>.
 
    [DC-SPEC]  Blinn, A., Kerola, S., and P. Kowalik, "Domain Connect
               Specification, Version 2.3 Rev. 67", 2 March 2025,

@@ -11,10 +11,21 @@ RUN echo 'xml2rfc --version' >> ~/.bashrc && \
 # Put the md2rfc script in place
 COPY bin/md2rfc /usr/bin/
 
-# Extra tools, plus the Pango libraries WeasyPrint needs for xml2rfc --pdf
+# Extra tools (SSH client for git over SSH, GitHub CLI), plus the Pango
+# libraries WeasyPrint needs for xml2rfc --pdf
 RUN apt-get -y update && \
-    apt-get -y install nano wget fontconfig libpango-1.0-0 libpangoft2-1.0-0 && \
+    apt-get -y install nano wget less openssh-client ca-certificates fontconfig \
+        libpango-1.0-0 libpangoft2-1.0-0 && \
+    mkdir -p -m 755 /etc/apt/keyrings && \
+    wget -qO /etc/apt/keyrings/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list && \
+    apt-get -y update && apt-get -y install gh && \
     apt-get -y clean && rm -rf /var/lib/apt/lists/*
+
+# The bind-mounted workspace is owned by the host user, not root; let git use it
+RUN git config --system --add safe.directory '*'
 
 # Install Plantuml
 RUN wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/share/java/plantuml.jar

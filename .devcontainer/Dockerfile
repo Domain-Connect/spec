@@ -1,21 +1,20 @@
-FROM ubuntu:24.04
+# Official metanorma image: ships Ruby, metanorma-cli, xml2rfc, Java and git
+# preinstalled, so no gem build is needed here.
+FROM metanorma/metanorma:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LANG=en_US.UTF-8
 
 # .bashrc configuration
 RUN echo 'xml2rfc --version' >> ~/.bashrc && \
     echo 'if [ -d ~/xml2rfc ]; then cd ~/xml2rfc; fi' >> ~/.bashrc
 
-RUN apt-get -y update && apt-get -y install curl gpg build-essential && apt-get -y clean
-
-RUN bash -c curl -L https://raw.githubusercontent.com/metanorma/metanorma-linux-setup/master/ubuntu.sh | bash && curl -L https://raw.githubusercontent.com/metanorma/metanorma-linux-setup/master/install-gems.sh | bash
-
 # Put the md2rfc script in place
 COPY bin/md2rfc /usr/bin/
 
-# Install Java JRE needed for plantuml
-RUN apt-get -y update && apt-get -y install git nano default-jre wget && apt-get -y clean
+# Extra tools, plus the Pango libraries WeasyPrint needs for xml2rfc --pdf
+RUN apt-get -y update && \
+    apt-get -y install nano wget fontconfig libpango-1.0-0 libpangoft2-1.0-0 && \
+    apt-get -y clean && rm -rf /var/lib/apt/lists/*
 
 # Install Plantuml
 RUN wget https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar -O /usr/share/java/plantuml.jar
@@ -29,9 +28,8 @@ RUN mkdir -p ~/.fonts/opentype /tmp/fonts && \
     rm -rf /tmp/fonts.tar.gz /tmp/fonts/ && \
     fc-cache -f
 
-# Install xml2rfc and dependencies
-RUN apt-get -y install python3-pip python3-setuptools python3-wheel && \
-    pip3 install xml2rfc --ignore-installed six chardet "xml2rfc[pdf]" --break-system-packages
+# xml2rfc is preinstalled; add the PDF extras (WeasyPrint)
+RUN pip3 install "xml2rfc[pdf]" --break-system-packages
 
 # Specify the working directory when a container is started
 WORKDIR /rfc

@@ -127,8 +127,9 @@ Table of Contents
      11.7.  Verifying Correct Operation
      11.8.  Fault Management
      11.9.  Configuration Management
-     11.10. Human-Readable Messages
-     11.11. Topics Not Applicable
+     11.10. Key Management
+     11.11. Human-Readable Messages
+     11.12. Topics Not Applicable
    12. Security Considerations
      12.1.  Template Variable Phishing
      12.2.  Untrusted DNS Provider Discovery Records
@@ -1699,8 +1700,7 @@ Table of Contents
 
       If omitted, MUST be assumed to be "RS256".
 
-      Support for "RS256" is MANDATORY for both DNS Providers and
-      Service Providers.
+      DNS Providers and Service Providers MUST support "RS256".
 
    "Public Key Format":
       Key:  "t"
@@ -1711,12 +1711,28 @@ Table of Contents
 
       If omitted, MUST be assumed to be "x509".
 
+      DNS Providers and Service Providers MUST support "x509".
+
    A Service Provider MUST publish exactly one public key on any given
    host name.  To use multiple keys, e.g. for key rotation, the Service
    Provider MUST publish each key on a different host name within
    "syncPubKeyDomain".  The "key" apply parameter identifies which host
    to query for each request and MUST be included in the signed apply
    request.
+
+   A Service Provider SHOULD NOT replace the key published at a host
+   name with a different key.  After such a change, caches and secondary
+   name servers can serve the old records for some time, so requests
+   signed with the new key fail verification.  A key whose fragments are
+   updated one at a time can also be retrieved, and cached, as a mix of
+   fragments of both keys, which no signature verifies.  A Service
+   Provider instead publishes the new key on a new host name, as
+   described in Section 11.10.
+
+   A Service Provider revokes a key by removing its TXT records.  A DNS
+   Provider MUST NOT use a retrieved public key beyond the TTL of its
+   TXT records, so that a removal takes effect for all DNS Providers
+   once that TTL has elapsed.
 
    To account for DNS record size limits, a public key MAY be split
    across multiple TXT records at the same host.  All fragments MUST be
@@ -3231,7 +3247,7 @@ Table of Contents
 
    This section follows the guidelines of [I-D.ietf-opsawg-rfc5706bis].
    It summarizes considerations specified elsewhere in this document,
-   and lists the topics that do not apply in Section 11.11.
+   and lists the topics that do not apply in Section 11.12.
 
 11.1.  Management Model
 
@@ -3478,14 +3494,73 @@ Table of Contents
    and group filtering define how a zone moves from one applied
    configuration to another (see Section 10).
 
-11.10.  Human-Readable Messages
+11.10.  Key Management
+
+   Service Providers distribute their public signing keys in DNS.  The
+   key format, its fragmentation into TXT records, and the consistency
+   rules across fragments are defined in Section 6.4.  The private key
+   never leaves the Service Provider.  Before it signs apply requests
+   with a newly published key, a Service Provider can retrieve the key
+   from each authoritative name server of "syncPubKeyDomain" and verify
+   a test signature with it.
+
+   The "RS256" algorithm and the "x509" key format are the defaults of
+   the key record and the set that every DNS Provider and Service
+   Provider supports (see Section 6.4).  They reflect the state of the
+   art at the time of writing and match the deployed base of [DC-SPEC].
+   Recommendations for signature algorithms and key formats evolve, and
+   future revisions of this document can change this set.  The "a" and
+   "t" fields let a Service Provider publish a key with another
+   algorithm or format without changing the protocol.  Signature
+   verification fails at a DNS Provider that does not support that
+   algorithm or format, so a Service Provider establishes support during
+   onboarding.  A move to a new algorithm or format follows the same
+   rollover as a move to a new key.
+
+   A signed apply request carries no expiry.  It can be verified for as
+   long as the key named by its "key" parameter is published.  A Service
+   Provider therefore rolls over keys with an overlap.  It publishes the
+   new key on a new host name within "syncPubKeyDomain", signs new
+   requests with it, and removes the old key only after the longest
+   expected lifetime of a request signed with the old key has elapsed
+   since the last such signature.  That lifetime depends on how the
+   Apply Template URL reaches the user.  A redirect followed at once is
+   used within seconds, while a URL sent by email can wait for days.  If
+   the old key is removed earlier, these requests fail signature
+   verification and the user has to restart the flow.  A new host name
+   can be used as soon as all authoritative name servers serve it,
+   unless it was queried before publication.  In that case a resolver
+   can return a cached negative answer for up to the negative caching
+   TTL of the zone [RFC2308].
+
+   Replacing the key at an existing host name is not advised, for the
+   reasons given in Section 6.4.
+
+   A Service Provider revokes a key, for example after its private key
+   is compromised, by removing the key's TXT records.  Revocation is not
+   immediate.  A DNS Provider can continue to verify requests with a
+   removed key until the TTL of its records has elapsed.  The TTL of the
+   key records therefore bounds the time a revocation takes, and a
+   Service Provider chooses it by weighing that time against the query
+   load on its name servers.  Requests signed with a revoked key fail
+   verification, and the user has to restart the flow with a request
+   signed with the replacement key.  The protocol defines no revocation
+   list and no notification of DNS Providers.
+
+   A signature is verified only when the request is received, never
+   later.  A Service Provider therefore needs a private key only while
+   the matching public key is published, and can destroy it once the
+   public key has been removed from DNS and the TTL of its records has
+   elapsed.
+
+11.11.  Human-Readable Messages
 
    Errors returned by the DNS Provider carry a machine-readable error
    code together with an optional developer-oriented description (see
    Section 8.3.6).  User-facing display strings in templates and apply
    parameters are expressed in Unicode (see Section 3).
 
-11.11.  Topics Not Applicable
+11.12.  Topics Not Applicable
 
    The following topics of [I-D.ietf-opsawg-rfc5706bis] do not apply to
    this protocol:
@@ -4291,6 +4366,12 @@ Change from draft-ietf-dconn-domainconnect-04 to -05
 
    *  Specified that a DNS Provider ignores a signature on an apply
       request for a template that does not require signing.
+
+   *  Added guidance on rollover, revocation and retention of Service
+      Provider signing keys, advised against replacing a key at an
+      existing host name, limited how long a DNS Provider uses a
+      retrieved key, and made the default signature algorithm and key
+      format the set that implementations must support.
 
 Change from draft-ietf-dconn-domainconnect-03 to -04
 

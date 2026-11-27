@@ -1594,9 +1594,9 @@ dc-key-type       =  1*( ALPHA / DIGIT / "-" )
             <t anchor="_374f1845-def0-d90f-6c9a-a308cb34848f">The value MUST conform to the <tt>dc-frag-data</tt> rule above: standard base64 encoding per <xref target="RFC4648"/>.</t>
           </dd>
         </dl>
-        <dl anchor="_4cbb47dc-8b13-c6ff-9f7e-0769997d1eae" newline="true">
+        <dl anchor="_cb0b6d4f-a5e9-6d3d-1dd6-fdfc344fe5dc" newline="true">
           <dt><tt>"Signing Algorithm"</tt>:</dt>
-          <dd anchor="_712ce904-81d3-b1f2-838d-d75c6c5c9f32">
+          <dd anchor="_410ab5b8-5950-133f-729a-68f26c8d2bf7">
             <dl anchor="_793002bf-cf87-ca78-512c-20612bf7ae90">
               <dt>Key:</dt>
               <dd anchor="_1cd64174-968b-bf2a-2989-19d9762baa6f">
@@ -1611,12 +1611,12 @@ dc-key-type       =  1*( ALPHA / DIGIT / "-" )
 </t>
             <t anchor="_9a6604f4-f350-806d-2b38-d9d279f64f43">If omitted, MUST be assumed to be <tt>"RS256"</tt>.
 </t>
-            <t anchor="_07c3d36c-7e07-e50a-9194-39c4d7af6752">Support for <tt>"RS256"</tt> is MANDATORY for both DNS Providers and Service Providers.</t>
+            <t anchor="_c4ec65a1-dbe4-8d96-eba5-8a3ed3684bca">DNS Providers and Service Providers MUST support <tt>"RS256"</tt>.</t>
           </dd>
         </dl>
-        <dl anchor="_99448f4a-b3bd-7c27-69a2-2e69ea6651fe" newline="true">
+        <dl anchor="_9f6134a6-2db1-7bc6-ba08-da2cad873bad" newline="true">
           <dt><tt>"Public Key Format"</tt>:</dt>
-          <dd anchor="_9d7146b8-5b6d-d98c-b641-4d4e1b27fc51">
+          <dd anchor="_44758adb-2eed-f132-2b5e-769364694b98">
             <dl anchor="_f62d9b0c-249b-6b3e-208b-b22adf6e7450">
               <dt>Key:</dt>
               <dd anchor="_99cd5400-726f-31c4-06d8-a2dfe7e8f50f">
@@ -1629,20 +1629,24 @@ dc-key-type       =  1*( ALPHA / DIGIT / "-" )
 </t>
             <t anchor="_bbbd69f9-46dd-e867-29be-5178b618fba6">The value MUST conform to the <tt>dc-key-type</tt> rule above.
 </t>
-            <t anchor="_bda5e766-bf87-4b59-c469-07edd94f33f8">If omitted, MUST be assumed to be <tt>"x509"</tt>.</t>
+            <t anchor="_bda5e766-bf87-4b59-c469-07edd94f33f8">If omitted, MUST be assumed to be <tt>"x509"</tt>.
+</t>
+            <t anchor="_5f4d34dc-e533-8a7d-51ff-060b271c6bb8">DNS Providers and Service Providers MUST support <tt>"x509"</tt>.</t>
           </dd>
         </dl>
         <t anchor="_b5ff41b1-c11d-e476-88d7-e0bde64aa3e2">A Service Provider MUST publish exactly one public key on any given host name. To use multiple keys, e.g. for key rotation, the Service Provider MUST publish each key on a different host name within <tt>"syncPubKeyDomain"</tt>. The <tt>"key"</tt> apply parameter identifies which host to query for each request and MUST be included in the signed apply request.</t>
-        <t anchor="_d6195502-358c-2a6c-2420-8969ed390ebe">To account for DNS record size limits, a public key MAY be split across multiple TXT records at the same host. All fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt> before use. All such TXT records at the same host therefore belong to the same key: the values  <tt>"a"</tt> and <tt>"t"</tt> MUST be equal across them, and their <tt>"d"</tt> fragments MUST have distinct  <tt>"p"</tt> indices.</t>
-        <t anchor="_a6a3d0b4-cc35-17f8-afb0-9d5bfd3554cf">A DNS Provider MAY limit the number of fragments it reassembles. If a key exceeds that limit, signature verification fails and the request is rejected as described in  <xref target="sig-verification"/>. A Service Provider SHOULD therefore publish a key in as few fragments as DNS record size limits allow. A key split into more fragments than necessary risks the rejection of all signed apply requests by DNS Providers that apply such a limit, and enlarges the DNS response, which can force a fallback from UDP to TCP.</t>
-        <t anchor="_5a6bd3d5-978a-b14a-4092-2e138ad6b11f">Given the public key (line breaks for brevity):</t>
+        <t anchor="_acb193f5-f9d8-bdfd-0fa3-2028df471267">A Service Provider SHOULD NOT replace the key published at a host name with a different key. After such a change, caches and secondary name servers can serve the old records for some time, so requests signed with the new key fail verification. A key whose fragments are updated one at a time can also be retrieved, and cached, as a mix of fragments of both keys, which no signature verifies. A Service Provider instead publishes the new key on a new host name, as described in <xref target="ops-key-management"/>.</t>
+        <t anchor="_737fa017-59e1-34a6-dc85-86c3c56c3f11">A Service Provider revokes a key by removing its TXT records. A DNS Provider MUST NOT use a retrieved public key beyond the TTL of its TXT records, so that a removal takes effect for all DNS Providers once that TTL has elapsed.</t>
+        <t anchor="_abdd9952-784f-3698-7d22-93529de6a436">To account for DNS record size limits, a public key MAY be split across multiple TXT records at the same host. All fragments MUST be reassembled in ascending numeric order of  <tt>"p"</tt> before use. All such TXT records at the same host therefore belong to the same key: the values  <tt>"a"</tt> and <tt>"t"</tt> MUST be equal across them, and their <tt>"d"</tt> fragments MUST have distinct  <tt>"p"</tt> indices.</t>
+        <t anchor="_d975d685-fe53-287d-d199-e747fc3e3dc7">A DNS Provider MAY limit the number of fragments it reassembles. If a key exceeds that limit, signature verification fails and the request is rejected as described in  <xref target="sig-verification"/>. A Service Provider SHOULD therefore publish a key in as few fragments as DNS record size limits allow. A key split into more fragments than necessary risks the rejection of all signed apply requests by DNS Providers that apply such a limit, and enlarges the DNS response, which can force a fallback from UDP to TCP.</t>
+        <t anchor="_86bc78c1-d094-9a62-d538-5830946f0c34">Given the public key (line breaks for brevity):</t>
         <sourcecode anchor="_ce37c31a-9b99-6730-337c-aed1feb22858">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN4BHkkv0SBjAzIc
 4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzLIZLNyMfI6qiXnM
 +HMd4byp97zs/3D39Q8iR5poubQcRaGozWx8yQpG0OcVdmEVcTfyR/XSEWC5u16EBNvRn
 NAOAvZYUdWqVyQvXsjnxQot8KcK0QP8iHpoL/1dbdRy2opRPQ2FdZpovUgknybq/6FkeD
 tW7uCQ6Mvu4QxcUa3+WP9nYHKtgWip/eFxpeb+qLvcLHf1h0JXtxLVdyy6OLk3f2JRYUX
 2ZZVDvG3biTpeJz6iRzjGg6MfGxXZHjI8weDjXrJwIDAQAB</sourcecode>
-        <t anchor="_478a9ea3-1cc8-77a3-ef7b-ca00eb308c52">Published at <tt>"_dcpubkeyv1.&lt;syncPubKeyDomain&gt;"</tt> as (line breaks for brevity):</t>
+        <t anchor="_90317aeb-c469-03d3-4fef-87cf8a36bc48">Published at <tt>"_dcpubkeyv1.&lt;syncPubKeyDomain&gt;"</tt> as (line breaks for brevity):</t>
         <t anchor="_88be6370-7ee9-c4cd-9e8e-88b7678ebad6" keepWithNext="true">EXAMPLE: Example: public key published as DNS TXT records</t>
         <sourcecode anchor="_8e5238ba-864d-da75-0beb-bbcd467a208c">p=1,a=RS256,d=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA18SgvpmeasN
 4BHkkv0SBjAzIc4grYLjiAXRtNiBUiGUDMeTzQrKTsWvy9NuxU1dIHCZy9o1CrKNg5EzL
@@ -2798,20 +2802,29 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
         <t anchor="_1d323279-6864-7f39-89d6-c05a0232c898">The local policies of a DNS Provider cover the accepted range or set of TTL values (see <xref target="ttl-record"/>), the record types supported in addition to those required (see <xref target="template-record"/>), the handling of SPF record merging (see <xref target="spf-record-merging"/>), whether applied template state is maintained (see <xref target="template-application"/>), local capabilities and limits checked during conflict detection (see <xref target="conflict-detection"/>), and the amount of detail disclosed to the user during authorization (see <xref target="user_authorization_of_changes"/>).</t>
         <t anchor="_626b06b0-f54b-2623-c587-dc34328c0545">The DNS zone is the persistent result of template application. Applied template state, where maintained, is internal to the DNS Provider. The cases in which a DNS Provider alters the records requested by a template are limited to those defined in this document: TTL adjustment and reconciliation, SPF record merging, and sharing of identical records (see <xref target="identical-records"/>). Re-application and group filtering define how a zone moves from one applied configuration to another (see <xref target="template-application"/>).</t>
       </section>
+      <section anchor="ops-key-management">
+        <name>Key Management</name>
+        <t anchor="_b5cdd7ac-9471-7d7f-fdc8-21d0b4022956">Service Providers distribute their public signing keys in DNS. The key format, its fragmentation into TXT records, and the consistency rules across fragments are defined in <xref target="pubkey-publication"/>. The private key never leaves the Service Provider. Before it signs apply requests with a newly published key, a Service Provider can retrieve the key from each authoritative name server of <tt>"syncPubKeyDomain"</tt> and verify a test signature with it.</t>
+        <t anchor="_a44035de-35b2-c323-2e52-55841f423230">The <tt>"RS256"</tt> algorithm and the <tt>"x509"</tt> key format are the defaults of the key record and the set that every DNS Provider and Service Provider supports (see <xref target="pubkey-publication"/>). They reflect the state of the art at the time of writing and match the deployed base of <xref target="DC-SPEC"/>. Recommendations for signature algorithms and key formats evolve, and future revisions of this document can change this set. The <tt>"a"</tt> and <tt>"t"</tt> fields let a Service Provider publish a key with another algorithm or format without changing the protocol. Signature verification fails at a DNS Provider that does not support that algorithm or format, so a Service Provider establishes support during onboarding. A move to a new algorithm or format follows the same rollover as a move to a new key.</t>
+        <t anchor="_94f8dd41-22d4-de73-ad5a-381cc454081f">A signed apply request carries no expiry. It can be verified for as long as the key named by its <tt>"key"</tt> parameter is published. A Service Provider therefore rolls over keys with an overlap. It publishes the new key on a new host name within <tt>"syncPubKeyDomain"</tt>, signs new requests with it, and removes the old key only after the longest expected lifetime of a request signed with the old key has elapsed since the last such signature. That lifetime depends on how the Apply Template URL reaches the user. A redirect followed at once is used within seconds, while a URL sent by email can wait for days. If the old key is removed earlier, these requests fail signature verification and the user has to restart the flow. A new host name can be used as soon as all authoritative name servers serve it, unless it was queried before publication. In that case a resolver can return a cached negative answer for up to the negative caching TTL of the zone <xref target="RFC2308"/>.</t>
+        <t anchor="_bfb963f6-2aa9-9c4f-59c7-8fcf60971bad">Replacing the key at an existing host name is not advised, for the reasons given in <xref target="pubkey-publication"/>.</t>
+        <t anchor="_4bcd97b6-efe8-dc9b-2d7e-a329e1a10ac2">A Service Provider revokes a key, for example after its private key is compromised, by removing the key's TXT records. Revocation is not immediate. A DNS Provider can continue to verify requests with a removed key until the TTL of its records has elapsed. The TTL of the key records therefore bounds the time a revocation takes, and a Service Provider chooses it by weighing that time against the query load on its name servers. Requests signed with a revoked key fail verification, and the user has to restart the flow with a request signed with the replacement key. The protocol defines no revocation list and no notification of DNS Providers.</t>
+        <t anchor="_f21834ae-d6bf-c74b-7036-5c0d7815fbe9">A signature is verified only when the request is received, never later. A Service Provider therefore needs a private key only while the matching public key is published, and can destroy it once the public key has been removed from DNS and the TTL of its records has elapsed.</t>
+      </section>
       <section anchor="ops-messages">
         <name>Human-Readable Messages</name>
-        <t anchor="_9e182f05-12a0-136d-0329-1a11adb50289">Errors returned by the DNS Provider carry a machine-readable error code together with an optional developer-oriented description (see <xref target="sync-apply-error-response"/>). User-facing display strings in templates and apply parameters are expressed in Unicode (see <xref target="terminology"/>).</t>
+        <t anchor="_d152364c-7a8e-9605-f2ef-9a8aa47b1cb7">Errors returned by the DNS Provider carry a machine-readable error code together with an optional developer-oriented description (see <xref target="sync-apply-error-response"/>). User-facing display strings in templates and apply parameters are expressed in Unicode (see <xref target="terminology"/>).</t>
       </section>
       <section anchor="ops-not-applicable">
         <name>Topics Not Applicable</name>
-        <t anchor="_f1004bc6-0474-dc6f-8416-017581d2a7a5">The following topics of <xref target="I-D.ietf-opsawg-rfc5706bis"/> do not apply to this protocol:</t>
-        <ul anchor="_92ff0d39-3ca6-2a29-eabc-b22d7acf8884">
-          <li anchor="_84f88a22-ddf0-3c51-9d11-5f58d74326f8">YANG modules and Information or Data Models: none are defined, for the reasons given in <xref target="ops-management-model"/>. The template format is a protocol data format, not a management model, and no separately consumable schema artifact is defined.</li>
-          <li anchor="_476e5adc-8505-b743-e2b2-5c5945935a34">Data-plane performance, Operations, Administration, and Maintenance (OAM) traffic, and new performance metrics: the protocol carries no user traffic and generates no OAM traffic.</li>
-          <li anchor="_cfb34ca0-822a-0fb6-8d8d-2bca3abd2b3c">MTU and IP fragmentation: the protocol runs over HTTP and DNS and defines no transport of its own.</li>
-          <li anchor="_352367b9-6db2-d042-213c-68cff59f113f">Protocol counters and device or network monitoring: the protocol has no packet-level state and no device-resident instances.</li>
-          <li anchor="_95fd054d-0907-4453-1c74-6c6e61b1a004">Notification throttling and alarm hierarchies: the protocol defines no notifications.</li>
-          <li anchor="_90845313-1f89-b8b0-26f6-32e5cbccd041">Encrypted metadata and operator visibility: the protocol hides no information that was previously visible to operators, and the resulting zone content remains public in DNS.</li>
+        <t anchor="_88d2b93f-143d-6059-52df-97a6ad53d78f">The following topics of <xref target="I-D.ietf-opsawg-rfc5706bis"/> do not apply to this protocol:</t>
+        <ul anchor="_2f012ffe-56ac-3d53-54c1-764746fc2556">
+          <li anchor="_ec6579c2-af62-24be-094e-0eb6ea3cfdfb">YANG modules and Information or Data Models: none are defined, for the reasons given in <xref target="ops-management-model"/>. The template format is a protocol data format, not a management model, and no separately consumable schema artifact is defined.</li>
+          <li anchor="_12218931-395a-42b9-d167-a47110562163">Data-plane performance, Operations, Administration, and Maintenance (OAM) traffic, and new performance metrics: the protocol carries no user traffic and generates no OAM traffic.</li>
+          <li anchor="_4df089a3-a392-735e-c558-940f19341774">MTU and IP fragmentation: the protocol runs over HTTP and DNS and defines no transport of its own.</li>
+          <li anchor="_518c09fc-4c21-4d19-d6fc-fbb91abf4fb5">Protocol counters and device or network monitoring: the protocol has no packet-level state and no device-resident instances.</li>
+          <li anchor="_d2b9718f-d6bd-3a94-65e4-036e7baa751f">Notification throttling and alarm hierarchies: the protocol defines no notifications.</li>
+          <li anchor="_ec29be99-d89e-6151-48f3-547b5ee23bf0">Encrypted metadata and operator visibility: the protocol hides no information that was previously visible to operators, and the resulting zone content remains public in DNS.</li>
         </ul>
       </section>
     </section>
@@ -3676,13 +3689,14 @@ r2.example.com. TXT v=spf1 include:_spf.newsletter.example ~all
         <li anchor="_46b0167b-92ce-a570-9894-83fb9ffdd685">Arnt Gulbrandsen</li>
       </ul>
     </section>
-    <section anchor="_203cd29b-2661-1c40-ff92-cd8629708275" numbered="false" toc="include" removeInRFC="true">
+    <section anchor="_d79a1877-3a51-1e79-2cdf-70133580527b" numbered="false" toc="include" removeInRFC="true">
       <name>Change History</name>
-      <section anchor="_14855a71-1e60-3e00-3e86-b0cc0330504d" numbered="false" toc="exclude">
+      <section anchor="_4f12a5a0-7a28-eebf-5a5e-9ba61fdfd41e" numbered="false" toc="exclude">
         <name>Change from draft-ietf-dconn-domainconnect-04 to -05</name>
-        <ul anchor="_54903e0a-e8a5-9219-b193-3ffa943b82f6">
+        <ul anchor="_e8deaa4e-77a7-4b65-9f9e-ff863e322744">
           <li anchor="_06449ab9-41b6-7a00-20de-8832657330f1">Added <xref target="operational-considerations" format="title"/>, stating the management model, summarizing the operational aspects of the protocol, describing the migration of existing <xref target="DC-SPEC"/> deployments, and bounding the scale of its protocol elements, with default limits and timers for discovery, template retrieval and verification of changes, and back-off from overloaded DNS Provider end-points.</li>
           <li anchor="_e07154d8-7e85-a8f9-900f-69ce4fffa3f7">Specified that a DNS Provider ignores a signature on an apply request for a template that does not require signing.</li>
+          <li anchor="_b0f8a0e1-29dd-dee8-c558-c7081ee01555">Added guidance on rollover, revocation and retention of Service Provider signing keys, advised against replacing a key at an existing host name, limited how long a DNS Provider uses a retrieved key, and made the default signature algorithm and key format the set that implementations must support.</li>
         </ul>
       </section>
       <section anchor="_d0019bd5-59b1-3d7a-2fdc-6a6816a4fde6" numbered="false" toc="exclude">

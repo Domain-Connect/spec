@@ -361,7 +361,7 @@ Service Providers are not assumed to be trusted by default. A malicious actor ma
 
 Templates define and restrict the permitted scope of DNS modifications. By fixing the records that a Service Provider may affect, templates ensure that no changes beyond the approved scope can be applied.
 
-As part of its template acceptance policy, a DNS Provider MAY limit the number of records in a template. Such a limit is enforced during onboarding by rejecting the template, so it does not cause apply requests for an onboarded template to fail.
+As part of its template acceptance policy, a DNS Provider MAY limit the number of records in a template and the size of a template. A DNS Provider SHOULD accept templates of at least 20000 octets in their JSON serialization. A Service Provider SHOULD NOT create templates larger than 20000 octets, because a larger template risks rejection during onboarding. Such limits are enforced during onboarding by rejecting the template, so they do not cause apply requests for an onboarded template to fail.
 
 [[versioning]]
 === Protocol Versioning and Extensibility
@@ -1588,7 +1588,17 @@ call was successful. The response is the JSON described above.
 |Not Found
 |404
 |A response of a 404 indicates that the DNS Provider does not have the zone.
+
+|Too Many Requests
+|429
+|The DNS Provider limits the rate of requests <<RFC6585>>. The response MAY carry a `"Retry-After"` header field.
+
+|Service Unavailable
+|503
+|The DNS Provider is temporarily unable to handle the request. The response MAY carry a `"Retry-After"` header field.
 |=======================================================================
+
+The Settings End-Point and the Query Supported Template end-point (see <<query-supported-template>>) are unauthenticated. A DNS Provider MAY limit the rate of requests to them and respond with status code 429 (Too Many Requests) <<RFC6585>> or 503 (Service Unavailable) (Section 15.6.4 of <<RFC9110>>) when a limit is exceeded. A Service Provider that receives either status code, or no response, MAY repeat the request, since both end-points are safe and idempotent (Section 9.2.2 of <<RFC9110>>). It SHOULD NOT repeat the request before the time given in a `"Retry-After"` header field (Section 10.2.3 of <<RFC9110>>). Without that header field, it SHOULD increase the interval between repeated requests exponentially <<RFC8961>>. Repeating requests sooner adds load to a DNS Provider that is already overloaded and delays its recovery.
 
 [[settings-property-extensibility]]
 ==== Settings Property Extensibility
@@ -1725,6 +1735,8 @@ returns the full template object in the response body, it MUST set the
 (see <<iana-media-type>>). A DNS Provider that does not return the full
 template object responds as described above.
 
+A Service Provider that requests the full template object SHOULD accept a response body of at least 20000 octets, the template size that DNS Providers accept during onboarding (see <<trust-model>>). With a smaller limit, the Service Provider can fail to retrieve a template that a DNS Provider has onboarded.
+
 Returning a status of 404 indicates the template is not supported.
 
 [cols=",,",options="header",title="https status codes for the Query Supported Template end-point"]
@@ -1741,6 +1753,14 @@ call was successful. The response OPTIONALLY contains the version or template.
 |Not Found
 |404
 |A response of a 404 indicates that the template is not supported
+
+|Too Many Requests
+|429
+|The DNS Provider limits the rate of requests <<RFC6585>>. The response MAY carry a `"Retry-After"` header field.
+
+|Service Unavailable
+|503
+|The DNS Provider is temporarily unable to handle the request. The response MAY carry a `"Retry-After"` header field.
 |=======================================================================
 
 [[synchronous-flow]]
@@ -2115,9 +2135,9 @@ After the synchronous flow completes, the Service Provider SHOULD verify that th
 
 DNS verification MUST be treated as the authoritative signal of success. A `"redirect_uri"` callback received without an `"error"` parameter does not constitute proof that the template was applied. Users can modify redirect URIs in the user agent, so a successful-looking redirect MUST NOT be relied upon as confirmation of DNS changes. Similarly, a `"redirect_uri"` callback received with an `"error"` parameter does not constitute proof that the template was NOT applied. The DNS Provider MAY have applied the template before the error condition arose.
 
-Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism with appropriate intervals until the expected records are observed or a timeout is reached.
+Receipt of a protocol-level completion signal MAY be used as a trigger to initiate DNS verification. However, the Service Provider MUST account for DNS propagation delay and MUST implement a retry mechanism until the expected records are observed or a timeout is reached. The Service Provider SHOULD wait at least 5 seconds between consecutive verification queries to the same name server, and SHOULD double the interval after each unsuccessful attempt, up to a maximum interval of 5 minutes, following the principles of <<RFC8961>>. Shorter or constant intervals add load on the authoritative name servers of the zone without making the records visible sooner. The Service Provider SHOULD continue verification for at least 1 hour after the synchronous flow completes, because a DNS Provider can provision the changes asynchronously after the user has consented. A shorter timeout can report a template as not applied while its records are still being provisioned.
 
-To minimize delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly.
+To minimize delays caused by DNS resolver caching, it is RECOMMENDED that the Service Provider query a DNS resolver configured with low TTL overrides, or query the authoritative name servers directly. A resolver that was queried for a name before the records were added can return a cached negative answer for up to the negative caching TTL of the zone <<RFC2308>>.
 
 [[template-processing]]
 == Resolving Template Variables
@@ -2420,12 +2440,12 @@ Examples of template processing are in <<examples>>.
 [[operational-considerations]]
 == Operational Considerations
 
-This section discusses the operational and manageability aspects of Domain Connect, following the guidelines of <<I-D.ietf-opsawg-rfc5706bis>>. Where a consideration is specified elsewhere in this document, this section summarizes it and refers to the normative text. Topics of those guidelines that do not apply to this protocol are listed, each with the reason, in <<ops-not-applicable>>.
+This section follows the guidelines of <<I-D.ietf-opsawg-rfc5706bis>>. It summarizes considerations specified elsewhere in this document, and lists the topics that do not apply in <<ops-not-applicable>>.
 
 [[ops-management-model]]
 === Management Model
 
-Domain Connect is an application-layer provisioning protocol between Service Providers and DNS Providers. It is not a network management protocol and does not manage network devices. The entities operated and managed in a Domain Connect deployment are:
+Domain Connect is an application-layer provisioning protocol, not a network management protocol. The managed entities are:
 
 * the `"_domainconnect"` TXT record served for each zone hosted by a DNS Provider (see <<dns-provider-discovery>>);
 * the data returned by the Settings End-Point of a DNS Provider (see <<dns-provider-discovery>>);
@@ -2434,47 +2454,45 @@ Domain Connect is an application-layer provisioning protocol between Service Pro
 * the applied template state, where a DNS Provider maintains it (see <<template-application>>);
 * the local policies of a DNS Provider that govern template application (see <<ops-configuration>>).
 
-Each of these entities is managed locally by the party that owns it, through interfaces specific to that party. A Service Provider authors its templates and publishes its signing keys in its own DNS zone. A DNS Provider configures its discovery records, its Settings End-Point, its local policies and the set of onboarded templates in its own systems. Templates pass from the Service Provider to the DNS Provider through the out-of-band onboarding process described in <<trust-model>> and <<sec-template-onboarding>>. Users manage the resulting DNS records through the control panel or other interfaces of their DNS Provider. The zone changes that result from applying a template reach the authoritative servers through whatever provisioning mechanisms the DNS Provider already uses, which are outside the scope of this document.
+Each entity is managed by the party that owns it, through interfaces of its own. Templates reach the DNS Provider through out-of-band onboarding (see <<sec-template-onboarding>>). How the resulting zone changes reach the authoritative servers is outside the scope of this document.
 
-This document deliberately defines no standardized management protocol, Information Model, or Data Model for these entities. Onboarding a template is a bilateral trust decision that involves verification of the submitter's identity and human review of the requested records (see <<sec-template-onboarding>>). It is not suited to automation through a generic management interface. The remaining entities are internal to a single operator, and interoperability between operators does not depend on how they are managed. Because onboarding is bilateral, a Service Provider onboards its templates with each DNS Provider separately, and the effort grows with the number of DNS Providers it wants to reach. The deployed base of <<DC-SPEC>> has operated at this scale without a standardized management interface.
-
-Where one party needs visibility into the configuration of another, the protocol provides read-only views. The Settings End-Point describes the DNS Provider's support for a given zone, and the Query Supported Template end-point (see <<query-supported-template>>) reveals whether a template is deployed and, optionally, which version.
+This document deliberately defines no standardized management protocol, Information Model, or Data Model for these entities. Onboarding a template is a bilateral trust decision that involves human review (see <<sec-template-onboarding>>), and is not suited to a generic management interface. The other entities are internal to a single operator. The onboarding effort grows with the number of DNS Providers a Service Provider reaches. The deployed base of <<DC-SPEC>> has operated at this scale without a standardized management interface.
 
 [[ops-deployment]]
 === Deployment and Initial Setup
 
-To deploy Domain Connect, a DNS Provider answers queries for the `"_domainconnect"` TXT record of the zones it hosts, operates the Settings End-Point and the end-points of <<applying-domain-connect>> over HTTPS, and provides the consent user experience of <<user_authorization_of_changes>>. The `"_domainconnect"` record need not be stored in each zone. It can be synthesized or delegated by CNAME, as described in <<dns-provider-discovery>>. A Service Provider deploys Domain Connect by onboarding its templates, optionally publishing a signing key (see <<pubkey-publication>>), implementing discovery, and verifying the resulting DNS changes (see <<verification-of-changes>>).
+A DNS Provider deploys Domain Connect by serving the `"_domainconnect"` record, which can be synthesized or delegated by CNAME (see <<dns-provider-discovery>>), the end-points of <<applying-domain-connect>>, and the consent user experience (see <<user_authorization_of_changes>>). A Service Provider onboards its templates, optionally publishes a signing key, and implements discovery and verification of changes.
 
-Deployment is incremental. Templates are onboarded one at a time, a DNS Provider decides per zone whether to serve a `"_domainconnect"` record, and a DNS Provider can withhold the synchronous flow for a zone by omitting `"urlSyncUX"` from the Settings End-Point response. No coordination is needed between parties beyond the onboarding of the templates concerned.
+Deployment is incremental. Templates are onboarded one at a time, and a DNS Provider decides per zone whether to offer Domain Connect (see <<dns-provider-discovery>>).
 
-The template format defines default values for its optional properties and record fields (see <<template-definition>> and <<template-record>>), and public key publication defines defaults for the key algorithm and type (see <<pubkey-publication>>). These defaults favor conservative behavior. Records are essential unless marked otherwise (see <<essential-records>>), a TXT record does not conflict with other TXT records unless the template says so (see <<conflict-detection>>), and an unsigned apply request is treated as susceptible to phishing (see <<user_authorization_of_changes>>). The TTL of each record is requested by the template and is adjusted by the DNS Provider to its local policy, rather than rejected (see <<ttl-record>>). The time and resources a Service Provider spends on discovery and on verification of changes are bounded as described in <<sec-discovery-record>> and <<verification-of-changes>>.
+The defaults of the template format and of public key publication favor conservative behavior. For example, records are essential unless marked otherwise (see <<essential-records>>), and unsigned apply requests are treated as susceptible to phishing (see <<user_authorization_of_changes>>). Discovery and verification of changes have default limits and timers (see <<sec-discovery-record>> and <<verification-of-changes>>).
 
-The values actually in effect remain observable. The records written to the zone, including any TTL adjusted by the DNS Provider, are visible in public DNS, and the deployed version of a template can be obtained through <<query-supported-template>>.
+The values in effect remain observable: the zone content in public DNS, and the deployed template version through <<query-supported-template>>.
 
 [[ops-migration]]
 === Migration and Coexistence
 
-This document is derived from <<DC-SPEC>>, which is widely deployed. Compatibility with that installed base is preserved by keeping the `"/v2"` path segment and the format of the `"_domainconnect"` record (see <<versioning>>), and by reserving elements of <<DC-SPEC>> that this document does not specify (see <<reserved-for-extensions>>). A deployment can serve more than one version path segment concurrently, so a future incompatible revision can be introduced alongside this one. Extensions under the existing path segment follow the ignore-unknown and must-understand rules of <<versioning>>. The limits of the must-understand marker against deployments that predate this document are described in <<sec-crit-legacy>>.
+Compatibility with the deployed base of <<DC-SPEC>> is preserved by keeping the `"/v2"` path segment and the format of the `"_domainconnect"` record (see <<versioning>>), and by reserving the elements of <<DC-SPEC>> that this document does not specify (see <<reserved-for-extensions>>).
 
-Because both documents use the same path segment, an implementation of this document cannot tell from the protocol whether its counterpart implements this document or <<DC-SPEC>> alone. The differences between the two are therefore limited to stricter validation, clarified processing and new optional elements, so that each party can migrate independently without coordinating with its counterparts. The synchronous flow, its parameters and its error redirect are unchanged. A template written for <<DC-SPEC>> carries no `"templateSpecVersion"` and is processed as version `"1"` (see <<template-property-extensibility>>). It remains usable without change, provided it conforms to the syntax in <<terminology>>.
+Because both documents use the same path segment, a party cannot tell whether its counterpart implements this document or <<DC-SPEC>> alone. The differences are therefore limited to stricter validation, clarified processing and new optional elements, so that each party can migrate independently. A template written for <<DC-SPEC>> is processed as `"templateSpecVersion"` `"1"` (see <<template-property-extensibility>>), and remains usable if it conforms to the syntax in <<terminology>>.
 
 A DNS Provider that implements <<DC-SPEC>> conforms to this document by addressing the following points:
 
-* Its `"_domainconnect"` record content conforms to the validity rules of <<dns-provider-discovery>>. Service Providers implementing this document reject non-conforming records, so a record that carries a scheme, query or fragment no longer leads to discovery.
-* It treats every unsigned apply request as susceptible to phishing, as described in <<user_authorization_of_changes>>, independent of the deprecated `"warnPhishing"` flag. Users therefore see additional warnings for unsigned templates that were previously presented without them.
-* It verifies signatures over the query string as received (see <<sig-verification>>). This accepts both signatures generated under <<DC-SPEC>> and signatures over the canonical input string of <<signing-procedure>>.
-* It ignores template properties, record fields and apply parameters it does not recognize, and rejects a template or request whose `"crit"` lists an element it does not understand, or whose `"templateSpecVersion"` it does not support (see <<versioning>>).
+* Its `"_domainconnect"` record content conforms to the validity rules of <<dns-provider-discovery>>.
+* It treats every unsigned apply request as susceptible to phishing, as described in <<user_authorization_of_changes>>, independent of the deprecated `"warnPhishing"` flag.
+* It verifies signatures over the query string as received (see <<sig-verification>>), which accepts signatures generated under either document.
+* It applies the ignore-unknown and must-understand rules of <<versioning>>.
 
-The asynchronous flow of <<DC-SPEC>>, together with the settings properties and apply parameters that serve it, is not specified by this document and is Reserved (see <<reserved-for-extensions>>). A DNS Provider that offers it can continue to do so alongside the synchronous flow.
+The asynchronous flow of <<DC-SPEC>> is Reserved (see <<reserved-for-extensions>>), and a DNS Provider can continue to offer it alongside the synchronous flow.
 
 A Service Provider that implements <<DC-SPEC>> conforms to this document by addressing the following points:
 
 * It rejects `"_domainconnect"` record content that does not conform to <<dns-provider-discovery>>, and bounds its discovery requests as described in <<sec-discovery-record>>.
-* It signs apply requests over the canonical input string of <<signing-procedure>> and sends the signed query string unchanged. DNS Providers that verify the received query string accept such signatures whether or not they implement this document.
+* It signs apply requests over the canonical input string of <<signing-procedure>>, which DNS Providers that verify the received query string accept.
 * It does not set the deprecated `"warnPhishing"` flag in new templates. It continues to set the deprecated `"shared"` flag together with `"sharedProviderName"` where DNS Providers predating version 2.2 of <<DC-SPEC>> are to be supported (see <<template-definition>>).
-* It uses `"crit"` and `"templateSpecVersion"` only with the limits described in <<sec-crit-legacy>> in mind. A DNS Provider that implements <<DC-SPEC>> alone ignores both properties. Because templates are onboarded with each DNS Provider separately, onboarding is the point at which a Service Provider can establish whether a DNS Provider supports them.
+* It uses `"crit"` and `"templateSpecVersion"` with the limits of <<sec-crit-legacy>> in mind, and establishes support for them during onboarding.
 
-Migration also includes moving a template from unsigned to signed requests. Adding `"syncPubKeyDomain"` to a template takes effect at each DNS Provider only when that DNS Provider onboards the updated version. From then on, it rejects unsigned requests for the template (see <<signing-procedure>>). A DNS Provider that still holds the earlier version ignores the signature and processes the request as unsigned (see <<sig-verification>>). A Service Provider can therefore publish its key (see <<pubkey-publication>>) and sign every apply request for the template before submitting the updated version, so that requests remain accepted while DNS Providers hold different versions of the template. Conversely, an update that removes `"syncPubKeyDomain"` or widens `"syncRedirectDomain"` weakens the protection of the template, and is subject to the re-review described in <<sec-template-onboarding>>.
+A Service Provider that adds `"syncPubKeyDomain"` to a template can publish its key (see <<pubkey-publication>>) and sign every apply request before submitting the updated version. A DNS Provider that still holds the earlier version ignores the signature (see <<sig-verification>>), and one that holds the updated version rejects unsigned requests (see <<signing-procedure>>). An update that removes `"syncPubKeyDomain"` or widens `"syncRedirectDomain"` is subject to the re-review described in <<sec-template-onboarding>>.
 
 [[ops-dependencies]]
 === Dependencies on Other Protocols
@@ -2484,37 +2502,41 @@ Domain Connect depends on the DNS for DNS Provider discovery, for publication of
 [[ops-network-impact]]
 === Impact on DNS and Network Operation
 
-The applicability of the protocol, and the scenarios outside its scope, are described in the "Use Cases" section. Domain Connect produces ordinary DNS records and introduces no new behavior in DNS resolution. Its interactions with the DNS are limited to the following: TTL reconciliation within an RRset (see <<steps-to-apply>>), coexistence rules of the DNS protocol (see <<conflict-detection>>), the constraints of merged SPF records (see <<spf-record-merging>>), and the additional queries issued for discovery, for retrieval of signing keys (see <<sig-verification>>) and for verification of changes (see <<verification-of-changes>>).
+Domain Connect produces ordinary DNS records and introduces no new behavior in DNS resolution. Its interactions with the DNS are limited to the following: TTL reconciliation within an RRset (see <<steps-to-apply>>), coexistence rules of the DNS protocol (see <<conflict-detection>>), the constraints of merged SPF records (see <<spf-record-merging>>), and the additional queries issued for discovery, for retrieval of signing keys (see <<sig-verification>>) and for verification of changes (see <<verification-of-changes>>).
+
+Verification of changes issues about 17 queries to each authoritative name server during the recommended hour (see <<verification-of-changes>>). The public Settings End-Point and Query Supported Template end-point can be queried at high rates, including by automated clients. DNS Providers can rate-limit them, and Service Providers back off (see <<dns-provider-discovery>>).
+
+Applying a template requires the consent of a user authenticated at the DNS Provider (see <<user_authorization_of_changes>>), and unattended automation is outside the scope of this protocol (see "Use Cases out of scope"). A DNS Provider cannot distinguish an automated agent acting in the user's authenticated session from the user, and treats its consent as the user's.
 
 [[ops-limits]]
 === Limits on Scale
 
-This section summarizes the limits on the size and number of protocol elements, and the behavior when a limit is exceeded. Limits on the length of identifiers and display strings are part of the syntax in <<terminology>>. The resources a Service Provider spends on a single discovery request are bounded as described in <<sec-discovery-record>>.
+Limits on the length of identifiers and display strings are part of the syntax in <<terminology>>.
 
-The number of records an apply request can write is fixed by the template, and group filtering (see <<group-filtering>>) can only reduce it. A DNS Provider that limits the number of records per template therefore enforces that limit when the template is onboarded (see <<trust-model>>), not when it is applied.
+A DNS Provider bounds the size of the templates it onboards and the number of their records (see <<trust-model>>), which also bounds the records written by an apply request and the full template object returned by <<query-supported-template>>. The value of 20000 octets that DNS Providers accept is twice the size of the largest of the about 2250 templates in the public Domain Connect template repository <<DC-TEMPLATES>> at the time of writing, which is about 10000 octets. The same value bounds the Settings End-Point response that a Service Provider accepts during discovery (see <<sec-discovery-record>>).
 
-The length of the Apply Template URL grows with the number and size of the variables, with the `"redirect_uri"` and `"state"` values, and with the signature. <<apply-template-url>> sets a minimum URL length that DNS Providers accept and that Service Providers stay within, and describes how a request that exceeds the length a DNS Provider supports is rejected.
-
-A public key published in many fragments enlarges DNS responses and costs the DNS Provider additional processing. <<pubkey-publication>> allows DNS Providers to limit the number of fragments, in which case signature verification fails, and therefore asks Service Providers to keep the number of fragments small.
-
-Each `"_domainconnect"` record a Service Provider attempts leads to a separate HTTPS request. <<dns-provider-discovery>> therefore asks the Service Provider to limit the number of records it attempts, and treats reaching that limit as a discovery failure.
+Further limits apply to the length of the Apply Template URL (see <<apply-template-url>>), the number of fragments of a public key (see <<pubkey-publication>>) and the number of `"_domainconnect"` records a Service Provider attempts (see <<dns-provider-discovery>>). Each of these sections describes the behavior when the limit is exceeded.
 
 [[ops-verification]]
 === Verifying Correct Operation
 
 The authoritative signal that a template was applied is the content of the DNS zone, not the outcome of the synchronous flow (see <<verification-of-changes>>). A Service Provider can additionally confirm that it reached the correct DNS Provider by comparing `"nameServers"` with the authoritative name servers of the zone (see <<dns-provider-discovery>>), and that a template is deployed in the expected version through <<query-supported-template>>.
 
+A Service Provider can monitor the service as the user experiences it by measuring the time from the start of the synchronous flow until the applied records are verified, and the share of flows that end in an error or are never verified. A DNS Provider can monitor the number of apply requests per template, and the number rejected per error code or for a failed signature verification. No new tooling is needed for these tasks. Standard DNS query tools and HTTP clients suffice to inspect the `"_domainconnect"` record, the Settings End-Point, published keys and the zone content.
+
 [[ops-fault-management]]
 === Fault Management
 
 Faults are reported per request. Discovery failures surface as invalid or missing `"_domainconnect"` records, or as a Settings End-Point that does not serve the zone (see <<dns-provider-discovery>>). Apply failures are returned through the error redirect of <<sync-apply-error-response>>, which carries a machine-readable error code. The protocol defines no notifications. A failure that occurs after the user has consented, for example a queued change that never reaches the authoritative servers, is detected only by verification of the zone content (see <<verification-of-changes>>). Messages and templates are validated against the syntax in <<terminology>> and the rules of each section, so a faulty message can be distinguished from a valid one.
 
+To debug a failed interaction, a Service Provider combines the error code and description of the error redirect, the `"nameServers"` comparison and the template version reported by <<query-supported-template>> with the zone content observed in DNS. The protocol carries no identifier that correlates a request across both parties. The `"state"` parameter correlates the error redirect with the request only for the Service Provider.
+
 [[ops-configuration]]
 === Configuration Management
 
-The configuration of a Service Provider consists of its templates and its published signing keys. The configuration of a DNS Provider consists of its discovery data, the onboarded templates and the local policies that govern template application. This document refers to such local policy for the accepted range or set of TTL values (see <<ttl-record>>), the record types supported in addition to those required (see <<template-record>>), the handling of SPF record merging (see <<spf-record-merging>>), whether applied template state is maintained (see <<template-application>>), local capabilities and limits checked during conflict detection (see <<conflict-detection>>), and the amount of detail disclosed to the user during authorization (see <<user_authorization_of_changes>>).
+The local policies of a DNS Provider cover the accepted range or set of TTL values (see <<ttl-record>>), the record types supported in addition to those required (see <<template-record>>), the handling of SPF record merging (see <<spf-record-merging>>), whether applied template state is maintained (see <<template-application>>), local capabilities and limits checked during conflict detection (see <<conflict-detection>>), and the amount of detail disclosed to the user during authorization (see <<user_authorization_of_changes>>).
 
-The DNS zone is the persistent result of template application. Applied template state, where maintained, is internal to the DNS Provider. The cases in which a DNS Provider alters the records requested by a template are limited to those defined in this document: TTL adjustment and reconciliation, SPF record merging, and sharing of identical records (see <<identical-records>>). Templates are the configuration templates of this protocol. Re-application and group filtering define how a zone moves from one applied configuration to another (see <<template-application>>).
+The DNS zone is the persistent result of template application. Applied template state, where maintained, is internal to the DNS Provider. The cases in which a DNS Provider alters the records requested by a template are limited to those defined in this document: TTL adjustment and reconciliation, SPF record merging, and sharing of identical records (see <<identical-records>>). Re-application and group filtering define how a zone moves from one applied configuration to another (see <<template-application>>).
 
 [[ops-messages]]
 === Human-Readable Messages
@@ -2560,6 +2582,8 @@ Service Providers MUST treat the `"_domainconnect"` TXT record content, and the 
 * SHOULD reject derived authorities that resolve to loopback, link-local, private-use, or otherwise internal addresses, unless the Service Provider has a specific reason to permit them
 
 * MUST bound the discovery request, including connection and total-request timeouts, a maximum response size, and a limit on the number of redirects followed
+
+Unless local policy requires otherwise, it is RECOMMENDED that a Service Provider abort a Settings End-Point request that has not completed within 10 seconds, accept response bodies of at most 20000 octets, and follow at most 5 redirects, the limit historically recommended for HTTP (see Section 15.4 of <<RFC9110>>). Settings End-Point responses are small, and discovery usually happens while the user waits. A longer timeout or a larger limit lets a malicious zone hold the Service Provider's resources for longer.
 
 [[sec-underscore-host]]
 === Underscored Host Names
@@ -3139,7 +3163,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-04 to -05
-- Added <<operational-considerations,format=title>>, stating the management model, summarizing the operational aspects of the protocol, describing the migration of existing <<DC-SPEC>> deployments, and bounding the scale of its protocol elements.
+- Added <<operational-considerations,format=title>>, stating the management model, summarizing the operational aspects of the protocol, describing the migration of existing <<DC-SPEC>> deployments, and bounding the scale of its protocol elements, with default limits and timers for discovery, template retrieval and verification of changes, and back-off from overloaded DNS Provider end-points.
 - Specified that a DNS Provider ignores a signature on an apply request for a template that does not require signing.
 
 [toc=exclude,numbered=false]
@@ -3272,10 +3296,13 @@ The authors wish to thank the following persons for their feedback and suggestio
 * [[[RFC6838,RFC 6838]]] Freed, N., Klensin, J., and T. Hansen, "Media Type Specifications and Registration Procedures", IETF, DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013, <https://www.rfc-editor.org/info/rfc6838>.
 * [[[RFC9110,RFC 9110]]] Fielding, R., Nottingham, M., and J. Reschke, "HTTP Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97, RFC 9110, June 2022, <https://www.rfc-editor.org/info/rfc9110>.
 * [[[RFC2181,RFC 2181]]] Elz, R. and R. Bush, "Clarifications to the DNS Specification", IETF, DOI 10.17487/RFC2181, RFC 2181, July 1997, <https://www.rfc-editor.org/info/rfc2181>.
+* [[[RFC6585,RFC 6585]]] Nottingham, M. and R. Fielding, "Additional HTTP Status Codes", IETF, DOI 10.17487/RFC6585, RFC 6585, April 2012, <https://www.rfc-editor.org/info/rfc6585>.
 
 [bibliography,normative=false]
 == Informative References
 * [[[RFC6839,RFC 6839]]] Hansen, T. and A. Melnikov, "Additional Media Type Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839, RFC 6839, January 2013, <https://www.rfc-editor.org/info/rfc6839>.
+* [[[RFC2308,RFC 2308]]] Andrews, M., "Negative Caching of DNS Queries (DNS NCACHE)", IETF, DOI 10.17487/RFC2308, RFC 2308, March 1998, <https://www.rfc-editor.org/info/rfc2308>.
+* [[[RFC8961,RFC 8961]]] Allman, M., "Requirements for Time-Based Loss Detection", IETF, DOI 10.17487/RFC8961, BCP 233, RFC 8961, November 2020, <https://www.rfc-editor.org/info/rfc8961>.
 
 // Documentation of asciibib: https://www.relaton.org/asciibib/
 
@@ -3285,14 +3312,14 @@ The authors wish to thank the following persons for their feedback and suggestio
 type:: standard
 docid::
 docid.type:: IETF
-docid.id:: draft-ietf-opsawg-rfc5706bis-08
+docid.id:: draft-ietf-opsawg-rfc5706bis-09
 link::
 link.type:: src
-link.content:: https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-rfc5706bis-08
+link.content:: https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-rfc5706bis-09
 
 date::
 date.type:: published
-date.on:: 2026-09-24
+date.on:: 2026-10-06
 
 contributor::
 contributor.role.type:: author
@@ -3354,6 +3381,22 @@ contributor::
 contributor.role.type:: author
 contributor.person.name.surname:: Kowalik
 contributor.person.name.forename:: P.
+
+[[DC-TEMPLATES,DC-TEMPLATES]]
+[%bibitem]
+==== Domain Connect Templates Repository
+type:: standard
+link::
+link.type:: src
+link.content:: https://github.com/Domain-Connect/Templates
+
+date::
+date.type:: accessed
+date.on:: 2026-10-30
+
+contributor::
+contributor.role.type:: publisher
+contributor.organization.name:: Domain Connect Community
 
 [appendix]
 [[examples]]

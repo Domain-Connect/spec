@@ -602,8 +602,12 @@ Table of Contents
    can be applied.
 
    As part of its template acceptance policy, a DNS Provider MAY limit
-   the number of records in a template.  Such a limit is enforced during
-   onboarding by rejecting the template, so it does not cause apply
+   the number of records in a template and the size of a template.  A
+   DNS Provider SHOULD accept templates of at least 20000 octets in
+   their JSON serialization.  A Service Provider SHOULD NOT create
+   templates larger than 20000 octets, because a larger template risks
+   rejection during onboarding.  Such limits are enforced during
+   onboarding by rejecting the template, so they do not cause apply
    requests for an onboarded template to fail.
 
 4.3.  Protocol Versioning and Extensibility
@@ -1219,12 +1223,11 @@ Table of Contents
       in the "data" field.
 
       The DNS Provider MUST support the core Fully Specified Record
-      Types A, AAAA, CNAME, MX, TXT, SRV.
-      The DNS Provider SHOULD support the "SPFM" Computed Record Type
-      for high interoperability with existing templates.
-      Support for NS, for Generic Record Types, and for any Fully
-      Specified Record Type registered by another specification is
-      OPTIONAL.
+      Types A, AAAA, CNAME, MX, TXT, SRV.  The DNS Provider SHOULD
+      support the "SPFM" Computed Record Type for high interoperability
+      with existing templates.  Support for NS, for Generic Record
+      Types, and for any Fully Specified Record Type registered by
+      another specification is OPTIONAL.
 
       The value MUST conform to the dc-record-type syntax (see
       Section 3).
@@ -1982,18 +1985,44 @@ Table of Contents
    The DNS Provider MUST return a 404 HTTP error code if they do not
    contain the zone.
 
-    +=========+==========+===========================================+
-    | Status  | Response | Description                               |
-    +=========+==========+===========================================+
-    | Success | 2xx      | A response of an http status code of 2xx  |
-    |         |          | indicates that the call was successful.   |
-    |         |          | The response is the JSON described above. |
-    +---------+----------+-------------------------------------------+
-    | Not     | 404      | A response of a 404 indicates that the    |
-    | Found   |          | DNS Provider does not have the zone.      |
-    +---------+----------+-------------------------------------------+
+      +=============+==========+===================================+
+      | Status      | Response | Description                       |
+      +=============+==========+===================================+
+      | Success     | 2xx      | A response of an http status code |
+      |             |          | of 2xx indicates that the call    |
+      |             |          | was successful.  The response is  |
+      |             |          | the JSON described above.         |
+      +-------------+----------+-----------------------------------+
+      | Not Found   | 404      | A response of a 404 indicates     |
+      |             |          | that the DNS Provider does not    |
+      |             |          | have the zone.                    |
+      +-------------+----------+-----------------------------------+
+      | Too Many    | 429      | The DNS Provider limits the rate  |
+      | Requests    |          | of requests [RFC6585].  The       |
+      |             |          | response MAY carry a "Retry-      |
+      |             |          | After" header field.              |
+      +-------------+----------+-----------------------------------+
+      | Service     | 503      | The DNS Provider is temporarily   |
+      | Unavailable |          | unable to handle the request.     |
+      |             |          | The response MAY carry a "Retry-  |
+      |             |          | After" header field.              |
+      +-------------+----------+-----------------------------------+
 
           Table 2: HTTP status codes for the settings end-point
+
+   The Settings End-Point and the Query Supported Template end-point
+   (see Section 8.2) are unauthenticated.  A DNS Provider MAY limit the
+   rate of requests to them and respond with status code 429 (Too Many
+   Requests) [RFC6585] or 503 (Service Unavailable) (Section 15.6.4 of
+   [RFC9110]) when a limit is exceeded.  A Service Provider that
+   receives either status code, or no response, MAY repeat the request,
+   since both end-points are safe and idempotent (Section 9.2.2 of
+   [RFC9110]).  It SHOULD NOT repeat the request before the time given
+   in a "Retry-After" header field (Section 10.2.3 of [RFC9110]).
+   Without that header field, it SHOULD increase the interval between
+   repeated requests exponentially [RFC8961].  Repeating requests sooner
+   adds load to a DNS Provider that is already overloaded and delays its
+   recovery.
 
 7.2.1.  Settings Property Extensibility
 
@@ -2125,22 +2154,38 @@ Table of Contents
    Provider that does not return the full template object responds as
    described above.
 
+   A Service Provider that requests the full template object SHOULD
+   accept a response body of at least 20000 octets, the template size
+   that DNS Providers accept during onboarding (see Section 4.2).  With
+   a smaller limit, the Service Provider can fail to retrieve a template
+   that a DNS Provider has onboarded.
+
    Returning a status of 404 indicates the template is not supported.
 
-       +=========+==========+======================================+
-       | Status  | Response | Description                          |
-       +=========+==========+======================================+
-       | Success | 2xx      | A response of an http status code of |
-       |         |          | 2xx indicates that the call was      |
-       |         |          | successful.  The response OPTIONALLY |
-       |         |          | contains the version or template.    |
-       +---------+----------+--------------------------------------+
-       | Not     | 404      | A response of a 404 indicates that   |
-       | Found   |          | the template is not supported        |
-       +---------+----------+--------------------------------------+
+     +=============+==========+======================================+
+     | Status      | Response | Description                          |
+     +=============+==========+======================================+
+     | Success     | 2xx      | A response of an http status code of |
+     |             |          | 2xx indicates that the call was      |
+     |             |          | successful.  The response OPTIONALLY |
+     |             |          | contains the version or template.    |
+     +-------------+----------+--------------------------------------+
+     | Not Found   | 404      | A response of a 404 indicates that   |
+     |             |          | the template is not supported        |
+     +-------------+----------+--------------------------------------+
+     | Too Many    | 429      | The DNS Provider limits the rate of  |
+     | Requests    |          | requests [RFC6585].  The response    |
+     |             |          | MAY carry a "Retry-After" header     |
+     |             |          | field.                               |
+     +-------------+----------+--------------------------------------+
+     | Service     | 503      | The DNS Provider is temporarily      |
+     | Unavailable |          | unable to handle the request.  The   |
+     |             |          | response MAY carry a "Retry-After"   |
+     |             |          | header field.                        |
+     +-------------+----------+--------------------------------------+
 
-            Table 3: https status codes for the Query Supported
-                             Template end-point
+        Table 3: https status codes for the Query Supported Template
+                                 end-point
 
 8.3.  Synchronous Flow
 
@@ -2601,12 +2646,25 @@ Table of Contents
    Receipt of a protocol-level completion signal MAY be used as a
    trigger to initiate DNS verification.  However, the Service Provider
    MUST account for DNS propagation delay and MUST implement a retry
-   mechanism with appropriate intervals until the expected records are
-   observed or a timeout is reached.
+   mechanism until the expected records are observed or a timeout is
+   reached.  The Service Provider SHOULD wait at least 5 seconds between
+   consecutive verification queries to the same name server, and SHOULD
+   double the interval after each unsuccessful attempt, up to a maximum
+   interval of 5 minutes, following the principles of [RFC8961].
+   Shorter or constant intervals add load on the authoritative name
+   servers of the zone without making the records visible sooner.  The
+   Service Provider SHOULD continue verification for at least 1 hour
+   after the synchronous flow completes, because a DNS Provider can
+   provision the changes asynchronously after the user has consented.  A
+   shorter timeout can report a template as not applied while its
+   records are still being provisioned.
 
    To minimize delays caused by DNS resolver caching, it is RECOMMENDED
    that the Service Provider query a DNS resolver configured with low
-   TTL overrides, or query the authoritative name servers directly.
+   TTL overrides, or query the authoritative name servers directly.  A
+   resolver that was queried for a name before the records were added
+   can return a cached negative answer for up to the negative caching
+   TTL of the zone [RFC2308].
 
 9.  Resolving Template Variables
 
@@ -3171,19 +3229,14 @@ Table of Contents
 
 11.  Operational Considerations
 
-   This section discusses the operational and manageability aspects of
-   Domain Connect, following the guidelines of
-   [I-D.ietf-opsawg-rfc5706bis].  Where a consideration is specified
-   elsewhere in this document, this section summarizes it and refers to
-   the normative text.  Topics of those guidelines that do not apply to
-   this protocol are listed, each with the reason, in Section 11.11.
+   This section follows the guidelines of [I-D.ietf-opsawg-rfc5706bis].
+   It summarizes considerations specified elsewhere in this document,
+   and lists the topics that do not apply in Section 11.11.
 
 11.1.  Management Model
 
-   Domain Connect is an application-layer provisioning protocol between
-   Service Providers and DNS Providers.  It is not a network management
-   protocol and does not manage network devices.  The entities operated
-   and managed in a Domain Connect deployment are:
+   Domain Connect is an application-layer provisioning protocol, not a
+   network management protocol.  The managed entities are:
 
    *  the "_domainconnect" TXT record served for each zone hosted by a
       DNS Provider (see Section 7);
@@ -3203,131 +3256,79 @@ Table of Contents
    *  the local policies of a DNS Provider that govern template
       application (see Section 11.9).
 
-   Each of these entities is managed locally by the party that owns it,
-   through interfaces specific to that party.  A Service Provider
-   authors its templates and publishes its signing keys in its own DNS
-   zone.  A DNS Provider configures its discovery records, its Settings
-   End-Point, its local policies and the set of onboarded templates in
-   its own systems.  Templates pass from the Service Provider to the DNS
-   Provider through the out-of-band onboarding process described in
-   Section 4.2 and Section 12.5.  Users manage the resulting DNS records
-   through the control panel or other interfaces of their DNS Provider.
-   The zone changes that result from applying a template reach the
-   authoritative servers through whatever provisioning mechanisms the
-   DNS Provider already uses, which are outside the scope of this
-   document.
+   Each entity is managed by the party that owns it, through interfaces
+   of its own.  Templates reach the DNS Provider through out-of-band
+   onboarding (see Section 12.5).  How the resulting zone changes reach
+   the authoritative servers is outside the scope of this document.
 
    This document deliberately defines no standardized management
    protocol, Information Model, or Data Model for these entities.
    Onboarding a template is a bilateral trust decision that involves
-   verification of the submitter's identity and human review of the
-   requested records (see Section 12.5).  It is not suited to automation
-   through a generic management interface.  The remaining entities are
-   internal to a single operator, and interoperability between operators
-   does not depend on how they are managed.  Because onboarding is
-   bilateral, a Service Provider onboards its templates with each DNS
-   Provider separately, and the effort grows with the number of DNS
-   Providers it wants to reach.  The deployed base of [DC-SPEC] has
-   operated at this scale without a standardized management interface.
-
-   Where one party needs visibility into the configuration of another,
-   the protocol provides read-only views.  The Settings End-Point
-   describes the DNS Provider's support for a given zone, and the Query
-   Supported Template end-point (see Section 8.2) reveals whether a
-   template is deployed and, optionally, which version.
+   human review (see Section 12.5), and is not suited to a generic
+   management interface.  The other entities are internal to a single
+   operator.  The onboarding effort grows with the number of DNS
+   Providers a Service Provider reaches.  The deployed base of [DC-SPEC]
+   has operated at this scale without a standardized management
+   interface.
 
 11.2.  Deployment and Initial Setup
 
-   To deploy Domain Connect, a DNS Provider answers queries for the
-   "_domainconnect" TXT record of the zones it hosts, operates the
-   Settings End-Point and the end-points of Section 8 over HTTPS, and
-   provides the consent user experience of Section 10.6.  The
-   "_domainconnect" record need not be stored in each zone.  It can be
-   synthesized or delegated by CNAME, as described in Section 7.  A
-   Service Provider deploys Domain Connect by onboarding its templates,
-   optionally publishing a signing key (see Section 6.4), implementing
-   discovery, and verifying the resulting DNS changes (see Section 8.4).
+   A DNS Provider deploys Domain Connect by serving the "_domainconnect"
+   record, which can be synthesized or delegated by CNAME (see
+   Section 7), the end-points of Section 8, and the consent user
+   experience (see Section 10.6).  A Service Provider onboards its
+   templates, optionally publishes a signing key, and implements
+   discovery and verification of changes.
 
-   Deployment is incremental.  Templates are onboarded one at a time, a
-   DNS Provider decides per zone whether to serve a "_domainconnect"
-   record, and a DNS Provider can withhold the synchronous flow for a
-   zone by omitting "urlSyncUX" from the Settings End-Point response.
-   No coordination is needed between parties beyond the onboarding of
-   the templates concerned.
+   Deployment is incremental.  Templates are onboarded one at a time,
+   and a DNS Provider decides per zone whether to offer Domain Connect
+   (see Section 7).
 
-   The template format defines default values for its optional
-   properties and record fields (see Section 6.1 and Section 6.2), and
-   public key publication defines defaults for the key algorithm and
-   type (see Section 6.4).  These defaults favor conservative behavior.
-   Records are essential unless marked otherwise (see Section 10.4.1.2),
-   a TXT record does not conflict with other TXT records unless the
-   template says so (see Section 10.4), and an unsigned apply request is
-   treated as susceptible to phishing (see Section 10.6).  The TTL of
-   each record is requested by the template and is adjusted by the DNS
-   Provider to its local policy, rather than rejected (see Section 6.2).
-   The time and resources a Service Provider spends on discovery and on
-   verification of changes are bounded as described in Section 12.2 and
-   Section 8.4.
+   The defaults of the template format and of public key publication
+   favor conservative behavior.  For example, records are essential
+   unless marked otherwise (see Section 10.4.1.2), and unsigned apply
+   requests are treated as susceptible to phishing (see Section 10.6).
+   Discovery and verification of changes have default limits and timers
+   (see Section 12.2 and Section 8.4).
 
-   The values actually in effect remain observable.  The records written
-   to the zone, including any TTL adjusted by the DNS Provider, are
-   visible in public DNS, and the deployed version of a template can be
-   obtained through Section 8.2.
+   The values in effect remain observable: the zone content in public
+   DNS, and the deployed template version through Section 8.2.
 
 11.3.  Migration and Coexistence
 
-   This document is derived from [DC-SPEC], which is widely deployed.
-   Compatibility with that installed base is preserved by keeping the
-   "/v2" path segment and the format of the "_domainconnect" record (see
-   Section 4.3), and by reserving elements of [DC-SPEC] that this
-   document does not specify (see Section 3, Paragraph 13).  A
-   deployment can serve more than one version path segment concurrently,
-   so a future incompatible revision can be introduced alongside this
-   one.  Extensions under the existing path segment follow the ignore-
-   unknown and must-understand rules of Section 4.3.  The limits of the
-   must-understand marker against deployments that predate this document
-   are described in Section 12.4.
+   Compatibility with the deployed base of [DC-SPEC] is preserved by
+   keeping the "/v2" path segment and the format of the "_domainconnect"
+   record (see Section 4.3), and by reserving the elements of [DC-SPEC]
+   that this document does not specify (see Section 3, Paragraph 13).
 
-   Because both documents use the same path segment, an implementation
-   of this document cannot tell from the protocol whether its
-   counterpart implements this document or [DC-SPEC] alone.  The
-   differences between the two are therefore limited to stricter
-   validation, clarified processing and new optional elements, so that
-   each party can migrate independently without coordinating with its
-   counterparts.  The synchronous flow, its parameters and its error
-   redirect are unchanged.  A template written for [DC-SPEC] carries no
-   "templateSpecVersion" and is processed as version "1" (see
-   Section 6.1.1).  It remains usable without change, provided it
-   conforms to the syntax in Section 3.
+   Because both documents use the same path segment, a party cannot tell
+   whether its counterpart implements this document or [DC-SPEC] alone.
+   The differences are therefore limited to stricter validation,
+   clarified processing and new optional elements, so that each party
+   can migrate independently.  A template written for [DC-SPEC] is
+   processed as "templateSpecVersion" "1" (see Section 6.1.1), and
+   remains usable if it conforms to the syntax in Section 3.
 
    A DNS Provider that implements [DC-SPEC] conforms to this document by
    addressing the following points:
 
    *  Its "_domainconnect" record content conforms to the validity rules
-      of Section 7.  Service Providers implementing this document reject
-      non-conforming records, so a record that carries a scheme, query
-      or fragment no longer leads to discovery.
+      of Section 7.
 
    *  It treats every unsigned apply request as susceptible to phishing,
       as described in Section 10.6, independent of the deprecated
-      "warnPhishing" flag.  Users therefore see additional warnings for
-      unsigned templates that were previously presented without them.
+      "warnPhishing" flag.
 
    *  It verifies signatures over the query string as received (see
-      Section 8.3.4).  This accepts both signatures generated under
-      [DC-SPEC] and signatures over the canonical input string of
-      Section 8.3.2.1.
+      Section 8.3.4), which accepts signatures generated under either
+      document.
 
-   *  It ignores template properties, record fields and apply parameters
-      it does not recognize, and rejects a template or request whose
-      "crit" lists an element it does not understand, or whose
-      "templateSpecVersion" it does not support (see Section 4.3).
+   *  It applies the ignore-unknown and must-understand rules of
+      Section 4.3.
 
-   The asynchronous flow of [DC-SPEC], together with the settings
-   properties and apply parameters that serve it, is not specified by
-   this document and is Reserved (see Section 3, Paragraph 13).  A DNS
-   Provider that offers it can continue to do so alongside the
-   synchronous flow.
+   The asynchronous flow of [DC-SPEC] is Reserved (see Section 3,
+   Paragraph 13), and a DNS Provider can continue to offer it alongside
+   the synchronous flow.
 
    A Service Provider that implements [DC-SPEC] conforms to this
    document by addressing the following points:
@@ -3337,35 +3338,26 @@ Table of Contents
       Section 12.2.
 
    *  It signs apply requests over the canonical input string of
-      Section 8.3.2.1 and sends the signed query string unchanged.  DNS
-      Providers that verify the received query string accept such
-      signatures whether or not they implement this document.
+      Section 8.3.2.1, which DNS Providers that verify the received
+      query string accept.
 
    *  It does not set the deprecated "warnPhishing" flag in new
       templates.  It continues to set the deprecated "shared" flag
       together with "sharedProviderName" where DNS Providers predating
       version 2.2 of [DC-SPEC] are to be supported (see Section 6.1).
 
-   *  It uses "crit" and "templateSpecVersion" only with the limits
-      described in Section 12.4 in mind.  A DNS Provider that implements
-      [DC-SPEC] alone ignores both properties.  Because templates are
-      onboarded with each DNS Provider separately, onboarding is the
-      point at which a Service Provider can establish whether a DNS
-      Provider supports them.
+   *  It uses "crit" and "templateSpecVersion" with the limits of
+      Section 12.4 in mind, and establishes support for them during
+      onboarding.
 
-   Migration also includes moving a template from unsigned to signed
-   requests.  Adding "syncPubKeyDomain" to a template takes effect at
-   each DNS Provider only when that DNS Provider onboards the updated
-   version.  From then on, it rejects unsigned requests for the template
-   (see Section 8.3.2.1).  A DNS Provider that still holds the earlier
-   version ignores the signature and processes the request as unsigned
-   (see Section 8.3.4).  A Service Provider can therefore publish its
-   key (see Section 6.4) and sign every apply request for the template
-   before submitting the updated version, so that requests remain
-   accepted while DNS Providers hold different versions of the template.
-   Conversely, an update that removes "syncPubKeyDomain" or widens
-   "syncRedirectDomain" weakens the protection of the template, and is
-   subject to the re-review described in Section 12.5.
+   A Service Provider that adds "syncPubKeyDomain" to a template can
+   publish its key (see Section 6.4) and sign every apply request before
+   submitting the updated version.  A DNS Provider that still holds the
+   earlier version ignores the signature (see Section 8.3.4), and one
+   that holds the updated version rejects unsigned requests (see
+   Section 8.3.2.1).  An update that removes "syncPubKeyDomain" or
+   widens "syncRedirectDomain" is subject to the re-review described in
+   Section 12.5.
 
 11.4.  Dependencies on Other Protocols
 
@@ -3382,48 +3374,49 @@ Table of Contents
 
 11.5.  Impact on DNS and Network Operation
 
-   The applicability of the protocol, and the scenarios outside its
-   scope, are described in the "Use Cases" section.  Domain Connect
-   produces ordinary DNS records and introduces no new behavior in DNS
-   resolution.  Its interactions with the DNS are limited to the
-   following: TTL reconciliation within an RRset (see Section 10.2),
-   coexistence rules of the DNS protocol (see Section 10.4), the
-   constraints of merged SPF records (see Section 9.4), and the
-   additional queries issued for discovery, for retrieval of signing
-   keys (see Section 8.3.4) and for verification of changes (see
-   Section 8.4).
+   Domain Connect produces ordinary DNS records and introduces no new
+   behavior in DNS resolution.  Its interactions with the DNS are
+   limited to the following: TTL reconciliation within an RRset (see
+   Section 10.2), coexistence rules of the DNS protocol (see
+   Section 10.4), the constraints of merged SPF records (see
+   Section 9.4), and the additional queries issued for discovery, for
+   retrieval of signing keys (see Section 8.3.4) and for verification of
+   changes (see Section 8.4).
+
+   Verification of changes issues about 17 queries to each authoritative
+   name server during the recommended hour (see Section 8.4).  The
+   public Settings End-Point and Query Supported Template end-point can
+   be queried at high rates, including by automated clients.  DNS
+   Providers can rate-limit them, and Service Providers back off (see
+   Section 7).
+
+   Applying a template requires the consent of a user authenticated at
+   the DNS Provider (see Section 10.6), and unattended automation is
+   outside the scope of this protocol (see "Use Cases out of scope").  A
+   DNS Provider cannot distinguish an automated agent acting in the
+   user's authenticated session from the user, and treats its consent as
+   the user's.
 
 11.6.  Limits on Scale
 
-   This section summarizes the limits on the size and number of protocol
-   elements, and the behavior when a limit is exceeded.  Limits on the
-   length of identifiers and display strings are part of the syntax in
-   Section 3.  The resources a Service Provider spends on a single
-   discovery request are bounded as described in Section 12.2.
+   Limits on the length of identifiers and display strings are part of
+   the syntax in Section 3.
 
-   The number of records an apply request can write is fixed by the
-   template, and group filtering (see Section 10.3) can only reduce it.
-   A DNS Provider that limits the number of records per template
-   therefore enforces that limit when the template is onboarded (see
-   Section 4.2), not when it is applied.
+   A DNS Provider bounds the size of the templates it onboards and the
+   number of their records (see Section 4.2), which also bounds the
+   records written by an apply request and the full template object
+   returned by Section 8.2.  The value of 20000 octets that DNS
+   Providers accept is twice the size of the largest of the about 2250
+   templates in the public Domain Connect template repository
+   [DC-TEMPLATES] at the time of writing, which is about 10000 octets.
+   The same value bounds the Settings End-Point response that a Service
+   Provider accepts during discovery (see Section 12.2).
 
-   The length of the Apply Template URL grows with the number and size
-   of the variables, with the "redirect_uri" and "state" values, and
-   with the signature.  Section 8.3.1 sets a minimum URL length that DNS
-   Providers accept and that Service Providers stay within, and
-   describes how a request that exceeds the length a DNS Provider
-   supports is rejected.
-
-   A public key published in many fragments enlarges DNS responses and
-   costs the DNS Provider additional processing.  Section 6.4 allows DNS
-   Providers to limit the number of fragments, in which case signature
-   verification fails, and therefore asks Service Providers to keep the
-   number of fragments small.
-
-   Each "_domainconnect" record a Service Provider attempts leads to a
-   separate HTTPS request.  Section 7 therefore asks the Service
-   Provider to limit the number of records it attempts, and treats
-   reaching that limit as a discovery failure.
+   Further limits apply to the length of the Apply Template URL (see
+   Section 8.3.1), the number of fragments of a public key (see
+   Section 6.4) and the number of "_domainconnect" records a Service
+   Provider attempts (see Section 7).  Each of these sections describes
+   the behavior when the limit is exceeded.
 
 11.7.  Verifying Correct Operation
 
@@ -3433,6 +3426,16 @@ Table of Contents
    reached the correct DNS Provider by comparing "nameServers" with the
    authoritative name servers of the zone (see Section 7), and that a
    template is deployed in the expected version through Section 8.2.
+
+   A Service Provider can monitor the service as the user experiences it
+   by measuring the time from the start of the synchronous flow until
+   the applied records are verified, and the share of flows that end in
+   an error or are never verified.  A DNS Provider can monitor the
+   number of apply requests per template, and the number rejected per
+   error code or for a failed signature verification.  No new tooling is
+   needed for these tasks.  Standard DNS query tools and HTTP clients
+   suffice to inspect the "_domainconnect" record, the Settings End-
+   Point, published keys and the zone content.
 
 11.8.  Fault Management
 
@@ -3448,28 +3451,31 @@ Table of Contents
    syntax in Section 3 and the rules of each section, so a faulty
    message can be distinguished from a valid one.
 
+   To debug a failed interaction, a Service Provider combines the error
+   code and description of the error redirect, the "nameServers"
+   comparison and the template version reported by Section 8.2 with the
+   zone content observed in DNS.  The protocol carries no identifier
+   that correlates a request across both parties.  The "state" parameter
+   correlates the error redirect with the request only for the Service
+   Provider.
+
 11.9.  Configuration Management
 
-   The configuration of a Service Provider consists of its templates and
-   its published signing keys.  The configuration of a DNS Provider
-   consists of its discovery data, the onboarded templates and the local
-   policies that govern template application.  This document refers to
-   such local policy for the accepted range or set of TTL values (see
-   Section 6.2), the record types supported in addition to those
-   required (see Section 6.2), the handling of SPF record merging (see
-   Section 9.4), whether applied template state is maintained (see
-   Section 10), local capabilities and limits checked during conflict
-   detection (see Section 10.4), and the amount of detail disclosed to
-   the user during authorization (see Section 10.6).
+   The local policies of a DNS Provider cover the accepted range or set
+   of TTL values (see Section 6.2), the record types supported in
+   addition to those required (see Section 6.2), the handling of SPF
+   record merging (see Section 9.4), whether applied template state is
+   maintained (see Section 10), local capabilities and limits checked
+   during conflict detection (see Section 10.4), and the amount of
+   detail disclosed to the user during authorization (see Section 10.6).
 
    The DNS zone is the persistent result of template application.
    Applied template state, where maintained, is internal to the DNS
    Provider.  The cases in which a DNS Provider alters the records
    requested by a template are limited to those defined in this
    document: TTL adjustment and reconciliation, SPF record merging, and
-   sharing of identical records (see Section 10.4.1.3).  Templates are
-   the configuration templates of this protocol.  Re-application and
-   group filtering define how a zone moves from one applied
+   sharing of identical records (see Section 10.4.1.3).  Re-application
+   and group filtering define how a zone moves from one applied
    configuration to another (see Section 10).
 
 11.10.  Human-Readable Messages
@@ -3564,6 +3570,15 @@ Table of Contents
    *  MUST bound the discovery request, including connection and total-
       request timeouts, a maximum response size, and a limit on the
       number of redirects followed
+
+   Unless local policy requires otherwise, it is RECOMMENDED that a
+   Service Provider abort a Settings End-Point request that has not
+   completed within 10 seconds, accept response bodies of at most 20000
+   octets, and follow at most 5 redirects, the limit historically
+   recommended for HTTP (see Section 15.4 of [RFC9110]).  Settings End-
+   Point responses are small, and discovery usually happens while the
+   user waits.  A longer timeout or a larger limit lets a malicious zone
+   hold the Service Provider's resources for longer.
 
 12.3.  Underscored Host Names
 
@@ -4129,8 +4144,7 @@ Table of Contents
    "Resource Record (RR) TYPEs" registry to cite this document alongside
    the existing references:
 
-   |  OLD: [RFC6895][RFC1035]
-   |  NEW: [RFC6895][RFC1035][This document]
+   |  OLD: [RFC6895][RFC1035] NEW: [RFC6895][RFC1035][This document]
 
    This records, on the DNS side, the obligation to consult the "Domain
    Connect Fully Specified Record Types" registry described above.
@@ -4199,8 +4213,8 @@ Table of Contents
 
                             Macintosh file type code(s):  N/A
 
-   Person email address to contact for further information:  IETF DCONN
-      Working Group <mailto:dconn@ietf.org>
+   Person & email address to contact for further information:  IETF
+      DCONN Working Group <mailto:dconn@ietf.org>
 
    Intended usage:  COMMON
 
@@ -4218,7 +4232,7 @@ DNS Providers
 
 Open Source
 
-   *  Server library (Python):https://github.com/Domain-Connect/
+   *  Server library (Python): https://github.com/Domain-Connect/
       DomainConnectApplyZone
 
 Proprietary implementations
@@ -4232,11 +4246,10 @@ Service Providers
 
 Open Source
 
-   *  Example service:
-      https://exampleservice.domainconnect.org/https://github.com/
-      Domain-Connect/exampleservice
+   *  Example service: https://exampleservice.domainconnect.org/
+      https://github.com/Domain-Connect/exampleservice
 
-   *  Client library (Python):https://github.com/Domain-Connect/
+   *  Client library (Python): https://github.com/Domain-Connect/
       domainconnect_python
 
 Proprietary implementations
@@ -4272,7 +4285,9 @@ Change from draft-ietf-dconn-domainconnect-04 to -05
    *  Added Operational Considerations, stating the management model,
       summarizing the operational aspects of the protocol, describing
       the migration of existing [DC-SPEC] deployments, and bounding the
-      scale of its protocol elements.
+      scale of its protocol elements, with default limits and timers for
+      discovery, template retrieval and verification of changes, and
+      back-off from overloaded DNS Provider end-points.
 
    *  Specified that a DNS Provider ignores a signature on an apply
       request for a template that does not require signing.
@@ -4511,140 +4526,250 @@ Change from draft-carney-regext-domainconnect-00 to -01
 
 Normative References
 
-   [RFC1035]  Mockapetris, P., "Domain names - implementation and
-              specification", STD 13, DOI 10.17487/RFC1035, BCP 13,
-              RFC 1035, November 1987,
+   [RFC1035]  Mockapetris, P., "P. Mockapetris. Domain names -
+              implementation and specification. Report no. RFC1035. STD,
+              no. 13. RFC Publisher, 1987. Available at:
+              https://www.rfc-editor.org/info/rfc1035.",
+              DOI 10.17487/RFC1035, STD 13, RFC 1035, November 1987,
               <https://www.rfc-editor.org/info/rfc1035>.
 
-   [RFC2782]  Gulbrandsen, A., Vixie, P., and L. Esibov, "A DNS RR for
-              specifying the location of services (DNS SRV)", IETF,
+   [RFC2782]  Gulbrandsen, A., Vixie, P., Esibov, L., and IETF, "A.
+              Gulbrandsen, P. Vixie, L. Esibov, and INTERNET ENGINEERING
+              TASK FORCE (IETF). A DNS RR for specifying the location of
+              services (DNS SRV). Report no. RFC2782. RFC, no. 2782. RFC
+              Publisher, 2000. Available at:
+              https://www.rfc-editor.org/info/rfc2782.",
               DOI 10.17487/RFC2782, RFC 2782, February 2000,
               <https://www.rfc-editor.org/info/rfc2782>.
 
-   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
-              Requirement Levels", IETF, DOI 10.17487/RFC2119, BCP 14,
-              RFC 2119, March 1997,
+   [RFC2119]  Bradner, S., "S. Bradner. Key words for use in RFCs to
+              Indicate Requirement Levels. Report no. RFC2119. BCP, no.
+              14. RFC Publisher, 1997. Available at:
+              https://www.rfc-editor.org/info/rfc2119.",
+              DOI 10.17487/RFC2119, BCP 14, RFC 2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
-              2119 Key Words", IETF, DOI 10.17487/RFC8174, BCP 14,
-              RFC 8174, May 2017,
+   [RFC8174]  Leiba, B., "B. Leiba. Ambiguity of Uppercase vs Lowercase
+              in RFC 2119 Key Words. Report no. RFC8174. BCP, no. 14.
+              RFC Publisher, 2017. Available at:
+              https://www.rfc-editor.org/info/rfc8174.",
+              DOI 10.17487/RFC8174, BCP 14, RFC 8174, May 2017,
               <https://www.rfc-editor.org/info/rfc8174>.
 
-   [RFC7208]  Kitterman, S., "Sender Policy Framework (SPF) for
-              Authorizing Use of Domains in Email, Version 1", IETF,
+   [RFC7208]  Kitterman, S. and IETF, "S. Kitterman and INTERNET
+              ENGINEERING TASK FORCE (IETF). Sender Policy Framework
+              (SPF) for Authorizing Use of Domains in Email, Version 1.
+              Report no. RFC7208. RFC, no. 7208. RFC Publisher, 2014.
+              Available at: https://www.rfc-editor.org/info/rfc7208.",
               DOI 10.17487/RFC7208, RFC 7208, April 2014,
               <https://www.rfc-editor.org/info/rfc7208>.
 
-   [RFC6749]  Hardt, D., "The OAuth 2.0 Authorization Framework", IETF,
+   [RFC6749]  Hardt, D. and IETF, "INTERNET ENGINEERING TASK FORCE
+              (IETF). The OAuth 2.0 Authorization Framework. Report no.
+              RFC6749. RFC, no. 6749. RFC Publisher, 2012. Available at:
+              https://www.rfc-editor.org/info/rfc6749.",
               DOI 10.17487/RFC6749, RFC 6749, October 2012,
               <https://www.rfc-editor.org/info/rfc6749>.
 
-   [RFC3597]  Gustafsson, A., "Handling of Unknown DNS Resource Record
-              (RR) Types", IETF, DOI 10.17487/RFC3597, RFC 3597,
-              September 2003, <https://www.rfc-editor.org/info/rfc3597>.
+   [RFC3597]  Gustafsson, A. and IETF, "A. Gustafsson and INTERNET
+              ENGINEERING TASK FORCE (IETF). Handling of Unknown DNS
+              Resource Record (RR) Types. Report no. RFC3597. RFC, no.
+              3597. RFC Publisher, 2003. Available at:
+              https://www.rfc-editor.org/info/rfc3597.",
+              DOI 10.17487/RFC3597, RFC 3597, September 2003,
+              <https://www.rfc-editor.org/info/rfc3597>.
 
-   [RFC8259]  Bray, T., "The JavaScript Object Notation (JSON) Data
-              Interchange Format", IETF, STD 90, DOI 10.17487/RFC8259,
-              BCP 90, RFC 8259, December 2017,
+   [RFC8259]  Bray, T. and IETF, "INTERNET ENGINEERING TASK FORCE
+              (IETF). The JavaScript Object Notation (JSON) Data
+              Interchange Format. Report no. RFC8259. STD, no. 90. RFC
+              Publisher, 2017. Available at:
+              https://www.rfc-editor.org/info/rfc8259.",
+              DOI 10.17487/RFC8259, STD 90, RFC 8259, December 2017,
               <https://www.rfc-editor.org/info/rfc8259>.
 
-   [RFC8552]  Crocker, D., "Scoped Interpretation of DNS Resource
-              Records through "Underscored" Naming of Attribute Leaves",
-              IETF, DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
+   [RFC8552]  Crocker, D. and IETF, "D. Crocker and INTERNET ENGINEERING
+              TASK FORCE (IETF). Scoped Interpretation of DNS Resource
+              Records through "Underscored" Naming of Attribute Leaves.
+              Report no. RFC8552. BCP, no. 222. RFC Publisher, 2019.
+              Available at: https://www.rfc-editor.org/info/rfc8552.",
+              DOI 10.17487/RFC8552, BCP 222, RFC 8552, March 2019,
               <https://www.rfc-editor.org/info/rfc8552>.
 
-   [RFC3986]  Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform
-              Resource Identifier (URI): Generic Syntax", IETF, STD 66,
-              DOI 10.17487/RFC3986, BCP 66, RFC 3986, January 2005,
+   [RFC3986]  Berners-Lee, T., Fielding, R., and L. Masinter, "T.
+              Berners-Lee, R. Fielding, and L. Masinter. Uniform
+              Resource Identifier (URI): Generic Syntax. Report no.
+              RFC3986. STD, no. 66. RFC Publisher, 2005. Available at:
+              https://www.rfc-editor.org/info/rfc3986.",
+              DOI 10.17487/RFC3986, STD 66, RFC 3986, January 2005,
               <https://www.rfc-editor.org/info/rfc3986>.
 
-   [RFC7518]  Jones, M., "JSON Web Algorithms (JWA)", IETF,
+   [RFC7518]  Jones, M. and IETF, "M. Jones and INTERNET ENGINEERING
+              TASK FORCE (IETF). JSON Web Algorithms (JWA). Report no.
+              RFC7518. RFC, no. 7518. RFC Publisher, 2015. Available at:
+              https://www.rfc-editor.org/info/rfc7518.",
               DOI 10.17487/RFC7518, RFC 7518, May 2015,
               <https://www.rfc-editor.org/info/rfc7518>.
 
-   [RFC6335]  Cotton, M., Eggert, L., Touch, J., Westerlund, M., and S.
-              Cheshire, "Internet Assigned Numbers Authority (IANA)
+   [RFC6335]  Cotton, M., Eggert, L., Touch, J., Westerlund, M.,
+              Cheshire, S., and IETF, "M. Cotton, L. Eggert, J. Touch,
+              M. Westerlund, S. Cheshire, and INTERNET ENGINEERING TASK
+              FORCE (IETF). Internet Assigned Numbers Authority (IANA)
               Procedures for the Management of the Service Name and
-              Transport Protocol Port Number Registry", IETF,
+              Transport Protocol Port Number Registry. Report no.
+              RFC6335. BCP, no. 165. RFC Publisher, 2011. Available at:
+              https://www.rfc-editor.org/info/rfc6335.",
               DOI 10.17487/RFC6335, BCP 165, RFC 6335, August 2011,
               <https://www.rfc-editor.org/info/rfc6335>.
 
-   [RFC6895]  3rd, D. E., "Domain Name System (DNS) IANA
-              Considerations", IETF, DOI 10.17487/RFC6895, BCP 42,
-              RFC 6895, April 2013,
+   [RFC6895]  Eastlake 3rd, D. and IETF, "D. Eastlake 3rd and INTERNET
+              ENGINEERING TASK FORCE (IETF). Domain Name System (DNS)
+              IANA Considerations. Report no. RFC6895. BCP, no. 42. RFC
+              Publisher, 2013. Available at:
+              https://www.rfc-editor.org/info/rfc6895.",
+              DOI 10.17487/RFC6895, BCP 42, RFC 6895, April 2013,
               <https://www.rfc-editor.org/info/rfc6895>.
 
    [RFC6570]  Gregorio, J., Fielding, R., Hadley, M., Nottingham, M.,
-              and D. Orchard, "URI Template", IETF,
+              and D. Orchard, "J. Gregorio, R. Fielding, M. Hadley, M.
+              Nottingham, and D. Orchard. URI Template. Report no.
+              RFC6570. RFC, no. 6570. RFC Publisher, 2012. Available at:
+              https://www.rfc-editor.org/info/rfc6570.",
               DOI 10.17487/RFC6570, RFC 6570, March 2012,
               <https://www.rfc-editor.org/info/rfc6570>.
 
-   [RFC5234]  Overell, P. and D. Crocker, "Augmented BNF for Syntax
-              Specifications: ABNF", IETF, STD 68, DOI 10.17487/RFC5234,
-              BCP 68, RFC 5234, January 2008,
+   [RFC5234]  Crocker, D. and P. Overell, "P. Overell. Augmented BNF for
+              Syntax Specifications: ABNF. Report no. RFC5234. STD, no.
+              68. RFC Publisher, 2008. Available at:
+              https://www.rfc-editor.org/info/rfc5234.",
+              DOI 10.17487/RFC5234, STD 68, RFC 5234, January 2008,
               <https://www.rfc-editor.org/info/rfc5234>.
 
-   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
-              Encodings", IETF, DOI 10.17487/RFC4648, RFC 4648, October
-              2006, <https://www.rfc-editor.org/info/rfc4648>.
+   [RFC4648]  Josefsson, S., "S. Josefsson. The Base16, Base32, and
+              Base64 Data Encodings. Report no. RFC4648. RFC, no. 4648.
+              RFC Publisher, 2006. Available at:
+              https://www.rfc-editor.org/info/rfc4648.",
+              DOI 10.17487/RFC4648, RFC 4648, October 2006,
+              <https://www.rfc-editor.org/info/rfc4648>.
 
-   [RFC5891]  Klensin, J., "Internationalized Domain Names in
-              Applications (IDNA): Protocol", IETF,
+   [RFC5891]  Klensin, J. and IETF, "J. Klensin and INTERNET ENGINEERING
+              TASK FORCE (IETF). Internationalized Domain Names in
+              Applications (IDNA): Protocol. Report no. RFC5891. RFC,
+              no. 5891. RFC Publisher, 2010. Available at:
+              https://www.rfc-editor.org/info/rfc5891.",
               DOI 10.17487/RFC5891, RFC 5891, August 2010,
               <https://www.rfc-editor.org/info/rfc5891>.
 
-   [RFC5890]  Klensin, J., "Internationalized Domain Names for
-              Applications (IDNA): Definitions and Document Framework",
-              IETF, DOI 10.17487/RFC5890, RFC 5890, August 2010,
+   [RFC5890]  Klensin, J. and IETF, "J. Klensin and INTERNET ENGINEERING
+              TASK FORCE (IETF). Internationalized Domain Names for
+              Applications (IDNA): Definitions and Document Framework.
+              Report no. RFC5890. RFC, no. 5890. RFC Publisher, 2010.
+              Available at: https://www.rfc-editor.org/info/rfc5890.",
+              DOI 10.17487/RFC5890, RFC 5890, August 2010,
               <https://www.rfc-editor.org/info/rfc5890>.
 
-   [RFC9839]  Bray, T. and P. Hoffman, "Unicode Character Repertoire
-              Subsets", IETF, DOI 10.17487/RFC9839, RFC 9839, August
-              2025, <https://www.rfc-editor.org/info/rfc9839>.
+   [RFC9839]  Bray, T. and P. Hoffman, "T. Bray and P. Hoffman. Unicode
+              Character Repertoire Subsets. Report no. RFC9839. RFC, no.
+              9839. RFC Publisher, 2025. Available at:
+              https://www.rfc-editor.org/info/rfc9839.",
+              DOI 10.17487/RFC9839, RFC 9839, August 2025,
+              <https://www.rfc-editor.org/info/rfc9839>.
 
-   [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "Guidelines for
-              Writing an IANA Considerations Section in RFCs", IETF,
+   [RFC8126]  Cotton, M., Leiba, B., and T. Narten, "M. Cotton, B.
+              Leiba, and T. Narten. Guidelines for Writing an IANA
+              Considerations Section in RFCs. Report no. RFC8126. BCP,
+              no. 26. RFC Publisher, 2017. Available at:
+              https://www.rfc-editor.org/info/rfc8126.",
               DOI 10.17487/RFC8126, BCP 26, RFC 8126, June 2017,
               <https://www.rfc-editor.org/info/rfc8126>.
 
-   [RFC9499]  Hoffman, P. and K. Fujiwara, "DNS Terminology", IETF,
+   [RFC9499]  Hoffman, P., Fujiwara, K., and IETF, "P. Hoffman, K.
+              Fujiwara, and INTERNET ENGINEERING TASK FORCE (IETF). DNS
+              Terminology. Report no. RFC9499. BCP, no. 219. RFC
+              Publisher, 2024. Available at:
+              https://www.rfc-editor.org/info/rfc9499.",
               DOI 10.17487/RFC9499, BCP 219, RFC 9499, March 2024,
               <https://www.rfc-editor.org/info/rfc9499>.
 
-   [RFC6838]  Freed, N., Klensin, J., and T. Hansen, "Media Type
-              Specifications and Registration Procedures", IETF,
+   [RFC6838]  Freed, N., Klensin, J., Hansen, T., and IETF, "N. Freed,
+              J. Klensin, T. Hansen, and INTERNET ENGINEERING TASK FORCE
+              (IETF). Media Type Specifications and Registration
+              Procedures. Report no. RFC6838. BCP, no. 13. RFC
+              Publisher, 2013. Available at:
+              https://www.rfc-editor.org/info/rfc6838.",
               DOI 10.17487/RFC6838, BCP 13, RFC 6838, January 2013,
               <https://www.rfc-editor.org/info/rfc6838>.
 
-   [RFC9110]  Fielding, R., Nottingham, M., and J. Reschke, "HTTP
-              Semantics", IETF, STD 97, DOI 10.17487/RFC9110, BCP 97,
-              RFC 9110, June 2022,
+   [RFC9110]  Fielding, R., Nottingham, M., Reschke, J., and IETF,
+              "INTERNET ENGINEERING TASK FORCE (IETF). HTTP Semantics.
+              Report no. RFC9110. STD, no. 97. RFC Publisher, 2022.
+              Available at: https://www.rfc-editor.org/info/rfc9110.",
+              DOI 10.17487/RFC9110, STD 97, RFC 9110, June 2022,
               <https://www.rfc-editor.org/info/rfc9110>.
 
-   [RFC2181]  Elz, R. and R. Bush, "Clarifications to the DNS
-              Specification", IETF, DOI 10.17487/RFC2181, RFC 2181, July
-              1997, <https://www.rfc-editor.org/info/rfc2181>.
+   [RFC2181]  Elz, R., Bush, R., and IETF, "R. Elz, R. Bush, and
+              INTERNET ENGINEERING TASK FORCE (IETF). Clarifications to
+              the DNS Specification. Report no. RFC2181. RFC, no. 2181.
+              RFC Publisher, 1997. Available at:
+              https://www.rfc-editor.org/info/rfc2181.",
+              DOI 10.17487/RFC2181, RFC 2181, July 1997,
+              <https://www.rfc-editor.org/info/rfc2181>.
+
+   [RFC6585]  Nottingham, M. and R. Fielding, "M. Nottingham and R.
+              Fielding. Additional HTTP Status Codes. Report no.
+              RFC6585. RFC, no. 6585. RFC Publisher, 2012. Available at:
+              https://www.rfc-editor.org/info/rfc6585.",
+              DOI 10.17487/RFC6585, RFC 6585, April 2012,
+              <https://www.rfc-editor.org/info/rfc6585>.
 
 Informative References
 
-   [RFC6839]  Hansen, T. and A. Melnikov, "Additional Media Type
-              Structured Syntax Suffixes", IETF, DOI 10.17487/RFC6839,
-              RFC 6839, January 2013,
+   [RFC6839]  Hansen, T., Melnikov, A., and IETF, "T. Hansen, A.
+              Melnikov, and INTERNET ENGINEERING TASK FORCE (IETF).
+              Additional Media Type Structured Syntax Suffixes. Report
+              no. RFC6839. RFC, no. 6839. RFC Publisher, 2013. Available
+              at: https://www.rfc-editor.org/info/rfc6839.",
+              DOI 10.17487/RFC6839, RFC 6839, January 2013,
               <https://www.rfc-editor.org/info/rfc6839>.
+
+   [RFC2308]  Andrews, M. and IETF, "M. Andrews and INTERNET ENGINEERING
+              TASK FORCE (IETF). Negative Caching of DNS Queries (DNS
+              NCACHE). Report no. RFC2308. RFC, no. 2308. RFC Publisher,
+              1998. Available at:
+              https://www.rfc-editor.org/info/rfc2308.",
+              DOI 10.17487/RFC2308, RFC 2308, March 1998,
+              <https://www.rfc-editor.org/info/rfc2308>.
+
+   [RFC8961]  Allman, M. and IETF, "M. Allman and INTERNET ENGINEERING
+              TASK FORCE (IETF). Requirements for Time-Based Loss
+              Detection. Report no. RFC8961. BCP, no. 233. RFC
+              Publisher, 2020. Available at:
+              https://www.rfc-editor.org/info/rfc8961.",
+              DOI 10.17487/RFC8961, BCP 233, RFC 8961, November 2020,
+              <https://www.rfc-editor.org/info/rfc8961>.
 
    [I-D.ietf-opsawg-rfc5706bis]
               Claise, B., Clarke, J., Farrel, A., Barguil, S.,
-              Pignataro, C., and R. Chen, "Guidelines for Considering
-              Operations and Management in IETF Specifications", draft-
-              ietf-opsawg-rfc5706bis-08, 24 September 2026,
-              <https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-
-              rfc5706bis-08>.
+              Pignataro, C., and R. Chen, "CLAISE, B., J. CLARKE, A.
+              FARREL, S. BARGUIL, C. PIGNATARO, and R. CHEN. Guidelines
+              for Considering Operations and Management in IETF
+              Specifications. Available at:
+              https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-
+              rfc5706bis-09.", <https://datatracker.ietf.org/doc/html/
+              draft-ietf-opsawg-rfc5706bis-09>.
 
-   [DC-SPEC]  Blinn, A., Kerola, S., and P. Kowalik, "Domain Connect
-              Specification, Version 2.3 Rev. 67", 2 March 2025,
+   [DC-SPEC]  Blinn, A., Kerola, S., and P. Kowalik, "BLINN, A., S.
+              KEROLA, and P. KOWALIK. Domain Connect Specification,
+              Version 2.3 Rev. 67. Domain Connect Community, Available
+              at: https://github.com/Domain-Connect/spec/blob/rev.67/
+              Domain%20Connect%20Spec%20Draft.adoc.",
               <https://github.com/Domain-Connect/spec/blob/rev.67/
               Domain%20Connect%20Spec%20Draft.adoc>.
+
+   [DC-TEMPLATES]
+              Domain Connect Community, "Domain Connect Templates
+              Repository. Domain Connect Community, Available at:
+              https://github.com/Domain-Connect/Templates.",
+              <https://github.com/Domain-Connect/Templates>.
 
 Appendix A.  Examples
 
@@ -4941,7 +5066,7 @@ A.7.  Example: SPF Record Merging
 
 Authors' Addresses
 
-   P Kowalik
+   Pawel Kowalik
    DENIC eG
    Theodor-Stern-Kai 1
    Frankfurt am Main
@@ -4950,23 +5075,23 @@ Authors' Addresses
    URI:   https://denic.de
 
 
-   A Blinn
+   Arnold Blinn
    Email: arnold@arnoldblinn.com
 
 
-   J Kolker
+   Jody Kolker
    GoDaddy Inc.
    14455 N. Hayden Rd. #219
-   Scottsdale,
+   Scottsdale
    United States of America
    Email: jkolker@godaddy.com
    URI:   https://www.godaddy.com
 
 
-   S Kerola
+   Sami Kerola
    Cloudflare, Inc.
    101 Townsend St
-   San Francisco,
+   San Francisco
    United States of America
    Email: kerolasa@cloudflare.com
    URI:   https://cloudflare.com

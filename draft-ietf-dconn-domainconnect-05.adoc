@@ -2537,6 +2537,19 @@ Faults are reported per request. Discovery failures surface as invalid or missin
 
 To debug a failed interaction, a Service Provider combines the error code and description of the error redirect, the `"nameServers"` comparison and the template version reported by <<query-supported-template>> with the zone content observed in DNS. The protocol carries no identifier that correlates a request across both parties. The `"state"` parameter correlates the error redirect with the request only for the Service Provider.
 
+[[ops-security-operations]]
+=== Security Operations and Logging
+
+Records applied through Domain Connect are visible in public DNS, so DNS Providers, Service Providers and third parties can observe changes to a zone. The circumstances of a change, such as who consented, through which template and with which values, are recorded only by the parties involved.
+
+A DNS Provider can record each apply request in an audit log. Useful entries are the time, the authenticated user, the zone and `"host"`, the `"providerId"`, `"serviceId"` and `"version"` of the template, the variable values, the `"key"` parameter and the result of signature verification, the records written and the conflicting records removed, and the outcome or error code. With such a log, a DNS Provider can identify the zones changed through a phishing-driven request (see <<sec-variable-phishing>>), through a template version later found to be malicious (see <<sec-template-onboarding>>), or through requests signed with a compromised key (see <<ops-key-management>>). It can also restore the records that were removed.
+
+Indicators of attack that a DNS Provider can count per template and per `"providerId"` include signature verification failures, repeated unsigned apply requests for the same template with varying variable values, apply requests with an underscore-prefixed `"host"` (see <<sec-underscore-host>>), and `"redirect_uri"` values rejected because they are not covered by `"syncRedirectDomain"` (see <<sync-apply-response>>). A Service Provider can count `"_domainconnect"` records and Settings End-Point responses rejected as invalid or as pointing to internal addresses (see <<sec-discovery-record>>).
+
+These logs link a user account to its domains and to the services connected to them. Variable values and the `"state"` parameter can carry identifiers of the user at the Service Provider. Logs are therefore protected against unauthorized access and retained only as long as their purpose requires. The same applies to the discovery logs of a Service Provider, which reveal the domains its users connect.
+
+The protocol defines no accounting. Usage statistics, for example the number of applies per template, are kept locally by each party, and are subject to the same protection where they identify users.
+
 [[ops-configuration]]
 === Configuration Management
 
@@ -3184,7 +3197,7 @@ The authors wish to thank the following persons for their feedback and suggestio
 
 [toc=exclude,numbered=false]
 === Change from draft-ietf-dconn-domainconnect-04 to -05
-- Added <<operational-considerations,format=title>>, stating the management model, summarizing the operational aspects of the protocol, describing the migration of existing <<DC-SPEC>> deployments, and bounding the scale of its protocol elements, with default limits and timers for discovery, template retrieval and verification of changes, and back-off from overloaded DNS Provider end-points.
+- Added <<operational-considerations,format=title>>, stating the management model, summarizing the operational aspects of the protocol, describing the migration of existing <<DC-SPEC>> deployments, and bounding the scale of its protocol elements, with default limits and timers for discovery, template retrieval and verification of changes, and back-off from overloaded DNS Provider end-points, and guidance on audit logging, indicators of attack and protection of log data.
 - Specified that a DNS Provider ignores a signature on an apply request for a template that does not require signing.
 - Added guidance on rollover, revocation and retention of Service Provider signing keys, advised against replacing a key at an existing host name, limited how long a DNS Provider uses a retrieved key, and made the default signature algorithm and key format the set that implementations must support.
 
